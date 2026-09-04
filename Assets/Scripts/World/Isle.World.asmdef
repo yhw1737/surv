@@ -1,0 +1,14 @@
+{
+    "name": "Isle.World",
+    "rootNamespace": "Isle.World",
+    "references": ["Isle.Core", "Isle.Data", "Isle.Networking"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

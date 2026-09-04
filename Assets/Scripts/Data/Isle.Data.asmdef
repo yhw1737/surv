@@ -1,0 +1,14 @@
+{
+    "name": "Isle.Data",
+    "rootNamespace": "Isle.Data",
+    "references": ["Isle.Core"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

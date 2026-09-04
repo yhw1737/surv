@@ -1,0 +1,14 @@
+{
+    "name": "Isle.Modding",
+    "rootNamespace": "Isle.Modding",
+    "references": ["Isle.Core", "Isle.Data"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
