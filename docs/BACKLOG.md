@@ -8,7 +8,7 @@
 
 **Nothing else matters until this passes. Do not skip ahead.**
 
-- [ ] **T-000** Unity project. Mono backend pinned, URP 2D, asmdef skeleton, Git LFS
+- [x] **T-000** Unity project. Mono backend pinned, URP 2D, asmdef skeleton, Git LFS
 - [ ] **T-001** Import character PSD, place bones in Skinning Editor (SYS-CHAR-01 §Rig)
 - [ ] **T-002** IK Manager 2D — Limb solver on front arm, look-at on head
 - [ ] **T-003** `AimController` — mouse → aimAngle, head/torso angle limits

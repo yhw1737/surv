@@ -1,0 +1,25 @@
+{
+    "name": "Isle.Tests.EditMode",
+    "rootNamespace": "Isle.Tests.EditMode",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Isle.Core",
+        "Isle.Data",
+        "Isle.Modding",
+        "Isle.Networking",
+        "Isle.World",
+        "Isle.Gameplay",
+        "Isle.Combat",
+        "Isle.UI"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": ["nunit.framework.dll"],
+    "autoReferenced": false,
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

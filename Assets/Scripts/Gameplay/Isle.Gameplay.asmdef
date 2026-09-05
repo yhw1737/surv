@@ -1,0 +1,14 @@
+{
+    "name": "Isle.Gameplay",
+    "rootNamespace": "Isle.Gameplay",
+    "references": ["Isle.Core", "Isle.Data", "Isle.Networking", "Isle.World"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
