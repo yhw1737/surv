@@ -110,6 +110,7 @@ namespace Isle.Gameplay.Editor
             }
 
             var root = BuildHierarchy();
+            CharacterRigIk.Apply(root);
             PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             Object.DestroyImmediate(root);
 

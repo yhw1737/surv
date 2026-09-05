@@ -12,7 +12,8 @@
         "Isle.Gameplay",
         "Isle.Gameplay.Editor",
         "Isle.Combat",
-        "Isle.UI"
+        "Isle.UI",
+        "Unity.2D.IK.Runtime"
     ],
     "includePlatforms": [
         "Editor"

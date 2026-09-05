@@ -6,7 +6,8 @@
         "Isle.Data",
         "Isle.Networking",
         "Isle.World",
-        "Isle.Gameplay"
+        "Isle.Gameplay",
+        "Unity.2D.IK.Runtime"
     ],
     "includePlatforms": [
         "Editor"
