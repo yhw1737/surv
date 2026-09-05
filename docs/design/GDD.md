@@ -54,6 +54,11 @@ Every system derives from these. A feature that fits none of them is not built.
 
 ## Character presentation
 
+> **Deferred to Phase 9 (2026-09-04).** Placeholder boxes until the systems are proven.
+> The perspective is **quarter view** — side-on, angled slightly toward the camera and slightly
+> from above (`ART_PIPELINE` `top-down 3/4`), *not* the pure side view the rig below assumes.
+> `SYS-CHAR-01` carries the full list of what that changes.
+
 Left/right sprites, with head, torso, arms, and weapon tracking the mouse.
 
 ```
@@ -258,7 +263,7 @@ Spec: `docs/modding/SCHEMA.md`
 | 1 | Scope creep | 🔴 top | Treat the scope table as a contract; additions go to BACKLOG only |
 | 2 | Art is the bottleneck | 🔴 high | `ART_PIPELINE.md` sourcing strategy |
 | 3 | Co-op game, solo testing | 🔴 high | Two-client automation and bot clients built early |
-| 4 | Rig doesn't work | 🔴 high | Gate G1 first; plan B is 8-direction sprites |
+| 4 | Rig doesn't work | 🟠 med | **Deferred to Phase 9 (2026-09-04).** Boxes until then; plan B is 8-direction sprites. Severity dropped because the game no longer blocks on it — but a late failure costs more |
 | 5 | Artifacts aren't fun | 🔴 high | Validate with the Ladle alone; stopping here is correct |
 | 6 | Focus reads as obstruction | 🟠 med | Bonus framing; zero interference below Lv 15 |
 | 7 | Judging fun alone | 🟠 med | External playtest every 3 months |
