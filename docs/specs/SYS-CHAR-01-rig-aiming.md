@@ -1,5 +1,22 @@
 # SYS-CHAR-01 · Rig, movement, aiming
 
+> ## ⚠️ Status: deferred to Phase 9 — and this sheet needs a rewrite before it is used
+> **2026-09-04 developer decision.** Characters stay placeholder boxes while the systems get
+> built (`BACKLOG.md` priority banner). T-003–T-006 moved from Phase 0 to Phase 9.
+>
+> **Two things in this sheet are now wrong and must be fixed before T-003 starts:**
+>
+> 1. **Perspective.** Everything below assumes a *pure side view* — hence left/right sprites,
+>    overlapping limbs, and the flip machinery. The actual character is **quarter view**:
+>    predominantly side-on but angled slightly toward the camera and slightly from above, matching
+>    `ART_PIPELINE.md`'s `top-down 3/4`. Legs and arms are visibly offset, not stacked.
+>    §Rig, §Angles and the flip section all need reworking for that.
+> 2. **Weapon-driven rig complexity is dropped.** §Weapon grips is no longer a reason to keep the
+>    part count high. Revisit it with the artifact animation needs (T-122), not before.
+>
+> The **movement**, **network** and **plan B** sections are unaffected and still authoritative.
+
+
 ## Purpose
 Keep left/right sprites while head, torso, arms, and weapon track the mouse naturally.
 **The project's top risk.** If this fails, the whole art direction changes.
