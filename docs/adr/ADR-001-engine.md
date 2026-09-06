@@ -4,7 +4,7 @@ Status: **accepted** · Project: ISLE, solo dev + AI · Basis date: 2026-09-01
 
 ## 2026-09-04 · Requirement A deferred — the decision still holds
 
-The developer reprioritised: placeholder boxes, systems first, character rigging to Phase 9
+The developer reprioritised: placeholder shapes, systems first, character rigging to Phase 11
 (`BACKLOG.md`). **Requirement A — the ★★★★★ item this ADR was largely argued on — is no longer
 what the next six months are spent on.**
 
@@ -13,11 +13,11 @@ That does not reopen the engine choice, for two reasons:
 1. **Unity also won B and E,** and B (server-authoritative networking, FishNet) is now the
    *top* priority — T-020–T-025. The new plan leans harder on the requirement Unity won on
    merit, not less.
-2. **A is deferred, not cancelled.** Phase 9 still runs the rig, and Godot's negative-scale
+2. **A is deferred, not cancelled.** Phase 11 still runs the rig, and Godot's negative-scale
    2D IK problem would still be waiting there.
 
 Review conditions are unchanged, except that condition 1 ("the rig prototype doesn't produce
-acceptable results in two weeks") now fires in Phase 9 rather than Phase 0. **The cost of that
+acceptable results in two weeks") now fires in Phase 11 rather than Phase 0. **The cost of that
 is real and accepted:** a G1 failure arrives with mechanics already built on top, instead of
 before them.
 

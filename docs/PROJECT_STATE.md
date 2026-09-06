@@ -5,27 +5,33 @@
 
 ## Header
 
-- Last updated: **2026-09-05**
-- Phase: **Phase 1 — foundation (definitions)** ← reprioritised 2026-09-04, see below
+- Last updated: **2026-09-06**
+- Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
 - Task: **T-002 done. Next is T-010, not T-003**
-- Branch: **docs/roadmap-reprioritisation** (this doc set; stacked on `feature/T-002-character-ik`)
-- Pending commit: **no code pending.** T-000 and T-001 are merged to `main`; T-002 is open as PR #3
+- Branch: **docs/solo-beta-first-roadmap** (docs only)
+- Pending commit: **no code pending.** T-000–T-002 are all merged to `main`
 
 ## Progress
 
 ```
+stage 1 · placeholders
 Phase 0  project setup        [x] 3/3   T-000..T-002
-Phase 1  foundation           [ ] 0/7   T-010..T-016  ← here
-Phase 2  networking P2P+Steam [ ] 0/6   T-020..T-025
+stage 2 · solo beta
+Phase 1  foundation           [ ] 0/8   T-010..T-017  ← here
+Phase 2  netcode skeleton     [ ] 0/2   T-020, T-021 (authority only)
 Phase 3  world                [ ] 0/7
-Phase 4  inventory            [ ] 0/7
+Phase 4  inventory            [ ] 0/6
 Phase 5  survival + skills    [ ] 0/8
 Phase 6  production loop      [ ] 0/9
 Phase 7  crafting + cooking   [ ] 0/10
 Phase 8  combat               [ ] 0/6
-Phase 9  character rig        [ ] 0/4   T-003..T-006, deferred from Phase 0
-Phase 10 artifacts            [ ] 0/7
-Phase 11 modding + polish     [ ] 0/7
+Phase 9  SOLO BETA 🚩         [ ] 0/3   T-150..T-152
+stage 3 · multiplayer
+Phase 10 multiplayer P2P+Steam[ ] 0/9   T-022..T-027, T-046, T-047, T-116
+stage 4 · graphics
+Phase 11 graphics + rig       [ ] 0/9   T-160, T-003..T-006, T-161..T-164
+Phase 12 artifacts            [ ] 0/7
+Phase 13 modding + polish     [ ] 0/7
 ```
 
 ## Completed
@@ -85,11 +91,48 @@ Nothing the developer named as a priority (weapons, cooking) can start before th
 loader exists — Absolute Rule 1 makes both of them pure JSON. Phase 1 is therefore the gate on
 Phase 7, not optional groundwork.
 
-**T-003 is no longer next.** It moved to Phase 9 and its spec needs a quarter-view rewrite first.
+**T-003 is no longer next.** It moved to Phase 11 and its spec needs a quarter-view rewrite first.
 
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### ★ 2026-09-06 — four-stage build order: placeholders → solo beta → multiplayer → graphics
+  **Developer decision.** The 2026-09-04 reprioritisation (below) put networking at Phase 2, ahead
+  of the whole single-player loop. The developer then stated the order explicitly as *placeholders
+  → **solo beta** → **multiplayer** → graphics*. This entry resolves that conflict.
+
+  **Networking was split rather than moved.** Whole-scale deferral would have been the wrong read:
+  Absolute Rule 2 makes every state change server-side anyway, and FishNet runs a listen server, so
+  **solo play is a one-player host session on the same code path.** Building the solo beta on a
+  non-networked path and bolting FishNet on afterwards is the classic rewrite. So:
+
+  | | Phase | Why |
+  |---|---|---|
+  | T-020 FishNet bootstrap, T-021 authoritative movement | **2** (unchanged) | architecture, not a co-op feature |
+  | T-022 aim sync, T-023 two-client rig, T-024 net gate, T-025 Steam P2P | **10** | need a second client to mean anything |
+  | T-046 inv gate, T-047 two-player carry, T-116 G2 | **10** | moved out of Phases 4/6/8, all inherently two-player |
+
+  **New tasks:** T-017 placeholder shape generator (Phase 1 — closes the ART_PIPELINE gap flagged
+  below), T-150/T-151/T-152 solo beta milestone (Phase 9), T-026 ping system and T-027 death drops
+  (Phase 10 — both mandatory in GDD but never carried a task), T-160–T-164 the actual graphics work
+  (Phase 11 — the phase was previously character rig only).
+
+  **Renumbered:** character presentation Phase 9 → **11**, artifacts 10 → **12**, modding 11 → **13**.
+
+  **The presentation boundary is now a rule, not a note.** It previously lived only in this file and
+  a BACKLOG comment, which is not where a constraint binds. It is now `ARCHITECTURE.md`
+  §Presentation boundary + `CLAUDE.md` Absolute Rule 7 + a `Never` entry in both. Gameplay reads
+  `position` / `aimAngle` / `facingSign` and def numbers; never a bone, sprite or art path.
+
+  **Rewritten:** `BACKLOG.md` (four-stage banner, 14 phases, gates re-ordered), `ARCHITECTURE.md`
+  (§Presentation boundary, §Never), `CLAUDE.md` (§Project build order, Absolute Rule 7, §Never),
+  `GDD.md` (genre now names *strategy*, beta milestone, risks 3/4/9), `ART_PIPELINE.md`
+  (§Placeholders rewritten around vector shapes, §Order of work re-sequenced),
+  `SYS-CHAR-01` + `ADR-001` (phase references).
+
+  **Wording adopted from the developer:** placeholders are *vector shapes*; the genre is *top-down
+  2D co-op survival **strategy***; the goal is a *beta release*. All three were absent from the docs.
 
 - ### ★ 2026-09-04 — roadmap reprioritised: boxes first, rig last
   **Developer decision, explicitly authorising the doc changes.** Project reframed as *solo indie
@@ -101,18 +144,19 @@ Phase 7, not optional groundwork.
   `SYS-CHAR-01` (deferral + rewrite banner), `ADR-001` (requirement A deferred),
   `GDD.md` (§Character presentation, risk 4).
 
-  | | before | after |
-  |---|---|---|
-  | Character rig | Phase 0, blocks everything | **Phase 9**, before artifacts |
-  | Definitions | Phase 1 | **Phase 1** (now first real work) |
-  | Networking | Phase 1 tail | **Phase 2**, called out as priority |
-  | G1 | first gate | second to last |
+  | | before | after | superseded 2026-09-06 |
+  |---|---|---|---|
+  | Character rig | Phase 0, blocks everything | Phase 9, before artifacts | **Phase 11** |
+  | Definitions | Phase 1 | **Phase 1** (now first real work) | unchanged |
+  | Networking | Phase 1 tail | Phase 2, called out as priority | **split: 2 and 10** |
+  | G1 | first gate | second to last | unchanged |
 
   **Cost, accepted knowingly:** a G1 failure now lands with mechanics already built on top of the
   character layer, instead of before them. Mitigation is architectural — gameplay depends on
   movement/aim *data* (position, `aimAngle`, `facingSign`), never on rig internals, so the
   character layer stays swappable. **Hold that line in every phase; it is the only thing making
-  the deferral safe.**
+  the deferral safe.** *(2026-09-06: promoted from this note to `ARCHITECTURE.md` §Presentation
+  boundary and `CLAUDE.md` Absolute Rule 7, where it actually binds.)*
 
 - **Perspective is quarter view, not side view.** The developer's concept sketch is predominantly
   side-on but angled slightly toward the camera and slightly from above — legs and arms visibly
@@ -141,7 +185,8 @@ Phase 7, not optional groundwork.
   Consequence: if `Isle.Core` ever exposes a Unity type on a member `Data` touches, `Data` fails
   to compile. That is intended.
 - **No `Isle.Tests.PlayMode` asmdef yet.** ARCHITECTURE.md's asmdef table lists only
-  `Isle.Tests.EditMode`. The folder exists; the asmdef lands at T-023 with the two-client rig.
+  `Isle.Tests.EditMode`. The folder exists; the asmdef was pencilled in for T-023, which is now
+  Phase 10 — too late. **Whichever task first needs a PlayMode test creates it** (likely T-020).
 - **No leaf subfolders created** (`Core/Ids/`, `World/Chunks/`, …). ARCHITECTURE.md §Folders
   already documents them; empty directories carry no information git can hold.
 - **`applicationIdentifier` left as `com.DefaultCompany.ISLE`** — see Blocked §2.
@@ -180,10 +225,10 @@ Phase 7, not optional groundwork.
   and the 32 px tile; no per-limb sizes exist anywhere. Segment widths, lengths and the 1 px joint
   overlap were chosen to look like a body. They are thrown away with the placeholder and no gameplay
   number depends on them, so they were not escalated — but they are not spec'd.
-- **`ART_PIPELINE.md` order of work has no backlog entries.** Its steps 1 (fix the 48-colour
-  palette) and 3 (placeholder generator script) are both prerequisites to its own step 4
-  "start coding", but `BACKLOG.md` jumps T-000 → T-001 with no task for either. Unresolved; needs
-  a task number or an explicit decision to drop them.
+- ~~**`ART_PIPELINE.md` order of work has no backlog entries.**~~ **Resolved 2026-09-06.** The
+  placeholder generator is **T-017** (Phase 1) and the palette is **T-160** (opens Phase 11); the
+  document's order of work was re-sequenced to match, and the rest of it is now explicitly a plan
+  for Phase 11 rather than a prerequisite for coding.
 
 ## Operational notes
 
@@ -218,8 +263,9 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 |---|---|---|---|
 | #1 | feature/T-000-unity-project | T-000 | **merged to main** |
 | #2 | feature/T-001-character-rig | T-001 | **merged to main** |
-| #3 | feature/T-002-character-ik | T-002 | open, awaiting review |
-| #4 | docs/roadmap-reprioritisation | — | open, stacked on #3 |
+| #3 | feature/T-002-character-ik | T-002 | **merged to main** |
+| #4 | docs/roadmap-reprioritisation | — | **merged to main** |
+| #5 | docs/solo-beta-first-roadmap | — | open — this doc set |
 
 Rebuilding the split meant reconstructing the T-001 tree without any T-002 code, so each commit
 builds and passes its own tests on its own: T-001 is **8/8** with an IK-free prefab, T-002 is
@@ -232,14 +278,19 @@ backup progress record (Git rules §5) and is the expensive thing to change late
 
 ## Gates
 
-| Gate | Status | Result |
-|---|---|---|
-| Def gate T-016 | ⬜ not reached | next up |
-| Net gate T-024 | ⬜ not reached | |
-| G1 rig | ⬜ not reached | **deferred to Phase 9** |
-| G2 role split | ⬜ not reached | |
-| G3 artifacts | ⬜ not reached | |
-| G4 final | ⬜ not reached | |
+In execution order (re-sequenced 2026-09-06).
+
+| Gate | Phase | Status | Result |
+|---|---|---|---|
+| Def gate T-016 | 1 | ⬜ not reached | next up |
+| Ext gate T-105 | 7 | ⬜ not reached | |
+| **Solo beta T-152** | 9 | ⬜ not reached | **stage 2 ends here** |
+| Net gate T-024 | 10 | ⬜ not reached | |
+| Inv gate T-046 | 10 | ⬜ not reached | |
+| G2 role split T-116 | 10 | ⬜ not reached | |
+| G1 rig T-006 | 11 | ⬜ not reached | **deferred to Phase 11** |
+| G3 artifacts T-124 | 12 | ⬜ not reached | |
+| G4 final T-143 | 13 | ⬜ not reached | |
 
 ## Update template
 

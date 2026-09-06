@@ -79,6 +79,41 @@ Anything depending on MonoBehaviour or network state is untestable and therefore
 
 **Event bus over direct refs.** `EventBus.Publish(new ItemCraftedEvent(...))`. These are exactly the future Lua hook points — writing them as events now means Tier 2 modding is a bolt-on later.
 
+## Presentation boundary — art lands last
+
+Real art arrives in Phase 11, after the solo beta and multiplayer. Everything built before it runs
+on **vector-shape placeholders**: a box, a circle, a solid colour. That only stays cheap if swapping
+the shape for a sprite touches nothing but the renderer.
+
+**Gameplay reads data, never visuals.**
+
+| Gameplay may depend on | Gameplay may never depend on |
+|---|---|
+| `position`, `aimAngle`, `facingSign` | a bone `Transform`, an IK target, a rig hierarchy path |
+| a def's `id`, tags and numbers | a sprite, texture, atlas or prefab path |
+| collider bounds from the def | the rendered size of a placeholder shape |
+| an animation *event* | an animation clip length or frame count |
+
+```csharp
+// ❌ gameplay reaching into the rig — the sprite swap now breaks combat
+var tip = transform.Find("Torso/Arm_Front_Upper/.../WeaponSocket").position;
+
+// ✅ the character layer publishes data; combat consumes it
+var tip = _rig.WeaponMuzzle;      // CharacterRig owns how that is computed
+```
+
+Concretely:
+- Every visual is behind a component in `UI` or the owning system's presentation class. No
+  `SpriteRenderer`, `Animator` or `Sprite` field outside one.
+- **Never hardcode an art path.** `T-017`'s generator resolves a def's visual, falling back to a
+  shape when none exists — including for mods, which will always have missing art.
+- Timing that gameplay cares about lives in the def or the formula, not in a clip. An attack's
+  active window is a number in JSON; the animation matches it, not the reverse.
+- Placeholder dimensions are **not** spec values. If a number was eyeballed to make a shape look
+  like a body, it may not leak into a formula.
+
+This is the single thing that makes deferring art safe. `BACKLOG.md` Phase 11 depends on it.
+
 ## Network
 
 | Target | Authority | Prediction | Rate |
@@ -120,6 +155,7 @@ Spoilage, crop growth, resource respawn, drying/smoking all use this. **When des
 - Unity types in `Isle.Data`
 - Upward references from `Core`
 - Formulas inside MonoBehaviours (untestable)
+- Gameplay code touching rig internals, sprites or art paths (§Presentation boundary)
 - Client-predicted inventory
 - Runtime mutation of definitions
 - SQLite access per frame
