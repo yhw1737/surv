@@ -5,10 +5,10 @@
 
 ## Header
 
-- Last updated: **2026-09-06**
+- Last updated: **2026-09-07**
 - Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
 - Task: **T-002 done. Next is T-010, not T-003**
-- Branch: **docs/solo-beta-first-roadmap** (docs only)
+- Branch: **docs/commit-pr-language-rule** (docs only)
 - Pending commit: **no code pending.** T-000–T-002 are all merged to `main`
 
 ## Progress
@@ -96,6 +96,14 @@ Phase 7, not optional groundwork.
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- **2026-09-07 — commit and PR languages are now specified, including length.** `CLAUDE.md`
+  §Language previously listed commits and PR bodies together as English. Split into two rows plus a
+  §Commits are English, PRs are Korean subsection, and Git rules §5/§6 updated to match: commits
+  **short, plain, precise English** (subject ≤ 60 chars, `git log` stays skimmable); PR titles and
+  bodies **Korean, detailed, complete**, with the rule that **no change in the diff may be missing
+  from the body**. The §6 template is now Korean (왜 / 변경점 / 판단 / 검증 / 스펙). Four `Never`
+  entries added.
 
 - ### ★ 2026-09-06 — four-stage build order: placeholders → solo beta → multiplayer → graphics
   **Developer decision.** The 2026-09-04 reprioritisation (below) put networking at Phase 2, ahead
@@ -265,16 +273,17 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #2 | feature/T-001-character-rig | T-001 | **merged to main** |
 | #3 | feature/T-002-character-ik | T-002 | **merged to main** |
 | #4 | docs/roadmap-reprioritisation | — | **merged to main** |
-| #5 | docs/solo-beta-first-roadmap | — | open — this doc set |
+| #5 | docs/solo-beta-first-roadmap | — | **merged to main** |
+| #6 | docs/commit-pr-language-rule | — | open — this doc set |
 
 Rebuilding the split meant reconstructing the T-001 tree without any T-002 code, so each commit
 builds and passes its own tests on its own: T-001 is **8/8** with an IK-free prefab, T-002 is
 **16/16** with the solvers attached. The Unity 6.2 serialization churn in `SampleScene.unity` and
 `ProjectSettings.asset` was folded into T-000, where those files belong.
 
-**PR bodies are Korean, commit messages English.** CLAUDE.md requires English for both; the
-developer asked for Korean PRs on 2026-09-05. Commits stayed English because `git log` is the
-backup progress record (Git rules §5) and is the expensive thing to change later.
+**PR bodies are Korean, commit messages English** — no longer an ad-hoc split. Confirmed by the
+developer and written into `CLAUDE.md` §Language on 2026-09-07, with the sizes specified too:
+commits short, PRs detailed and complete.
 
 ## Gates
 

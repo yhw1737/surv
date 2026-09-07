@@ -27,7 +27,8 @@ Build order — four stages, `docs/BACKLOG.md` is the schedule:
 |---|---|
 | **Conversation, explanations, questions, reports** | **한국어** |
 | Code, identifiers, comments | English |
-| Commit messages, PR titles and bodies | English |
+| **Commit messages** | **English — short, plain, precise** (see below) |
+| **PR titles and bodies** | **한국어 — detailed, nothing omitted** (see below) |
 | Documentation (`docs/`, `CLAUDE.md`) | English |
 | Definition files (`definitions/*.json`) — keys and IDs | English |
 | Mod loader error messages | English (modders are international) |
@@ -38,6 +39,28 @@ Why: docs and specs are re-read every session, and English is roughly 2–3× mo
 So: think and write artifacts in English, but **respond in Korean.** Session reports, questions, and status summaries all go to the developer in Korean.
 
 Player-facing strings always go through `@key` references into the language files (see `docs/modding/SCHEMA.md`), never inline in C# or definition values.
+
+### Commits are English, PRs are Korean
+
+They are read by different people at different times, so they follow different rules.
+
+| | Commit message | PR title and body |
+|---|---|---|
+| Language | **English, always** | **한국어, always** |
+| Length | **short.** Subject ≤ 60 chars, body a few bullets | **as long as it needs to be** |
+| Read by | future sessions scanning `git log` | the developer, once, before merging |
+| Optimised for | scanning and grepping | understanding and reviewing |
+
+**Commit messages: short, plain, precise English.** No adjectives, no rationale essays, no
+restating the diff line by line. State what changed and why in as few words as carry the meaning.
+`git log --oneline` is the backup progress record — it has to stay skimmable.
+
+**PR bodies: Korean, detailed, and complete.** The developer reviews here, so write for
+comprehension: why the change was needed, what was decided and what was rejected, tables over
+prose. **Every change in the diff must appear somewhere in the body** — an unmentioned change is
+an unreviewed change. If a file was touched, say why.
+
+Both: no AI attribution anywhere (Git rules §4).
 
 ## Stack (do not change)
 
@@ -179,24 +202,33 @@ T-043: grid inventory rotation and bulk move
 - GridInventory.Rotate() swaps W/H then revalidates placement
 - Verified: SYS-INV-01 §3.3, 5 cases pass
 ```
-Task ID on the first line — `git log` becomes the backup progress record. No signatures, footers, or emoji.
+**English, short, plain.** Task ID on the first line — `git log` becomes the backup progress
+record, so it must stay skimmable. Subject ≤ 60 characters, imperative or plain statement, no
+trailing period. Body only where the subject is not enough: a few bullets, facts not prose.
+No signatures, footers, or emoji.
 
-**6. PR body** (when requested)
+**6. PR body** (when requested) — **Korean, detailed, complete.** Section headings too.
+
 ```markdown
-## Summary
-T-043 grid inventory rotation and bulk move
+## 왜
+T-043 그리드 인벤토리 회전 · 일괄 이동. (배경, 무엇이 문제였는지)
 
-## Changes
-- ...
+## 변경점
+- (파일/시스템 단위로. 빠진 변경이 없어야 함)
 
-## Verification
-- SYS-INV-01 §3.3, 5 cases pass
-- Manual: two-client test, no duplication
+## 판단
+- (스펙에 없어서 정한 것, 대안 중 버린 것과 그 이유)
 
-## Spec
+## 검증
+- SYS-INV-01 §3.3, 5 케이스 통과
+- 수동: 2클라이언트 테스트, 복제 없음
+
+## 스펙
 docs/specs/SYS-INV-01-grid-inventory.md
 ```
-No AI mentions here either.
+
+**Nothing in the diff may be missing from §변경점.** Before opening the PR, run
+`git diff --stat` against the base and check every file is accounted for. No AI mentions here either.
 
 ## Never
 
@@ -217,6 +249,9 @@ No AI mentions here either.
 - **Start a task without `git fetch`**
 - **Reply to the developer in English** (use Korean)
 - **Write code, docs, or commits in Korean** (use English)
+- **Write a PR body in English** (use Korean)
+- **Write a long commit message or a thin PR body** — the sizes are the other way round
+- **Open a PR whose body omits part of the diff**
 - **Hardcode player-facing strings** (use `lang/*.json`)
 
 ## Doc index
