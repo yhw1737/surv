@@ -479,7 +479,7 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #5 | docs/solo-beta-first-roadmap | — | **merged to main** |
 | #6 | docs/commit-pr-language-rule | — | **merged to main** |
 | #7 | feature/T-010-namespaced-id-tags | T-010 | **merged to main** |
-| #8 | feature/T-011-data-skill-taxonomy | T-011 + skill/profession taxonomy | opened, see PR link below |
+| #8 | feature/T-011-data-skill-taxonomy | T-011 + skill/profession taxonomy | [PR #8](https://github.com/yhw1737/surv/pull/8) — open |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
