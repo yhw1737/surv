@@ -37,7 +37,7 @@
 **Everything downstream depends on this.** Weapons and cooking are pure JSON (Absolute Rule 1),
 so neither can start before the loader exists.
 
-- [ ] **T-010** `NamespacedId`, `TagRegistry` flattening (SYS-CORE-01)
+- [x] **T-010** `NamespacedId`, `TagRegistry` flattening (SYS-CORE-01)
 - [ ] **T-011** `Data` layer POCOs — ItemDef, CreatureDef, FishDef, CookMethodDef, etc.
 - [ ] **T-012** `DefinitionLoader` + `SchemaValidator`
 - [ ] **T-013** ★ `ReferenceResolver` + typo-suggesting error messages
