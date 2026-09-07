@@ -7,9 +7,11 @@
 
 - Last updated: **2026-09-07**
 - Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
-- Task: **T-010 done. Next is T-011**
-- Branch: **feature/T-010-namespaced-id-tags** (stacked on `docs/commit-pr-language-rule`)
-- Pending commit: **yes** — T-010 awaiting verification (PR #7)
+- Task: **T-011 done + skill/profession taxonomy settled. Next is T-012** (T-018/T-019 do the
+  SYS-SKILL-01/SYS-BUFF-01 rewrite; new debt T-106/T-107/T-117, see Decided without a spec)
+- Branch: **feature/T-011-data-skill-taxonomy** (renamed from `feature/T-011-data-defs` — scope
+  grew past T-011 alone, developer requested a single PR for both)
+- Pending commit: **committed, PR opened** — see Pending commits below
 
 ## Progress
 
@@ -17,7 +19,7 @@
 stage 1 · placeholders
 Phase 0  project setup        [x] 3/3   T-000..T-002
 stage 2 · solo beta
-Phase 1  foundation           [~] 1/8   T-010..T-017  ← here
+Phase 1  foundation           [~] 2/10  T-010..T-019  ← here
 Phase 2  netcode skeleton     [ ] 0/2   T-020, T-021 (authority only)
 Phase 3  world                [ ] 0/7
 Phase 4  inventory            [ ] 0/6
@@ -97,25 +99,159 @@ Phase 13 modding + polish     [ ] 0/7
     cases 2 and 3 by `HasTag_ChildImpliesParent_IsTrue` and
     `HasTag_ParentDoesNotImplyChild_IsFalse`. Cases 4–8 belong to T-012/T-013.
 
+- **T-011**: `Data` layer POCOs — the nine definition types in `SCHEMA.md` §Definition types.
+  - Files: `Assets/Scripts/Data/{Definition,Shared,ItemDef,CreatureDef,FishDef,CookMethodDef,`
+    `CraftRecipeDef,WeaponDef,ArtifactDef,EnchantDef,CropDef,IsExternalInit}.cs`,
+    `Assets/Tests/EditMode/DataDefinitionTests.cs`
+  - `ItemDef CreatureDef FishDef CookMethodDef CraftRecipeDef WeaponDef ArtifactDef EnchantDef
+    CropDef`, each implementing `IDefinition` (`NamespacedId Id`), plus ~25 nested value objects.
+    Field-for-field from SCHEMA; nothing added and nothing dropped.
+  - **Every property is `init`-only.** A def is held by reference from every stack that uses it
+    (ARCHITECTURE §Patterns), so one runtime write would retune the world. Unity 6's netstandard
+    profile has no `IsExternalInit`, so `Isle.Data` declares its own.
+  - Cross-references are typed `NamespacedId`, not `string`, so T-013's `ReferenceResolver` has
+    one thing to walk. `IDefinition` also requires `Name`, so a type cannot be added without a
+    language key.
+  - Verified: batchmode import exit 0, 0 compiler errors; EditMode **70/70 passed** (6 new).
+    The five are architectural guards, not behaviour — a POCO has no logic to test:
+    `Isle.Data` references no Unity assembly, the type roster matches SCHEMA exactly, every def is
+    sealed and parameterless-constructible (System.Text.Json needs both), every property is
+    `init`-only, a def can be built with an object initializer from another assembly, and a
+    definition's name is a `@` language key rather than literal text.
+  - Cross-checked by script: **all 127 JSON keys in SCHEMA §Definition types map to a property and
+    back**, no extras in either direction. Not kept as a test — it parses markdown, which is too
+    brittle to run every build.
+
 ## In progress / unfinished
 
 (none)
 
 ## Next
 
-**T-011** — `Data` layer POCOs (ItemDef, CreatureDef, FishDef, CookMethodDef, …), shapes taken
-from `docs/modding/SCHEMA.md` §Definition types.
+**T-012** — `DefinitionLoader` + `SchemaValidator`, following SYS-CORE-01 §Load pipeline.
 
-Two things T-010 deliberately left for it: a `System.Text.Json` converter for `NamespacedId`
-(nothing serialises yet, so writing one now would be guessing at the loader's options), and whether
-a def stores its tag strings or only the flattened `HashSet<int>`.
+T-011 leaves it three concrete jobs:
 
-Watch the layer rule — `Isle.Data` has `noEngineReferences: true`, so no Unity types.
-`NamespacedId` lives in `Isle.Core`, which `Data` may reference.
+1. **A `System.Text.Json` converter for `NamespacedId`.** It needs `Read`/`Write` *and*
+   `ReadAsPropertyName`/`WriteAsPropertyName` — `FishDef.BaitAffinity` is a dictionary keyed by an
+   ID. On a parse failure, surface `NamespacedId.TryParse`'s message rather than a bare
+   `JsonException`; §Load pipeline step 5 wants every failure reported, not the first.
+2. **`System.Text.Json` is not in the project yet.** No DLL, not in `manifest.json`. Getting it in
+   (NuGet DLL under `Assets/Plugins/`, listed in the asmdef's `precompiledReferences`) is part of
+   T-012, not a prerequisite someone else did.
+3. **Naming policy, not attributes.** The POCOs carry no `[JsonPropertyName]`, so the loader must
+   set `PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower`. Every property name was chosen to
+   round-trip under it (`NutritionRetention` → `nutrition_retention`). Keeping the attributes out
+   is what lets `Isle.Data` stay dependency-free.
+
+Validation the POCOs deliberately do **not** do, all of it T-012's: `IngredientRef` has exactly one
+of `item`/`tag`; `condition_range` and the `habitat` bands are length 2; an artifact's
+`combat_skill` really is null; an `EnchantEffect` carries the fields its `type` requires.
+
+**T-012 is not blocked by T-018/T-019** — the loader does not care which definition types exist.
+But **T-018 and T-019 must both land before T-015**, because starter definitions reference skill
+and buff IDs and would have to be rewritten otherwise.
 
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### ★ 2026-09-07 — skills and buffs become moddable content; every definition gets a name
+  **Developer decision**, answering the three questions T-011 raised.
+
+  | # | Question | Answer |
+  |---|---|---|
+  | 1 | Are skills fixed at 7? | **No.** Magic/enchanting, brewing and others may be added during development |
+  | 2 | Can modders add skills? | **Yes** — so the focus formula must be simulated across skill counts |
+  | 3 | Buff spec sheet? | **Yes**, minimal beta set now, detailed during development, modder-extensible |
+  | 4 | Name field on the other 8 types? | **Yes** |
+  | 5 | Unify on `{namespace}:{name}`? | **Yes** |
+
+  **Questions 4 and 5 are done** — applied to the POCOs and to `SCHEMA.md` in T-011.
+  `IDefinition` now requires `Name`, so a definition type cannot be added without a language key.
+
+  **Questions 1–3 are new work: T-018 and T-019.** They are design, not transcription, and the
+  reason is question 2. The focus formula is
+  `denominator = L_i + Σ_{j≠i}( L_j * w(L_j) * c(i,j) * p(n) )`, and three things in it assume a
+  closed skill list:
+  - **`w(L) = 0` below level 16 is what saves it.** An unlevelled skill contributes nothing, so a
+    mod adding ten skills the player never touches changes no one's focus. This property is why
+    modder-added skills are viable at all, and it must be preserved deliberately, not by luck.
+  - **`c(i,j)` is a hardcoded 2×2** over Production and Combat. **Open: may a mod declare a new
+    pool?** If yes, `c` becomes an N×N matrix and cross-pool balance is a design problem. If no,
+    every modded skill picks an existing pool and the matrix stands. *Recommend no for beta.*
+  - **Pool asymmetry.** Production has 5 members, Combat 2. Same-pool interference is
+    `c = 1.00` against Combat's cross-pool `0.35`, so a mod loading its new skills into one pool
+    quietly taxes that pool's specialists. Needs simulating.
+  - **The 9 verification cases are written against a fixed 7-element array** in a fixed order.
+    They have to be restated so they still mean something at any skill count.
+
+  **Question 3's taxonomy half is now decided — see Blocked §2 (resolved).** T-018's actual
+  formula rewrite is still pending; the pool-asymmetry bullet above was analyzed for a 5/2 split
+  and needs redoing for 5/3 now that Combat has a third member (Magic).
+
+  **Two follow-up design clarifications (2026-09-07), written directly into the specs rather than
+  tracked here as debt:**
+  - **Hunter sets the initial bulk, Cook refines it.** `SYS-HUNT-01`'s `damageFactor` (kill method
+    and weapon — already existed) is the Hunter's contribution to `TotalEdibleKg`; `cookingLevel`'s
+    term in `ButcherQuality` is the Cook's. No formula changed, only which existing term belongs to
+    which profession is now stated explicitly.
+  - **Magic/Enchanting is a late-game power-ceiling system, not a core-loop requirement.** The solo
+    beta loop (gather → hunt → fish → cook → craft → fight → sleep, `T-152`) must stay completable
+    on unenchanted Common gear without Magic. Recorded in `GDD.md` §Scope, §Skills, and
+    `SYS-CRAFT-01` §Enchanting.
+
+- **T-011: the type roster follows `SCHEMA.md`, not `ARCHITECTURE.md`, and the two disagreed.**
+  ARCHITECTURE §Folders listed ten Data types; SCHEMA documents nine, and the sets do not match.
+  `CropDef` is in SCHEMA but was missing from ARCHITECTURE's list — **added**. `SkillDef` and
+  `BuffDef` were in ARCHITECTURE's list but have no schema anywhere — **not written**, see
+  Blocked §2. ARCHITECTURE §Folders now names the nine that exist.
+
+- **T-011: a def stores its tag strings, not a flattened `HashSet<int>`.** This answers the
+  question T-010 left open. `Tags` is `string[]`, exactly as the JSON writes it; the flattened set
+  is a load-time product and belongs to the tag index in **T-014**, which is also where
+  `AllWithTag` lives. A def that carried its own set would be two sources of truth for the same
+  fact.
+
+- **T-011: `CookModifiers` fields default to `1.0`.** SCHEMA's own example has a `tag_reaction`
+  declaring only `thirst`, so the absent fields must be identity or the reaction would zero the
+  dish out. GLOSSARY §Units defines 1.0 as "no change" and SYS-COOK-01 steps 3–4 multiply, so this
+  is read off the docs rather than invented — but the docs never say it outright.
+  `TagReaction.Power` is **not** defaulted; it has no documented identity value, and it is only
+  read when the reaction grants a buff, where SCHEMA always states it.
+
+- **T-011: numeric ranges stay bare `float[]`.** `condition_range: [0.7, 1.3]`, `habitat.depth`,
+  `habitat.water_temp`. A `Range { Min, Max }` type would read better but does not match the JSON,
+  and length is a validator concern (T-012).
+
+- **T-011: `EnchantEffect` is one class with nullable fields, not a polymorphic hierarchy.**
+  SCHEMA's two example effects have different shapes — `{type, value}` vs
+  `{type, when, damage_mult}`. A discriminated hierarchy would need the full list of `type` values,
+  which is not documented. Union-of-optionals now; T-012 validates per type.
+
+- ~~**T-011: `ButcherYield.quality_from` is unnamespaced in SCHEMA.**~~ **Resolved 2026-09-07** —
+  developer confirmed `{namespace}:{name}` everywhere. SCHEMA now writes `"isle:hunting"` and the
+  property is a `NamespacedId`. It changes again if T-018 renames the skill.
+
+- **T-011: `ArtifactAbility.Id` is a plain `string`.** SCHEMA writes `"hook_pull"` — the ID is
+  local to its artifact, not a definition ID, so it is deliberately not a `NamespacedId`.
+
+- **T-011: `IsExternalInit` is declared public in `Isle.Data`.** Unity 6's netstandard profile does
+  not ship it, so `init` accessors will not compile without a local copy. It is public rather than
+  internal because setting an `init` property needs the marker accessible at the call site —
+  internal would stop EditMode tests from building def fixtures inline, which every formula test
+  from T-072 on will want to do. Ceiling: a referenced NuGet DLL declaring its own public copy is a
+  CS0433 ambiguity; the fix is `internal` + `InternalsVisibleTo`.
+
+- **T-011: type names take the `Def` suffix over GLOSSARY's concept names.** GLOSSARY says
+  `CookMethod` and `CraftRecipe`; ARCHITECTURE §Folders and SYS-COOK-01 both write `CookMethodDef`.
+  Used the suffixed form throughout — GLOSSARY's entries name the *concept*, and ARCHITECTURE's
+  def-vs-instance pattern needs the suffix free for the loaded type.
+
+- **⚠ T-011: SYS-COOK-01 step 2 reads `def.reference_weight`, which is not in SCHEMA §Items.**
+  `weightScale = clamp(itemWeightKg / def.reference_weight, 0.5, 2.0)`. The item schema has
+  `weight` and nothing else weight-like, so this is almost certainly the same field under an old
+  name. **Not renamed and not added** — `ItemDef.Weight` is what exists. Resolve before T-101.
 
 - **T-010: equality compares the hash first, then the string.** SYS-CORE-01 §NamespacedId says
   "compare hashes, not strings". Taken literally that is wrong: a 32-bit hash over a few thousand
@@ -314,6 +450,20 @@ Watch the layer rule — `Isle.Data` has `noEngineReferences: true`, so no Unity
    `applicationIdentifier` is `com.DefaultCompany.ISLE`. Both want the real name before anything
    ships to Steam. One-line edits in `ProjectSettings/ProjectSettings.asset`.
 
+2. ~~**★ Skill taxonomy.**~~ **Resolved 2026-09-07** — see `SYS-SKILL-01`'s status banner and
+   `docs/design/GDD.md` §Scope for the finalized table. Not a pure rename after all: `isle:hunting`
+   is retired (butchery yield moves to **Cooking**, `SYS-HUNT-01`), and a genuinely new profession,
+   **Enchanter**, is added — distinct from Blacksmith, spanning a new Combat skill (`isle:magic`,
+   magic combat) and a new Production skill (`isle:enchanting`, fills `EnchantDef` slots + brews).
+   Production stays at 5 members, **Combat grows from 2 to 3** — this changes the pool-asymmetry
+   math below, which was written for 5/2. **T-018 must still do the actual formula rewrite** and
+   re-simulate all 9 verification cases against the new 5/3 split; only the taxonomy question
+   itself is closed. New backlog debt: `BACKLOG.md` T-106 (move enchant application off Crafting —
+   mechanical, formula already exists), T-107 (SYS-BREW-01 — **no spec exists**, ask before
+   inventing brewing numbers), T-117 (magic combat weapon category — `SYS-COMBAT-01`'s
+   `PowerCalculator` is skill-agnostic, so this is cheap unless a mana/resource system turns out to
+   be wanted, which is itself unasked and unspecced).
+
 ## Pending commits
 
 > Claude does not commit. The developer verifies and requests it explicitly (CLAUDE.md Git rules §3).
@@ -327,8 +477,15 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #3 | feature/T-002-character-ik | T-002 | **merged to main** |
 | #4 | docs/roadmap-reprioritisation | — | **merged to main** |
 | #5 | docs/solo-beta-first-roadmap | — | **merged to main** |
-| #6 | docs/commit-pr-language-rule | — | open |
-| #7 | feature/T-010-namespaced-id-tags | T-010 | open, stacked on #6 |
+| #6 | docs/commit-pr-language-rule | — | **merged to main** |
+| #7 | feature/T-010-namespaced-id-tags | T-010 | **merged to main** |
+| #8 | feature/T-011-data-skill-taxonomy | T-011 + skill/profession taxonomy | opened, see PR link below |
+
+T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
+nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
+up mid-review (Enchanter split off Blacksmith, `isle:hunting` retired, `isle:magic` and
+`isle:enchanting` added) — the developer asked for one bundled PR rather than splitting the
+taxonomy docs out, and renamed the branch accordingly (was `feature/T-011-data-defs`).
 
 Rebuilding the split meant reconstructing the T-001 tree without any T-002 code, so each commit
 builds and passes its own tests on its own: T-001 is **8/8** with an IK-free prefab, T-002 is

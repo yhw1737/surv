@@ -36,7 +36,7 @@ One asmdef per folder; the compiler enforces the boundaries.
 Assets/Scripts/
   Core/       Ids/ Tags/ Defs/ Events/ Util/
   Data/       ItemDef CreatureDef FishDef CookMethodDef CraftRecipeDef
-              WeaponDef ArtifactDef EnchantDef SkillDef BuffDef
+              WeaponDef ArtifactDef EnchantDef CropDef
   Modding/    ModManifest ModLoader PatchApplier LoadOrderResolver Hooks/
   Networking/ IsleNetworkManager Authority/ Sync/
   World/      Chunks/ Time/ Spawning/ Spoilage/ Generation/
@@ -71,7 +71,7 @@ public sealed class ItemStack {
 **Formulas are static pure functions.** Required for EditMode testing.
 ```csharp
 public static class ButcheryCalculator {
-    public static float TotalEdibleKg(float bodyWeightKg, int huntingLevel,
+    public static float TotalEdibleKg(float bodyWeightKg, int cookingLevel,
         float toolFactor, float damageFactor, float edibleRatio, float conditionFactor) { ... }
 }
 ```

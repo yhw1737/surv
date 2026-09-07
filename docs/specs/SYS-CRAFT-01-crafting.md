@@ -4,6 +4,12 @@
 Crafting skill sets the **quality tier**, and quality sets the **enchant slot count**.
 Higher benches need several skills, but **nearby allies contribute**, driving cooperation.
 
+> **2026-09-07 developer decision.** Enchanter is a profession distinct from Blacksmith — the
+> smith (Crafting) builds the item and its slot count; the enchanter (**Enchanting**,
+> `isle:enchanting`) fills those slots and also brews (no spec yet, see BACKLOG T-107). §Enchanting
+> below now gates on Enchanting, not Crafting — the callout under §Quality already named this
+> split before either skill existed to back it.
+
 ## Quality
 
 | Tier | Power | Slots | Durability |
@@ -64,12 +70,19 @@ Set `allow_adjacent_assist: false` on top-tier recipes to disable this.
 
 ## Enchanting (Core: slots only)
 ```
-successRate = EnchantBaseRate(0.60) + craftingLevel * EnchantSkillRate(0.008)
+successRate = EnchantBaseRate(0.60) + enchantingLevel * EnchantSkillRate(0.008)
 Lv 50 → 100%
 On failure only the catalyst is lost.
 ★ Within the slot count, the item can never be destroyed.
 ```
-Overload enchanting (exceeding slots) is post-EA; the formula is preserved in `docs/BACKLOG.md`. Core implements `EnchantDef` and the slot system with 3–4 enchant types.
+`enchantingLevel` is the **Enchanting** skill (`EnchantDef.enchanting_skill_required`), separate
+from the Crafting level that set the item's slot count. Overload enchanting (exceeding slots) is
+post-EA; the formula is preserved in `docs/BACKLOG.md`. Core implements `EnchantDef` and the slot
+system with 3–4 enchant types.
+
+**Design intent:** enchanting raises the **late-game power ceiling** (GDD §Scope) — the solo beta
+loop must be completable on unenchanted Common gear. It is the payoff for reaching a smith who can
+build slots and an enchanter who can fill them, not a requirement to reach either.
 
 ## Crafter mark
 `ItemStack.CrafterName` set on creation, shown in tooltips. Master tier gets a distinguishing visual effect.
@@ -95,3 +108,4 @@ Scripts/Gameplay/Crafting/
 - How `stationTier` is derived
 - How `materialPurity` is computed (mean quality tier of inputs?)
 - The Core enchant type list
+- Whether Enchanting gets its own adjacent-assist / minigame, or reuses this sheet's — not decided, tracked at BACKLOG T-106

@@ -38,13 +38,35 @@
 so neither can start before the loader exists.
 
 - [x] **T-010** `NamespacedId`, `TagRegistry` flattening (SYS-CORE-01)
-- [ ] **T-011** `Data` layer POCOs — ItemDef, CreatureDef, FishDef, CookMethodDef, etc.
+- [x] **T-011** `Data` layer POCOs — ItemDef, CreatureDef, FishDef, CookMethodDef, etc.
 - [ ] **T-012** `DefinitionLoader` + `SchemaValidator`
 - [ ] **T-013** ★ `ReferenceResolver` + typo-suggesting error messages
 - [ ] **T-014** `DefRegistry` + tag index
 - [ ] **T-015** F5 hot reload
 - [ ] **T-016** 🚩 **Def gate:** editing `items/*.json` reflects without recompiling. **Do not proceed until this works**
 - [ ] **T-017** ★ Placeholder visual generator — vector shapes (box / circle / solid colour, ART_PIPELINE §Placeholders). A definition with no art falls back automatically, so **no later phase ever waits on a sprite**
+- [ ] **T-018** ★ SYS-SKILL-01 rewrite + `SkillDef` — skills become data-driven and **modder-addable**, so the focus formula must hold for any skill count. Settle the skill taxonomy first (see below). **Blocks T-015, T-060, T-061**
+- [ ] **T-019** SYS-BUFF-01 spec sheet + `BuffDef` — the beta buff set plus an effect vocabulary modders can extend. **Blocks T-015, T-103**
+
+> **T-018 and T-019 exist because T-011 found the schema had no shape for skills or buffs.**
+> Both were listed as Data types in ARCHITECTURE with nothing describing their fields.
+> The developer's 2026-09-07 decision made both moddable, which turns them from
+> transcription into design work — see `PROJECT_STATE.md` §Decided without a spec.
+>
+> **Do them before T-015.** Starter definitions reference skill and buff IDs; writing those
+> files first means rewriting them.
+>
+> ⚠️ **T-018 is not a rename job.** Modder-added skills change what the focus formula has to
+> survive, and SYS-SKILL-01's 9 verification cases are written against a fixed 7-element array.
+> The formula needs simulating across skill counts and pool assignments before the sheet is
+> rewritten.
+>
+> **The skill taxonomy is settled (2026-09-07)** — see `SYS-SKILL-01`'s status banner for the
+> finalized 8-skill, 5-production/3-combat table. `isle:hunting` is retired (butchery yield moves
+> to Cooking, `SYS-HUNT-01`); **Enchanter is a profession distinct from Blacksmith**, spanning a
+> new Combat skill (`isle:magic`) and a new Production skill (`isle:enchanting`, also brewing).
+> T-018 now simulates a 5/3 pool split, not 5/2 — redo the pool-asymmetry analysis in
+> `PROJECT_STATE.md`, it was written before Combat had a third member.
 
 ## Phase 2 · Netcode skeleton — solo runs as a one-player host
 
@@ -104,13 +126,15 @@ stood up now so the solo beta is already a listen-server session with one client
 - [ ] **T-090** `QualityCalculator` + 5 verification cases
 - [ ] **T-091** Forging minigame
 - [ ] **T-092** `AdjacentAssist`
-- [ ] **T-093** Slot enchanting + crafter mark + repair
+- [ ] **T-093** Crafter mark + repair (slot *count* only — application moves to **T-106**)
 - [ ] **T-100** ★ `TagReactionEngine` (SYS-COOK-01)
 - [ ] **T-101** ★ `CookingResolver` full algorithm
 - [ ] **T-102** 8 cook method definitions + stations
 - [ ] **T-103** Buffs + care tag + satiety fatigue
 - [ ] **T-104** `DishNamer` procedural naming + player registration
 - [ ] **T-105** 🚩 **Ext gate** — one new ingredient works across all 8 methods with zero C# edits
+- [ ] **T-106** `EnchantSystem` on the **Enchanting** skill — slot application moves off Crafting (SYS-CRAFT-01 §Enchanting). Formula already exists, this is a skill-owner move, not new math
+- [ ] **T-107** ★ SYS-BREW-01 spec + `BrewDef` — brewing has **no existing spec or formula** anywhere; write the sheet before coding (workflow: spec exists before code)
 
 ## Phase 8 · Combat ★
 
@@ -120,6 +144,7 @@ stood up now so the solo beta is already a listen-server session with one client
 - [ ] **T-113** Hit detection + lag compensation (melee only) + i-frames
 - [ ] **T-114** Dodge roll
 - [ ] **T-115** `CreatureAI` 4-state machine + 3 creatures
+- [ ] **T-117** Magic combat — `isle:magic` weapon/focus category. `SYS-COMBAT-01`'s `PowerCalculator` is already skill-agnostic (`combat_skill` is just a `NamespacedId`), so this is mostly a new weapon type; a mana/resource cost, if any, is an **open question — ask, don't invent**
 
 ## Phase 9 · 🚩 Solo beta — the first release milestone
 
