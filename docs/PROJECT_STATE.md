@@ -7,9 +7,9 @@
 
 - Last updated: **2026-09-07**
 - Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
-- Task: **T-002 done. Next is T-010, not T-003**
-- Branch: **docs/commit-pr-language-rule** (docs only)
-- Pending commit: **no code pending.** T-000–T-002 are all merged to `main`
+- Task: **T-010 done. Next is T-011**
+- Branch: **feature/T-010-namespaced-id-tags** (stacked on `docs/commit-pr-language-rule`)
+- Pending commit: **yes** — T-010 awaiting verification (PR #7)
 
 ## Progress
 
@@ -17,7 +17,7 @@
 stage 1 · placeholders
 Phase 0  project setup        [x] 3/3   T-000..T-002
 stage 2 · solo beta
-Phase 1  foundation           [ ] 0/8   T-010..T-017  ← here
+Phase 1  foundation           [~] 1/8   T-010..T-017  ← here
 Phase 2  netcode skeleton     [ ] 0/2   T-020, T-021 (authority only)
 Phase 3  world                [ ] 0/7
 Phase 4  inventory            [ ] 0/6
@@ -79,23 +79,74 @@ Phase 13 modding + polish     [ ] 0/7
     the spec notes, so `CharacterRig` clamps to ±70° and eases with `SmoothDampAngle` over 0.08 s.
   - Verified: builder exit 0, 0 compiler errors; EditMode **16/16 passed** (9 new).
 
+- **T-010**: `NamespacedId` and `TagRegistry` tag flattening (SYS-CORE-01 §NamespacedId, §Tags).
+  - Files: `Assets/Scripts/Core/Ids/NamespacedId.cs`, `Assets/Scripts/Core/Tags/TagRegistry.cs`,
+    `Assets/Scripts/Core/Util/IdText.cs`,
+    `Assets/Tests/EditMode/{NamespacedIdTests,TagRegistryTests}.cs`
+  - `NamespacedId` is a readonly struct holding the full text, the colon index and a precomputed
+    hash. `TryParse` returns an explanatory message instead of throwing, because §Load pipeline
+    step 5 requires reporting *all* failures rather than stopping at the first.
+  - `TagRegistry` interns paths to ints and precomputes each one's ancestor chain, so `Flatten`
+    turns `["fish/saltwater"]` into a `HashSet<int>` holding both `fish/saltwater` and `fish`.
+    Depth capped at 3. **Not a singleton** — ARCHITECTURE.md caps those at three and this is not
+    one of them, so it is an instance owned by whatever loads definitions.
+  - `IdText` holds the `[a-z0-9_]+` rule the spec states once but two systems need.
+  - Verified: batchmode import exit 0, 0 compiler errors; EditMode **64/64 passed**
+    (20 NamespacedId + 28 TagRegistry + the 16 from T-000–T-002).
+    **SYS-CORE-01 verification cases 1, 2 and 3 covered** — case 1 by `TryParse_NoNamespace_Fails`,
+    cases 2 and 3 by `HasTag_ChildImpliesParent_IsTrue` and
+    `HasTag_ParentDoesNotImplyChild_IsFalse`. Cases 4–8 belong to T-012/T-013.
+
 ## In progress / unfinished
 
 (none)
 
 ## Next
 
-**T-010** — `NamespacedId` + `TagRegistry` flattening (SYS-CORE-01). First task of Phase 1.
+**T-011** — `Data` layer POCOs (ItemDef, CreatureDef, FishDef, CookMethodDef, …), shapes taken
+from `docs/modding/SCHEMA.md` §Definition types.
 
-Nothing the developer named as a priority (weapons, cooking) can start before the definition
-loader exists — Absolute Rule 1 makes both of them pure JSON. Phase 1 is therefore the gate on
-Phase 7, not optional groundwork.
+Two things T-010 deliberately left for it: a `System.Text.Json` converter for `NamespacedId`
+(nothing serialises yet, so writing one now would be guessing at the loader's options), and whether
+a def stores its tag strings or only the flattened `HashSet<int>`.
 
-**T-003 is no longer next.** It moved to Phase 11 and its spec needs a quarter-view rewrite first.
+Watch the layer rule — `Isle.Data` has `noEngineReferences: true`, so no Unity types.
+`NamespacedId` lives in `Isle.Core`, which `Data` may reference.
 
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- **T-010: equality compares the hash first, then the string.** SYS-CORE-01 §NamespacedId says
+  "compare hashes, not strings". Taken literally that is wrong: a 32-bit hash over a few thousand
+  mod IDs collides with meaningful probability (birthday bound), and a collision would silently make
+  two different definitions equal — resolving to whichever loaded last, the exact failure the
+  namespace exists to prevent. `Equals` tests `_hash` first and falls back to an `Ordinal` string
+  compare only when the hashes match, so the case the spec cares about, a mismatch, still costs one
+  int compare. **Reads as a deviation from the sheet; it is a correction, and the sheet should be
+  amended.**
+
+- **⚠ T-010: `SYS-CORE-01` and `SCHEMA.md` disagree about whether a tag is namespaced.**
+  `SYS-CORE-01` §Tags describes bare paths (`fish/saltwater`) and its verification cases use them;
+  `SCHEMA.md` §Tags declares tags as `{ "id": "coolmod:deep_sea", "parent": "isle:fish/saltwater" }`
+  while item definitions in the same file use bare tags (`["fish", "oily", "raw"]`). T-010
+  sidesteps it: everything before the first `/` is an opaque root, so `isle:fish/saltwater` flattens
+  to `{isle:fish/saltwater, isle:fish}` and `fish/saltwater` to `{fish/saltwater, fish}` — both
+  correct — and `isle:fish` != `fish`. **Canonicalising the two is a load-time decision and belongs
+  to T-014.** The documents need reconciling before then.
+
+- **T-010: an undeclared tag is interned, not rejected.** `SCHEMA.md` §Tags gives a declaration
+  format, yet its own item examples carry `oily`, `protein` and `low_fat`, none of which are in the
+  base tag table. So use implies declaration. If T-013's `ReferenceResolver` should instead reject
+  unknown tags, that is a policy change at the loader, not in `TagRegistry`.
+
+- **T-010: tag segment charset is `[a-z0-9_]+`, invented by analogy.** The spec fixes that charset
+  for `NamespacedId` and says nothing about tag segments. Reused it so one rule covers both
+  (`IdText`). Consequence: uppercase and hyphenated tags are load errors.
+
+- **T-010: `TagRegistry` is not a singleton.** SYS-CORE-01 makes `DefRegistry` one but is silent
+  here; ARCHITECTURE.md caps singletons at three and does not list this. Instance, owned by the
+  loader.
 
 - **2026-09-07 — commit and PR languages are now specified, including length.** `CLAUDE.md`
   §Language previously listed commits and PR bodies together as English. Split into two rows plus a
@@ -192,6 +243,8 @@ Phase 7, not optional groundwork.
   `Data` but names no enforcement; this makes the compiler enforce it rather than review.
   Consequence: if `Isle.Core` ever exposes a Unity type on a member `Data` touches, `Data` fails
   to compile. That is intended.
+- **`Assets/Tests/EditMode` has no per-system subfolders.** Five files sit flat. Fine for now;
+  split when the count makes it awkward.
 - **No `Isle.Tests.PlayMode` asmdef yet.** ARCHITECTURE.md's asmdef table lists only
   `Isle.Tests.EditMode`. The folder exists; the asmdef was pencilled in for T-023, which is now
   Phase 10 — too late. **Whichever task first needs a PlayMode test creates it** (likely T-020).
@@ -274,7 +327,8 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #3 | feature/T-002-character-ik | T-002 | **merged to main** |
 | #4 | docs/roadmap-reprioritisation | — | **merged to main** |
 | #5 | docs/solo-beta-first-roadmap | — | **merged to main** |
-| #6 | docs/commit-pr-language-rule | — | open — this doc set |
+| #6 | docs/commit-pr-language-rule | — | open |
+| #7 | feature/T-010-namespaced-id-tags | T-010 | open, stacked on #6 |
 
 Rebuilding the split meant reconstructing the T-001 tree without any T-002 code, so each commit
 builds and passes its own tests on its own: T-001 is **8/8** with an IK-free prefab, T-002 is
