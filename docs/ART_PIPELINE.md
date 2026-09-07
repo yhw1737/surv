@@ -2,7 +2,15 @@
 
 > **The real bottleneck for a solo developer is art, not code.**
 > AI writes an inventory system in a day. It does not draw 200 item icons.
-> Decide this before you start coding.
+
+> ### ⚠️ Scheduling decision, 2026-09-06 — art is the *last* of the four build stages
+> Nothing in this document blocks anything in `BACKLOG.md` Phases 1–10. The game is built and
+> shipped to a solo beta, then to multiplayer, on **vector-shape placeholders** — and only then
+> does real art land, in Phase 11.
+>
+> This document is therefore a **plan for Phase 11**, not a prerequisite for coding. The two
+> exceptions are §Placeholders (`T-017`, needed in Phase 1) and the palette (`T-160`, which opens
+> Phase 11 before anything is bought).
 
 ## Volume estimate (ISLE Core)
 
@@ -90,20 +98,31 @@ Art/UI/
 ```
 Icon filenames match definition IDs so binding can be automatic — and modders follow the same rule.
 
-## Placeholders ★
+## Placeholders ★ — what the game actually runs on until Phase 11
 
-**Never stall coding waiting on art.**
+**Never stall coding waiting on art.** This is not a stopgap; it is stage 1 of the build order.
 
-| Target | Placeholder |
+Placeholders are **vector shapes**: flat, untextured, generated at runtime. A box, a circle, a
+solid fill. No pixel work, nothing hand-drawn, nothing to keep in sync with a definition.
+
+| Target | Placeholder shape |
 |---|---|
-| Item icons | solid rectangle + first letter |
-| Creatures | colored circle |
-| Tiles | solid color |
+| Item icons | solid rounded rectangle, tag-derived colour, first letter |
+| Characters | the `T-001` capsule rig (already built) |
+| Creatures | coloured circle, radius from body weight |
+| Weapons / tools | solid rectangle at the grip socket |
+| Tiles | solid colour per terrain |
+| World objects | rectangle or circle by footprint |
 | VFX | default particles |
 
-Put a generator script in `Art/Placeholder/`. When a definition has no icon, fall back automatically.
+`T-017` puts the generator in `Art/Placeholder/`. **A definition with no art falls back
+automatically** — that rule also covers mods, which will always ship with missing art.
 
-**Real art is only needed at the gates** — G1 (rig) and G3 (artifacts).
+Two constraints that keep the eventual swap cheap:
+- Placeholder dimensions are **not** spec values. Nothing in a formula may read them
+  (`ARCHITECTURE.md` §Presentation boundary).
+- Colours come from tags, not from IDs. A new ingredient gets a sensible colour with no C# edit,
+  the same way Absolute Rule 4 wants everything else to work.
 
 ## Sound
 
@@ -122,19 +141,30 @@ Royalty-free with commercial rights only. Record every license in `Art/LICENSES.
 
 ## Order of work
 
+Reordered 2026-09-06 to match the four-stage build order.
+
 ```
-1  Fix the palette                      half a day
-2  Character rig PSD                    required before G1
-3  Placeholder generator script         half a day
-4  --- start coding here ---
-5  Tilesets + basic objects             around Phase 2
-6  Item icons (buy + retouch)           alongside Phases 3–5
-7  Five creatures                       before Phase 7
-8  Artifact VFX                         Phase 8, top priority
-9  UI polish                            Phase 9
+--- during Phase 1 -------------------------------------------------
+1  Placeholder shape generator    T-017     half a day
+--- then code, all the way through the solo beta and multiplayer ----
+   (Phases 2–10: no art work at all)
+--- Phase 11, in this order -----------------------------------------
+2  Fix the 48-colour palette      T-160     half a day
+3  Character rig PSD              T-003–6   required before G1
+4  Item icons (buy + retouch)     T-161     the long pole, 150–200
+5  Five creatures                 T-162     buy or commission
+6  Tilesets + world objects       T-163
+7  UI pass                        T-164
+--- Phase 12 --------------------------------------------------------
+8  Artifact VFX                   T-123     top priority, triple budget
 ```
 
-**Stop at step 4 and start coding.** Trying to finish the art first burns six months.
+**Step 1 is the only art task before Phase 11.** Everything else waits. Trying to finish art
+first burns six months, and doing it before the systems are proven means redrawing whatever the
+design changes.
+
+**Real art is only needed at G1 (rig, Phase 11) and G3 (artifacts, Phase 12).** No gate before
+those can fail for want of a sprite.
 
 ## Open questions
 - Commission or draw the character rig (depends on budget)

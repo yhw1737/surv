@@ -1,8 +1,10 @@
 # SYS-CHAR-01 · Rig, movement, aiming
 
-> ## ⚠️ Status: deferred to Phase 9 — and this sheet needs a rewrite before it is used
-> **2026-09-04 developer decision.** Characters stay placeholder boxes while the systems get
-> built (`BACKLOG.md` priority banner). T-003–T-006 moved from Phase 0 to Phase 9.
+> ## ⚠️ Status: deferred to Phase 11 — and this sheet needs a rewrite before it is used
+> **2026-09-04 developer decision, rescheduled 2026-09-06.** Characters stay placeholder shapes
+> while the systems get built (`BACKLOG.md` priority banner). T-003–T-006 moved from Phase 0 to
+> **Phase 11**, after the solo beta (Phase 9) and multiplayer (Phase 10) — art is the last of the
+> four build stages.
 >
 > **Two things in this sheet are now wrong and must be fixed before T-003 starts:**
 >
@@ -15,6 +17,9 @@
 >    part count high. Revisit it with the artifact animation needs (T-122), not before.
 >
 > The **movement**, **network** and **plan B** sections are unaffected and still authoritative.
+>
+> 3. **§Network lands in Phase 10, not with the rig.** `aimAngle` sync and the `facingSign` event
+>    are T-022. Until then a solo listen-server session drives both locally.
 
 
 ## Purpose

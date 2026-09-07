@@ -4,10 +4,20 @@ Read this first, every session.
 
 ## Project
 
-**ISLE** — top-down 2D co-op survival. Unity 6 / C# / Steam Early Access.
+**ISLE** — top-down 2D co-op survival strategy. Unity 6 / C# / Steam.
 **Solo developer + AI.** One person; you write most of the code.
+**Nearest milestone is a beta release**, then Early Access.
 
 Concept: on an island where nobody can master everything, each player becomes a specialist. Cooks, anglers, and smiths are not weak in combat.
+
+Build order — four stages, `docs/BACKLOG.md` is the schedule:
+
+```
+1  placeholders   every visual is a vector shape: box, circle, solid colour
+2  solo beta      the whole loop playable by one player, bug-free
+3  multiplayer    Steam P2P, friend invites, co-op verification
+4  graphics       real rig, icons, creatures, tiles, UI
+```
 
 ## Language
 
@@ -61,6 +71,12 @@ Workshop modding is the core strategy. One "just this once" breaks it.
 **5. Artifacts never touch combat skills.** `combat_skill: null`, `grants_combat_xp: false`. They scale off production skills. Core design — do not "fix" this for convenience.
 
 **6. No scope additions.** Anything outside ISLE Core (`docs/design/GDD.md`) is not built. Good ideas go to `docs/BACKLOG.md` only.
+
+**7. Placeholder shapes now, art last.** Never stall on a missing sprite — draw a box and move on. In exchange, gameplay depends on movement/aim **data** (`position`, `aimAngle`, `facingSign`) and def numbers, never on rig internals, sprites or art paths. That boundary is what lets stage 4 be a swap instead of a rewrite. Rules: `docs/ARCHITECTURE.md` §Presentation boundary.
+```csharp
+var tip = transform.Find("Torso/Arm_Front_Upper/…/WeaponSocket").position;  // ❌
+var tip = _rig.WeaponMuzzle;                                                // ✅
+```
 
 ## Layout
 
@@ -191,6 +207,8 @@ No AI mentions here either.
 - Touch multiple systems in one session
 - Client-authoritative state changes
 - Build outside ISLE Core
+- Reference a sprite, rig bone or art path from gameplay code
+- Block a system on missing art (use a placeholder shape)
 - Ship grid inventory without rotation and bulk move
 - Unity types in `Data`; upward refs from `Core`
 - **Commit, push, or open a PR without an explicit request**
