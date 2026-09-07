@@ -50,3 +50,6 @@ Thumbs.db
 *.db
 *.db-shm
 *.db-wal
+
+# Dev-reference diagrams — local only, not a game asset
+/profession-flow.svg

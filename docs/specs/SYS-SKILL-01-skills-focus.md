@@ -1,9 +1,35 @@
 # SYS-SKILL-01 · Skills, focus, rust
 
+> ## ⚠️ Status: roster finalized 2026-09-07, formula rewrite pending T-018
+> Skills become **data-driven and modder-addable** (`SkillDef`, BACKLOG T-018). Below is the old,
+> still-implemented 7-skill table with its verification cases — correct for the current fixed
+> roster, **stale as documentation of what ships**. The table that replaces it once T-018 lands:
+>
+> | Idx | Name | ID | Pool | Note |
+> |---|---|---|---|---|
+> | 0 | Gathering | `isle:gathering` | Production | + farming, land traps |
+> | 1 | Fishing | `isle:fishing` | Production | + water traps |
+> | 2 | Cooking | `isle:cooking` | Production | + butchery (`SYS-HUNT-01`) |
+> | 3 | Crafting | `isle:crafting` | Production | weapon/armor + enchant slot count |
+> | 4 | Enchanting | `isle:enchanting` | Production | enchant application + brewing (`SYS-CRAFT-01`, BACKLOG T-106/T-107) |
+> | 5 | Melee | `isle:melee` | Combat | |
+> | 6 | Ranged | `isle:ranged` | Combat | |
+> | 7 | Magic | `isle:magic` | Combat | magic combat — `SYS-COMBAT-01`'s power formula is already skill-agnostic, so this needs no new formula, only a weapon category (BACKLOG T-117) |
+>
+> `isle:hunting` is retired — see `SYS-HUNT-01`'s 2026-09-07 note. Production stays at 5 members,
+> Combat grows from 2 to 3. **T-018 must re-simulate `c(i,j)` and every verification case below
+> against this 8-skill, 5/3-pool table** — the pool asymmetry analysis in `PROJECT_STATE.md`
+> §Decided without a spec was written for 5/2 and needs redoing for 5/3.
+>
+> Professions are flavor labels over these skills, not code: Cook→Cooking, Farmer/Angler→
+> Gathering+Fishing, Hunter→Melee+Ranged (kill method sets the *initial* carcass bulk, `SYS-HUNT-01`; feeds Cook's butchery), Blacksmith→Crafting,
+> Enchanter→Magic+Enchanting (late-game power ceiling, GDD §Scope). No profession is a real
+> class — skill levels alone sort players into them (GDD §Skills).
+
 ## Purpose
 Track 7 skills and use **focus** to stop any one player mastering everything.
 
-## Skills
+## Skills — current (pre-T-018) implementation
 
 | Idx | Name | ID | Pool |
 |---|---|---|---|

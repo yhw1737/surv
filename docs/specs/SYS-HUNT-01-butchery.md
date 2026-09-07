@@ -4,6 +4,20 @@
 Yield scales with the animal's actual body weight. Skill, tools, and kill method drive a large spread.
 Mid/large carcasses can't be moved alone — **the physical basis for cooperation**.
 
+> **2026-09-07 developer decision.** `ButcherQuality` scales off **Cooking**, not a `hunting`
+> skill — the intended flow is a high-level hunter kills, a high-level cook determines the final
+> yield. Killing itself is not a skill: creature damage is priced entirely by `damageFactor`
+> below (trap/bow/melee/blunt), which a player's Melee or Ranged weapon already governs through
+> `SYS-COMBAT-01`. "Hunter" is a flavor label for a Melee/Ranged specialist, not a skill ID.
+> `isle:hunting` is retired; every `cookingLevel` below was `huntingLevel` before this date.
+>
+> **Bulk vs. refinement.** The Hunter sets the *initial* bulk: `damageFactor` below is entirely
+> their kill method and weapon choice — a clean trap or precise shot preserves carcass bulk,
+> overkill and blunt trauma shrink it before butchery ever starts. The Cook then refines however
+> much bulk survived the kill: `cookingLevel`'s term in `ButcherQuality` decides what fraction of
+> that bulk becomes edible product. `BodyWeightKg * damageFactor` is the ceiling the Hunter hands
+> off; the Cook's skill decides how much of it is realized.
+
 ## Body weight
 ```
 BodyWeightKg ~ LogNormal(mean, sigma), clamp[min, max]     // CreatureDef.weight_dist
@@ -14,7 +28,7 @@ Boar example: `mean=62.0, sigma=0.28, min=30, max=120`.
 ## Yield ★
 
 ```
-ButcherQuality = ButcherBase + ButcherSkillWeight * (huntingLevel/50) * toolFactor * damageFactor
+ButcherQuality = ButcherBase + ButcherSkillWeight * (cookingLevel/50) * toolFactor * damageFactor
 ButcherQuality = clamp(ButcherQuality, QualityFloor, QualityCeil)
 TotalEdibleKg  = BodyWeightKg * EdibleRatio * ConditionFactor * ButcherQuality
 ```
@@ -73,7 +87,7 @@ Split `TotalEdibleKg` by `CreatureDef.butcher.yields[].share`. Boar:
 
 ```
 if damage_sensitive:
-    survivalRate = clamp(damageFactor * (0.4 + 0.6 * huntingLevel/50), 0, 1)
+    survivalRate = clamp(damageFactor * (0.4 + 0.6 * cookingLevel/50), 0, 1)
     amount *= survivalRate
 ```
 
@@ -100,7 +114,7 @@ coopSpeedMult = 1.0 - CoopPenalty     // 0.20, CoopMinPlayers = 2
 Dragging blocks attacking, gathering, and rolling. Co-op carry needs both players holding `E`; if one lets go it drops to drag mode. Movement follows the **slower** player.
 
 ```
-butcherSeconds = BaseButcherSeconds * (BodyWeightKg/50) * (1.5 - 0.5 * huntingLevel/50)
+butcherSeconds = BaseButcherSeconds * (BodyWeightKg/50) * (1.5 - 0.5 * cookingLevel/50)
 BaseButcherSeconds = 12.0
 ```
 62 kg boar at Lv30 → **17.9 s**. Multiple butchers divide the time by participant count (max 3) — so two people butchering together beats one guarding, which matters because of scent (below).

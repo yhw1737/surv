@@ -33,8 +33,8 @@ Every system derives from these. A feature that fits none of them is not built.
 
 | System | Scope |
 |---|---|
-| Production skills | **5** — gathering, hunting, fishing, cooking, crafting |
-| Combat skills | **2** — melee, ranged |
+| Production skills | **5** — gathering, fishing, cooking, crafting, enchanting |
+| Combat skills | **3** — melee, ranged, magic |
 | Level cap | 50 |
 | Artifacts | **3** — Great Cauldron Ladle (cooking), Abyss-Caller's Rod (fishing), Unbroken Anvil Hammer (crafting) |
 | Cook methods | **8** — raw, grill, boil, porridge, dry, stew, smoke, ferment |
@@ -45,7 +45,9 @@ Every system derives from these. A feature that fits none of them is not built.
 | Modding | **Tier 1 (JSON)**, architecture ready for Tier 2/3 |
 | Farming | till, sow, harvest (no soil sim) |
 
-**Deferred to post-EA:** magic, guns, shields, 7 more artifacts, overload enchanting and breakage, soil NPK sim, crop breeding, seasons, dedicated servers, 8 players, modding Tier 2/3, sailing, gamepad. Deferred, not deleted — this is what Early Access is for.
+**Deferred to post-EA:** guns, shields, 7 more artifacts, overload enchanting and breakage, soil NPK sim, crop breeding, seasons, dedicated servers, 8 players, modding Tier 2/3, sailing, gamepad. Deferred, not deleted — this is what Early Access is for.
+
+> **2026-09-07 developer decision: magic moves from Deferred into Core**, scoped to the Enchanter profession — magic combat (Combat skill `isle:magic`), enchant application, and brewing (Production skill `isle:enchanting`). Enchanter is a profession distinct from Blacksmith, same status as Cook/Farmer-Angler/Hunter. Not reopened: guns, shields, extra artifacts, and overload enchanting stay post-EA. See `SYS-SKILL-01`, `SYS-CRAFT-01` §Enchanting, `SYS-HUNT-01`, and `docs/BACKLOG.md` T-106/T-107/T-117. **Design intent:** magic/enchanting is not a floor requirement — the core loop (gather → hunt → fish → cook → craft → fight → sleep) must stay completable without ever touching it. It exists to raise the **late-game power ceiling**, the same role Artifacts play, for players who go deep after the beta loop already works.
 
 **Permanently out:** PvP (conflicts with co-op design), monetization.
 
@@ -90,7 +92,7 @@ Thirst drains twice as fast as hunger. On an island, "you can't drink seawater" 
 
 ## Skills — the differentiator
 
-Two pools: 5 production, 2 combat, levels 1–50.
+Two pools: 5 production, 3 combat, levels 1–50.
 
 **Framed as a bonus, never a penalty.**
 - ❌ "Raising another skill tripled your XP requirement"
@@ -109,6 +111,17 @@ Two pools: 5 production, 2 combat, levels 1–50.
 - Everything at 35 → **inefficient** (Focus 0.30). Nothing goes deep
 
 The equilibrium is **one production mastery + one combat specialty per player**. That's the party unit.
+
+**Professions are flavor, not code** — there is no class system, just skill levels sorting players
+into roles on their own:
+
+| Profession | Skill(s) |
+|---|---|
+| Cook | Cooking (incl. butchery) |
+| Farmer / Angler | Gathering + Fishing (usually the same player) |
+| Hunter | Melee + Ranged (kills; Cook's level sets the butchered yield) |
+| Blacksmith | Crafting (weapon/armor, quality tier, enchant slot count) |
+| Enchanter | Magic (combat) + Enchanting (fills slots, brews) — late-game power ceiling, not core-loop-required |
 
 Solo play stays possible but slower: interference scales by median active players over 7 days (0.35× at one player). Median, not concurrent, so hopping a friend on doesn't game it.
 

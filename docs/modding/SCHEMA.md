@@ -105,12 +105,14 @@ Hierarchical: `fish/saltwater` automatically implies `fish`. Max depth 3.
   "nutrition": { "hunger": 12, "thirst": 4, "sanitation_risk": 0.35 }
 }
 ```
-Names beginning `@` resolve through `lang/*.json`. `grid` follows SYS-INV-01; rotation is inferred from `w != h`. `temp_factor` is the spoilage multiplier per degree.
+**Every definition type carries `id` and `name`.** Names beginning `@` resolve through
+`lang/*.json`; a literal string is a validation error, in ours and in mods alike. `grid` follows SYS-INV-01; rotation is inferred from `w != h`. `temp_factor` is the spoilage multiplier per degree.
 
 ### Creatures
 ```json
 {
   "id": "coolmod:mountain_boar",
+  "name": "@creature.mountain_boar",
   "tags": ["animal", "mammal", "aggressive"],
   "weight_dist": { "type": "lognormal", "mean": 62.0, "sigma": 0.28, "min": 30, "max": 120 },
   "health_per_kg": 2.4,
@@ -124,7 +126,7 @@ Names beginning `@` resolve through `lang/*.json`. `grid` follows SYS-INV-01; ro
       { "item": "isle:animal_fat", "share": 0.15 },
       { "item": "isle:offal",      "share": 0.12, "damage_sensitive": true },
       { "item": "isle:bone",       "share": 0.10, "damage_sensitive": true },
-      { "item": "isle:hide",       "share": 0.08, "damage_sensitive": true, "quality_from": "hunting" }
+      { "item": "isle:hide",       "share": 0.08, "damage_sensitive": true, "quality_from": "isle:cooking" }
     ]
   },
   "carry": { "inventory_allowed": false, "drag_speed_penalty": 0.6, "coop_carry_penalty": 0.2 }
@@ -136,6 +138,7 @@ The engine applies SYS-HUNT-01's formula. Modders fill in `edible_ratio` and `yi
 ```json
 {
   "id": "coolmod:lanternfish",
+  "name": "@fish.lanternfish",
   "tags": ["fish", "fish/deep", "oily", "raw"],
   "weight_dist": { "type": "lognormal", "mean": 0.8, "sigma": 0.4, "min": 0.15, "max": 4.5 },
   "habitat": {
@@ -156,6 +159,7 @@ The engine applies SYS-HUNT-01's formula. Modders fill in `edible_ratio` and `yi
 ```json
 {
   "id": "coolmod:steam_bake",
+  "name": "@cook_method.steam_bake",
   "unlock_skill": { "skill": "isle:cooking", "level": 26 },
   "station": "coolmod:steam_oven",
   "duration_sec": 90,
@@ -179,6 +183,7 @@ The engine applies SYS-HUNT-01's formula. Modders fill in `edible_ratio` and `yi
 ```json
 {
   "id": "coolmod:harpoon_steel",
+  "name": "@recipe.harpoon_steel",
   "station": "isle:forge",
   "skills": [
     { "skill": "isle:crafting", "level": 22, "primary": true }
@@ -200,6 +205,7 @@ Ingredients accept `tag` instead of `item`, so new woods work automatically. `al
 ```json
 {
   "id": "coolmod:steel_harpoon",
+  "name": "@weapon.steel_harpoon",
   "tags": ["weapon", "weapon/blade", "metal"],
   "grid": { "w": 1, "h": 4 }, "weight": 3.2,
   "combat_skill": "isle:melee",
@@ -213,6 +219,7 @@ Ingredients accept `tag` instead of `item`, so new woods work automatically. `al
 ```json
 {
   "id": "coolmod:tide_callers_reel",
+  "name": "@artifact.tide_callers_reel",
   "tags": ["weapon", "weapon/artifact"],
   "scaling_skill": "isle:fishing",
   "combat_skill": null,
@@ -235,6 +242,7 @@ Ingredients accept `tag` instead of `item`, so new woods work automatically. `al
 ```json
 {
   "id": "coolmod:tidebound",
+  "name": "@enchant.tidebound",
   "applicable_tags": ["weapon/artifact", "weapon/blade"],
   "max_stack": 2,
   "effects": [
@@ -242,15 +250,18 @@ Ingredients accept `tag` instead of `item`, so new woods work automatically. `al
     { "type": "conditional", "when": "near_water", "damage_mult": 1.25 }
   ],
   "catalyst": [ { "item": "isle:deep_pearl", "count": 1 }, { "tag": "stabilizer", "count": 2 } ],
-  "crafting_skill_required": 24
+  "enchanting_skill_required": 24
 }
 ```
-Overload enchanting is post-EA (see BACKLOG).
+Overload enchanting is post-EA (see BACKLOG). `enchanting_skill_required` gates on the
+**Enchanting** skill (`isle:enchanting`), not Crafting — Crafting sets slot count, Enchanting
+fills them (SYS-CRAFT-01 §Enchanting).
 
 ### Crops
 ```json
 {
   "id": "coolmod:frost_barley",
+  "name": "@crop.frost_barley",
   "tags": ["crop", "grain"],
   "output": { "item": "coolmod:barley_grain", "base_count": 4 },
   "growth_days": 6,

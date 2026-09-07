@@ -11,12 +11,14 @@ Synonyms fracture the codebase across sessions. Use only these names.
 | Production pool | `SkillPool.Production` | — | Crafting Pool, Life Skill |
 | Combat pool | `SkillPool.Combat` | — | Battle, War |
 | Gathering | `Gathering` | `isle:gathering` | Foraging, Harvesting |
-| Hunting/butchery | `Hunting` | `isle:hunting` | Butchery (not separate) |
+| Hunting/butchery | *(retired 2026-09-07)* | ~~`isle:hunting`~~ | Butchery (not separate) — yield now scales off Cooking, killing has no skill, see `SYS-HUNT-01` |
 | Fishing | `Fishing` | `isle:fishing` | Angling |
 | Cooking | `Cooking` | `isle:cooking` | Culinary |
 | Crafting | `Crafting` | `isle:crafting` | Smithing, Building |
+| Enchanting | `Enchanting` | `isle:enchanting` | Alchemy (brewing is folded in, not a separate skill) |
 | Melee | `Melee` | `isle:melee` | Blade, Sword |
 | Ranged | `Ranged` | `isle:ranged` | Archery, Bow |
+| Magic | `Magic` | `isle:magic` | Sorcery, Enchanter (that's the profession, not the skill) |
 | **Focus** | `Focus` | — | Concentration, Specialization |
 | XP multiplier | `FocusMultiplier` | — | XpBonus |
 | Band weight | `InterferenceWeight` (w) | — | Penalty |
