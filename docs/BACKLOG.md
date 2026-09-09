@@ -44,7 +44,7 @@ so neither can start before the loader exists.
 - [x] **T-014** `DefRegistry` + tag index
 - [ ] **T-015** F5 hot reload
 - [ ] **T-016** 🚩 **Def gate:** editing `items/*.json` reflects without recompiling. **Do not proceed until this works**
-- [ ] **T-017** ★ Placeholder visual generator — vector shapes (box / circle / solid colour, ART_PIPELINE §Placeholders). A definition with no art falls back automatically, so **no later phase ever waits on a sprite**
+- [x] **T-017** ★ Placeholder visual generator — vector shapes (box / circle / solid colour, ART_PIPELINE §Placeholders). A definition with no art falls back automatically, so **no later phase ever waits on a sprite**
 - [ ] **T-018** ★ SYS-SKILL-01 rewrite + `SkillDef` — skills become data-driven and **modder-addable**, so the focus formula must hold for any skill count. Settle the skill taxonomy first (see below). **Blocks T-015, T-060, T-061**
 - [ ] **T-019** SYS-BUFF-01 spec sheet + `BuffDef` — the beta buff set plus an effect vocabulary modders can extend. **Blocks T-015, T-103**
 

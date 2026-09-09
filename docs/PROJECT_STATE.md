@@ -7,9 +7,9 @@
 
 - Last updated: **2026-09-09**
 - Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
-- Task: **T-014 done. Next is T-017** (T-015/T-016 blocked on T-018/T-019, see Next)
-- Branch: **feature/T-014-def-registry**
-- Pending commit: **no — committed, pushed, [PR #11](https://github.com/yhw1737/surv/pull/11) open**
+- Task: **T-017 done. Next is T-018** (SYS-SKILL-01 rewrite — has open design questions, see Next)
+- Branch: **feature/T-017-placeholder-visuals**
+- Pending commit: **no — committed, pushed, [PR #12](https://github.com/yhw1737/surv/pull/12) open**
 
 ## Progress
 
@@ -17,7 +17,7 @@
 stage 1 · placeholders
 Phase 0  project setup        [x] 3/3   T-000..T-002
 stage 2 · solo beta
-Phase 1  foundation           [~] 5/10  T-010..T-019  ← here
+Phase 1  foundation           [~] 6/10  T-010..T-019  ← here
 Phase 2  netcode skeleton     [ ] 0/2   T-020, T-021 (authority only)
 Phase 3  world                [ ] 0/7
 Phase 4  inventory            [ ] 0/6
@@ -194,29 +194,45 @@ Phase 13 modding + polish     [ ] 0/7
     not decided — see Decided without a spec.
   - Verified: batchmode import exit 0, 0 compiler errors; EditMode **100/100 passed** (9 new).
 
+- **T-017**: placeholder visual generator (ART_PIPELINE §Placeholders).
+  - Files: `Assets/Scripts/Core/Util/PlaceholderVisuals.cs`, `Assets/Scripts/UI/PlaceholderIcons.cs`,
+    `Assets/Tests/EditMode/PlaceholderVisualsTests.cs`, `Assets/Tests/EditMode/PlaceholderIconsTests.cs`.
+  - `PlaceholderVisuals` (`Isle.Core.Util`) draws flat vector shapes at runtime — no pixel art, no
+    baked assets — reusing `PlaceholderRigBuilder`'s (T-001) rounded-box signed-distance approach:
+    `RoundedRect(w, h, fill, cornerRadius)` and `Circle(diameter, fill)` (a square `RoundedRect`
+    whose corner radius is half its side, same trick the rig's Head part already uses).
+    `ColorForTags(tags)` hashes the first tag (FNV-1a, not `string.GetHashCode` — not guaranteed
+    stable across runs) into a hue, so the same tag always draws the same colour and a new tag needs
+    no C# edit (Absolute Rule 4); no tags falls back to neutral grey. `AsSprite` wraps a texture with
+    `Sprite.Create`.
+  - Placed in `Isle.Core`, not behind a UI/system presentation class — see Decided without a spec.
+  - `PlaceholderIcons.ItemIcon(ItemDef)` (`Isle.UI`) is the one concrete consumer wired up: a 32px
+    rounded rect coloured by the item's own tags, exactly the fallback `ItemDef.Icon`'s own doc
+    comment already named for T-017. Creature/weapon/tile/world-object shapes from ART_PIPELINE's
+    table are not wired to anything — see Decided without a spec.
+  - Verified: batchmode import exit 0, 0 compiler errors; EditMode **110/110 passed** (10 new).
+
 ## In progress / unfinished
 
 (none)
 
 ## Next
 
-**T-015 and T-016 are next in strict backlog order but both blocked:**
+**T-015 and T-016 stay blocked** — T-015 (F5 hot reload) needs T-018/T-019 landed first (starter
+definitions reference skill and buff IDs), and T-016 (🚩 Def gate) needs T-015 to exist before it
+can be tested against.
 
-- T-015 (F5 hot reload) needs T-018/T-019 landed first — starter definitions reference skill and
-  buff IDs and would have to be rewritten otherwise.
-- T-016 (🚩 Def gate) needs T-015 to exist before it can be tested against.
+**T-018 (SYS-SKILL-01 rewrite + `SkillDef`) is next**, and it has open design questions still
+waiting on the developer (see Decided without a spec, 2026-09-07 entry) — **ask before
+implementing, don't default them**:
 
-**So the next actionable task is T-017** — placeholder visual generator (ART_PIPELINE
-§Placeholders): a definition with no `icon`/art path falls back to a vector shape (box, circle,
-solid colour) automatically, so no later phase ever waits on a sprite. Independent of T-018/T-019 —
-mechanical, the spec already fixes the shapes and the fallback rule.
+- Whether a mod may declare a new skill pool (recommendation on file: no, for beta).
+- The 5/3 pool-asymmetry re-simulation the Enchanter split now requires (Production 5, Combat 3,
+  not the 5/2 the original formula was checked against).
 
-**T-018 (SYS-SKILL-01 rewrite + `SkillDef`) is the bigger piece after that.** It has open design
-questions still waiting on the developer (see Decided without a spec, 2026-09-07 entry): whether a
-mod may declare a new skill pool (recommendation on file: no, for beta), and the 5/3
-pool-asymmetry re-simulation the Enchanter split now requires. Ask rather than default those before
-implementing. T-019 (SYS-BUFF-01 + `BuffDef`) follows the same "ask, don't invent" pattern for the
-beta buff set.
+T-019 (SYS-BUFF-01 spec sheet + `BuffDef`) follows the same "ask, don't invent" pattern for the
+beta buff set, and has no spec sheet at all yet — CLAUDE.md's workflow says offer to write the spec
+first rather than code from nothing.
 
 ## Decided without a spec
 
@@ -315,6 +331,40 @@ beta buff set.
   `Register<T>` indexes whatever `LoadResult<T>.Definitions` contains; skipping a definition that
   failed a check, or refusing to `Freeze()` at all if any load produced errors, is the caller's job
   until the developer decides which policy is wanted.
+
+- **T-017: `PlaceholderVisuals` lives in `Isle.Core`, not behind a UI/system presentation class.**
+  ARCHITECTURE.md's Presentation boundary says every visual sits behind a component in `UI` or the
+  owning system's own presentation class, but the shape generator itself has to be reachable from
+  every layer that draws something — `UI` for icons, `Gameplay`/`Combat`/`World` for creatures,
+  weapons, tiles once those exist — and `Core` is the only asmdef all of them already reference
+  (`UI → Gameplay/Combat → World → ... → Core` is a chain, not a diamond, so no layer in the middle
+  can host something every other layer needs). The boundary still holds for what calls it: the
+  generator returns a `Texture2D`/`Sprite`, nothing here touches a `SpriteRenderer` or a
+  `GameObject` — that wiring is each future system's own presentation class, e.g. `PlaceholderIcons`
+  in `Isle.UI` for items.
+
+- **T-017: only item icons are wired up; creatures/weapons/tiles/world objects are not.**
+  ART_PIPELINE §Placeholders' shape table lists all five, but nothing outside items has an owning
+  presentation class yet to attach a placeholder to — Phase 3 (world), 4 (inventory) and 8 (combat)
+  haven't started. Wiring them now would mean guessing at a component that doesn't exist. The shape
+  primitives (`RoundedRect`, `Circle`) are generic enough that each one is a few lines when its
+  system actually gets built.
+
+- **T-017: the "first letter" part of the item-icon placeholder is skipped.** ART_PIPELINE's table
+  wants a rounded rectangle, a tag colour, *and* the item's first letter. Drawing text without a
+  font system means hand-rasterizing glyphs pixel-by-pixel, which is real complexity for a shape
+  that's thrown away at Phase 11 anyway. Shape and colour alone already satisfy Absolute Rule 7
+  ("no later phase ever waits on a sprite") — a letter is a legibility nicety, not the requirement.
+  Left for whichever Phase 4 inventory UI component actually renders the icon, which can overlay a
+  `TextMeshPro` label far more cheaply than this generator hand-drawing one.
+
+- **T-017: ART_PIPELINE says "puts the generator in `Art/Placeholder/`"; it isn't.** That folder is
+  where the T-001 rig's *baked PNG output* lives — files an Editor tool wrote once and Unity imports
+  as assets. Item/creature/etc. shapes here are generated at runtime from a live definition's tags,
+  which aren't known until mods load, so there is nothing to bake or put in `Art/`. The code follows
+  CLAUDE.md's Layout table instead (`Core/Util`, `UI`) — same kind of doc disagreement as T-011's
+  type roster and the rig's bone names below, resolved the same way: pick the one that matches how
+  the system actually has to work, and record it here.
 
 - **T-011: the type roster follows `SCHEMA.md`, not `ARCHITECTURE.md`, and the two disagreed.**
   ARCHITECTURE §Folders listed ten Data types; SCHEMA documents nine, and the sets do not match.
@@ -597,7 +647,8 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #8 | feature/T-011-data-skill-taxonomy | T-011 + skill/profession taxonomy | [PR #8](https://github.com/yhw1737/surv/pull/8) — **merged to main** |
 | #9 | feature/T-012-definition-loader | T-012 | [PR #9](https://github.com/yhw1737/surv/pull/9) — **merged to main** |
 | #10 | feature/T-013-reference-resolver | T-013 | [PR #10](https://github.com/yhw1737/surv/pull/10) — **merged to main** |
-| #11 | feature/T-014-def-registry | T-014 | [PR #11](https://github.com/yhw1737/surv/pull/11) — open |
+| #11 | feature/T-014-def-registry | T-014 | [PR #11](https://github.com/yhw1737/surv/pull/11) — **merged to main** |
+| #12 | feature/T-017-placeholder-visuals | T-017 | [PR #12](https://github.com/yhw1737/surv/pull/12) — open |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
