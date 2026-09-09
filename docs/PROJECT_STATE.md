@@ -5,11 +5,11 @@
 
 ## Header
 
-- Last updated: **2026-09-07**
+- Last updated: **2026-09-09**
 - Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
-- Task: **T-012 done. Next is T-013** (T-018/T-019 SYS-SKILL-01/SYS-BUFF-01 rewrite still
+- Task: **T-013 done. Next is T-014** (T-018/T-019 SYS-SKILL-01/SYS-BUFF-01 rewrite still
   pending, see Decided without a spec)
-- Branch: **feature/T-012-definition-loader**
+- Branch: **feature/T-013-reference-resolver**
 - Pending commit: **yes, awaiting developer verification**
 
 ## Progress
@@ -18,7 +18,7 @@
 stage 1 · placeholders
 Phase 0  project setup        [x] 3/3   T-000..T-002
 stage 2 · solo beta
-Phase 1  foundation           [~] 3/10  T-010..T-019  ← here
+Phase 1  foundation           [~] 4/10  T-010..T-019  ← here
 Phase 2  netcode skeleton     [ ] 0/2   T-020, T-021 (authority only)
 Phase 3  world                [ ] 0/7
 Phase 4  inventory            [ ] 0/6
@@ -150,33 +150,61 @@ Phase 13 modding + polish     [ ] 0/7
   - Fixtures are temp directories written per test (`Assets/StreamingAssets/definitions/` is still
     empty — no real content JSON exists yet), so nothing here depends on content that doesn't exist.
 
+- **T-013**: `ReferenceResolver` (SYS-CORE-01 §Load pipeline step 7), scoped to item references.
+  - Files: `Assets/Scripts/Modding/Defs/ReferenceResolver.cs`,
+    `Assets/Scripts/Modding/Defs/DefinitionLoader.cs` (adds `LoadError.Line`/`Suggestion` and
+    `LoadResult<T>.SourcePaths`), `Assets/Tests/EditMode/ReferenceResolverTests.cs`.
+  - `ReferenceResolver.ResolveItemRefs` walks every `NamespacedId` field that targets `ItemDef` —
+    `IngredientRef.Item` (`CraftRecipeDef.Ingredients`, `EnchantDef.Catalyst`), `RecipeOutput.Item`,
+    `ButcherYield.Item` (creatures and fish), `FishDef.BaitAffinity` keys, `CropOutput.Item`,
+    `ItemDef.Spoilage.Result`, `CookFailure.Result` — against the full set of loaded item ids, and
+    reports the ones that don't resolve with a Levenshtein ≤2 suggestion (verification case 4).
+  - **Scoped to items only, deliberately** — see Decided without a spec. Skill
+    (`SkillRequirement.Skill`, `ArtifactDef.ScalingSkill`, `WeaponDef.CombatSkill`,
+    `ButcherYield.QualityFrom`), buff (`TagReaction.GrantBuff`), AI (`CreatureDef.Ai`), biome
+    (`SpawnSpec.Biomes`), station, quest and moveset ids have no backing definition type yet
+    (T-014/T-018/T-019/T-115...), so checking them now would just flag every one of them as
+    unresolved; they stay unchecked until a type exists to check them against.
+  - `LoadError` gained `Line` (1-based, 0 when no meaningful location exists) and `Suggestion`.
+    Parse/deserialize errors get their line for free from `JsonException.LineNumber`; reference
+    errors get theirs from a plain string search for the offending quoted literal in the file's
+    raw text (`JsonLine.OfValue`) — ponytail: not a real JSON span tracker, upgrade if a duplicate
+    literal in one file ever misattributes a line. Missing `id`/`name` (case 7) now reports line 1.
+  - `LoadResult<T>` gained `SourcePaths`, parallel to `Definitions`, so a reference-resolution
+    failure found after the fact can still be attributed to its file.
+  - Verified: batchmode import exit 0, 0 compiler errors; EditMode **91/91 passed** (6 new resolver
+    tests + 1 new line-number assertion on the existing case-7 test). Covers verification case 4
+    end-to-end (bad ID → error + suggestion + line). Cases 5/8 (circular mod deps, patch conflicts)
+    stay T-130 — no multi-mod loading exists to produce them yet.
+
 ## In progress / unfinished
 
 (none)
 
 ## Next
 
-**T-013** — `ReferenceResolver`, SYS-CORE-01 §Load pipeline step 7 (★ typo-suggestion via
-Levenshtein ≤2 is the headline feature — the required error format is already fixed in the spec):
+**T-014** — `DefRegistry` + tag index:
 
+```csharp
+DefRegistry.Get<ItemDef>(id);              // throws if missing
+DefRegistry.TryGet<ItemDef>(id, out def);
+DefRegistry.AllWithTag<ItemDef>("meat");   // O(1), indexed at load
+DefRegistry.All<CookMethodDef>();
 ```
-[coolmod] definitions/recipes/harpoon.json:14
-  Unknown item ID: "isle:steel_ingott"
-  Did you mean "isle:steel_ingot"?
-```
 
-T-012 gives it a `LoadResult<T>` per definition type to walk; T-013 is what actually dereferences
-every `NamespacedId` field (`IngredientRef.Item`, `ButcherYield.Item`/`QualityFrom`,
-`RecipeOutput.Item`, `SpawnSpec.Biomes`, etc.) against the loaded set and reports the ones that
-don't resolve, with the file/line `LoadError` doesn't currently carry (needs a source position,
-not just a file path — `System.Text.Json`'s `JsonException.LineNumber` from the deserialize pass,
-or a second `JsonDocument` walk for line info on already-valid defs). Belongs in `Isle.Modding`
-next to `DefinitionLoader`, same reasoning as the entry below. Covers verification cases 4/5/8
-(circular mod deps and patch-path conflicts are T-130, not this).
+Singleton in `Isle.Core` per spec — but `Get<T>` needs `IDefinition` (`Isle.Data`), the same
+one-way-dependency problem T-012's placement note already worked through, so this likely lands in
+`Isle.Modding` too rather than `Core`; confirm against `ARCHITECTURE.md`'s dependency table before
+writing it, same as the earlier decision. Read-only after load — mutation throws. `AllWithTag`
+is where T-010's flattened `HashSet<int>` tag index actually gets used (T-010 built the flattening,
+T-014 is the first thing that queries it). This is also the natural place to decide whether a
+failed `ReferenceResolver` check (T-013) should block registry freeze — not decided yet, ask before
+inventing a policy.
 
-**T-012 is not blocked by T-018/T-019** — the loader does not care which definition types exist.
-But **T-018 and T-019 must both land before T-015**, because starter definitions reference skill
-and buff IDs and would have to be rewritten otherwise.
+**T-018 and T-019 must both land before T-015** (F5 hot reload), because starter definitions
+reference skill and buff IDs and would have to be rewritten otherwise. Neither T-013 nor T-014 is
+blocked by them — a registry does not care which definition types exist, only that they implement
+`IDefinition`.
 
 ## Decided without a spec
 
@@ -235,6 +263,26 @@ and buff IDs and would have to be rewritten otherwise.
   both, and CLAUDE.md's own Layout table calls that folder "mod loader, schema validation,
   patches" — an exact match. Same reasoning will place `ReferenceResolver` (T-013) and
   `DefRegistry` (T-014) there too. SYS-CORE-01 §Location should be corrected to match.
+
+- **T-013: `ReferenceResolver` only checks references to `ItemDef`.** SYS-CORE-01 §Load pipeline
+  step 7 says "verify every referenced id exists" without listing which fields that covers. Walking
+  every `NamespacedId` field in the nine types turns up mostly skill ids (`SkillRequirement.Skill`,
+  `ArtifactDef.ScalingSkill`, `WeaponDef.CombatSkill`, `ButcherYield.QualityFrom`), plus one buff
+  reference (`TagReaction.GrantBuff`), one AI reference (`CreatureDef.Ai`), one biome reference
+  (`SpawnSpec.Biomes`), and station/quest/moveset/minigame ids — **none of which have a backing
+  definition type yet.** Skills and buffs are T-018/T-019; AI profiles are T-115; biomes, stations,
+  quests, movesets and minigames have no ticket at all. Resolving them now would mean either
+  flagging every single one as unresolved (there is nothing loaded to check them against) or
+  inventing a temporary allow-list — both would be guessing at a design that isn't decided.
+  Only `ItemDef` is both referenced by other types and itself loadable today, so that's what's
+  checked. Each excluded field is named in `ReferenceResolver`'s own doc comment so this isn't a
+  silent gap; revisit as each target type gets built.
+
+- **T-013: the `[modid]` prefix in SYS-CORE-01's required error format is dropped for now.** The
+  spec's example is `[coolmod] definitions/recipes/harpoon.json:14`, but nothing in the codebase
+  has a concept of "which mod loaded this file" yet — `DefinitionLoader.LoadAll` takes one
+  directory, not a mod manifest. Multi-mod loading is T-130. `LoadError.ToString()` renders just
+  `path:line` until a mod id actually exists to put in front of it.
 
 - **T-011: the type roster follows `SCHEMA.md`, not `ARCHITECTURE.md`, and the two disagreed.**
   ARCHITECTURE §Folders listed ten Data types; SCHEMA documents nine, and the sets do not match.
@@ -515,7 +563,8 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #6 | docs/commit-pr-language-rule | — | **merged to main** |
 | #7 | feature/T-010-namespaced-id-tags | T-010 | **merged to main** |
 | #8 | feature/T-011-data-skill-taxonomy | T-011 + skill/profession taxonomy | [PR #8](https://github.com/yhw1737/surv/pull/8) — **merged to main** |
-| — | feature/T-012-definition-loader | T-012 | not yet committed — awaiting developer request |
+| #9 | feature/T-012-definition-loader | T-012 | [PR #9](https://github.com/yhw1737/surv/pull/9) — **merged to main** |
+| — | feature/T-013-reference-resolver | T-013 | not yet committed — awaiting developer request |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came

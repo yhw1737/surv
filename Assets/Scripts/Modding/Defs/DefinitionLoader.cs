@@ -8,19 +8,33 @@ using Isle.Data;
 
 namespace Isle.Modding.Defs
 {
-    /// <summary>One file's worth of trouble — parse/shape/semantic failures all report the same way.</summary>
+    /// <summary>One file's worth of trouble — parse/shape/semantic/reference failures all report the same way.</summary>
     public readonly struct LoadError
     {
         public string FilePath { get; }
         public string Message { get; }
 
-        public LoadError(string filePath, string message)
+        /// <summary>1-based, or 0 when no meaningful location exists (SYS-CORE-01 verification case 7).</summary>
+        public int Line { get; }
+
+        /// <summary>Null unless a Levenshtein ≤2 candidate was found (verification case 4).</summary>
+        public string Suggestion { get; }
+
+        public LoadError(string filePath, string message, int line = 0, string suggestion = null)
         {
             FilePath = filePath;
             Message = message;
+            Line = line;
+            Suggestion = suggestion;
         }
 
-        public override string ToString() => $"{FilePath}\n  {Message}";
+        public override string ToString()
+        {
+            var location = Line > 0 ? $"{FilePath}:{Line}" : FilePath;
+            var text = $"{location}\n  {Message}";
+            if (Suggestion != null) text += $"\n  Did you mean \"{Suggestion}\"?";
+            return text;
+        }
     }
 
     /// <summary>
@@ -31,6 +45,11 @@ namespace Isle.Modding.Defs
     public sealed class LoadResult<T>
     {
         public List<T> Definitions { get; } = new();
+
+        /// <summary>Parallel to <see cref="Definitions"/> — same index, source file. T-013 needs this
+        /// to attribute a reference-resolution failure found after the fact.</summary>
+        public List<string> SourcePaths { get; } = new();
+
         public List<LoadError> Errors { get; } = new();
         public List<LoadError> Warnings { get; } = new();
     }
@@ -38,8 +57,8 @@ namespace Isle.Modding.Defs
     /// <summary>
     /// SYS-CORE-01 §Load pipeline steps 4–5 for a single content root: read every <c>*.json</c> in a
     /// directory, deserialize to <typeparamref name="T"/>, validate. Multi-mod orchestration (scan,
-    /// dependency order, patches — steps 1–3, 6), reference resolution (step 7) and the registry
-    /// (steps 9–10) are T-130/T-013/T-014, not this.
+    /// dependency order, patches — steps 1–3, 6), reference resolution (step 7, <see cref="ReferenceResolver"/>)
+    /// and the registry (steps 9–10) are T-130/T-014, not this.
     /// </summary>
     public static class DefinitionLoader
     {
@@ -85,7 +104,7 @@ namespace Isle.Modding.Defs
             }
             catch (JsonException ex)
             {
-                result.Errors.Add(new LoadError(path, ex.Message));
+                result.Errors.Add(new LoadError(path, ex.Message, JsonLine.Of(ex)));
                 return;
             }
 
@@ -98,12 +117,12 @@ namespace Isle.Modding.Defs
                 var missingRequired = false;
                 if (!root.TryGetProperty("id", out _))
                 {
-                    result.Errors.Add(new LoadError(path, "Missing required field: \"id\"."));
+                    result.Errors.Add(new LoadError(path, "Missing required field: \"id\".", line: 1));
                     missingRequired = true;
                 }
                 if (!root.TryGetProperty("name", out _))
                 {
-                    result.Errors.Add(new LoadError(path, "Missing required field: \"name\"."));
+                    result.Errors.Add(new LoadError(path, "Missing required field: \"name\".", line: 1));
                     missingRequired = true;
                 }
                 foreach (var member in root.EnumerateObject())
@@ -119,7 +138,7 @@ namespace Isle.Modding.Defs
                 }
                 catch (JsonException ex)
                 {
-                    result.Errors.Add(new LoadError(path, ex.Message));
+                    result.Errors.Add(new LoadError(path, ex.Message, JsonLine.Of(ex)));
                     return;
                 }
 
@@ -139,6 +158,7 @@ namespace Isle.Modding.Defs
                 }
 
                 result.Definitions.Add(def);
+                result.SourcePaths.Add(path);
             }
         }
 
@@ -148,6 +168,27 @@ namespace Isle.Modding.Defs
             foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
                 fields.Add(JsonNamingPolicy.SnakeCaseLower.ConvertName(prop.Name));
             return fields;
+        }
+    }
+
+    /// <summary>
+    /// Line numbers by counting newlines up to a raw-text offset. ponytail: string search over a
+    /// real JSON span tracker — good enough to point a modder at roughly the right line; upgrade to
+    /// a <c>Utf8JsonReader</c> walk if a duplicate literal ever misattributes one.
+    /// </summary>
+    static class JsonLine
+    {
+        public static int Of(JsonException ex) => ex.LineNumber.HasValue ? (int)ex.LineNumber.Value + 1 : 0;
+
+        public static int OfValue(string json, string value)
+        {
+            var idx = json.IndexOf($"\"{value}\"", StringComparison.Ordinal);
+            if (idx < 0) return 0;
+
+            var line = 1;
+            for (var i = 0; i < idx; i++)
+                if (json[i] == '\n') line++;
+            return line;
         }
     }
 }
