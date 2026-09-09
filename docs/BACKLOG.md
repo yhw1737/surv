@@ -45,7 +45,7 @@ so neither can start before the loader exists.
 - [ ] **T-015** F5 hot reload
 - [ ] **T-016** 🚩 **Def gate:** editing `items/*.json` reflects without recompiling. **Do not proceed until this works**
 - [x] **T-017** ★ Placeholder visual generator — vector shapes (box / circle / solid colour, ART_PIPELINE §Placeholders). A definition with no art falls back automatically, so **no later phase ever waits on a sprite**
-- [ ] **T-018** ★ SYS-SKILL-01 rewrite + `SkillDef` — skills become data-driven and **modder-addable**, so the focus formula must hold for any skill count. Settle the skill taxonomy first (see below). **Blocks T-015, T-060, T-061**
+- [x] **T-018** ★ SYS-SKILL-01 rewrite + `SkillDef` — skills become data-driven and **modder-addable**, so the focus formula holds for any skill count. **Blocks T-015, T-060, T-061**
 - [ ] **T-019** SYS-BUFF-01 spec sheet + `BuffDef` — the beta buff set plus an effect vocabulary modders can extend. **Blocks T-015, T-103**
 
 > **T-018 and T-019 exist because T-011 found the schema had no shape for skills or buffs.**
@@ -56,17 +56,13 @@ so neither can start before the loader exists.
 > **Do them before T-015.** Starter definitions reference skill and buff IDs; writing those
 > files first means rewriting them.
 >
-> ⚠️ **T-018 is not a rename job.** Modder-added skills change what the focus formula has to
-> survive, and SYS-SKILL-01's 9 verification cases are written against a fixed 7-element array.
-> The formula needs simulating across skill counts and pool assignments before the sheet is
-> rewritten.
+> **T-018 is done (2026-09-09)** — `FocusCalculator.Focus` takes any-length skill collections, not
+> a fixed array, and all 9 verification cases are re-simulated against the finalized 8-skill,
+> 5-production/3-combat table in `SYS-SKILL-01` §Verification. `RustSystem` stayed out of scope
+> (disabled by default, no caller, open interpolation curve) — see `PROJECT_STATE.md` §Decided
+> without a spec.
 >
-> **The skill taxonomy is settled (2026-09-07)** — see `SYS-SKILL-01`'s status banner for the
-> finalized 8-skill, 5-production/3-combat table. `isle:hunting` is retired (butchery yield moves
-> to Cooking, `SYS-HUNT-01`); **Enchanter is a profession distinct from Blacksmith**, spanning a
-> new Combat skill (`isle:magic`) and a new Production skill (`isle:enchanting`, also brewing).
-> T-018 now simulates a 5/3 pool split, not 5/2 — redo the pool-asymmetry analysis in
-> `PROJECT_STATE.md`, it was written before Combat had a third member.
+> **T-019 is next** and still has no spec sheet.
 
 ## Phase 2 · Netcode skeleton — solo runs as a one-player host
 

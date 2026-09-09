@@ -7,9 +7,9 @@
 
 - Last updated: **2026-09-09**
 - Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
-- Task: **T-017 done. Next is T-018** (SYS-SKILL-01 rewrite — has open design questions, see Next)
-- Branch: **feature/T-017-placeholder-visuals**
-- Pending commit: **no — committed, pushed, [PR #12](https://github.com/yhw1737/surv/pull/12) open**
+- Task: **T-018 done. Next is T-019** (SYS-BUFF-01 spec sheet + `BuffDef`)
+- Branch: **feature/T-018-skill-def**
+- Pending commit: **no — committed (607fd63) and pushed, [PR #13](https://github.com/yhw1737/surv/pull/13) open**
 
 ## Progress
 
@@ -17,7 +17,7 @@
 stage 1 · placeholders
 Phase 0  project setup        [x] 3/3   T-000..T-002
 stage 2 · solo beta
-Phase 1  foundation           [~] 6/10  T-010..T-019  ← here
+Phase 1  foundation           [~] 7/10  T-010..T-019  ← here
 Phase 2  netcode skeleton     [ ] 0/2   T-020, T-021 (authority only)
 Phase 3  world                [ ] 0/7
 Phase 4  inventory            [ ] 0/6
@@ -212,6 +212,34 @@ Phase 13 modding + polish     [ ] 0/7
     table are not wired to anything — see Decided without a spec.
   - Verified: batchmode import exit 0, 0 compiler errors; EditMode **110/110 passed** (10 new).
 
+- **T-018**: `SkillDef` + SYS-SKILL-01 formula rewrite — skills become data-driven and
+  modder-addable.
+  - Files: `Assets/Scripts/Data/SkillDef.cs`; `Assets/Scripts/Gameplay/Skills/{FocusCalculator.cs,
+    XpCurve.cs, ActivityTracker.cs, SkillSet.cs}`; `Assets/Tests/EditMode/{FocusCalculatorTests.cs,
+    XpCurveTests.cs, ActivityTrackerTests.cs, SkillSetTests.cs}`; `DataDefinitionTests.cs` (schema
+    type roster, 9→10) and `docs/modding/SCHEMA.md` (new §Skills) updated to match.
+  - `SkillDef.Pool` is a plain `string`, not an enum — exactly two legal values (`"production"`,
+    `"combat"`) per the 2026-09-09 decision, but a string keeps JSON deserialization trivial and
+    matches the existing `WeightDistribution.Type` precedent; the closed set is a validator concern,
+    not a type-system one.
+  - `FocusCalculator.Focus` takes `IEnumerable<SkillLevel>` (level + pool only), not a fixed array —
+    this is the actual point of T-018 (BACKLOG: "not a rename job"). A second overload reads
+    straight off a `SkillSet` + the loaded `SkillDef` roster for real call sites.
+  - `SkillSet` is a `Dictionary<NamespacedId, int>` seeded from whatever `SkillDef`s exist, not a
+    fixed 7- or 8-element array — a mod adding a skill needs no change to this class.
+  - **Re-simulated all 9 verification cases against the beta 8-skill, 5/3-pool roster** (Production:
+    gathering/fishing/cooking/crafting/enchanting; Combat: melee/ranged/magic) — written into
+    `SYS-SKILL-01`'s own Verification section, not just the test file, so the spec stays the source
+    of truth. Only case 4 (all-35s) and cases 6–9 (the n-scaling set) actually moved: 0.299/1.06×
+    → 0.284/1.03× for case 4, since a third Combat member adds one more cross-pool interference
+    term. Cases 1, 2, 3, 5 are numerically unchanged — their filler skills are novices, which
+    contribute 0 regardless of how many extra pool members exist.
+  - **`RustSystem` and its `docs/content/xp_table.md` per-action values are explicitly out of
+    scope** — see Decided without a spec. `EnableSkillRust` defaults to false, has no caller, and
+    its efficiency-debuff interpolation curve is an open question in the spec itself; building it
+    now would mean inventing the missing number (Absolute Rule 3).
+  - Verified: batchmode import exit 0, 0 compiler errors; EditMode **140/140 passed** (30 new).
+
 ## In progress / unfinished
 
 (none)
@@ -222,17 +250,14 @@ Phase 13 modding + polish     [ ] 0/7
 definitions reference skill and buff IDs), and T-016 (🚩 Def gate) needs T-015 to exist before it
 can be tested against.
 
-**T-018 (SYS-SKILL-01 rewrite + `SkillDef`) is next**, and it has open design questions still
-waiting on the developer (see Decided without a spec, 2026-09-07 entry) — **ask before
-implementing, don't default them**:
+**T-019 (SYS-BUFF-01 spec sheet + `BuffDef`) is next.** It follows the same "ask, don't invent"
+pattern for the beta buff set, and has no spec sheet at all yet — CLAUDE.md's workflow says offer
+to write the spec first rather than code from nothing.
 
-- Whether a mod may declare a new skill pool (recommendation on file: no, for beta).
-- The 5/3 pool-asymmetry re-simulation the Enchanter split now requires (Production 5, Combat 3,
-  not the 5/2 the original formula was checked against).
-
-T-019 (SYS-BUFF-01 spec sheet + `BuffDef`) follows the same "ask, don't invent" pattern for the
-beta buff set, and has no spec sheet at all yet — CLAUDE.md's workflow says offer to write the spec
-first rather than code from nothing.
+**RustSystem stays unbuilt** — deferred out of T-018's scope (see Completed, T-018 entry, and
+Decided without a spec). Pick it up only once the efficiency-debuff interpolation curve and the
+per-action XP table (`docs/content/xp_table.md`) have real numbers; nothing currently calls
+`GameConfig.EnableSkillRust` so nothing is blocked on it.
 
 ## Decided without a spec
 
@@ -259,18 +284,21 @@ first rather than code from nothing.
   - **`w(L) = 0` below level 16 is what saves it.** An unlevelled skill contributes nothing, so a
     mod adding ten skills the player never touches changes no one's focus. This property is why
     modder-added skills are viable at all, and it must be preserved deliberately, not by luck.
-  - **`c(i,j)` is a hardcoded 2×2** over Production and Combat. **Open: may a mod declare a new
-    pool?** If yes, `c` becomes an N×N matrix and cross-pool balance is a design problem. If no,
-    every modded skill picks an existing pool and the matrix stands. *Recommend no for beta.*
-  - **Pool asymmetry.** Production has 5 members, Combat 2. Same-pool interference is
-    `c = 1.00` against Combat's cross-pool `0.35`, so a mod loading its new skills into one pool
-    quietly taxes that pool's specialists. Needs simulating.
-  - **The 9 verification cases are written against a fixed 7-element array** in a fixed order.
-    They have to be restated so they still mean something at any skill count.
+  - **`c(i,j)` is a hardcoded 2×2** over Production and Combat. **Resolved 2026-09-09 — no.** The
+    developer confirmed beta ships exactly two pools; a mod may not declare a new pool, and every
+    modded skill must join Production or Combat. `c` stays a fixed 2×2, no N×N generalisation needed.
+  - **Pool asymmetry.** Production has 5 members, Combat 3 (post-Enchanter-split). Same-pool
+    interference is `c = 1.00` against Combat's cross-pool `0.35`, so a mod loading its new skills
+    into one pool quietly taxes that pool's specialists. **Resolved 2026-09-09** — re-simulated
+    against the 5/3 split in `SYS-SKILL-01` §Verification; only case 4 (all-35s) moved
+    (0.299/1.06× → 0.284/1.03×), since one more Combat member adds one more cross-pool term.
+  - **The 9 verification cases were written against a fixed 7-element array** in a fixed order.
+    **Resolved 2026-09-09** — `FocusCalculator.Focus` (T-018) takes any-length `SkillLevel`
+    collections, and the cases are restated in `SYS-SKILL-01` §Verification against the 8-skill
+    beta roster.
 
-  **Question 3's taxonomy half is now decided — see Blocked §2 (resolved).** T-018's actual
-  formula rewrite is still pending; the pool-asymmetry bullet above was analyzed for a 5/2 split
-  and needs redoing for 5/3 now that Combat has a third member (Magic).
+  **All of questions 1–3 are now done as of T-018/T-019** — T-018 landed 2026-09-09
+  (`SkillDef`, `FocusCalculator`, `XpCurve`, `ActivityTracker`, `SkillSet`); T-019 (buffs) is next.
 
   **Two follow-up design clarifications (2026-09-07), written directly into the specs rather than
   tracked here as debt:**
@@ -366,11 +394,31 @@ first rather than code from nothing.
   type roster and the rig's bone names below, resolved the same way: pick the one that matches how
   the system actually has to work, and record it here.
 
+- **T-018: `SkillDef.Pool` is a `string`, not an enum.** Exactly two values are legal
+  (`"production"`, `"combat"`), fixed by the developer for beta, so an enum would be defensible —
+  but nothing in this codebase's JSON pipeline registers a `JsonStringEnumConverter`
+  (`DefinitionLoader.BuildOptions`), and adding one to support one field risked more than it saved.
+  A plain string matches the `WeightDistribution.Type` precedent (T-011) and pushes the closed-set
+  check to `SchemaValidator`, which is where every other JSON-shape rule already lives. Not yet
+  enforced there — `SchemaValidator` has no "value must be one of" check for any field today.
+- **T-018: `RustSystem` was not built.** `SYS-SKILL-01`'s Location section lists it, but
+  `EnableSkillRust` defaults to false, nothing calls it, and its efficiency-debuff interpolation
+  curve is the spec's own listed open question — building it now would mean inventing the missing
+  number (Absolute Rule 3). `decay(XP)` and the hard rules that don't depend on that curve are
+  fully specified whenever this gets picked up; not started.
+- **T-018: `ActivityTracker.MedianActivePlayers` rounds a fractional median to the nearest int.**
+  `FocusCalculator.ActivePlayerFactor` only has bands for integer n (1/2/3/≥4); a 7-day window with
+  an even number of recorded days can produce a median like 2.5, which the spec never addresses.
+  Rounds to nearest (away from zero on a tie) rather than flooring or ceiling — arbitrary but
+  symmetric, and only reachable during a world's first 6 days before the window fills. Flagged for
+  the developer to confirm or override; not blocking anything.
+
 - **T-011: the type roster follows `SCHEMA.md`, not `ARCHITECTURE.md`, and the two disagreed.**
   ARCHITECTURE §Folders listed ten Data types; SCHEMA documents nine, and the sets do not match.
   `CropDef` is in SCHEMA but was missing from ARCHITECTURE's list — **added**. `SkillDef` and
-  `BuffDef` were in ARCHITECTURE's list but have no schema anywhere — **not written**, see
-  Blocked §2. ARCHITECTURE §Folders now names the nine that exist.
+  `BuffDef` were in ARCHITECTURE's list but have no schema anywhere — **`SkillDef` written 2026-09-09
+  (T-018); `BuffDef` still not written**, see Blocked §2. ARCHITECTURE §Folders now names the ten
+  that exist.
 
 - **T-011: a def stores its tag strings, not a flattened `HashSet<int>`.** This answers the
   question T-010 left open. `Tags` is `string[]`, exactly as the JSON writes it; the flattened set
@@ -620,10 +668,10 @@ first rather than code from nothing.
    is retired (butchery yield moves to **Cooking**, `SYS-HUNT-01`), and a genuinely new profession,
    **Enchanter**, is added — distinct from Blacksmith, spanning a new Combat skill (`isle:magic`,
    magic combat) and a new Production skill (`isle:enchanting`, fills `EnchantDef` slots + brews).
-   Production stays at 5 members, **Combat grows from 2 to 3** — this changes the pool-asymmetry
-   math below, which was written for 5/2. **T-018 must still do the actual formula rewrite** and
-   re-simulate all 9 verification cases against the new 5/3 split; only the taxonomy question
-   itself is closed. New backlog debt: `BACKLOG.md` T-106 (move enchant application off Crafting —
+   Production stays at 5 members, **Combat grows from 2 to 3** — this changed the pool-asymmetry
+   math, which was written for 5/2. **Resolved 2026-09-09** — T-018 did the formula rewrite and
+   re-simulated all 9 verification cases against the 5/3 split (see Completed, T-018 entry).
+   Remaining backlog debt from the taxonomy split: `BACKLOG.md` T-106 (move enchant application off Crafting —
    mechanical, formula already exists), T-107 (SYS-BREW-01 — **no spec exists**, ask before
    inventing brewing numbers), T-117 (magic combat weapon category — `SYS-COMBAT-01`'s
    `PowerCalculator` is skill-agnostic, so this is cheap unless a mana/resource system turns out to
@@ -648,7 +696,8 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #9 | feature/T-012-definition-loader | T-012 | [PR #9](https://github.com/yhw1737/surv/pull/9) — **merged to main** |
 | #10 | feature/T-013-reference-resolver | T-013 | [PR #10](https://github.com/yhw1737/surv/pull/10) — **merged to main** |
 | #11 | feature/T-014-def-registry | T-014 | [PR #11](https://github.com/yhw1737/surv/pull/11) — **merged to main** |
-| #12 | feature/T-017-placeholder-visuals | T-017 | [PR #12](https://github.com/yhw1737/surv/pull/12) — open |
+| #12 | feature/T-017-placeholder-visuals | T-017 | [PR #12](https://github.com/yhw1737/surv/pull/12) — **merged to main** |
+| #13 | feature/T-018-skill-def | T-018 | [PR #13](https://github.com/yhw1737/surv/pull/13) — open |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came

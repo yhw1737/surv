@@ -270,6 +270,19 @@ fills them (SYS-CRAFT-01 §Enchanting).
 ```
 Breeding is post-EA. Core parses `traits` but does not use them.
 
+### Skills
+```json
+{
+  "id": "coolmod:brewing",
+  "name": "@skill.brewing",
+  "pool": "production"
+}
+```
+Skills are data, not a fixed roster (SYS-SKILL-01, T-018) — a mod can add one. `pool` is closed
+to exactly `"production"` or `"combat"`: a mod cannot declare a third pool, only join one of the
+two the focus formula already balances against (developer decision, PROJECT_STATE.md §Decided
+without a spec, 2026-09-09). A skill has no `tags` — nothing indexes skills by tag today.
+
 ## Patch system
 
 **A mod that wholly redefines `isle:mackerel` collides with every other mod that touches it.** Patch instead — an abbreviated RFC 6902.
