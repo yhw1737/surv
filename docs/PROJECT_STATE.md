@@ -9,7 +9,7 @@
 - Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
 - Task: **T-014 done. Next is T-017** (T-015/T-016 blocked on T-018/T-019, see Next)
 - Branch: **feature/T-014-def-registry**
-- Pending commit: **yes, awaiting developer verification**
+- Pending commit: **no — committed, pushed, [PR #11](https://github.com/yhw1737/surv/pull/11) open**
 
 ## Progress
 
@@ -596,8 +596,8 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #7 | feature/T-010-namespaced-id-tags | T-010 | **merged to main** |
 | #8 | feature/T-011-data-skill-taxonomy | T-011 + skill/profession taxonomy | [PR #8](https://github.com/yhw1737/surv/pull/8) — **merged to main** |
 | #9 | feature/T-012-definition-loader | T-012 | [PR #9](https://github.com/yhw1737/surv/pull/9) — **merged to main** |
-| #10 | feature/T-013-reference-resolver | T-013 | [PR #10](https://github.com/yhw1737/surv/pull/10) — open |
-| — | feature/T-014-def-registry | T-014 | not yet committed — awaiting developer request |
+| #10 | feature/T-013-reference-resolver | T-013 | [PR #10](https://github.com/yhw1737/surv/pull/10) — **merged to main** |
+| #11 | feature/T-014-def-registry | T-014 | [PR #11](https://github.com/yhw1737/surv/pull/11) — open |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
