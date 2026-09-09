@@ -1,25 +1,11 @@
 # SYS-SKILL-01 · Skills, focus, rust
 
-> ## ⚠️ Status: roster finalized 2026-09-07, formula rewrite pending T-018
-> Skills become **data-driven and modder-addable** (`SkillDef`, BACKLOG T-018). Below is the old,
-> still-implemented 7-skill table with its verification cases — correct for the current fixed
-> roster, **stale as documentation of what ships**. The table that replaces it once T-018 lands:
->
-> | Idx | Name | ID | Pool | Note |
-> |---|---|---|---|---|
-> | 0 | Gathering | `isle:gathering` | Production | + farming, land traps |
-> | 1 | Fishing | `isle:fishing` | Production | + water traps |
-> | 2 | Cooking | `isle:cooking` | Production | + butchery (`SYS-HUNT-01`) |
-> | 3 | Crafting | `isle:crafting` | Production | weapon/armor + enchant slot count |
-> | 4 | Enchanting | `isle:enchanting` | Production | enchant application + brewing (`SYS-CRAFT-01`, BACKLOG T-106/T-107) |
-> | 5 | Melee | `isle:melee` | Combat | |
-> | 6 | Ranged | `isle:ranged` | Combat | |
-> | 7 | Magic | `isle:magic` | Combat | magic combat — `SYS-COMBAT-01`'s power formula is already skill-agnostic, so this needs no new formula, only a weapon category (BACKLOG T-117) |
->
-> `isle:hunting` is retired — see `SYS-HUNT-01`'s 2026-09-07 note. Production stays at 5 members,
-> Combat grows from 2 to 3. **T-018 must re-simulate `c(i,j)` and every verification case below
-> against this 8-skill, 5/3-pool table** — the pool asymmetry analysis in `PROJECT_STATE.md`
-> §Decided without a spec was written for 5/2 and needs redoing for 5/3.
+> ## Status: data-driven as of T-018 (2026-09-09)
+> Skills are **data** (`SkillDef`, `Isle.Data`), not a fixed array — a mod can add one, as long as
+> it joins one of the two pools below (developer decision, `PROJECT_STATE.md` §Decided without a
+> spec, 2026-09-09: beta ships exactly two pools, no mod-declared third). The formula below is
+> generalised over any skill count (`FocusCalculator.Focus`, `Scripts/Gameplay/Skills/`) — the
+> table is the beta starter roster, not a hardcoded array size.
 >
 > Professions are flavor labels over these skills, not code: Cook→Cooking, Farmer/Angler→
 > Gathering+Fishing, Hunter→Melee+Ranged (kill method sets the *initial* carcass bulk, `SYS-HUNT-01`; feeds Cook's butchery), Blacksmith→Crafting,
@@ -27,19 +13,24 @@
 > class — skill levels alone sort players into them (GDD §Skills).
 
 ## Purpose
-Track 7 skills and use **focus** to stop any one player mastering everything.
+Track skills and use **focus** to stop any one player mastering everything.
 
-## Skills — current (pre-T-018) implementation
+## Skills — beta starter roster
 
-| Idx | Name | ID | Pool |
-|---|---|---|---|
-| 0 | Gathering | `isle:gathering` | Production |
-| 1 | Hunting | `isle:hunting` | Production |
-| 2 | Fishing | `isle:fishing` | Production |
-| 3 | Cooking | `isle:cooking` | Production |
-| 4 | Crafting | `isle:crafting` | Production |
-| 5 | Melee | `isle:melee` | Combat |
-| 6 | Ranged | `isle:ranged` | Combat |
+| Idx | Name | ID | Pool | Note |
+|---|---|---|---|---|
+| 0 | Gathering | `isle:gathering` | Production | + farming, land traps |
+| 1 | Fishing | `isle:fishing` | Production | + water traps |
+| 2 | Cooking | `isle:cooking` | Production | + butchery (`SYS-HUNT-01`) |
+| 3 | Crafting | `isle:crafting` | Production | weapon/armor + enchant slot count |
+| 4 | Enchanting | `isle:enchanting` | Production | enchant application + brewing (`SYS-CRAFT-01`, BACKLOG T-106/T-107) |
+| 5 | Melee | `isle:melee` | Combat | |
+| 6 | Ranged | `isle:ranged` | Combat | |
+| 7 | Magic | `isle:magic` | Combat | magic combat — `SYS-COMBAT-01`'s power formula is already skill-agnostic, so this needs no new formula, only a weapon category (BACKLOG T-117) |
+
+`isle:hunting` is retired — see `SYS-HUNT-01`'s 2026-09-07 note; butchery moved to Cooking.
+Production has 5 members, Combat 3 — the verification cases below are simulated against this
+5/3 split, not the 5/2 split the original 7-skill formula was checked against.
 
 Levels 1–50, all start at 1.
 
@@ -102,23 +93,33 @@ awardedXp = baseXp * Multiplier
 
 ## Verification
 
-Level array order: `[gathering, hunting, fishing, cooking, crafting, melee, ranged]`, tolerance ±0.005.
+Re-simulated 2026-09-09 (T-018) against the 8-skill, 5/3-pool table above — cases 1, 2, 3 and 5
+are unaffected (their non-target skills besides the deliberate pair are novices, so the extra
+Production and Combat slots contribute 0 regardless); cases 4 and 6–9 shift because Combat gained
+a third member.
+
+Level array order: `[gathering, fishing, cooking, crafting, enchanting, melee, ranged, magic]`, tolerance ±0.005.
 
 | # | Levels | Target | n | Focus | Multiplier |
 |---|---|---|---|---|---|
-| 1 | `[10,10,10,45,10,10,10]` | cooking | 4 | 1.000 | 2.00 |
-| 2 | `[10,10,10,45,10,35,10]` | cooking | 4 | 0.880 | 1.86 |
-| 3 | `[10,10,10,45,40,10,10]` | cooking | 4 | 0.529 | 1.41 |
-| 4 | `[35,35,35,35,35,35,35]` | cooking | 4 | 0.299 | 1.06 |
-| 5 | `[10,10,10,10,10,10,10]` | cooking | 4 | 1.000 | 2.00 |
-| 6 | `[30,30,30,45,30,25,25]` | cooking | 1 | 0.652 | 1.57 |
-| 7 | `[30,30,30,45,30,25,25]` | cooking | 2 | 0.522 | 1.40 |
-| 8 | `[30,30,30,45,30,25,25]` | cooking | 3 | 0.450 | 1.29 |
-| 9 | `[30,30,30,45,30,25,25]` | cooking | 4 | 0.396 | 1.21 |
+| 1 | `[10,10,45,10,10,10,10,10]` | cooking | 4 | 1.000 | 2.00 |
+| 2 | `[10,10,45,10,10,35,10,10]` | cooking | 4 | 0.880 | 1.86 |
+| 3 | `[10,10,45,40,10,10,10,10]` | cooking | 4 | 0.529 | 1.41 |
+| 4 | `[35,35,35,35,35,35,35,35]` | cooking | 4 | 0.284 | 1.03 |
+| 5 | `[10,10,10,10,10,10,10,10]` | cooking | 4 | 1.000 | 2.00 |
+| 6 | `[30,30,45,30,30,25,25,25]` | cooking | 1 | 0.637 | 1.55 |
+| 7 | `[30,30,45,30,30,25,25,25]` | cooking | 2 | 0.506 | 1.37 |
+| 8 | `[30,30,45,30,30,25,25,25]` | cooking | 3 | 0.435 | 1.27 |
+| 9 | `[30,30,45,30,30,25,25,25]` | cooking | 4 | 0.381 | 1.19 |
 
 Cases 1 and 5 both give 1.000 **by design** — sub-15 levels contribute nothing, so beginners always get the maximum multiplier.
 
 **Cases 2 vs 3 are the whole point.** Cooking 45 + Melee 35 (cross-pool) costs almost nothing at 1.86×; Cooking 45 + Crafting 40 (same pool) is clearly worse at 1.41×.
+
+**Case 4 dropped from 0.299/1.06× (5/2) to 0.284/1.03× (5/3).** A third Combat member at Adept
+level adds one more cross-pool interference term, so an all-35s player who spreads evenly now
+loses slightly more focus than before — Combat gaining a skill costs Production specialists a
+little, exactly the "quietly taxes that pool" effect flagged when the pool was still 5/2.
 
 ## Rust — off by default in Core
 
@@ -145,15 +146,23 @@ UI: not "you lost a level" but **"you're rusty — a few tries will loosen it up
 ## Location
 ```
 Scripts/Gameplay/Skills/
-  SkillSet.cs           7 skills per player
-  FocusCalculator.cs    ★ static pure, formulas above
+  SkillSet.cs           per-player levels, keyed by SkillDef.Id — whatever DefRegistry loaded
+  FocusCalculator.cs    ★ static pure, formulas above, generalised over any skill count (T-018)
   XpCurve.cs            static, XpToNext / TotalXpTo
-  RustSystem.cs         flag-gated
   ActivityTracker.cs    7-day median
+  RustSystem.cs         flag-gated — not yet implemented, see Open questions
 ```
 `FocusCalculator` and `XpCurve` must not reference Unity — EditMode test targets. XP awards are server-only.
 
 ## Open questions
 - Per-action base XP values (`docs/content/xp_table.md`, not yet written)
+- **`RustSystem` is unimplemented.** `EnableSkillRust = false` by default and no caller needs it
+  yet, so T-018 left it out rather than build against the still-open efficiency curve below
+  (Absolute Rule 3 — don't invent a missing value). `decay(XP)` and the hard rules are fully
+  specified whenever this gets picked up.
 - Exact interpolation curve for the rust efficiency debuff
 - Reassignment UI flow
+- **`ActivityTracker`'s median, for an even number of recorded days, can land between two
+  integers** (e.g. 2 and 3 average to 2.5), but `ActivePlayerFactor` has no band for a fractional
+  n. Implemented as round-to-nearest for now (only matters in a world's first 6 days); flagged in
+  `PROJECT_STATE.md` §Decided without a spec for the developer to confirm or override.

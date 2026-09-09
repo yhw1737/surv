@@ -36,7 +36,7 @@ One asmdef per folder; the compiler enforces the boundaries.
 Assets/Scripts/
   Core/       Ids/ Tags/ Defs/ Events/ Util/
   Data/       ItemDef CreatureDef FishDef CookMethodDef CraftRecipeDef
-              WeaponDef ArtifactDef EnchantDef CropDef
+              WeaponDef ArtifactDef EnchantDef CropDef SkillDef
   Modding/    ModManifest ModLoader PatchApplier LoadOrderResolver Hooks/
   Networking/ IsleNetworkManager Authority/ Sync/
   World/      Chunks/ Time/ Spawning/ Spoilage/ Generation/
