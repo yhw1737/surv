@@ -39,7 +39,7 @@ so neither can start before the loader exists.
 
 - [x] **T-010** `NamespacedId`, `TagRegistry` flattening (SYS-CORE-01)
 - [x] **T-011** `Data` layer POCOs — ItemDef, CreatureDef, FishDef, CookMethodDef, etc.
-- [ ] **T-012** `DefinitionLoader` + `SchemaValidator`
+- [x] **T-012** `DefinitionLoader` + `SchemaValidator`
 - [ ] **T-013** ★ `ReferenceResolver` + typo-suggesting error messages
 - [ ] **T-014** `DefRegistry` + tag index
 - [ ] **T-015** F5 hot reload

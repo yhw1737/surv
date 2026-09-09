@@ -7,11 +7,10 @@
 
 - Last updated: **2026-09-07**
 - Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
-- Task: **T-011 done + skill/profession taxonomy settled. Next is T-012** (T-018/T-019 do the
-  SYS-SKILL-01/SYS-BUFF-01 rewrite; new debt T-106/T-107/T-117, see Decided without a spec)
-- Branch: **feature/T-011-data-skill-taxonomy** (renamed from `feature/T-011-data-defs` — scope
-  grew past T-011 alone, developer requested a single PR for both)
-- Pending commit: **committed, PR opened** — see Pending commits below
+- Task: **T-012 done. Next is T-013** (T-018/T-019 SYS-SKILL-01/SYS-BUFF-01 rewrite still
+  pending, see Decided without a spec)
+- Branch: **feature/T-012-definition-loader**
+- Pending commit: **yes, awaiting developer verification**
 
 ## Progress
 
@@ -19,7 +18,7 @@
 stage 1 · placeholders
 Phase 0  project setup        [x] 3/3   T-000..T-002
 stage 2 · solo beta
-Phase 1  foundation           [~] 2/10  T-010..T-019  ← here
+Phase 1  foundation           [~] 3/10  T-010..T-019  ← here
 Phase 2  netcode skeleton     [ ] 0/2   T-020, T-021 (authority only)
 Phase 3  world                [ ] 0/7
 Phase 4  inventory            [ ] 0/6
@@ -122,31 +121,58 @@ Phase 13 modding + polish     [ ] 0/7
     back**, no extras in either direction. Not kept as a test — it parses markdown, which is too
     brittle to run every build.
 
+- **T-012**: `DefinitionLoader` + `SchemaValidator` (SYS-CORE-01 §Load pipeline steps 4–5).
+  - Files: `Assets/Scripts/Modding/Defs/{NamespacedIdJsonConverter,DefinitionLoader,SchemaValidator}.cs`,
+    `Assets/Scripts/Modding/Isle.Modding.asmdef` (vendored references), `Assets/Plugins/SystemTextJson/*.dll`
+    (8 files — `System.Text.Json` 8.0.5 and its netstandard2.0 dependency chain, none of them in the
+    project before this task), `Assets/Tests/EditMode/DefinitionLoaderTests.cs`
+  - `NamespacedIdJsonConverter` implements `Read`/`Write`/`ReadAsPropertyName`/`WriteAsPropertyName`
+    (the last pair for `FishDef.BaitAffinity`'s dictionary key) and turns a parse failure into a
+    `JsonException` carrying `NamespacedId.TryParse`'s own message. `HandleNull` is on, because
+    `ArtifactDef.CombatSkill` is always `null` in JSON and must deserialize to `default`, not throw.
+  - `DefinitionLoader.LoadAll<T>(directoryPath)` reads every `*.json` under a directory
+    (`PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower`, no attributes on the POCOs, as T-011
+    left it), aggregating failures across the whole batch rather than stopping at the first file or
+    the first field. Per file: missing `id`/`name` and a JSON parse exception are errors that drop
+    the file; an unrecognized top-level field is a warning that does not.
+  - `SchemaValidator` does the four checks the POCOs' own doc comments deferred here: `IngredientRef`
+    exactly-one-of `item`/`tag` (`CraftRecipeDef.Ingredients`, `EnchantDef.Catalyst`); `[min,max]`
+    bands are length 2 (`ButcherSpec.ConditionRange`, `HabitatSpec.Depth`/`WaterTemp`);
+    `ArtifactDef.CombatSkill`/`GrantsCombatXp` are unset (Absolute Rule 5); an `EnchantEffect`
+    carries the fields its `type` needs. An unrecognized `EnchantEffect.Type` is left alone —
+    SYS-CRAFT-01 §Open questions leaves the type list undecided, so hard-failing would foreclose it.
+  - Verified: batchmode import exit 0, **0 compiler errors — no `CS0433` conflict between the
+    vendored DLLs and Unity's own Mono BCL**, which was the open risk going in; EditMode **85/85
+    passed** (15 new). Covers SYS-CORE-01 verification case 1 through the loader (not just
+    `NamespacedId` directly), case 6 (unknown field → warning, def still loads) and case 7 (missing
+    `id`/`name` → error), plus all four `SchemaValidator` checks in both pass and fail form. Cases
+    4/5/8 (multi-mod) and case 1's typo-suggestion half stay T-013/T-130.
+  - Fixtures are temp directories written per test (`Assets/StreamingAssets/definitions/` is still
+    empty — no real content JSON exists yet), so nothing here depends on content that doesn't exist.
+
 ## In progress / unfinished
 
 (none)
 
 ## Next
 
-**T-012** — `DefinitionLoader` + `SchemaValidator`, following SYS-CORE-01 §Load pipeline.
+**T-013** — `ReferenceResolver`, SYS-CORE-01 §Load pipeline step 7 (★ typo-suggestion via
+Levenshtein ≤2 is the headline feature — the required error format is already fixed in the spec):
 
-T-011 leaves it three concrete jobs:
+```
+[coolmod] definitions/recipes/harpoon.json:14
+  Unknown item ID: "isle:steel_ingott"
+  Did you mean "isle:steel_ingot"?
+```
 
-1. **A `System.Text.Json` converter for `NamespacedId`.** It needs `Read`/`Write` *and*
-   `ReadAsPropertyName`/`WriteAsPropertyName` — `FishDef.BaitAffinity` is a dictionary keyed by an
-   ID. On a parse failure, surface `NamespacedId.TryParse`'s message rather than a bare
-   `JsonException`; §Load pipeline step 5 wants every failure reported, not the first.
-2. **`System.Text.Json` is not in the project yet.** No DLL, not in `manifest.json`. Getting it in
-   (NuGet DLL under `Assets/Plugins/`, listed in the asmdef's `precompiledReferences`) is part of
-   T-012, not a prerequisite someone else did.
-3. **Naming policy, not attributes.** The POCOs carry no `[JsonPropertyName]`, so the loader must
-   set `PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower`. Every property name was chosen to
-   round-trip under it (`NutritionRetention` → `nutrition_retention`). Keeping the attributes out
-   is what lets `Isle.Data` stay dependency-free.
-
-Validation the POCOs deliberately do **not** do, all of it T-012's: `IngredientRef` has exactly one
-of `item`/`tag`; `condition_range` and the `habitat` bands are length 2; an artifact's
-`combat_skill` really is null; an `EnchantEffect` carries the fields its `type` requires.
+T-012 gives it a `LoadResult<T>` per definition type to walk; T-013 is what actually dereferences
+every `NamespacedId` field (`IngredientRef.Item`, `ButcherYield.Item`/`QualityFrom`,
+`RecipeOutput.Item`, `SpawnSpec.Biomes`, etc.) against the loaded set and reports the ones that
+don't resolve, with the file/line `LoadError` doesn't currently carry (needs a source position,
+not just a file path — `System.Text.Json`'s `JsonException.LineNumber` from the deserialize pass,
+or a second `JsonDocument` walk for line info on already-valid defs). Belongs in `Isle.Modding`
+next to `DefinitionLoader`, same reasoning as the entry below. Covers verification cases 4/5/8
+(circular mod deps and patch-path conflicts are T-130, not this).
 
 **T-012 is not blocked by T-018/T-019** — the loader does not care which definition types exist.
 But **T-018 and T-019 must both land before T-015**, because starter definitions reference skill
@@ -200,6 +226,15 @@ and buff IDs and would have to be rewritten otherwise.
     beta loop (gather → hunt → fish → cook → craft → fight → sleep, `T-152`) must stay completable
     on unenchanted Common gear without Magic. Recorded in `GDD.md` §Scope, §Skills, and
     `SYS-CRAFT-01` §Enchanting.
+
+- **T-012: `DefinitionLoader`/`SchemaValidator` live in `Isle.Modding`, not `Isle.Core` as
+  SYS-CORE-01 §Location says.** That note predates the `Isle.Data` split — a generic loader has to
+  constrain on `IDefinition`, which is in `Isle.Data`, and `Isle.Core` has `"references": []`
+  (ARCHITECTURE.md's own table). Putting the loader in `Core` would mean `Core` referencing `Data`,
+  reversing the one-way dependency graph the asmdefs enforce. `Isle.Modding` already references
+  both, and CLAUDE.md's own Layout table calls that folder "mod loader, schema validation,
+  patches" — an exact match. Same reasoning will place `ReferenceResolver` (T-013) and
+  `DefRegistry` (T-014) there too. SYS-CORE-01 §Location should be corrected to match.
 
 - **T-011: the type roster follows `SCHEMA.md`, not `ARCHITECTURE.md`, and the two disagreed.**
   ARCHITECTURE §Folders listed ten Data types; SCHEMA documents nine, and the sets do not match.
@@ -479,7 +514,8 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #5 | docs/solo-beta-first-roadmap | — | **merged to main** |
 | #6 | docs/commit-pr-language-rule | — | **merged to main** |
 | #7 | feature/T-010-namespaced-id-tags | T-010 | **merged to main** |
-| #8 | feature/T-011-data-skill-taxonomy | T-011 + skill/profession taxonomy | [PR #8](https://github.com/yhw1737/surv/pull/8) — open |
+| #8 | feature/T-011-data-skill-taxonomy | T-011 + skill/profession taxonomy | [PR #8](https://github.com/yhw1737/surv/pull/8) — **merged to main** |
+| — | feature/T-012-definition-loader | T-012 | not yet committed — awaiting developer request |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
@@ -525,6 +561,35 @@ In execution order (re-sequenced 2026-09-06).
 - T-0XX: one-line summary
   - Files: Scripts/.../Foo.cs, Tests/EditMode/FooTests.cs
   - Verified: SYS-XXX-01 §N, all cases pass
+
+- **T-012**: `DefinitionLoader` + `SchemaValidator` (SYS-CORE-01 §Load pipeline steps 4–5).
+  - Files: `Assets/Scripts/Modding/Defs/{NamespacedIdJsonConverter,DefinitionLoader,SchemaValidator}.cs`,
+    `Assets/Scripts/Modding/Isle.Modding.asmdef` (vendored references), `Assets/Plugins/SystemTextJson/*.dll`
+    (8 files — `System.Text.Json` 8.0.5 and its netstandard2.0 dependency chain, none of them in the
+    project before this task), `Assets/Tests/EditMode/DefinitionLoaderTests.cs`
+  - `NamespacedIdJsonConverter` implements `Read`/`Write`/`ReadAsPropertyName`/`WriteAsPropertyName`
+    (the last pair for `FishDef.BaitAffinity`'s dictionary key) and turns a parse failure into a
+    `JsonException` carrying `NamespacedId.TryParse`'s own message. `HandleNull` is on, because
+    `ArtifactDef.CombatSkill` is always `null` in JSON and must deserialize to `default`, not throw.
+  - `DefinitionLoader.LoadAll<T>(directoryPath)` reads every `*.json` under a directory
+    (`PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower`, no attributes on the POCOs, as T-011
+    left it), aggregating failures across the whole batch rather than stopping at the first file or
+    the first field. Per file: missing `id`/`name` and a JSON parse exception are errors that drop
+    the file; an unrecognized top-level field is a warning that does not.
+  - `SchemaValidator` does the four checks the POCOs' own doc comments deferred here: `IngredientRef`
+    exactly-one-of `item`/`tag` (`CraftRecipeDef.Ingredients`, `EnchantDef.Catalyst`); `[min,max]`
+    bands are length 2 (`ButcherSpec.ConditionRange`, `HabitatSpec.Depth`/`WaterTemp`);
+    `ArtifactDef.CombatSkill`/`GrantsCombatXp` are unset (Absolute Rule 5); an `EnchantEffect`
+    carries the fields its `type` needs. An unrecognized `EnchantEffect.Type` is left alone —
+    SYS-CRAFT-01 §Open questions leaves the type list undecided, so hard-failing would foreclose it.
+  - Verified: batchmode import exit 0, **0 compiler errors — no `CS0433` conflict between the
+    vendored DLLs and Unity's own Mono BCL**, which was the open risk going in; EditMode **85/85
+    passed** (15 new). Covers SYS-CORE-01 verification case 1 through the loader (not just
+    `NamespacedId` directly), case 6 (unknown field → warning, def still loads) and case 7 (missing
+    `id`/`name` → error), plus all four `SchemaValidator` checks in both pass and fail form. Cases
+    4/5/8 (multi-mod) and case 1's typo-suggestion half stay T-013/T-130.
+  - Fixtures are temp directories written per test (`Assets/StreamingAssets/definitions/` is still
+    empty — no real content JSON exists yet), so nothing here depends on content that doesn't exist.
 
 ## In progress / unfinished
 - T-0YY: how far it got, what remains
