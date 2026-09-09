@@ -41,7 +41,7 @@ so neither can start before the loader exists.
 - [x] **T-011** `Data` layer POCOs — ItemDef, CreatureDef, FishDef, CookMethodDef, etc.
 - [x] **T-012** `DefinitionLoader` + `SchemaValidator`
 - [x] **T-013** ★ `ReferenceResolver` + typo-suggesting error messages
-- [ ] **T-014** `DefRegistry` + tag index
+- [x] **T-014** `DefRegistry` + tag index
 - [ ] **T-015** F5 hot reload
 - [ ] **T-016** 🚩 **Def gate:** editing `items/*.json` reflects without recompiling. **Do not proceed until this works**
 - [ ] **T-017** ★ Placeholder visual generator — vector shapes (box / circle / solid colour, ART_PIPELINE §Placeholders). A definition with no art falls back automatically, so **no later phase ever waits on a sprite**
