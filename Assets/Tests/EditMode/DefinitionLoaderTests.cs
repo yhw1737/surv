@@ -85,6 +85,7 @@ namespace Isle.Tests.EditMode
 
             Assert.IsEmpty(result.Definitions);
             StringAssert.Contains("\"name\"", result.Errors[0].Message);
+            Assert.AreEqual(1, result.Errors[0].Line);
         }
 
         // --- Verification case 6: unknown field is a warning, not an error ---------------------
