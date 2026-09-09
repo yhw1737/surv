@@ -9,7 +9,7 @@
 - Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
 - Task: **T-018 done. Next is T-019** (SYS-BUFF-01 spec sheet + `BuffDef`)
 - Branch: **feature/T-018-skill-def**
-- Pending commit: **yes — not committed, developer has not requested it yet**
+- Pending commit: **no — committed (607fd63) and pushed, [PR #13](https://github.com/yhw1737/surv/pull/13) open**
 
 ## Progress
 
@@ -697,7 +697,7 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #10 | feature/T-013-reference-resolver | T-013 | [PR #10](https://github.com/yhw1737/surv/pull/10) — **merged to main** |
 | #11 | feature/T-014-def-registry | T-014 | [PR #11](https://github.com/yhw1737/surv/pull/11) — **merged to main** |
 | #12 | feature/T-017-placeholder-visuals | T-017 | [PR #12](https://github.com/yhw1737/surv/pull/12) — **merged to main** |
-| — | feature/T-018-skill-def | T-018 | not yet committed |
+| #13 | feature/T-018-skill-def | T-018 | [PR #13](https://github.com/yhw1737/surv/pull/13) — open |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
