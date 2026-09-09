@@ -7,10 +7,9 @@
 
 - Last updated: **2026-09-09**
 - Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
-- Task: **T-013 done. Next is T-014** (T-018/T-019 SYS-SKILL-01/SYS-BUFF-01 rewrite still
-  pending, see Decided without a spec)
-- Branch: **feature/T-013-reference-resolver**
-- Pending commit: **yes, awaiting developer verification**
+- Task: **T-014 done. Next is T-017** (T-015/T-016 blocked on T-018/T-019, see Next)
+- Branch: **feature/T-014-def-registry**
+- Pending commit: **no — committed, pushed, [PR #11](https://github.com/yhw1737/surv/pull/11) open**
 
 ## Progress
 
@@ -18,7 +17,7 @@
 stage 1 · placeholders
 Phase 0  project setup        [x] 3/3   T-000..T-002
 stage 2 · solo beta
-Phase 1  foundation           [~] 4/10  T-010..T-019  ← here
+Phase 1  foundation           [~] 5/10  T-010..T-019  ← here
 Phase 2  netcode skeleton     [ ] 0/2   T-020, T-021 (authority only)
 Phase 3  world                [ ] 0/7
 Phase 4  inventory            [ ] 0/6
@@ -177,34 +176,47 @@ Phase 13 modding + polish     [ ] 0/7
     end-to-end (bad ID → error + suggestion + line). Cases 5/8 (circular mod deps, patch conflicts)
     stay T-130 — no multi-mod loading exists to produce them yet.
 
+- **T-014**: `DefRegistry` (SYS-CORE-01 §Load pipeline steps 9–10).
+  - Files: `Assets/Scripts/Modding/Defs/DefRegistry.cs`, `Assets/Tests/EditMode/DefRegistryTests.cs`.
+  - A static class — one of ARCHITECTURE.md's three allowed singletons, no instance — placed in
+    `Isle.Modding`, not `Isle.Core` as the spec says. See Decided without a spec.
+  - `Get<T>`/`TryGet<T>` key on `NamespacedId`; `Get<T>` throws `KeyNotFoundException` on a miss.
+    `AllWithTag<T>` resolves the tag string to `TagRegistry`'s interned int once, then a single
+    dictionary lookup — this is the first thing that actually queries T-010's flattened ancestor
+    sets, so `AllWithTag<ItemDef>("fish")` also returns an item only tagged `fish/saltwater`.
+    `All<T>` returns everything registered for that type. `Register<T>(LoadResult<T>)` indexes by
+    id and by tag; `Freeze()` makes further `Register` calls throw; `Clear()` exists for test
+    isolation only.
+  - Tag indexing is reflection over a `string[] Tags` property found by name, cached per type — see
+    Decided without a spec. `CraftRecipeDef`, `CookMethodDef` and `EnchantDef` have none and are
+    simply never tag-indexed; `AllWithTag<T>` on one of those always returns empty.
+  - Whether a failed `ReferenceResolver`/`SchemaValidator` check should block `Register`/`Freeze` is
+    not decided — see Decided without a spec.
+  - Verified: batchmode import exit 0, 0 compiler errors; EditMode **100/100 passed** (9 new).
+
 ## In progress / unfinished
 
 (none)
 
 ## Next
 
-**T-014** — `DefRegistry` + tag index:
+**T-015 and T-016 are next in strict backlog order but both blocked:**
 
-```csharp
-DefRegistry.Get<ItemDef>(id);              // throws if missing
-DefRegistry.TryGet<ItemDef>(id, out def);
-DefRegistry.AllWithTag<ItemDef>("meat");   // O(1), indexed at load
-DefRegistry.All<CookMethodDef>();
-```
+- T-015 (F5 hot reload) needs T-018/T-019 landed first — starter definitions reference skill and
+  buff IDs and would have to be rewritten otherwise.
+- T-016 (🚩 Def gate) needs T-015 to exist before it can be tested against.
 
-Singleton in `Isle.Core` per spec — but `Get<T>` needs `IDefinition` (`Isle.Data`), the same
-one-way-dependency problem T-012's placement note already worked through, so this likely lands in
-`Isle.Modding` too rather than `Core`; confirm against `ARCHITECTURE.md`'s dependency table before
-writing it, same as the earlier decision. Read-only after load — mutation throws. `AllWithTag`
-is where T-010's flattened `HashSet<int>` tag index actually gets used (T-010 built the flattening,
-T-014 is the first thing that queries it). This is also the natural place to decide whether a
-failed `ReferenceResolver` check (T-013) should block registry freeze — not decided yet, ask before
-inventing a policy.
+**So the next actionable task is T-017** — placeholder visual generator (ART_PIPELINE
+§Placeholders): a definition with no `icon`/art path falls back to a vector shape (box, circle,
+solid colour) automatically, so no later phase ever waits on a sprite. Independent of T-018/T-019 —
+mechanical, the spec already fixes the shapes and the fallback rule.
 
-**T-018 and T-019 must both land before T-015** (F5 hot reload), because starter definitions
-reference skill and buff IDs and would have to be rewritten otherwise. Neither T-013 nor T-014 is
-blocked by them — a registry does not care which definition types exist, only that they implement
-`IDefinition`.
+**T-018 (SYS-SKILL-01 rewrite + `SkillDef`) is the bigger piece after that.** It has open design
+questions still waiting on the developer (see Decided without a spec, 2026-09-07 entry): whether a
+mod may declare a new skill pool (recommendation on file: no, for beta), and the 5/3
+pool-asymmetry re-simulation the Enchanter split now requires. Ask rather than default those before
+implementing. T-019 (SYS-BUFF-01 + `BuffDef`) follows the same "ask, don't invent" pattern for the
+beta buff set.
 
 ## Decided without a spec
 
@@ -283,6 +295,26 @@ blocked by them — a registry does not care which definition types exist, only 
   has a concept of "which mod loaded this file" yet — `DefinitionLoader.LoadAll` takes one
   directory, not a mod manifest. Multi-mod loading is T-130. `LoadError.ToString()` renders just
   `path:line` until a mod id actually exists to put in front of it.
+
+- **T-014: `DefRegistry` placed in `Isle.Modding`, confirmed against `ARCHITECTURE.md`'s asmdef
+  table.** The spec says "Singleton in `Isle.Core`", but `Get<T>`/`TryGet<T>` return `IDefinition`
+  (`Isle.Data`), and `Isle.Core`'s asmdef has `"references": []` — it cannot see `Isle.Data` at
+  all. Same one-way-dependency reasoning as the T-012 entry above; `Isle.Modding` already
+  references both. SYS-CORE-01 §Location should be corrected to match.
+
+- **T-014: tag indexing is reflection over a `Tags` property, not a new `IDefinition` member.**
+  `CraftRecipeDef`, `CookMethodDef` and `EnchantDef` have no `Tags` field — widening `IDefinition`
+  to require one would force it onto three types nothing has ever asked to carry it, and
+  `IDefinition`'s shape is T-011's contract, not this task's to change. `DefRegistry` instead looks
+  up a public `string[] Tags` property by name per type, caching the `PropertyInfo` (or its
+  absence) the first time each type is registered. A type without one is simply never tag-indexed —
+  `AllWithTag<T>` on it always returns empty, not an error.
+
+- **T-014: `Register<T>` does not check `ReferenceResolver`/`SchemaValidator` errors before
+  indexing.** Flagged as undecided when this was written into Next (ask, don't invent). Today
+  `Register<T>` indexes whatever `LoadResult<T>.Definitions` contains; skipping a definition that
+  failed a check, or refusing to `Freeze()` at all if any load produced errors, is the caller's job
+  until the developer decides which policy is wanted.
 
 - **T-011: the type roster follows `SCHEMA.md`, not `ARCHITECTURE.md`, and the two disagreed.**
   ARCHITECTURE §Folders listed ten Data types; SCHEMA documents nine, and the sets do not match.
@@ -564,7 +596,8 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #7 | feature/T-010-namespaced-id-tags | T-010 | **merged to main** |
 | #8 | feature/T-011-data-skill-taxonomy | T-011 + skill/profession taxonomy | [PR #8](https://github.com/yhw1737/surv/pull/8) — **merged to main** |
 | #9 | feature/T-012-definition-loader | T-012 | [PR #9](https://github.com/yhw1737/surv/pull/9) — **merged to main** |
-| — | feature/T-013-reference-resolver | T-013 | not yet committed — awaiting developer request |
+| #10 | feature/T-013-reference-resolver | T-013 | [PR #10](https://github.com/yhw1737/surv/pull/10) — **merged to main** |
+| #11 | feature/T-014-def-registry | T-014 | [PR #11](https://github.com/yhw1737/surv/pull/11) — open |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
