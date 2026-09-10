@@ -6,10 +6,10 @@
 ## Header
 
 - Last updated: **2026-09-10**
-- Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
-- Task: **T-015 and T-016 done. Phase 1 is complete (10/10)**
-- Branch: **feature/T-015-hot-reload**
-- Pending commit: **no — implemented and verified, not committed. Awaiting developer go-ahead**
+- Phase: **Phase 2 — netcode skeleton**
+- Task: **T-020 done and confirmed. T-021 (server-authoritative movement) is next**
+- Branch: **feature/T-020-fishnet-bootstrap**
+- Pending commit: **yes — developer requested commit + PR**
 
 ## Progress
 
@@ -18,7 +18,7 @@ stage 1 · placeholders
 Phase 0  project setup        [x] 3/3   T-000..T-002
 stage 2 · solo beta
 Phase 1  foundation           [x] 10/10 T-010..T-019  ← done
-Phase 2  netcode skeleton     [ ] 0/2   T-020, T-021 (authority only)
+Phase 2  netcode skeleton     [~] 1/2   T-020 done, confirmed 2026-09-10; T-021 next
 Phase 3  world                [ ] 0/7
 Phase 4  inventory            [ ] 0/6
 Phase 5  survival + skills    [ ] 0/8
@@ -304,15 +304,57 @@ Phase 13 modding + polish     [ ] 0/7
     logged `[Isle] Definitions reloaded from .../definitions.` with no errors and no recompile.
     **Phase 1 is fully done (10/10).**
 
+- **T-020**: FishNet bootstrap, listen server connection (SYS-NET-01 §Transports) — Phase 2, the
+  first Phase 2 task.
+  - Files: `Packages/manifest.json` (adds `com.firstgeargames.fishnet` 4.7.2 via git URL, pinned
+    to match `ADR-001`'s "4.7.2R"), `Packages/packages-lock.json` (resolved lock entry, automatic),
+    `ProjectSettings/ProjectSettings.asset` (`scriptingDefineSymbols.Standalone: FISHNET;FISHNET_V4`,
+    added automatically by FishNet's own installer), `Assets/DefaultPrefabObjects.asset` (+`.meta`,
+    auto-generated empty `DefaultPrefabObjects` — `NetworkManager`'s required spawnable-prefabs
+    asset, no spawnable prefabs exist yet so `_prefabs: []`),
+    `Assets/Scripts/Networking/Isle.Networking.asmdef` (added a `FishNet.Runtime` reference to the
+    empty placeholder that already existed on `main`), `Assets/Scripts/Networking/IsleNetworkManager.cs`
+    (new), `Assets/Scenes/SampleScene.unity` (new `IsleNetworkManager` GameObject),
+    8× `Assets/Plugins/SystemTextJson/*.dll.meta` (bugfix, see below).
+  - **Blocking prerequisite bug found and fixed: a T-012 defect, not new scope.** FishNet's Synapse
+    transport ships its own `Microsoft.Bcl.AsyncInterfaces.dll`, which collided (`CS0433`, ambiguous
+    type) with the identically-named DLL T-012 vendored for `System.Text.Json`. Root cause: T-012's
+    eight `.meta` files were hand-written down to the minimal two-line form and never had Unity's
+    Plugin Importer "Auto Referenced" checkbox turned off, so every vendored DLL was silently
+    auto-added to every assembly, including ones that bring their own copy. Fixed by rewriting all
+    eight `.meta` files to the full `PluginImporter` YAML block with `isExplicitlyReferenced: 1`
+    (guids preserved). This was a latent T-012 bug that any second DLL with a name collision would
+    have hit; FishNet's Synapse transport was just the first thing to trip it. Tugboat (the
+    transport actually used) does not carry this DLL and would not have surfaced the bug at all.
+  - `IsleNetworkManager` (`Isle.Networking`) `[RequireComponent]`s FishNet's own `NetworkManager`
+    and `Tugboat`, wires `TransportManager.Transport = Tugboat` in `Awake`, then calls
+    `ServerManager.StartConnection()` and `ClientManager.StartConnection()` in `Start` — a listen
+    server, so the host's own client is the same session co-op joins later, per SYS-NET-01 and the
+    2026-09-06 "solo beta already runs on the multiplayer code path" decision. Steam P2P is a
+    second transport, deliberately not touched here — T-025, Phase 10.
+  - Verified: batchmode compile-only run **0 `error CS`** (retried once after an unrelated flaky
+    SIGBUS crash mid-run, clean on retry — not caused by these changes); full EditMode suite
+    **155/155 passed**, twice (once after the `.meta` fix, once again after wiring the scene, to
+    rule out a regression from either step).
+  - **No EditMode test written for `IsleNetworkManager` — see Decided without a spec.** Manual
+    verification substitutes: press Play, check the Console for FishNet's own
+    `"Local server is started for Tugboat."` and `"Local client is started for Tugboat."` lines.
+  - **T-020 confirmed (2026-09-10)**: developer pressed Play in a live Editor session; Console
+    showed `Local server is started for Tugboat.`, `Remote connection started for Id 0.` (the local
+    client connecting to the local server), then `Local client is started for Tugboat.` — no
+    errors. Listen server bootstrap works end to end.
+
 ## In progress / unfinished
 
 (none)
 
 ## Next
 
+**T-021** (server-authoritative movement + client prediction) is next in Phase 2 —
+`docs/BACKLOG.md`. Read `SYS-NET-01` for the authority split before starting.
+
 **Phase 1 is fully done.** T-015 and T-016 both confirmed 2026-09-10 — the developer manually
-verified F5 hot reload in a live Editor session. Next session picks up Phase 2 (T-020 FishNet
-bootstrap) from `BACKLOG.md`.
+verified F5 hot reload in a live Editor session.
 
 **RustSystem stays unbuilt** — deferred out of T-018's scope (see Completed, T-018 entry, and
 Decided without a spec). Pick it up only once the efficiency-debuff interpolation curve and the
@@ -327,6 +369,35 @@ blocking anything right now.
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-09-10 — T-020: fixed a T-012 bug en route (Plugin Importer auto-reference), scoped Tugboat-only, wired the scene directly, skipped an EditMode test
+  Four judgment calls, none in `SYS-NET-01` or `BACKLOG.md`'s one-line T-020 scope:
+  - **The `CS0433` fix (`isExplicitlyReferenced: 1` on all 8 `Assets/Plugins/SystemTextJson/*.dll.meta`)
+    is a bugfix, not scope creep.** FishNet's Synapse transport carries its own
+    `Microsoft.Bcl.AsyncInterfaces.dll`, which collided with T-012's identically-named vendored copy
+    because T-012's `.meta` files never disabled Unity's Plugin Importer auto-reference. Fixing the
+    `.meta` files was a required prerequisite to get anything compiling at all — Tugboat itself
+    doesn't carry the colliding DLL, so this bug would have stayed latent until some other package
+    happened to ship the same DLL name. Could not be scripted (a C# Editor fixup script can't run
+    via `-executeMethod` while the very compile error it targets is blocking all compilation), so
+    the 8 `.meta` files were hand-edited as plain YAML text instead.
+  - **Tugboat only; Steam P2P stays out.** `ADR-001`/`SYS-NET-01` name FishNet without committing to
+    a transport for T-020 specifically; Tugboat (FishNet's built-in UDP transport) is what "listen
+    server" needs for a LAN/localhost host, and Steam P2P is its own ticket (T-025, Phase 10) with
+    its own SDK dependency. Building both now would be scope creep into a Phase 10 task.
+  - **`IsleNetworkManager` was wired directly into `Assets/Scenes/SampleScene.unity`, not left as an
+    unused class.** No scene-bootstrap precedent existed to follow — `DefinitionBootstrap` (T-015)
+    is confirmed **not** wired into any scene anywhere in the codebase, so Phase 1 never actually
+    established a "how does gameplay code start at runtime" pattern. BACKLOG.md's T-020 wording
+    ("listen server connection") reads as something that has to actually happen when the game runs,
+    not just compile, so a GameObject carrying `IsleNetworkManager` (which
+    `[RequireComponent]`-adds FishNet's own `NetworkManager` and `Tugboat`) was added to the
+    project's one and only scene (`ProjectSettings/EditorBuildSettings.asset` lists no others).
+  - **No EditMode test for `IsleNetworkManager`.** `docs/TESTING.md` states plainly that
+    MonoBehaviour/network-state code is untestable via EditMode, which is also why T-016's def gate
+    was a manual check rather than a test. Same policy applied here: verification is the developer
+    pressing Play and reading FishNet's own `"Local server is started for Tugboat."` /
+    `"Local client is started for Tugboat."` console lines, not an automated EditMode assertion.
 
 - ### 2026-09-10 — durability check (developer request, before T-015): weapons ✓, food ✓ (different mechanic), equipment ✗ (no schema yet)
   The developer asked, before starting the next task, whether weapons/equipment/food all have
@@ -820,6 +891,7 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #13 | feature/T-018-skill-def | T-018 | [PR #13](https://github.com/yhw1737/surv/pull/13) — **merged to main** |
 | #14 | docs/T-019-buff-spec | T-019 | [PR #14](https://github.com/yhw1737/surv/pull/14) — **merged to main** |
 | — | feature/T-015-hot-reload | T-015 | implemented and verified, not committed |
+| #15 | feature/T-020-fishnet-bootstrap | T-020 | confirmed 2026-09-10, PR requested |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
