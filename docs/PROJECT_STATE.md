@@ -9,7 +9,7 @@
 - Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
 - Task: **T-019 done. Phase 1 core is now 8/10** (only T-015/T-016 remain)
 - Branch: **docs/T-019-buff-spec**
-- Pending commit: **yes — not committed, developer has not requested it yet**
+- Pending commit: **no — committed (ad7f5e2) and pushed, [PR #14](https://github.com/yhw1737/surv/pull/14) open**
 
 ## Progress
 
@@ -735,7 +735,7 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #11 | feature/T-014-def-registry | T-014 | [PR #11](https://github.com/yhw1737/surv/pull/11) — **merged to main** |
 | #12 | feature/T-017-placeholder-visuals | T-017 | [PR #12](https://github.com/yhw1737/surv/pull/12) — **merged to main** |
 | #13 | feature/T-018-skill-def | T-018 | [PR #13](https://github.com/yhw1737/surv/pull/13) — **merged to main** |
-| — | docs/T-019-buff-spec | T-019 | not yet committed |
+| #14 | docs/T-019-buff-spec | T-019 | [PR #14](https://github.com/yhw1737/surv/pull/14) — open |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
