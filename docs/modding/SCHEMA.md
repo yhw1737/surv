@@ -283,6 +283,24 @@ to exactly `"production"` or `"combat"`: a mod cannot declare a third pool, only
 two the focus formula already balances against (developer decision, PROJECT_STATE.md §Decided
 without a spec, 2026-09-09). A skill has no `tags` — nothing indexes skills by tag today.
 
+### Buffs
+```json
+{
+  "id": "coolmod:well_fed",
+  "name": "@buff.well_fed",
+  "duration_min": 180,
+  "effects": [
+    { "type": "stamina_regen_mult", "value": 1.25 }
+  ]
+}
+```
+Buffs are the timed-status vocabulary a `grant_buff` reference points at (SYS-BUFF-01, T-019) —
+`CookMethodDef.TagReaction.GrantBuff` is the only granter today, brewing and enchanting join later
+(BACKLOG T-106/T-107). `effects` is heterogeneous by `type`, same shape as an enchant's `effects`.
+`duration_min` is in-game minutes; `0` means the buff lasts until something else clears it, not
+time. **Buffs never carry a combat-stat effect** (`+X attack power`, `+X weapon damage`) — SYS-COOK-01's
+rule, enforced here because it is `BuffDef`'s as much as cooking's.
+
 ## Patch system
 
 **A mod that wholly redefines `isle:mackerel` collides with every other mod that touches it.** Patch instead — an abbreviated RFC 6902.
