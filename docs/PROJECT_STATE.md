@@ -7,9 +7,9 @@
 
 - Last updated: **2026-09-10**
 - Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
-- Task: **T-019 done. Phase 1 core is now 8/10** (only T-015/T-016 remain)
-- Branch: **docs/T-019-buff-spec**
-- Pending commit: **no — committed (ad7f5e2) and pushed, [PR #14](https://github.com/yhw1737/surv/pull/14) open**
+- Task: **T-015 and T-016 done. Phase 1 is complete (10/10)**
+- Branch: **feature/T-015-hot-reload**
+- Pending commit: **no — implemented and verified, not committed. Awaiting developer go-ahead**
 
 ## Progress
 
@@ -17,7 +17,7 @@
 stage 1 · placeholders
 Phase 0  project setup        [x] 3/3   T-000..T-002
 stage 2 · solo beta
-Phase 1  foundation           [~] 8/10  T-010..T-019  ← here (T-015/T-016 remain)
+Phase 1  foundation           [x] 10/10 T-010..T-019  ← done
 Phase 2  netcode skeleton     [ ] 0/2   T-020, T-021 (authority only)
 Phase 3  world                [ ] 0/7
 Phase 4  inventory            [ ] 0/6
@@ -259,15 +259,60 @@ Phase 13 modding + polish     [ ] 0/7
     verbatim, not redefined), and this task filling the remaining gaps — see Decided without a spec.
   - Verified: batchmode import exit 0, 0 compiler errors; EditMode **147/147 passed** (7 new).
 
+- **T-015**: F5 hot reload (SYS-CORE-01 §Hot reload) — the first orchestration code wiring the
+  eleven definition types together at all; nothing before this actually called `DefinitionLoader`
+  → `ReferenceResolver` → `DefRegistry` in sequence for real content, only EditMode tests exercised
+  each piece alone.
+  - Files: `Assets/Scripts/Modding/Defs/DefinitionLoader.cs` (adds `ILoadResult`),
+    `Assets/Scripts/Modding/Defs/DefRegistry.cs` (adds `Reload<T>`, `CopyProperties`,
+    `RebuildTagIndex`), `Assets/Scripts/Modding/Defs/DefinitionBootstrap.cs` (new),
+    `Assets/Scripts/Modding/Editor/{Isle.Modding.Editor.asmdef,DefinitionHotReload.cs}` (new),
+    `Assets/Tests/EditMode/DefRegistryTests.cs` (5 new `Reload` cases),
+    `Assets/Tests/EditMode/DefinitionBootstrapTests.cs` (new, 3 cases).
+  - `DefinitionBootstrap.Load(contentRoot)` names all eleven types explicitly (no reflection loop —
+    matches `ReferenceResolver`'s existing style, and there is no common base beyond `IDefinition`
+    to loop over generically): loads each from its `ARCHITECTURE.md`-listed subfolder, runs
+    `ReferenceResolver.ResolveItemRefs`, `Register`s all eleven, then `Freeze()`s. `Reload(contentRoot)`
+    repeats load + resolve but calls `DefRegistry.Reload<T>` instead.
+  - **The init-only-vs-hot-reload tension**: `IDefinition` properties are compiler-enforced
+    init-only (T-011, `DataProperties_AreInitOnly_NeverSettable`), but the spec's "runtime objects
+    hold `ItemDef` by reference, so reload propagates automatically" needs the *same instance*
+    updated, not replaced. `modreq(IsExternalInit)` is a C# compiler restriction on ordinary
+    assignment syntax at the call site — it does not stop `PropertyInfo.SetValue` from writing an
+    init-only property directly, which is well-established, unremarkable reflection behaviour, and
+    already has a precedent in this codebase (`DefRegistry.TagsOf<T>`'s own reflection property
+    access). `DefRegistry.Reload<T>` copies every public property from the incoming def onto the
+    existing instance for an id that already exists, inserts new ids fresh, removes ids missing
+    from the new load, and rebuilds the tag index from scratch (no incremental-update story exists
+    for it, and `Register`'s own indexing loop is additive-only, so reusing it verbatim on a second
+    call would double-count).
+  - **`Reload<T>` is the one sanctioned exception to "no `Register` after `Freeze()`"** — it does
+    not check `_frozen` at all, by design: the guard exists to stop *other* callers mutating
+    definitions, not to block the hot-reload mechanism itself.
+  - Multi-mod orchestration (scan mods, dependency order, patches — §Load pipeline steps 1–3/6,
+    `ModLoader`/`LoadOrderResolver`/`PatchApplier`) is **T-130**, not touched — `DefinitionBootstrap`
+    takes one content root today, exactly the shape T-130 will eventually call once per mod.
+  - New `Isle.Modding.Editor` asmdef (`includePlatforms: ["Editor"]`, references only
+    `Isle.Modding`) hosts `DefinitionHotReload`'s `[MenuItem("Isle/Reload Definitions _F5")]` — the
+    `_` prefix binds plain `F5`, matching the spec's literal wording.
+  - Verified: batchmode import exit 0, 0 compiler errors; EditMode **155/155 passed** (8 new).
+    Covers editing a file on disk and reloading into the same object reference
+    (`DefinitionBootstrapTests.Reload_ChangedFile_UpdatesSameReference`), new/stale id handling and
+    tag-index rebuild on `Reload`, and that `Reload` (unlike `Register`) works after `Freeze()`.
+  - **T-016 confirmed (2026-09-10)**: developer edited a test item's `name` field under
+    `Assets/StreamingAssets/definitions/items/` and pressed `F5` in a live Editor session; console
+    logged `[Isle] Definitions reloaded from .../definitions.` with no errors and no recompile.
+    **Phase 1 is fully done (10/10).**
+
 ## In progress / unfinished
 
 (none)
 
 ## Next
 
-**T-015 and T-016 stay blocked** — T-015 (F5 hot reload) needs T-018/T-019 landed first (starter
-definitions reference skill and buff IDs), and T-016 (🚩 Def gate) needs T-015 to exist before it
-can be tested against. **Both T-018 and T-019 are now done**, so T-015 is unblocked on that front.
+**Phase 1 is fully done.** T-015 and T-016 both confirmed 2026-09-10 — the developer manually
+verified F5 hot reload in a live Editor session. Next session picks up Phase 2 (T-020 FishNet
+bootstrap) from `BACKLOG.md`.
 
 **RustSystem stays unbuilt** — deferred out of T-018's scope (see Completed, T-018 entry, and
 Decided without a spec). Pick it up only once the efficiency-debuff interpolation curve and the
@@ -282,6 +327,44 @@ blocking anything right now.
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-09-10 — durability check (developer request, before T-015): weapons ✓, food ✓ (different mechanic), equipment ✗ (no schema yet)
+  The developer asked, before starting the next task, whether weapons/equipment/food all have
+  durability specified. Findings, not a code change:
+  - **Weapons: yes, fully specified.** `WeaponDef.Durability` is a non-nullable `int` — every
+    weapon always has one. `SYS-CRAFT-01`'s Quality table gives a per-tier durability multiplier
+    (Crude 0.60× → Master 2.20×) and a repair formula
+    (`newMaxDurability = previousMaxDurability * RepairDecay(0.92)`); `SYS-ART-01`'s Field Repair
+    ability restores 35% of it.
+  - **Food: deliberately does not use durability — not a gap.** `ItemDef.Durability` is nullable,
+    and `SCHEMA.md`'s own food example (`cod_fillet`) sets it to `null`. Food decays through a
+    separate mechanic instead — `ItemDef.Spoilage` (`BaseHours`, `TempFactor`, `Result`), matching
+    `ARCHITECTURE.md`'s `ItemStack` example, which tracks `Freshness` for perishables, not
+    `Durability`. Time/temperature decay into a spoiled result item is a different concept from
+    wear-through-use-and-repair, and the schema already treats them as two fields, not one.
+  - **Equipment/armor: no schema exists yet — a real gap, not answered here.** None of the eleven
+    `IDefinition` types represent armor; `GLOSSARY.md` has only a glossary row (`EquipSlot`) with no
+    backing type. `SYS-ART-01`'s Field Repair text ("restore ... to your own or an ally's
+    equipment") implies armor durability is intended eventually, but there is nothing to specify it
+    on today. Tracked only as **`BACKLOG.md` T-044** (Equipment slots + bag expansion, Phase 4, not
+    started). Per Absolute Rule 3, flagged here rather than inventing an `ArmorDef` mid-T-015.
+
+- ### 2026-09-10 — T-015: hot reload writes onto the existing instance via reflection, not replacement
+  SYS-CORE-01 §Hot reload requires reload to "propagate automatically" through existing references,
+  but `IDefinition` properties are compiler-enforced init-only (T-011). `DefRegistry.Reload<T>`
+  resolves this by copying the incoming def's property values onto the **already-registered
+  instance** with `PropertyInfo.SetValue` rather than swapping the dictionary entry — the init-only
+  restriction is enforced by the C# compiler at ordinary assignment call sites, not by the CLR, so
+  reflection can write it directly (same category of reflection access as the existing
+  `DefRegistry.TagsOf<T>`). This is also why `Reload<T>` is allowed to run after `Freeze()` — the
+  guard's purpose is to block *other* code from mutating definitions, not the hot-reload path
+  itself, which is what keeps the registry live in the first place. Full writeup in Completed,
+  T-015 entry.
+
+  **Also decided, same task:** no orchestration code existed anywhere to run the load pipeline
+  against real content before this — `DefinitionBootstrap` is new and scoped to Isle's own single
+  content root (§Load pipeline steps 4/5/7/9/10 only); multi-mod scanning/ordering/patching (steps
+  1–3/6) stays T-130, deliberately not pulled forward.
 
 - ### ★ 2026-09-07 — skills and buffs become moddable content; every definition gets a name
   **Developer decision**, answering the three questions T-011 raised.
@@ -735,7 +818,8 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #11 | feature/T-014-def-registry | T-014 | [PR #11](https://github.com/yhw1737/surv/pull/11) — **merged to main** |
 | #12 | feature/T-017-placeholder-visuals | T-017 | [PR #12](https://github.com/yhw1737/surv/pull/12) — **merged to main** |
 | #13 | feature/T-018-skill-def | T-018 | [PR #13](https://github.com/yhw1737/surv/pull/13) — **merged to main** |
-| #14 | docs/T-019-buff-spec | T-019 | [PR #14](https://github.com/yhw1737/surv/pull/14) — open |
+| #14 | docs/T-019-buff-spec | T-019 | [PR #14](https://github.com/yhw1737/surv/pull/14) — **merged to main** |
+| — | feature/T-015-hot-reload | T-015 | implemented and verified, not committed |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
@@ -758,7 +842,7 @@ In execution order (re-sequenced 2026-09-06).
 
 | Gate | Phase | Status | Result |
 |---|---|---|---|
-| Def gate T-016 | 1 | ⬜ not reached | next up |
+| Def gate T-016 | 1 | ✅ passed | 2026-09-10, developer confirmed F5 hot reload in a live Editor session |
 | Ext gate T-105 | 7 | ⬜ not reached | |
 | **Solo beta T-152** | 9 | ⬜ not reached | **stage 2 ends here** |
 | Net gate T-024 | 10 | ⬜ not reached | |

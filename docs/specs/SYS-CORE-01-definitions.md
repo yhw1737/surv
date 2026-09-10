@@ -85,7 +85,8 @@ Assets/StreamingAssets/definitions/    base content
 ```
 Scripts/Core/Ids/NamespacedId.cs
 Scripts/Core/Tags/TagRegistry.cs
-Scripts/Core/Defs/{DefinitionLoader,SchemaValidator,ReferenceResolver,DefRegistry,LoadErrorReporter}.cs
+Scripts/Modding/Defs/{DefinitionLoader,SchemaValidator,ReferenceResolver,DefRegistry,DefinitionBootstrap}.cs
+Scripts/Modding/Editor/DefinitionHotReload.cs   -- F5 menu item, editor-only asmdef
 Scripts/Modding/{ModManifest,ModLoader,LoadOrderResolver,PatchApplier}.cs
 ```
 

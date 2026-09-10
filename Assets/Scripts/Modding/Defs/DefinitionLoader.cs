@@ -37,12 +37,19 @@ namespace Isle.Modding.Defs
         }
     }
 
+    /// <summary>Non-generic view of a <see cref="LoadResult{T}"/> — lets T-015's bootstrap collect
+    /// errors across the eleven definition types without reflection.</summary>
+    public interface ILoadResult
+    {
+        IReadOnlyList<LoadError> Errors { get; }
+    }
+
     /// <summary>
     /// Everything <see cref="DefinitionLoader.LoadAll{T}"/> found in one directory. A file with an
     /// error contributes no definition; a file with only warnings still does — §Load pipeline step 5
     /// wants every failure reported, not the first, so loading never stops partway through the batch.
     /// </summary>
-    public sealed class LoadResult<T>
+    public sealed class LoadResult<T> : ILoadResult
     {
         public List<T> Definitions { get; } = new();
 
@@ -52,6 +59,8 @@ namespace Isle.Modding.Defs
 
         public List<LoadError> Errors { get; } = new();
         public List<LoadError> Warnings { get; } = new();
+
+        IReadOnlyList<LoadError> ILoadResult.Errors => Errors;
     }
 
     /// <summary>

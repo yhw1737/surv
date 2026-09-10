@@ -1,0 +1,18 @@
+{
+    "name": "Isle.Modding.Editor",
+    "rootNamespace": "Isle.Modding.Editor",
+    "references": [
+        "Isle.Modding"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

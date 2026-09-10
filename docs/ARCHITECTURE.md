@@ -37,7 +37,9 @@ Assets/Scripts/
   Core/       Ids/ Tags/ Defs/ Events/ Util/
   Data/       ItemDef CreatureDef FishDef CookMethodDef CraftRecipeDef
               WeaponDef ArtifactDef EnchantDef CropDef SkillDef BuffDef
-  Modding/    ModManifest ModLoader PatchApplier LoadOrderResolver Hooks/
+  Modding/    Defs/ (DefinitionLoader, SchemaValidator, ReferenceResolver, DefRegistry,
+              DefinitionBootstrap) Editor/ (DefinitionHotReload)
+              ModManifest ModLoader PatchApplier LoadOrderResolver Hooks/
   Networking/ IsleNetworkManager Authority/ Sync/
   World/      Chunks/ Time/ Spawning/ Spoilage/ Generation/
   Gameplay/   Character/ Skills/ Inventory/ Gathering/ Hunting/
