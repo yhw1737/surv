@@ -104,5 +104,71 @@ namespace Isle.Tests.EditMode
 
             Assert.Throws<System.InvalidOperationException>(() => DefRegistry.Register(new LoadResult<ItemDef>()));
         }
+
+        // --- Reload (T-015) ---------------------------------------------------------------------
+
+        [Test]
+        public void Reload_ExistingId_UpdatesInPlace_SameReference()
+        {
+            var first = new LoadResult<ItemDef>();
+            first.Definitions.Add(Item("isle:raw_meat"));
+            DefRegistry.Register(first);
+            var before = DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:raw_meat"));
+
+            var second = new LoadResult<ItemDef>();
+            second.Definitions.Add(new ItemDef { Id = NamespacedId.Parse("isle:raw_meat"), Name = "@item.changed" });
+            DefRegistry.Reload(second);
+            var after = DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:raw_meat"));
+
+            Assert.AreSame(before, after);
+            Assert.AreEqual("@item.changed", after.Name);
+        }
+
+        [Test]
+        public void Reload_NewId_IsInserted()
+        {
+            DefRegistry.Register(new LoadResult<ItemDef>());
+
+            var result = new LoadResult<ItemDef>();
+            result.Definitions.Add(Item("isle:new_item"));
+            DefRegistry.Reload(result);
+
+            Assert.AreEqual("isle:new_item", DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:new_item")).Id.Value);
+        }
+
+        [Test]
+        public void Reload_MissingId_IsRemoved()
+        {
+            var first = new LoadResult<ItemDef>();
+            first.Definitions.Add(Item("isle:raw_meat"));
+            DefRegistry.Register(first);
+
+            DefRegistry.Reload(new LoadResult<ItemDef>());
+
+            Assert.IsFalse(DefRegistry.TryGet<ItemDef>(NamespacedId.Parse("isle:raw_meat"), out _));
+        }
+
+        [Test]
+        public void Reload_RebuildsTagIndex()
+        {
+            var first = new LoadResult<ItemDef>();
+            first.Definitions.Add(Item("isle:raw_meat", "meat"));
+            DefRegistry.Register(first);
+
+            var second = new LoadResult<ItemDef>();
+            second.Definitions.Add(Item("isle:raw_meat", "fish"));
+            DefRegistry.Reload(second);
+
+            Assert.IsEmpty(DefRegistry.AllWithTag<ItemDef>("meat"));
+            Assert.AreEqual(1, DefRegistry.AllWithTag<ItemDef>("fish").Count);
+        }
+
+        [Test]
+        public void Reload_AfterFreeze_DoesNotThrow()
+        {
+            DefRegistry.Freeze();
+
+            Assert.DoesNotThrow(() => DefRegistry.Reload(new LoadResult<ItemDef>()));
+        }
     }
 }

@@ -59,6 +59,63 @@ namespace Isle.Modding.Defs
             }
         }
 
+        /// <summary>
+        /// SYS-CORE-01 §Hot reload: re-parses one type's definitions and applies them in place.
+        /// The one sanctioned exception to "read-only after <see cref="Freeze"/>" — this <b>is</b>
+        /// the mechanism that keeps the registry current, not a caller mutating it.
+        /// <para>
+        /// A def already held by reference (e.g. an <c>ItemStack.Def</c>) must see the update
+        /// without re-fetching, so existing ids are updated by copying the incoming values onto
+        /// the <b>existing instance</b> rather than replacing it — <see cref="IDefinition"/>
+        /// properties are init-only (T-011), but that's a compiler restriction on ordinary
+        /// assignment, not on reflection. New ids are inserted; ids missing from this reload are
+        /// removed. The tag index has no incremental-update story, so it's rebuilt from scratch.
+        /// </para>
+        /// </summary>
+        public static void Reload<T>(LoadResult<T> result) where T : class, IDefinition
+        {
+            var byId = ByIdFor<T>();
+
+            var incomingIds = new HashSet<NamespacedId>();
+            foreach (var def in result.Definitions)
+            {
+                incomingIds.Add(def.Id);
+                if (byId.TryGetValue(def.Id, out var existing))
+                    CopyProperties(def, existing);
+                else
+                    byId[def.Id] = def;
+            }
+
+            foreach (var staleId in byId.Keys.Where(id => !incomingIds.Contains(id)).ToList())
+                byId.Remove(staleId);
+
+            RebuildTagIndex(byId.Values);
+        }
+
+        static void CopyProperties<T>(T source, T target) where T : class, IDefinition
+        {
+            foreach (var prop in typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                if (prop.CanRead && prop.CanWrite)
+                    prop.SetValue(target, prop.GetValue(source));
+        }
+
+        static void RebuildTagIndex<T>(IEnumerable<T> defs) where T : class, IDefinition
+        {
+            var byTag = ByTagFor<T>();
+            byTag.Clear();
+            foreach (var def in defs)
+            {
+                var literalTags = TagsOf(def);
+                if (literalTags == null) continue;
+                foreach (var tagId in _tags.Flatten(literalTags))
+                {
+                    if (!byTag.TryGetValue(tagId, out var list))
+                        byTag[tagId] = list = new List<T>();
+                    list.Add(def);
+                }
+            }
+        }
+
         public static void Freeze() => _frozen = true;
 
         /// <summary>Test isolation only — production code never calls this after startup.</summary>

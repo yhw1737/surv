@@ -42,8 +42,8 @@ so neither can start before the loader exists.
 - [x] **T-012** `DefinitionLoader` + `SchemaValidator`
 - [x] **T-013** ★ `ReferenceResolver` + typo-suggesting error messages
 - [x] **T-014** `DefRegistry` + tag index
-- [ ] **T-015** F5 hot reload
-- [ ] **T-016** 🚩 **Def gate:** editing `items/*.json` reflects without recompiling. **Do not proceed until this works**
+- [x] **T-015** F5 hot reload
+- [x] **T-016** 🚩 **Def gate:** editing `items/*.json` reflects without recompiling. **Do not proceed until this works**
 - [x] **T-017** ★ Placeholder visual generator — vector shapes (box / circle / solid colour, ART_PIPELINE §Placeholders). A definition with no art falls back automatically, so **no later phase ever waits on a sprite**
 - [x] **T-018** ★ SYS-SKILL-01 rewrite + `SkillDef` — skills become data-driven and **modder-addable**, so the focus formula holds for any skill count. **Blocks T-015, T-060, T-061**
 - [x] **T-019** SYS-BUFF-01 spec sheet + `BuffDef` — the beta buff set plus an effect vocabulary modders can extend. **Blocks T-015, T-103**
@@ -67,6 +67,21 @@ so neither can start before the loader exists.
 > effect to a real gauge or formula waits for `SYS-SURV-01`/`SYS-COMBAT-01` to exist (Phase 5/8).
 > Both T-018 and T-019 are done, so **T-015 is unblocked** on the "starter defs need skill/buff
 > IDs" front.
+>
+> **T-015 is done (2026-09-10)** — `DefinitionBootstrap.Load`/`Reload` wire all 11 types through
+> `DefinitionLoader` → `ReferenceResolver` → `DefRegistry`; `DefRegistry.Reload<T>` updates existing
+> ids **in place** via reflection (init-only setters are a compiler-only restriction, not a
+> reflection one) so anything holding a def by reference sees the change; a new `Isle.Modding.Editor`
+> asmdef adds the `F5` menu item. No orchestration code existed anywhere before this — T-130's
+> multi-mod scan/order/patch steps are still not built, deliberately (out of scope; `Load`/`Reload`
+> take a single content root today, exactly what T-130 will call per mod later). **T-016 stays
+> unchecked**: 3 new EditMode tests prove the edit→reload→same-reference mechanism works, but the
+> gate is a manual "confirm it in a live Editor session" check the developer should do once — press
+> `F5` after hand-editing a file under `Assets/StreamingAssets/definitions/items/`.
+>
+> **T-016 confirmed (2026-09-10)** — developer edited a test item's `name` field and pressed `F5`
+> in a live Editor session; console logged `[Isle] Definitions reloaded from .../definitions.`
+> with no errors and no recompile step. Def gate passes; **Phase 1 is fully done (10/10)**.
 
 ## Phase 2 · Netcode skeleton — solo runs as a one-player host
 
