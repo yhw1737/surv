@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.firstgeargames.fishnet": "https://github.com/FirstGearGames/FishNet.git?path=/Assets/FishNet#4.7.2",
     "com.unity.2d.animation": "10.1.4",
     "com.unity.2d.psdimporter": "10.0.0",
     "com.unity.2d.sprite": "1.0.0",
