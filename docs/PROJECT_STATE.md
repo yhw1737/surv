@@ -891,7 +891,7 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #13 | feature/T-018-skill-def | T-018 | [PR #13](https://github.com/yhw1737/surv/pull/13) — **merged to main** |
 | #14 | docs/T-019-buff-spec | T-019 | [PR #14](https://github.com/yhw1737/surv/pull/14) — **merged to main** |
 | — | feature/T-015-hot-reload | T-015 | implemented and verified, not committed |
-| #15 | feature/T-020-fishnet-bootstrap | T-020 | confirmed 2026-09-10, PR requested |
+| #16 | feature/T-020-fishnet-bootstrap | T-020 | [PR #16](https://github.com/yhw1737/surv/pull/16) — awaiting merge |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
