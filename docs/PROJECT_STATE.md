@@ -5,11 +5,11 @@
 
 ## Header
 
-- Last updated: **2026-09-09**
+- Last updated: **2026-09-10**
 - Phase: **Phase 1 — foundation (definitions)** ← re-sequenced 2026-09-06, see below
-- Task: **T-018 done. Next is T-019** (SYS-BUFF-01 spec sheet + `BuffDef`)
-- Branch: **feature/T-018-skill-def**
-- Pending commit: **no — committed (607fd63) and pushed, [PR #13](https://github.com/yhw1737/surv/pull/13) open**
+- Task: **T-019 done. Phase 1 core is now 8/10** (only T-015/T-016 remain)
+- Branch: **docs/T-019-buff-spec**
+- Pending commit: **yes — not committed, developer has not requested it yet**
 
 ## Progress
 
@@ -17,7 +17,7 @@
 stage 1 · placeholders
 Phase 0  project setup        [x] 3/3   T-000..T-002
 stage 2 · solo beta
-Phase 1  foundation           [~] 7/10  T-010..T-019  ← here
+Phase 1  foundation           [~] 8/10  T-010..T-019  ← here (T-015/T-016 remain)
 Phase 2  netcode skeleton     [ ] 0/2   T-020, T-021 (authority only)
 Phase 3  world                [ ] 0/7
 Phase 4  inventory            [ ] 0/6
@@ -240,6 +240,25 @@ Phase 13 modding + polish     [ ] 0/7
     now would mean inventing the missing number (Absolute Rule 3).
   - Verified: batchmode import exit 0, 0 compiler errors; EditMode **140/140 passed** (30 new).
 
+- **T-019**: `BuffDef` + SYS-BUFF-01 spec sheet — buffs become a modder-extensible vocabulary
+  instead of a bare `NamespacedId` with nowhere to look up what it does.
+  - Files: `docs/specs/SYS-BUFF-01-buffs.md` (new), `docs/specs/README.md` (index row),
+    `Assets/Scripts/Data/BuffDef.cs` (`BuffDef`, `BuffEffect`), `Assets/Scripts/Gameplay/Buffs/BuffSet.cs`,
+    `Assets/Tests/EditMode/BuffSetTests.cs`, `DataDefinitionTests.cs` (schema type roster, 10→11)
+    and `docs/modding/SCHEMA.md` (new §Buffs) updated to match.
+  - `BuffEffect` copies `EnchantEffect`'s shape exactly (`Type` string + nullable `Value`) — same
+    reasoning as T-012's original choice, restated in the spec rather than re-litigated.
+  - `BuffSet` only tracks which `BuffDef.Id`s are active and until when (`Dictionary<NamespacedId,
+    long>` of expiry in in-game minutes) — it does not apply any effect to a real gauge or formula,
+    because `SYS-SURV-01` (Vitals) and `SYS-COMBAT-01` have no code yet (Phase 5/8). Those systems
+    will read `BuffSet.ActiveBuffIds` and look up each `BuffDef`'s effects once they exist.
+  - Re-granting an already-active buff **refreshes** its expiry (developer's call) rather than
+    stacking or extending — `BuffSet.Grant` always overwrites.
+  - The beta buff set's numbers came from three places: `SYS-COOK-01`'s existing tag-reaction table
+    (five buffs' effect *types*), `SYS-SURV-01`'s existing disease numbers (`food_poisoning`, reused
+    verbatim, not redefined), and this task filling the remaining gaps — see Decided without a spec.
+  - Verified: batchmode import exit 0, 0 compiler errors; EditMode **147/147 passed** (7 new).
+
 ## In progress / unfinished
 
 (none)
@@ -248,16 +267,17 @@ Phase 13 modding + polish     [ ] 0/7
 
 **T-015 and T-016 stay blocked** — T-015 (F5 hot reload) needs T-018/T-019 landed first (starter
 definitions reference skill and buff IDs), and T-016 (🚩 Def gate) needs T-015 to exist before it
-can be tested against.
-
-**T-019 (SYS-BUFF-01 spec sheet + `BuffDef`) is next.** It follows the same "ask, don't invent"
-pattern for the beta buff set, and has no spec sheet at all yet — CLAUDE.md's workflow says offer
-to write the spec first rather than code from nothing.
+can be tested against. **Both T-018 and T-019 are now done**, so T-015 is unblocked on that front.
 
 **RustSystem stays unbuilt** — deferred out of T-018's scope (see Completed, T-018 entry, and
 Decided without a spec). Pick it up only once the efficiency-debuff interpolation curve and the
 per-action XP table (`docs/content/xp_table.md`) have real numbers; nothing currently calls
 `GameConfig.EnableSkillRust` so nothing is blocked on it.
+
+**A new backlog item, T-028** (SYS-DIFF-01 spec + world difficulty setting), was added
+2026-09-10 at the developer's request — see `BACKLOG.md` Phase 2. No spec sheet yet; it touches
+`SYS-SURV-01` (T-050) and `SYS-COMBAT-01` (T-110), neither of which exist in code yet, so it isn't
+blocking anything right now.
 
 ## Decided without a spec
 
@@ -298,7 +318,8 @@ per-action XP table (`docs/content/xp_table.md`) have real numbers; nothing curr
     beta roster.
 
   **All of questions 1–3 are now done as of T-018/T-019** — T-018 landed 2026-09-09
-  (`SkillDef`, `FocusCalculator`, `XpCurve`, `ActivityTracker`, `SkillSet`); T-019 (buffs) is next.
+  (`SkillDef`, `FocusCalculator`, `XpCurve`, `ActivityTracker`, `SkillSet`); T-019 (`BuffDef`,
+  `BuffSet`, `SYS-BUFF-01`) landed 2026-09-10.
 
   **Two follow-up design clarifications (2026-09-07), written directly into the specs rather than
   tracked here as debt:**
@@ -310,6 +331,22 @@ per-action XP table (`docs/content/xp_table.md`) have real numbers; nothing curr
     beta loop (gather → hunt → fish → cook → craft → fight → sleep, `T-152`) must stay completable
     on unenchanted Common gear without Magic. Recorded in `GDD.md` §Scope, §Skills, and
     `SYS-CRAFT-01` §Enchanting.
+
+- ### 2026-09-10 — T-019's five open questions, answered
+  `SYS-BUFF-01`'s draft (see its own Open questions when it was first written) had five gaps.
+  Three were the developer's explicit call, two were delegated ("네가 알아서 정해" — you decide):
+
+  | Question | Answer | Who decided |
+  |---|---|---|
+  | Duration for `steady_hand`/`endurance`/`hydrated`/`iron_gut`/`cold_resist` | 180 min (3 h), reusing `warm`'s already-fixed number rather than inventing five separate ones | delegated |
+  | `cold_resist`'s mechanic | shifts both hypothermia bands (`SYS-SURV-01`, 33/28) down 5°: warning at 28, HP-drain at 23 | delegated |
+  | `warm`'s hookup into the Temperature formula | multiplies `TempApproachRate` (2.0/min) by 0.5 wholesale, both directions | developer |
+  | `iron_gut`'s "+40% disease resistance" | ×0.60 multiplier on `SYS-SURV-01`'s water-source disease chance | developer, confirming the spec draft's own reading |
+  | Re-granting an already-active buff | refreshes duration; never stacks or extends | developer |
+
+  The two delegated numbers (the reused 3 h duration, the −5° `cold_resist` shift) are flagged in
+  `SYS-BUFF-01` itself as still-unbalanced placeholders — nothing plays them yet since
+  `SYS-SURV-01`/`SYS-COMBAT-01` have no code, so there's nothing to feel wrong until those exist.
 
 - **T-012: `DefinitionLoader`/`SchemaValidator` live in `Isle.Modding`, not `Isle.Core` as
   SYS-CORE-01 §Location says.** That note predates the `Isle.Data` split — a generic loader has to
@@ -416,9 +453,9 @@ per-action XP table (`docs/content/xp_table.md`) have real numbers; nothing curr
 - **T-011: the type roster follows `SCHEMA.md`, not `ARCHITECTURE.md`, and the two disagreed.**
   ARCHITECTURE §Folders listed ten Data types; SCHEMA documents nine, and the sets do not match.
   `CropDef` is in SCHEMA but was missing from ARCHITECTURE's list — **added**. `SkillDef` and
-  `BuffDef` were in ARCHITECTURE's list but have no schema anywhere — **`SkillDef` written 2026-09-09
-  (T-018); `BuffDef` still not written**, see Blocked §2. ARCHITECTURE §Folders now names the ten
-  that exist.
+  `BuffDef` were in ARCHITECTURE's list but have no schema anywhere — **`SkillDef` written
+  2026-09-09 (T-018), `BuffDef` written 2026-09-10 (T-019)**. ARCHITECTURE §Folders now names the
+  eleven that exist.
 
 - **T-011: a def stores its tag strings, not a flattened `HashSet<int>`.** This answers the
   question T-010 left open. `Tags` is `string[]`, exactly as the JSON writes it; the flattened set
@@ -697,7 +734,8 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #10 | feature/T-013-reference-resolver | T-013 | [PR #10](https://github.com/yhw1737/surv/pull/10) — **merged to main** |
 | #11 | feature/T-014-def-registry | T-014 | [PR #11](https://github.com/yhw1737/surv/pull/11) — **merged to main** |
 | #12 | feature/T-017-placeholder-visuals | T-017 | [PR #12](https://github.com/yhw1737/surv/pull/12) — **merged to main** |
-| #13 | feature/T-018-skill-def | T-018 | [PR #13](https://github.com/yhw1737/surv/pull/13) — open |
+| #13 | feature/T-018-skill-def | T-018 | [PR #13](https://github.com/yhw1737/surv/pull/13) — **merged to main** |
+| — | docs/T-019-buff-spec | T-019 | not yet committed |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came

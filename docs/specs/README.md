@@ -11,9 +11,10 @@
 | [SYS-WORLD-01](SYS-WORLD-01-chunks-time.md) | chunks, time, deferred sim | CORE |
 | [SYS-INV-01](SYS-INV-01-grid-inventory.md) | grid inventory, weight | CORE, NET |
 | [SYS-SKILL-01](SYS-SKILL-01-skills-focus.md) | skills, focus, rust | CORE |
+| [SYS-BUFF-01](SYS-BUFF-01-buffs.md) | buffs (draft — schema only) | CORE |
 | [SYS-HUNT-01](SYS-HUNT-01-butchery.md) | hunting, butchery, carrying | SKILL, INV |
 | [SYS-FISH-01](SYS-FISH-01-fishing.md) | fishing | SKILL, WORLD |
-| [SYS-COOK-01](SYS-COOK-01-cooking.md) | cooking, tag combination, buffs | SKILL, CORE |
+| [SYS-COOK-01](SYS-COOK-01-cooking.md) | cooking, tag combination, buffs | SKILL, CORE, BUFF |
 | [SYS-CRAFT-01](SYS-CRAFT-01-crafting.md) | crafting, quality, enchanting | SKILL, INV |
 | [SYS-COMBAT-01](SYS-COMBAT-01-combat.md) | combat, weapons, hit detection | SKILL, NET |
 | [SYS-ART-01](SYS-ART-01-artifacts.md) | artifacts (3) | COMBAT, SKILL |

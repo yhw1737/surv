@@ -46,7 +46,7 @@ so neither can start before the loader exists.
 - [ ] **T-016** 🚩 **Def gate:** editing `items/*.json` reflects without recompiling. **Do not proceed until this works**
 - [x] **T-017** ★ Placeholder visual generator — vector shapes (box / circle / solid colour, ART_PIPELINE §Placeholders). A definition with no art falls back automatically, so **no later phase ever waits on a sprite**
 - [x] **T-018** ★ SYS-SKILL-01 rewrite + `SkillDef` — skills become data-driven and **modder-addable**, so the focus formula holds for any skill count. **Blocks T-015, T-060, T-061**
-- [ ] **T-019** SYS-BUFF-01 spec sheet + `BuffDef` — the beta buff set plus an effect vocabulary modders can extend. **Blocks T-015, T-103**
+- [x] **T-019** SYS-BUFF-01 spec sheet + `BuffDef` — the beta buff set plus an effect vocabulary modders can extend. **Blocks T-015, T-103**
 
 > **T-018 and T-019 exist because T-011 found the schema had no shape for skills or buffs.**
 > Both were listed as Data types in ARCHITECTURE with nothing describing their fields.
@@ -62,7 +62,11 @@ so neither can start before the loader exists.
 > (disabled by default, no caller, open interpolation curve) — see `PROJECT_STATE.md` §Decided
 > without a spec.
 >
-> **T-019 is next** and still has no spec sheet.
+> **T-019 is done (2026-09-10)** — `BuffDef`/`BuffEffect`/`BuffSet` exist; the seven beta buffs'
+> numbers are all fixed in `SYS-BUFF-01`. `BuffSet` only tracks activity and expiry — applying an
+> effect to a real gauge or formula waits for `SYS-SURV-01`/`SYS-COMBAT-01` to exist (Phase 5/8).
+> Both T-018 and T-019 are done, so **T-015 is unblocked** on the "starter defs need skill/buff
+> IDs" front.
 
 ## Phase 2 · Netcode skeleton — solo runs as a one-player host
 
@@ -71,6 +75,13 @@ stood up now so the solo beta is already a listen-server session with one client
 
 - [ ] **T-020** FishNet bootstrap, listen server connection
 - [ ] **T-021** Server-authoritative movement + client prediction
+- [ ] **T-028** SYS-DIFF-01 spec sheet + world difficulty setting — host picks it when creating a
+      room: Peaceful / Easy / Normal / Hard. Normal = 100%, Easy = 50%, Hard = 200% on hunger/thirst
+      drain rate and enemy attack power; enemy HP is unaffected at every tier; bosses may get faster
+      patterns on top of that at higher tiers (developer decision, 2026-09-10). Peaceful matches
+      Minecraft's peaceful mode. No spec sheet yet — write it before coding (workflow: spec before
+      code). Touches `SYS-SURV-01` (T-050) and `SYS-COMBAT-01` (T-110), neither built yet, so this
+      isn't blocking anything today.
 
 ## Phase 3 · World
 

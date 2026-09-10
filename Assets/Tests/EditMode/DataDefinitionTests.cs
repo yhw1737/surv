@@ -16,12 +16,12 @@ namespace Isle.Tests.EditMode
     {
         static readonly Assembly Data = typeof(ItemDef).Assembly;
 
-        /// <summary>The ten types documented in <c>docs/modding/SCHEMA.md</c> §Definition types.</summary>
+        /// <summary>The eleven types documented in <c>docs/modding/SCHEMA.md</c> §Definition types.</summary>
         static readonly string[] SchemaTypes =
         {
             nameof(ItemDef), nameof(CreatureDef), nameof(FishDef), nameof(CookMethodDef),
             nameof(CraftRecipeDef), nameof(WeaponDef), nameof(ArtifactDef), nameof(EnchantDef),
-            nameof(CropDef), nameof(SkillDef)
+            nameof(CropDef), nameof(SkillDef), nameof(BuffDef)
         };
 
         static Type[] Definitions() =>
