@@ -57,11 +57,31 @@ Anything in the second category is **regenerated from spawn rules on chunk load*
 Check this constraint **before** designing any new time-dependent system.
 
 ## Island generation
-Procedural plus hand-placed landmarks, seeded and deterministic (same seed → same island). Three biomes: coast, forest, marsh. Landmarks: 1 shipwreck, 2 ruins, 3 freshwater springs, positions from a definition file.
+Procedural plus hand-placed landmarks, seeded and deterministic (same seed → same island). Three biomes: coast, forest, marsh. Landmarks: 1 shipwreck, 2 ruins, 3 freshwater springs — fixed counts, but which def each kind actually places comes from a definition file (`Assets/StreamingAssets/definitions/world/landmarks.json`), not a literal ID in code. Positions are procedural, not hand-placed — see §Shape (random island every game rules out a fixed layout).
 
 **Fully random worlds aren't memorable.** Landmarks are what drive settlement choice and mental mapping.
 
 Island size ~384 × 384 tiles (12×12 chunks), roughly 3 minutes to cross on foot.
+
+**Shape**: a different random shape every game start — no fixed layout, but never a fully random
+blob either. Main axis is a rough ellipse so the silhouette always reads as an island. Edges are
+always coast. Moving inward from the coast, the interior is a patchwork of marsh and forest in
+clumps (not concentric rings, not a clean split) with scattered ponds and rivers cut into it.
+
+**Landmark placement**: `LandmarkPlacer` generates positions (Absolute rule 1 — no hardcoded
+coordinates), targeting a minimum of 2 minutes of walking distance between every pair of
+landmarks. Using this section's own crossing pace (384 tiles ≈ 3 minutes → ~128 tiles/minute),
+that's a **256-tile target**. (`PlayerMovement.BaseSpeed`, T-021's movement-tuning constant, gives
+a different — much faster — pace; it isn't used here because 2 minutes at that pace exceeds the
+island's own diagonal, making 6 landmarks impossible to place at all. See `PROJECT_STATE.md`
+§Decided without a spec, T-036.)
+
+256 tiles for every one of 6 landmarks' pairs turns out not to be reachable either — the best 6
+mutually-spread points can do on a disk this size is close to its own radius (~155–180 tiles,
+depending on the seed), well short of 256. `LandmarkPlacer` maximizes the achieved minimum
+separation instead of enforcing the literal number (greedy farthest-point placement — each
+landmark goes wherever is farthest from every landmark already placed). See `PROJECT_STATE.md`
+§Decided without a spec, T-036 for the actual numbers this produces.
 
 ## Verification
 
@@ -79,11 +99,16 @@ Scripts/World/
   Chunks/{Chunk,ChunkManager,ChunkSerializer}.cs
   Chunks/DeferredSimulation.cs   ★ static pure — EditMode target
   Time/WorldClock.cs
-  Generation/IslandGenerator.cs
+  Generation/{IslandGenerator,LandmarkDefs,LandmarkPlacer}.cs
   Spawning/
 ```
 
 ## Open questions
-- Chunk serialization format
-- Landmark placement algorithm (minimum separation)
+- ~~Chunk serialization format~~ — resolved: JSON TEXT column, not a binary BLOB (save-file
+  inspectability for mod debugging outweighs the space/parse cost at this scale). See
+  `ChunkSerializer`.
+- ~~Landmark placement algorithm (minimum separation)~~ — resolved: ≥2 minutes walking, 256 tiles
+  (see §Island generation above). The rest of the placement algorithm (how positions inside that
+  constraint are actually chosen) is `IslandGenerator`/landmark-placement's own implementation
+  detail, not a spec value.
 - Concrete night vision radius
