@@ -7,9 +7,9 @@
 
 - Last updated: **2026-09-15**
 - Phase: **Phase 2 — netcode skeleton, done (2/2)**
-- Task: **T-020 done and confirmed (PR #16, still awaiting merge — blocked on a GitHub-side outage, not the PR). T-021 (server-authoritative movement) done and confirmed**
-- Branch: **feature/T-021-server-movement** (stacked on `feature/T-020-fishnet-bootstrap`, since T-021 needs T-020's `IsleNetworkManager` — rebase onto `main` once PR #16 merges)
-- Pending commit: **yes — T-021 verified and confirmed, nothing committed yet, waiting on an explicit commit/PR request**
+- Task: **T-020 done and confirmed (PR #16, still awaiting merge — blocked on a GitHub-side outage, not the PR). T-021 (server-authoritative movement) done, confirmed, and committed (PR #17)**
+- Branch: **feature/T-021-server-movement** — pushed, PR #17 open against `feature/T-020-fishnet-bootstrap` (not `main` — T-020 isn't merged yet). Merge order: PR #16 first, then PR #17
+- Pending commit: **no — T-021 committed and pushed (79facd4), PR #17 open**
 
 ## Progress
 
@@ -374,9 +374,9 @@ Nothing right now — T-021 is the last item in Phase 2, and Phase 2 is done.
 
 ## Next
 
-Rebase `feature/T-021-server-movement` onto `main` once PR #16 merges (see Header — merge is only
-blocked by a GitHub platform outage, not the PR itself), then open T-021's own PR. Both are
-uncommitted/unopened until the developer explicitly asks. After that: Phase 3 (world) is next up.
+PR #16 and PR #17 both open, in merge order (#16 then #17 — #17 targets #16's branch since T-021
+needs T-020's `IsleNetworkManager`). Once both land on `main`, Phase 3 (world) is next up, starting
+with T-030 (`WorldClock`).
 
 **Phase 1 is fully done.** T-015 and T-016 both confirmed 2026-09-10 — the developer manually
 verified F5 hot reload in a live Editor session.
