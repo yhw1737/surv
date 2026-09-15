@@ -89,7 +89,7 @@ Not "multiplayer work". This is the authority architecture that Absolute Rule 2 
 stood up now so the solo beta is already a listen-server session with one client attached.
 
 - [x] **T-020** FishNet bootstrap, listen server connection
-- [ ] **T-021** Server-authoritative movement + client prediction
+- [x] **T-021** Server-authoritative movement + client prediction
 
 > **T-020 confirmed (2026-09-10)** — FishNet 4.7.2 (Tugboat transport) installed;
 > `IsleNetworkManager` starts a listen server (host server + local client) and is wired into
@@ -101,6 +101,14 @@ stood up now so the solo beta is already a listen-server session with one client
 > confirmed in a live Editor session instead: Console showed `Local server is started for
 > Tugboat.`, `Remote connection started for Id 0.`, `Local client is started for Tugboat.`, no
 > errors.
+
+> **T-021 confirmed (2026-09-15)** — `PlayerMovement` (FishNet Prediction v2,
+> `TickNetworkBehaviour` + `[Replicate]`/`[Reconcile]`) added to the existing `player_rig_placeholder`
+> prefab alongside a new `NetworkObject`; FishNet's built-in `PlayerSpawner` spawns it per connecting
+> client. Flat `BaseSpeed = 4.2` (SYS-CHAR-01 §Movement) only — no weight/terrain/stance multiplier,
+> no collider; see `PROJECT_STATE.md` §Decided without a spec for why. Batchmode compile clean,
+> EditMode **155/155**, no new tests added. Developer confirmed in a live Editor session: WASD
+> moves the rig smoothly, no console errors. **Phase 2 is fully done (2/2).**
 
 - [ ] **T-028** SYS-DIFF-01 spec sheet + world difficulty setting — host picks it when creating a
       room: Peaceful / Easy / Normal / Hard. Normal = 100%, Easy = 50%, Hard = 200% on hunger/thirst
