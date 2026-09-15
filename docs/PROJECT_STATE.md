@@ -5,11 +5,11 @@
 
 ## Header
 
-- Last updated: **2026-09-10**
-- Phase: **Phase 2 — netcode skeleton**
-- Task: **T-020 done and confirmed. T-021 (server-authoritative movement) is next**
-- Branch: **feature/T-020-fishnet-bootstrap**
-- Pending commit: **yes — developer requested commit + PR**
+- Last updated: **2026-09-15**
+- Phase: **Phase 2 — netcode skeleton, done (2/2)**
+- Task: **T-020 done and confirmed (PR #16, still awaiting merge — blocked on a GitHub-side outage, not the PR). T-021 (server-authoritative movement) done, confirmed, and committed (PR #17)**
+- Branch: **feature/T-021-server-movement** — pushed, PR #17 open against `feature/T-020-fishnet-bootstrap` (not `main` — T-020 isn't merged yet). Merge order: PR #16 first, then PR #17
+- Pending commit: **no — T-021 committed and pushed (79facd4), PR #17 open**
 
 ## Progress
 
@@ -18,7 +18,7 @@ stage 1 · placeholders
 Phase 0  project setup        [x] 3/3   T-000..T-002
 stage 2 · solo beta
 Phase 1  foundation           [x] 10/10 T-010..T-019  ← done
-Phase 2  netcode skeleton     [~] 1/2   T-020 done, confirmed 2026-09-10; T-021 next
+Phase 2  netcode skeleton     [x] 2/2   T-020..T-021 ← done, T-020 confirmed 2026-09-10 (PR #16 open), T-021 confirmed 2026-09-15
 Phase 3  world                [ ] 0/7
 Phase 4  inventory            [ ] 0/6
 Phase 5  survival + skills    [ ] 0/8
@@ -344,14 +344,39 @@ Phase 13 modding + polish     [ ] 0/7
     client connecting to the local server), then `Local client is started for Tugboat.` — no
     errors. Listen server bootstrap works end to end.
 
+- **T-021**: server-authoritative movement + client prediction (SYS-NET-01 §Authority — Position
+  row, "server-validated" + prediction, 20 Hz). Branch `feature/T-021-server-movement` (stacked on
+  `feature/T-020-fishnet-bootstrap`, which is still PR #16, unmerged).
+  - `Assets/Scripts/Networking/PlayerMovement.cs` (new) — `TickNetworkBehaviour` with
+    `[Replicate]`/`[Reconcile]`, FishNet's own Prediction v2 template (mirrors the package's
+    `CharacterControllerPrediction` demo). Moves `transform.position` directly at
+    `BaseSpeed = 4.2` (SYS-CHAR-01 §Movement; GLOSSARY §Units: 1 Unity unit = 1 tile), diagonal
+    input normalized. Reads WASD via the new Input System (`Keyboard.current`) — the project has
+    `activeInputHandler: 1` (Input System Package only), so `UnityEngine.Input` throws at runtime.
+  - `Assets/Scripts/Networking/Isle.Networking.asmdef` — added `Unity.InputSystem` reference.
+  - `Assets/Prefabs/Characters/player_rig_placeholder.prefab` — added `NetworkObject` and
+    `PlayerMovement` components to the existing T-001 rig prefab (no rig-internal changes).
+  - `Assets/DefaultPrefabObjects.asset` — auto-updated by FishNet's own `AssetPostprocessor`
+    (`Generator.cs`) to register the prefab now that it carries a `NetworkObject`; not a manual edit.
+  - `Assets/Scenes/SampleScene.unity` — removed the static, hand-posed `player_rig_placeholder`
+    instance (it would otherwise double-spawn once the prefab is a `NetworkObject`); added
+    FishNet's built-in `PlayerSpawner` component to the `IsleNetworkManager` object so each
+    connecting client gets its own instance, instead of writing spawn code from scratch.
+  - No new/changed test files — see "Decided without a spec" for why.
+  - Verified: batchmode compile **0 `error CS`**, clean exit; full EditMode suite **155/155
+    passed** (no new tests added, per the "Decided without a spec" entry).
+  - **T-021 confirmed (2026-09-15)**: developer pressed Play in a live Editor session, moved with
+    WASD — rig moves smoothly, no console errors. **Phase 2 is fully done (2/2).**
+
 ## In progress / unfinished
 
-(none)
+Nothing right now — T-021 is the last item in Phase 2, and Phase 2 is done.
 
 ## Next
 
-**T-021** (server-authoritative movement + client prediction) is next in Phase 2 —
-`docs/BACKLOG.md`. Read `SYS-NET-01` for the authority split before starting.
+PR #16 and PR #17 both open, in merge order (#16 then #17 — #17 targets #16's branch since T-021
+needs T-020's `IsleNetworkManager`). Once both land on `main`, Phase 3 (world) is next up, starting
+with T-030 (`WorldClock`).
 
 **Phase 1 is fully done.** T-015 and T-016 both confirmed 2026-09-10 — the developer manually
 verified F5 hot reload in a live Editor session.
@@ -369,6 +394,24 @@ blocking anything right now.
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-09-13 — T-021: flat `BaseSpeed` only, no collider, reused the T-001 rig prefab, skipped an EditMode test
+  Five judgment calls, none spelled out in `SYS-NET-01`'s one-line scope or `BACKLOG.md`:
+  - **`weightMult`/`terrainMult`/`stanceMult` (SYS-CHAR-01 §Movement) are left out.** They need
+    systems that don't exist yet — inventory weight is Phase 4, terrain is Phase 3. T-021 exists to
+    prove the FishNet replicate/reconcile loop, not to ship the final movement formula; that spec
+    itself is marked "needs a rewrite before it is used" pending the Phase 11 rig work anyway.
+  - **No `Rigidbody2D` or collider.** There is nothing to collide with before T-031's tilemap.
+    `transform.position` is the simplest thing that proves the prediction loop; swap in a physics
+    body once collision exists.
+  - **Reused `player_rig_placeholder.prefab` instead of a new prefab.** It already exists as "the
+    box stand-in" (`BACKLOG.md` Phase 0). Adding `NetworkObject` + `PlayerMovement` to it doesn't
+    touch any IK/rig internals — it sits alongside them. Avoids a second, redundant player asset.
+  - **Used FishNet's built-in `PlayerSpawner`** rather than writing per-connection spawn code —
+    it does exactly what was needed (spawn a prefab for each connecting client) with zero new code.
+  - **No EditMode test.** The new logic is either `MonoBehaviour`/network state (untestable per
+    `TESTING.md`) or a one-line diagonal-input clamp (too trivial to warrant a test on its own).
+    Verification is the same live-Editor pattern as T-020 — confirmed 2026-09-15.
 
 - ### 2026-09-10 — T-020: fixed a T-012 bug en route (Plugin Importer auto-reference), scoped Tugboat-only, wired the scene directly, skipped an EditMode test
   Four judgment calls, none in `SYS-NET-01` or `BACKLOG.md`'s one-line T-020 scope:
