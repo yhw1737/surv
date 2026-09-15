@@ -473,6 +473,92 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1179008776
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1179008780}
+  - component: {fileID: 1179008779}
+  - component: {fileID: 1179008778}
+  - component: {fileID: 1179008777}
+  m_Layer: 0
+  m_Name: IsleNetworkManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1179008777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1179008776}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95f556814c780478eb1eede9ca8e95d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Isle.Networking::Isle.Networking.IsleNetworkManager
+--- !u!114 &1179008778
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1179008776}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f48f002b825cbd45a19bd96d90f9edb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FishNet.Runtime::FishNet.Transporting.Tugboat.Tugboat
+  _stopSocketsOnThread: 0
+  _dontRoute: 0
+  _reuseAddress: 0
+  _ipv4BindAddress: 
+  _enableIpv6: 1
+  _ipv6BindAddress: 
+  _port: 7770
+  _maximumClients: 4095
+  _clientAddress: localhost
+--- !u!114 &1179008779
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1179008776}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2c95dfde7d73b54dbbdc23155d35d36, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FishNet.Runtime::FishNet.Managing.NetworkManager
+  _refreshDefaultPrefabs: 0
+  _runInBackground: 1
+  _dontDestroyOnLoad: 1
+  _objectPool: {fileID: 0}
+  _persistence: 0
+  _logging: {fileID: 0}
+  _spawnablePrefabs: {fileID: 11400000, guid: fbf9ff6df4b834f19b3a927e2939314f, type: 2}
+--- !u!4 &1179008780
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1179008776}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -480,3 +566,4 @@ SceneRoots:
   - {fileID: 519420032}
   - {fileID: 619394802}
   - {fileID: 186439556}
+  - {fileID: 1179008780}

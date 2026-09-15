@@ -88,8 +88,20 @@ so neither can start before the loader exists.
 Not "multiplayer work". This is the authority architecture that Absolute Rule 2 requires anyway,
 stood up now so the solo beta is already a listen-server session with one client attached.
 
-- [ ] **T-020** FishNet bootstrap, listen server connection
+- [x] **T-020** FishNet bootstrap, listen server connection
 - [ ] **T-021** Server-authoritative movement + client prediction
+
+> **T-020 confirmed (2026-09-10)** — FishNet 4.7.2 (Tugboat transport) installed;
+> `IsleNetworkManager` starts a listen server (host server + local client) and is wired into
+> `SampleScene.unity`. Fixed a latent T-012 bug found along the way: FishNet's Synapse transport's
+> own `Microsoft.Bcl.AsyncInterfaces.dll` collided (`CS0433`) with T-012's vendored copy because
+> those `.meta` files never had Plugin Importer auto-reference disabled — see `PROJECT_STATE.md`
+> §Decided without a spec. Batchmode compile clean, EditMode **155/155**. No EditMode test for
+> `IsleNetworkManager` itself (`docs/TESTING.md`'s MonoBehaviour/network-state policy) — developer
+> confirmed in a live Editor session instead: Console showed `Local server is started for
+> Tugboat.`, `Remote connection started for Id 0.`, `Local client is started for Tugboat.`, no
+> errors.
+
 - [ ] **T-028** SYS-DIFF-01 spec sheet + world difficulty setting — host picks it when creating a
       room: Peaceful / Easy / Normal / Hard. Normal = 100%, Easy = 50%, Hard = 200% on hunger/thirst
       drain rate and enemy attack power; enemy HP is unaffected at every tier; bosses may get faster

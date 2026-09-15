@@ -1,7 +1,11 @@
 {
     "name": "Isle.Networking",
     "rootNamespace": "Isle.Networking",
-    "references": ["Isle.Core", "Isle.Data"],
+    "references": [
+        "Isle.Core",
+        "Isle.Data",
+        "FishNet.Runtime"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
