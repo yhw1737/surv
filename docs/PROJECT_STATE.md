@@ -7,9 +7,9 @@
 
 - Last updated: **2026-09-15**
 - Phase: **Phase 3 — world, in progress (5/7, only T-031 skipped and T-034 deferred left — see below)**
-- Task: **T-020/T-021 done, confirmed, committed, and merged into `main`** (PR #16, #17 both merged 2026-09-15). T-030 (`WorldClock`), T-032 (`Chunk`/`ChunkManager`), T-033 (`ChunkSerializer`), T-035 (`IslandGenerator`), T-036 (`LandmarkPlacer`) implemented and verified, not yet committed
-- Branch: **feature/T-030-world-clock** — rebuilt from `main` after the #16/#17 merges (previously stacked on `feature/T-021-server-movement` for doc continuity while those PRs were open; that's no longer needed now that `main` is current). T-032/T-033/T-035/T-036 all continued on the same branch (see Operational notes — one batched PR planned). Not pushed, no PR yet
-- Pending commit: **yes — T-030/T-032/T-033/T-035/T-036 verified, awaiting an explicit commit/PR request**
+- Task: **T-020/T-021 done, confirmed, committed, and merged into `main`** (PR #16, #17 both merged 2026-09-15). T-030 (`WorldClock`), T-032 (`Chunk`/`ChunkManager`), T-033 (`ChunkSerializer`), T-035 (`IslandGenerator`), T-036 (`LandmarkPlacer`) implemented, verified, committed, and pushed — [PR #18](https://github.com/yhw1737/surv/pull/18), awaiting the developer's review/merge
+- Branch: **feature/T-030-world-clock** — rebuilt from `main` after the #16/#17 merges (previously stacked on `feature/T-021-server-movement` for doc continuity while those PRs were open; that's no longer needed now that `main` is current). T-032/T-033/T-035/T-036 all continued on the same branch and batched into one PR. Pushed, [PR #18](https://github.com/yhw1737/surv/pull/18) open against `main`
+- Pending commit: **none — committed (6 commits: one per task + one docs commit) and pushed, [PR #18](https://github.com/yhw1737/surv/pull/18) opened 2026-09-15, awaiting developer review/merge**
 
 ## Progress
 
@@ -1199,8 +1199,10 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #12 | feature/T-017-placeholder-visuals | T-017 | [PR #12](https://github.com/yhw1737/surv/pull/12) — **merged to main** |
 | #13 | feature/T-018-skill-def | T-018 | [PR #13](https://github.com/yhw1737/surv/pull/13) — **merged to main** |
 | #14 | docs/T-019-buff-spec | T-019 | [PR #14](https://github.com/yhw1737/surv/pull/14) — **merged to main** |
-| — | feature/T-015-hot-reload | T-015 | implemented and verified, not committed |
-| #16 | feature/T-020-fishnet-bootstrap | T-020 | [PR #16](https://github.com/yhw1737/surv/pull/16) — awaiting merge |
+| #15 | feature/T-015-hot-reload | T-015 | [PR #15](https://github.com/yhw1737/surv/pull/15) — **merged to main** |
+| #16 | feature/T-020-fishnet-bootstrap | T-020 | [PR #16](https://github.com/yhw1737/surv/pull/16) — **merged to main** |
+| #17 | feature/T-021-server-movement | T-021 | [PR #17](https://github.com/yhw1737/surv/pull/17) — **merged to main** |
+| #18 | feature/T-030-world-clock | T-030 + T-032 + T-033 + T-035 + T-036 | [PR #18](https://github.com/yhw1737/surv/pull/18) — awaiting merge |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
