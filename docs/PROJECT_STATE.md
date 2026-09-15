@@ -6,10 +6,10 @@
 ## Header
 
 - Last updated: **2026-09-15**
-- Phase: **Phase 2 — netcode skeleton, done (2/2)**
-- Task: **T-020 done and confirmed (PR #16, still awaiting merge — blocked on a GitHub-side outage, not the PR). T-021 (server-authoritative movement) done, confirmed, and committed (PR #17)**
-- Branch: **feature/T-021-server-movement** — pushed, PR #17 open against `feature/T-020-fishnet-bootstrap` (not `main` — T-020 isn't merged yet). Merge order: PR #16 first, then PR #17
-- Pending commit: **no — T-021 committed and pushed (79facd4), PR #17 open**
+- Phase: **Phase 3 — world, in progress (5/7, only T-031 skipped and T-034 deferred left — see below)**
+- Task: **T-020/T-021 done, confirmed, committed, and merged into `main`** (PR #16, #17 both merged 2026-09-15). T-030 (`WorldClock`), T-032 (`Chunk`/`ChunkManager`), T-033 (`ChunkSerializer`), T-035 (`IslandGenerator`), T-036 (`LandmarkPlacer`) implemented, verified, committed, and pushed — [PR #18](https://github.com/yhw1737/surv/pull/18), awaiting the developer's review/merge
+- Branch: **feature/T-030-world-clock** — rebuilt from `main` after the #16/#17 merges (previously stacked on `feature/T-021-server-movement` for doc continuity while those PRs were open; that's no longer needed now that `main` is current). T-032/T-033/T-035/T-036 all continued on the same branch and batched into one PR. Pushed, [PR #18](https://github.com/yhw1737/surv/pull/18) open against `main`
+- Pending commit: **none — committed (6 commits: one per task + one docs commit) and pushed, [PR #18](https://github.com/yhw1737/surv/pull/18) opened 2026-09-15, awaiting developer review/merge**
 
 ## Progress
 
@@ -18,8 +18,8 @@ stage 1 · placeholders
 Phase 0  project setup        [x] 3/3   T-000..T-002
 stage 2 · solo beta
 Phase 1  foundation           [x] 10/10 T-010..T-019  ← done
-Phase 2  netcode skeleton     [x] 2/2   T-020..T-021 ← done, T-020 confirmed 2026-09-10 (PR #16 open), T-021 confirmed 2026-09-15
-Phase 3  world                [ ] 0/7
+Phase 2  netcode skeleton     [x] 2/2   T-020..T-021 ← done, both merged into main (PR #16, #17, 2026-09-15)
+Phase 3  world                [ ] 5/7   T-030, T-032, T-033, T-035, T-036 done, verified 2026-09-15 (not yet committed); T-031 skipped, T-034 deferred
 Phase 4  inventory            [ ] 0/6
 Phase 5  survival + skills    [ ] 0/8
 Phase 6  production loop      [ ] 0/9
@@ -368,15 +368,161 @@ Phase 13 modding + polish     [ ] 0/7
   - **T-021 confirmed (2026-09-15)**: developer pressed Play in a live Editor session, moved with
     WASD — rig moves smoothly, no console errors. **Phase 2 is fully done (2/2).**
 
+- **T-030**: in-game clock (SYS-WORLD-01 §Time). Branch `feature/T-030-world-clock`, stacked on
+  `feature/T-021-server-movement` (no code dependency — pure doc continuity, since `main` doesn't
+  yet carry T-020/T-021's `PROJECT_STATE.md` updates; see Decided without a spec).
+  - `Assets/Scripts/World/Time/WorldClock.cs` (new) — plain C# (no `MonoBehaviour`, no FishNet),
+    matching the `Isle.Gameplay.Skills` pure-formula pattern. `MinutesPerDay = 1440`,
+    `MinutesPerRealSecond = 1.2` (1 in-game day = 20 real minutes), both verbatim from the spec.
+    `DayPhase` enum (Dawn/Day/Dusk/Night) with `PhaseAt(minuteOfDay)` matching the spec's boundary
+    table (dawn 300–420, day 420–1020, dusk 1020–1140, else night). Internal accumulator is a
+    `double` (`_totalMinutes`), truncated to `long` only on read, to avoid rounding drift across
+    many small `Tick()` calls.
+  - `Assets/Tests/EditMode/WorldClockTests.cs` (new) — 14 cases: 9 `[TestCase]` rows covering every
+    phase-boundary edge (inclusive/exclusive) from the spec table, plus 5 `[Test]` methods for tick
+    rate, multi-day minute-of-day wraparound, and phase-after-wraparound.
+  - No asmdef changes needed — `Isle.World` already referenced `Isle.Networking`/`Isle.Data`, and
+    `Isle.Tests.EditMode` already referenced `Isle.World`.
+  - Verified: batchmode compile **0 `error CS`**; full EditMode suite **169/169 passed** (155
+    pre-existing + 14 new), run twice (once per branch base, see Decided without a spec).
+  - **Not committed yet** — implemented and verified this session on the assistant's own initiative
+    (following this file's own "Next" pointer, Phase 2 being done), not from a fresh explicit
+    instruction. Awaiting developer review before commit/PR.
+
+- **T-032**: `Chunk` + `ChunkManager` load/unload (SYS-WORLD-01 §Chunks). Same branch/session as
+  T-030, continued per the developer's "keep going through logic-only tasks" instruction (T-031
+  skipped — see Blocked / needs the developer).
+  - `Assets/Scripts/Core/Vec2Int.cs` (new) — integer 2D coordinate, no Unity dependency (Absolute
+    rule: `Vector2Int` isn't allowed outside Unity-facing code). Used for tile/chunk coordinates.
+  - `Assets/Scripts/World/Chunks/Chunk.cs` (new) — `Chunk` (32×32 `Tile[]`, `List<WorldObject>`,
+    `LastSimulatedTime`) exactly matching the spec's struct sketch, plus `Chunk.CoordFromTilePosition`
+    (floor-division so the grid is well-defined on both sides of the origin). `Tile` and
+    `WorldObject` are minimal placeholders — the spec only names their container types, not their
+    fields; see Decided without a spec.
+  - `Assets/Scripts/World/Chunks/ChunkManager.cs` (new) — `UpdateActiveChunks(playerChunkCoords,
+    worldTime)` loads the union of every player's 3×3 neighborhood and unloads (stamping
+    `LastSimulatedTime`, then calling an injected save callback) anything that falls out of range.
+    Load/save are constructor-injected `Func`/`Action` delegates, not an interface, so this class
+    has zero SQLite dependency — `ChunkSerializer` (T-033) supplies the real ones later.
+  - `Assets/Tests/EditMode/ChunkTests.cs` (new) — constructor defaults, 7 `CoordFromTilePosition`
+    cases including negative coordinates.
+  - `Assets/Tests/EditMode/ChunkManagerTests.cs` (new) — 5 cases covering SYS-WORLD-01 verification
+    #3: first-load 3×3, move-away unload+save, stays-in-range chunks aren't reloaded, two distant
+    players load the union of both neighborhoods, zero players unloads everything.
+  - No asmdef changes needed — `Isle.World` already references `Isle.Core`; `Isle.Tests.EditMode`
+    already references both.
+  - Verified: batchmode compile **0 `error CS`**; full EditMode suite **182/182 passed** (169
+    pre-existing + 13 new).
+
+- **T-033**: `ChunkSerializer` (SYS-WORLD-01 §Chunks persistence). Same branch/session, unblocked
+  2026-09-15 by the developer's library choice and storage-format answer (see Decided without a
+  spec).
+  - `Packages/manifest.json` — added `com.gilzoide.sqlite-net` (git URL, pinned `#1.3.2`), the
+    developer's chosen SQLite binding. Resolves into `Library/PackageCache/`, root namespace
+    `SQLite`.
+  - `Assets/Scripts/World/Chunks/ChunkSerializer.cs` (new) — one row per chunk in a `chunks`
+    table (`cx`, `cy` primary key, `data` TEXT), `Load(Vec2Int)` (null if no row), `Save(Chunk)`
+    (`INSERT OR REPLACE`). Stores the chunk as a JSON **TEXT** column, not the spec's literal
+    "BLOB" — see Decided without a spec. Two private converters (`Vec2IntJsonConverter`,
+    `NamespacedIdJsonConverter`) — the latter a deliberate trimmed duplicate of
+    `Isle.Modding.Defs.NamespacedIdJsonConverter` since `Isle.World` doesn't reference `Modding`;
+    consolidate if a third consumer needs it.
+  - `Assets/Tests/EditMode/ChunkSerializerTests.cs` (new) — round-trip (all fields, non-default
+    biome, one `WorldObject`) and missing-row-returns-null, both against an in-memory
+    (`:memory:`) database.
+  - `Assets/Scripts/World/Isle.World.asmdef` — added `Gilzoide.SqliteNet` to `references`, **and**
+    fixed `overrideReferences`/`precompiledReferences` for `System.Text.Json` (see Decided
+    without a spec / Operational notes — this was a latent gap from T-030, not something T-033
+    introduced).
+  - `Assets/Scripts/World/Chunks/Chunk.cs` — doc-comment only, points at `ChunkSerializer` now
+    that it exists. No logic touched.
+  - Verified: batchmode compile **0 `error CS`**; full EditMode suite **184/184 passed** (182
+    pre-existing + 2 new).
+
+- **T-035/T-036**: `IslandGenerator` + `LandmarkPlacer` (SYS-WORLD-01 §Island generation). Same
+  branch/session, unblocked 2026-09-15 by the developer's shape and separation answers (see
+  Decided without a spec).
+  - `Assets/Scripts/World/Generation/IslandGenerator.cs` (new) — `BiomeAt(worldX, worldY)` is a
+    pure function of (seed, tile): normalized elliptical distance from centre decides coast vs.
+    interior (`CoastRingStart = 0.82`), semi-axes randomized per seed (0.82–0.95 of the half-width)
+    for the "different island every game" requirement, interior biome sampled on a 24-tile cell
+    grid (clumped patches, not per-tile speckle) via a small deterministic hash — no whole-island
+    array generated or stored, any chunk can compute its own tiles independently. `IsLand` exposes
+    the same ellipse test for landmark placement. Marsh doubles as the "ponds/rivers" the developer
+    described — the spec fixes exactly three biomes, no fourth "water" type invented.
+  - `Assets/Scripts/World/Generation/LandmarkDefs.cs` (new) — `LandmarkDef` (def id + count).
+    Counts (1 shipwreck, 2 ruins, 3 springs) are a fixed design constant (same status as `Biome`);
+    the def id each kind actually places is moddable, so it's read from
+    `Assets/StreamingAssets/definitions/world/landmarks.json` (new), not hardcoded.
+  - `Assets/Scripts/World/Generation/LandmarkPlacer.cs` (new) — greedy farthest-point placement:
+    samples land tiles on an 8-tile grid, places each landmark at the candidate that maximizes the
+    minimum distance to every already-placed landmark (deterministic per-seed tiebreak for the
+    first pick, which has nothing to maximize against yet). Returns positions pre-grouped by chunk
+    coordinate, ready to append to that `Chunk`'s `Objects` once it's generated. See Decided without
+    a spec for why this maximizes rather than enforces the literal 256-tile target.
+  - `Assets/StreamingAssets/definitions/world/landmarks.json` (new) — the three def ids
+    (`isle:shipwreck`, `isle:ruins`, `isle:freshwater_spring`); none of these defs exist yet
+    (Phase 4/6+ content), same "not fleshed out yet" status as other `WorldObject` placeholders.
+  - `Assets/Tests/EditMode/IslandGeneratorTests.cs` (new) — determinism (same seed → same biome
+    everywhere sampled), edges/corners always coast, interior contains both forest and marsh,
+    different seeds differ, `IsLand` sanity.
+  - `Assets/Tests/EditMode/LandmarkDefsTests.cs` (new) — loads counts/def ids from a JSON file.
+  - `Assets/Tests/EditMode/LandmarkPlacerTests.cs` (new) — correct total count (6), every landmark
+    on land, determinism, and a floor on the achieved minimum pairwise separation (80 tiles — just
+    catches a degenerate/clustered placement, not the literal 256 target; see Decided without a
+    spec for the real achieved numbers).
+  - No asmdef changes needed.
+  - Verified: batchmode compile **0 `error CS`**; full EditMode suite **194/194 passed** (184
+    pre-existing + 10 new).
+
 ## In progress / unfinished
 
-Nothing right now — T-021 is the last item in Phase 2, and Phase 2 is done.
+T-030 (`WorldClock`), T-032 (`Chunk`/`ChunkManager`), T-033 (`ChunkSerializer`), T-035
+(`IslandGenerator`), and T-036 (`LandmarkPlacer`) are implemented and verified but **not
+committed** — awaiting developer review/commit decision (one batched PR planned — see Operational
+notes). T-034 is explicitly **deferred**, not blocked (see below) — nothing to build for it right
+now. **Phase 3 is down to just T-031 (skipped) and T-034 (deferred)** — everything else is done.
 
 ## Next
 
-PR #16 and PR #17 both open, in merge order (#16 then #17 — #17 targets #16's branch since T-021
-needs T-020's `IsleNetworkManager`). Once both land on `main`, Phase 3 (world) is next up, starting
-with T-030 (`WorldClock`).
+PR #16 and PR #17 both merged into `main` (2026-09-15). T-030, T-032, T-033, T-035, and T-036 are
+implemented and verified on a branch rebuilt from the now-current `main`, awaiting review/commit.
+
+**Session note (2026-09-15):** the developer authorized working through consecutive Phase 3 tasks
+in one sitting without stopping to ask after each one, batching everything into a single PR
+instead of the usual one-PR-per-task — but only up to the first task that needs the developer's
+own visual/manual check, or that hits a genuinely missing spec value (rule 3: "if a value is
+missing, ask — do not invent one"). **T-031** ("Tilemap, Y-sort, collision, 3-step camera zoom")
+hit the first kind — it's tilemap rendering/camera behavior with no spec sheet anywhere, and no way
+to verify it except looking at the Editor — so the developer said to skip it and continue with the
+logic-only tasks instead. The tasks after it hit the second kind, one by one — the developer
+answered all four the same session, and all four are now resolved (recorded here so a later
+session doesn't re-ask):
+
+- **T-033** (SQLite chunk persistence) — **done**, see Completed. Developer picked
+  `com.gilzoide.sqlite-net` and said save-file inspectability for mod debugging matters more than
+  following the spec's literal "BLOB" wording, so storage is JSON TEXT (see Decided without a
+  spec).
+- **T-034** (`DeferredSimulation`) — developer confirmed this stays **deferred**, to be built
+  together with the real Phase 4/6 systems it depends on (inventory, crops, cooking) rather than
+  against invented placeholder data shapes. Not blocking Phase 3 completion; revisit once one of
+  those phases lands.
+- **T-035** (`IslandGenerator`) — **done**, see Completed. Developer answered the shape question
+  directly: random island shape every game start (no fixed layout), a rough ellipse as the main
+  axis so it never reads as a non-island blob, edges always coast, interior a patchwork/clumped mix
+  of marsh and forest moving inward, with scattered ponds/rivers (marsh doubles as this — no
+  fourth biome invented).
+- **T-036** (landmarks) — **done**, see Completed. Developer answered the minimum-separation
+  question directly: landmarks (1 shipwreck, 2 ruins, 3 springs) must be at least **2 minutes of
+  walking distance** apart from each other. Converted to a tile distance using the spec's own
+  stated crossing pace, not `PlayerMovement.BaseSpeed` (see Decided without a spec) — and that
+  target turned out not to be reachable for every pair of 6 landmarks on a 384-tile island anyway,
+  so `LandmarkPlacer` maximizes the achieved minimum separation instead (see Decided without a
+  spec for the real numbers).
+
+Phase 3 has nothing left to do except revisit T-031 (needs a spec) and T-034 (deferred to Phase
+4/6) — see Blocked / needs the developer for T-031, and Phase 4 (`docs/BACKLOG.md`) for what's
+next after this branch is committed and reviewed.
 
 **Phase 1 is fully done.** T-015 and T-016 both confirmed 2026-09-10 — the developer manually
 verified F5 hot reload in a live Editor session.
@@ -394,6 +540,78 @@ blocking anything right now.
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-09-15 — T-036: landmark minimum separation converted from the spec's crossing pace, not `PlayerMovement.BaseSpeed`
+  The developer's answer was "≥2 minutes walking distance apart", which needs a tile-distance
+  constant. Two candidate paces exist and they disagree by almost 2×:
+  - `PlayerMovement.BaseSpeed = 4.2` tiles/s (T-021, `SYS-NET-01`) → **252 tiles/min**. 2 minutes
+    → **504 tiles** minimum separation.
+  - `SYS-WORLD-01`'s own "~384×384 tiles, roughly 3 minutes to cross on foot" → **128 tiles/min**.
+    2 minutes → **256 tiles**.
+  Went with the spec's pace (**256 tiles**), not `BaseSpeed`: 504 tiles is bigger than the
+  island's own diagonal (~543), which makes placing all 6 landmarks (1 shipwreck, 2 ruins, 3
+  springs) pairwise ≥504 apart geometrically impossible on the stated island size — a strong sign
+  that pace is the wrong one for a world-generation constraint, whatever it's right for as a
+  movement-tuning number. 256 tiles leaves room to actually place 6 landmarks. `BaseSpeed`'s
+  "roughly 3 minutes" is descriptive prose, not a formula input elsewhere in the spec, so trusting
+  it here isn't inventing a number — it's reading the same sentence the spec's own landmark section
+  sits next to. Flagged here because it's still a judgment call, not a value either spec states
+  directly as a tile count.
+
+  **Second finding, discovered while implementing `LandmarkPlacer`: even 256 isn't reachable for
+  every pair at once.** Six points with every pairwise distance ≥256 need more room than a
+  384-tile island's ellipse gives — the best any 6 mutually-spread points can do on a disk this
+  size (a regular-hexagon arrangement, the known-optimal packing for n=6) tops out at roughly the
+  disk's own radius, ~155–180 tiles here depending on the seed's randomized semi-axes. This isn't a
+  bug to fix, it's the geometry of asking for 6 things to be 256 apart inside something only ~384
+  wide. Rather than reject-sample forever chasing a number that can't be hit, `LandmarkPlacer` uses
+  greedy farthest-point placement instead — each landmark goes wherever maximizes its distance to
+  every landmark already placed. Actual result for seed 42: minimum pairwise separation **~129
+  tiles** (full pairwise breakdown ranges 129–309). That's a little over 1 minute of walking by the
+  same pace, not 2 — worth flagging to the developer as a real gap between the requested number and
+  what a 384-tile island can physically deliver for 6 landmarks, in case the answer is "make the
+  island bigger" or "6 landmarks is too many" rather than "spread them as best you can."
+
+- ### 2026-09-15 — T-033: `com.gilzoide.sqlite-net`, JSON TEXT column instead of a BLOB
+  Two decisions from the developer's answers, both outside what `ADR-001`/`ARCHITECTURE.md`/
+  `SYS-WORLD-01` specify:
+  - **SQLite binding library: `com.gilzoide.sqlite-net`** (git package, pinned `#1.3.2`). The stack
+    table only ever said "SQLite"; this was a real dependency choice (native binaries per
+    platform), not a code detail — asked, developer picked this one.
+  - **Chunk rows store JSON text, not a binary BLOB**, despite `SYS-WORLD-01` literally saying
+    "BLOB". Developer wants save files inspectable for mod debugging; a binary blob defeats that,
+    and chunks are small enough (32×32 tiles) that the JSON overhead isn't a real cost. Developer
+    explicitly delegated the exact mechanism ("판단해서 무난하게") — JSON TEXT was the least
+    surprising way to satisfy "readable" without inventing a whole new save-file format.
+
+- ### 2026-09-15 — T-032: `Tile`/`WorldObject` are minimal placeholders; load/save injected as delegates, not an interface
+  Two judgment calls, neither spelled out in `SYS-WORLD-01`'s one-line `Chunk` struct sketch:
+  - **`Tile` holds only a `Biome` enum; `WorldObject` holds only a def ID + local position.** The
+    spec names `Tile[] tiles` and `List<WorldObject> objects` as `Chunk` fields but never lists
+    what either contains. `Biome` (coast/forest/marsh) is spec/GDD canon, not invented; beyond that,
+    fleshing either type out is `IslandGenerator` (T-035) and whatever places world objects — both
+    still blocked (see Blocked / needs the developer). Adding fields speculatively now risks
+    guessing a shape those tasks would rather define themselves.
+  - **`ChunkManager`'s load/save are constructor-injected `Func<Vec2Int, Chunk>`/`Action<Chunk>`
+    delegates, not a formal `IChunkStore` interface.** One real implementation (the eventual SQLite
+    `ChunkSerializer`, T-033) doesn't justify an interface — delegates keep `ChunkManager` fully
+    unit-testable today with zero production implementations yet to satisfy.
+
+- ### 2026-09-15 — T-030: `WorldClock` is plain, non-networked C#; branched off T-021 instead of `main`
+  Two judgment calls, neither spelled out in `SYS-WORLD-01` or `BACKLOG.md`'s one-line T-030 scope:
+  - **No FishNet sync yet.** Absolute Rule 2 (server authority) implies the server should eventually
+    own the canonical clock and broadcast `WorldTime` to clients, but nothing yet consumes
+    `WorldClock` across the network — no day/night rendering, no spawn-table queries exist. Wiring
+    sync now would be speculative ahead of an actual consumer; the next task that needs `WorldTime`
+    client-side should add it then.
+  - **Branched `feature/T-030-world-clock` off `feature/T-021-server-movement`, not `main`.** The
+    code itself has zero dependency on T-020/T-021 — this is a doc-continuity stack, not a code one.
+    `main` hasn't merged PR #16/#17 yet, so its `PROJECT_STATE.md` is still pre-Phase-3; branching
+    from it would build T-030's docs on stale state and likely conflict later. Started on `main`
+    first, caught the staleness, deleted that branch, and redid it stacked on `feature/T-021-server-movement`
+    before any commit. **Superseded same day**: once PR #16/#17 merged into `main`, the branch was
+    rebuilt from `main` directly (stash, recreate, stash pop) — the stack was only ever needed while
+    those PRs were open.
 
 - ### 2026-09-13 — T-021: flat `BaseSpeed` only, no collider, reused the T-001 rig prefab, skipped an EditMode test
   Five judgment calls, none spelled out in `SYS-NET-01`'s one-line scope or `BACKLOG.md`:
@@ -876,6 +1094,25 @@ blocking anything right now.
 
 ## Operational notes
 
+- **2026-09-15 session batching:** the developer asked to skip the normal one-task-stop-and-ask
+  cadence for a run of consecutive Phase 3 tasks, planning one combined PR instead of one per task
+  — but only up to the first task needing the developer's own visual/manual check. T-031 hit that
+  (see Blocked / needs the developer) and was skipped; T-032/T-033 continued on the same branch
+  and T-035/T-036 are the same batch — keep this file's Completed section current per task so
+  nothing is missing from that eventual PR's 변경점.
+- **Loose Plugin DLLs with `isExplicitlyReferenced: 1` in their `.meta` are never auto-included**,
+  regardless of an asmdef's `overrideReferences` setting on other asmdefs. They must be listed by
+  name in the *consuming* asmdef's own `precompiledReferences` array with that asmdef's
+  `overrideReferences: true`. Found this the hard way adding `ChunkSerializer.cs` (T-033) to
+  `Isle.World`: it couldn't see `System.Text.Json` at all until `Isle.World.asmdef` got the same
+  `overrideReferences: true` + 8-entry `precompiledReferences` list `Isle.Modding.asmdef` already
+  used. Check any new asmdef that needs `System.Text.Json` against `Isle.Modding.asmdef`'s pattern
+  before assuming an existing `references` entry is enough.
+- **`-runTests` must not be combined with `-quit`** in a headless batchmode invocation — together
+  they make Unity do a normal asset-refresh-and-quit with no test execution at all (exit 0, no
+  results file, no error). Omit `-quit`; the test runner quits on its own once done. Correct form:
+  `Unity -batchmode -nographics -projectPath "$(pwd)" -runTests -testPlatform EditMode -testResults
+  <path> -logFile <path>`.
 - **Unity Hub must be running before any headless `Unity -batchmode` run.** A Personal licence is
   activated (since 2025-10-13) but Unity 6 Personal is a *floating* licence: no `.ulf` lands on
   disk, the licensing client fetches it over the Hub's session. With the Hub closed the CLI reports
@@ -893,11 +1130,40 @@ blocking anything right now.
 
 ## Blocked / needs the developer
 
-1. **Company name.** `productName` is `ISLE`; `companyName` is still `DefaultCompany` and
+1. **T-031 scope** ("Tilemap, Y-sort, collision, 3-step camera zoom") — no spec sheet exists for
+   tilemap rendering, Y-sort, collision layers, or camera zoom anywhere in `docs/specs/`.
+   `SYS-WORLD-01` covers chunks/time/generation only. This is also inherently visual work (you'd
+   need to look at the Editor to confirm tile layout, sort order, and zoom steps look right).
+   **Developer decision 2026-09-15: skip it for now, continue with logic-only tasks instead**
+   (T-032 done). Still needs (a) the developer to give the numbers/behavior directly (zoom levels,
+   collision layer names) so a short spec can be written, or (b) a spec-writing session, before
+   it can be picked up.
+
+2. ~~**T-033** (SQLite chunk persistence)~~ **Resolved 2026-09-15** — developer picked
+   `com.gilzoide.sqlite-net` and confirmed JSON-readable save files over a binary BLOB. Done, see
+   Completed and Decided without a spec.
+
+3. **T-034** (`DeferredSimulation`) — not blocked, **explicitly deferred**. Developer confirmed
+   2026-09-15 this builds later, bundled with the real Phase 4/6 systems it depends on (inventory,
+   crops, cooking) rather than against invented placeholder data shapes. Its five formulas
+   (spoilage, crop growth, resource respawn, drying/smoking) all operate on data types that don't
+   exist yet — item stacks (`GridInventory`, Phase 4), crop instances, resource-node spawn state,
+   cooking progress (Phase 6+). Revisit once one of those phases lands; no placeholder version
+   wanted in the meantime.
+
+4. ~~**T-035** (`IslandGenerator`)~~ **Resolved 2026-09-15** — developer gave the shape rule
+   directly (random per game, ellipse main axis, coast edges, marsh/forest interior patchwork,
+   scattered ponds/rivers). See Next and `SYS-WORLD-01`'s Island generation section.
+
+5. ~~**T-036** (landmarks)~~ **Resolved 2026-09-15** — developer gave the minimum separation
+   directly (≥2 minutes walking). See Next and Decided without a spec for the tile-distance
+   conversion.
+
+6. **Company name.** `productName` is `ISLE`; `companyName` is still `DefaultCompany` and
    `applicationIdentifier` is `com.DefaultCompany.ISLE`. Both want the real name before anything
    ships to Steam. One-line edits in `ProjectSettings/ProjectSettings.asset`.
 
-2. ~~**★ Skill taxonomy.**~~ **Resolved 2026-09-07** — see `SYS-SKILL-01`'s status banner and
+7. ~~**★ Skill taxonomy.**~~ **Resolved 2026-09-07** — see `SYS-SKILL-01`'s status banner and
    `docs/design/GDD.md` §Scope for the finalized table. Not a pure rename after all: `isle:hunting`
    is retired (butchery yield moves to **Cooking**, `SYS-HUNT-01`), and a genuinely new profession,
    **Enchanter**, is added — distinct from Blacksmith, spanning a new Combat skill (`isle:magic`,
@@ -933,8 +1199,10 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #12 | feature/T-017-placeholder-visuals | T-017 | [PR #12](https://github.com/yhw1737/surv/pull/12) — **merged to main** |
 | #13 | feature/T-018-skill-def | T-018 | [PR #13](https://github.com/yhw1737/surv/pull/13) — **merged to main** |
 | #14 | docs/T-019-buff-spec | T-019 | [PR #14](https://github.com/yhw1737/surv/pull/14) — **merged to main** |
-| — | feature/T-015-hot-reload | T-015 | implemented and verified, not committed |
-| #16 | feature/T-020-fishnet-bootstrap | T-020 | [PR #16](https://github.com/yhw1737/surv/pull/16) — awaiting merge |
+| #15 | feature/T-015-hot-reload | T-015 | [PR #15](https://github.com/yhw1737/surv/pull/15) — **merged to main** |
+| #16 | feature/T-020-fishnet-bootstrap | T-020 | [PR #16](https://github.com/yhw1737/surv/pull/16) — **merged to main** |
+| #17 | feature/T-021-server-movement | T-021 | [PR #17](https://github.com/yhw1737/surv/pull/17) — **merged to main** |
+| #18 | feature/T-030-world-clock | T-030 + T-032 + T-033 + T-035 + T-036 | [PR #18](https://github.com/yhw1737/surv/pull/18) — awaiting merge |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came

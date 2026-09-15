@@ -120,13 +120,58 @@ stood up now so the solo beta is already a listen-server session with one client
 
 ## Phase 3 · World
 
-- [ ] **T-030** `WorldClock` in-game time
-- [ ] **T-031** Tilemap, Y-sort, collision, 3-step camera zoom
-- [ ] **T-032** `Chunk` + `ChunkManager` load/unload
-- [ ] **T-033** SQLite chunk persistence
-- [ ] **T-034** `DeferredSimulation` (SYS-WORLD-01)
-- [ ] **T-035** `IslandGenerator` seeded procedural (coast + forest)
-- [ ] **T-036** Hand-placed landmarks (shipwreck, ruins, springs)
+> **T-030 implemented and verified (2026-09-15), not yet committed** — `WorldClock`
+> (`Assets/Scripts/World/Time/WorldClock.cs`) is plain C# (no `MonoBehaviour`, no FishNet), matching
+> the `Isle.Gameplay.Skills` pure-formula pattern. `MinutesPerDay = 1440`, `MinutesPerRealSecond =
+> 1.2`, `DayPhase` (Dawn/Day/Dusk/Night) per SYS-WORLD-01 §Time's boundary table, `double` accumulator
+> to avoid rounding drift. No FishNet sync yet — see `PROJECT_STATE.md` §Decided without a spec.
+> Batchmode compile clean, EditMode **169/169** (155 pre-existing + 14 new). Branched off
+> `feature/T-021-server-movement` for doc continuity while PR #16/#17 were open; rebuilt from `main`
+> once both merged. Awaiting developer review/commit.
+
+> **T-031 skipped for now (2026-09-15, developer decision)** — no spec sheet covers tilemaps,
+> Y-sort, collision, or camera zoom, and it's inherently visual (Editor-only verification). Needs
+> either the missing numbers/behavior from the developer or a spec-writing session first.
+
+> **T-032 implemented and verified (2026-09-15), not yet committed** — `Chunk`
+> (`Assets/Scripts/World/Chunks/Chunk.cs`) matches the spec's struct exactly (32×32 `Tile[]`,
+> `List<WorldObject>`, `LastSimulatedTime`); `Tile`/`WorldObject` are minimal placeholders pending
+> T-035/landmark work (see `PROJECT_STATE.md` §Decided without a spec). `ChunkManager` loads the
+> union of every player's 3×3 neighborhood and unloads+saves anything that falls out, via
+> constructor-injected load/save delegates (no SQLite dependency yet — `ChunkSerializer` is T-033).
+> New `Isle.Core.Vec2Int` (integer coordinate, no `UnityEngine` dependency). Batchmode compile
+> clean, EditMode **182/182** (169 pre-existing + 13 new). Same branch as T-030. Awaiting developer
+> review/commit.
+
+> **T-033 implemented and verified (2026-09-15), not yet committed** — `ChunkSerializer`
+> (`Assets/Scripts/World/Chunks/ChunkSerializer.cs`) via `com.gilzoide.sqlite-net`, one row per
+> chunk keyed by coordinate, storing JSON **text** rather than the spec's literal BLOB (developer
+> wants save files inspectable for mod debugging — see `PROJECT_STATE.md` §Decided without a
+> spec). Batchmode compile clean, EditMode **184/184** (182 pre-existing + 2 new). Same branch as
+> T-030/T-032. Awaiting developer review/commit.
+
+> **T-034 explicitly deferred (2026-09-15, developer decision)** — builds later, bundled with the
+> Phase 4/6 systems it depends on (inventory, crops, cooking). Not blocked, just not now; no
+> placeholder version wanted.
+
+> **T-035/T-036 implemented and verified (2026-09-15), not yet committed** — `IslandGenerator`
+> (`Assets/Scripts/World/Generation/IslandGenerator.cs`) paints biome per-tile as a pure function
+> of (seed, position): elliptical falloff for coast vs. interior, hashed-grid patches for the
+> forest/marsh mix, per the developer's shape answer. `LandmarkPlacer` places the fixed counts
+> (1 shipwreck, 2 ruins, 3 springs, def ids from `definitions/world/landmarks.json`) via greedy
+> farthest-point placement, maximizing separation rather than enforcing the literal 256-tile
+> (2-minute) target — that target isn't reachable for all 6 pairs on a 384-tile island (achieved
+> ~129 tiles for seed 42; see `PROJECT_STATE.md` §Decided without a spec for the full finding).
+> Batchmode compile clean, EditMode **194/194** (184 pre-existing + 10 new). Same branch as
+> T-030/T-032/T-033. Awaiting developer review/commit.
+
+- [x] **T-030** `WorldClock` in-game time
+- [ ] **T-031** Tilemap, Y-sort, collision, 3-step camera zoom — skipped, no spec + visual-only
+- [x] **T-032** `Chunk` + `ChunkManager` load/unload
+- [x] **T-033** SQLite chunk persistence
+- [ ] **T-034** `DeferredSimulation` (SYS-WORLD-01) — deferred to Phase 4/6 (not blocked)
+- [x] **T-035** `IslandGenerator` seeded procedural (coast + forest)
+- [x] **T-036** Hand-placed landmarks (shipwreck, ruins, springs)
 
 ## Phase 4 · Inventory
 
