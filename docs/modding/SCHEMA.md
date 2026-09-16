@@ -102,11 +102,19 @@ Hierarchical: `fish/saltwater` automatically implies `fish`. Max depth 3.
   "icon": "icons/cod_fillet.png",
   "durability": null,
   "spoilage": { "base_hours": 18, "temp_factor": 1.6, "result": "isle:rotten_flesh" },
-  "nutrition": { "hunger": 12, "thirst": 4, "sanitation_risk": 0.35 }
+  "nutrition": { "hunger": 12, "thirst": 4, "sanitation_risk": 0.35 },
+  "equip_slot": null,
+  "bag_grid": null
 }
 ```
 **Every definition type carries `id` and `name`.** Names beginning `@` resolve through
 `lang/*.json`; a literal string is a validation error, in ours and in mods alike. `grid` follows SYS-INV-01; rotation is inferred from `w != h`. `temp_factor` is the spoilage multiplier per degree.
+`equip_slot` is one of `head chest legs feet back belt main_hand off_hand` (SYS-INV-01 §Containers),
+null for items that can't be equipped — a plain string, same reasoning as `skills.pool` (T-018): the
+closed set is a validator concern, not a type-system one. `bag_grid` is only set on bag-type
+equipment (backpacks, belt pouches): the separate grid it opens when equipped, e.g.
+`{ "w": 6, "h": 7 }` for the leather backpack — distinct from `grid`, which is the bag *item's own*
+footprint while it sits inside another container.
 
 ### Creatures
 ```json

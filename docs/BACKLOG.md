@@ -120,41 +120,40 @@ stood up now so the solo beta is already a listen-server session with one client
 
 ## Phase 3 · World
 
-> **T-030 implemented and verified (2026-09-15), not yet committed** — `WorldClock`
+> **T-030 merged (2026-09-15, [PR #18](https://github.com/yhw1737/surv/pull/18))** — `WorldClock`
 > (`Assets/Scripts/World/Time/WorldClock.cs`) is plain C# (no `MonoBehaviour`, no FishNet), matching
 > the `Isle.Gameplay.Skills` pure-formula pattern. `MinutesPerDay = 1440`, `MinutesPerRealSecond =
 > 1.2`, `DayPhase` (Dawn/Day/Dusk/Night) per SYS-WORLD-01 §Time's boundary table, `double` accumulator
 > to avoid rounding drift. No FishNet sync yet — see `PROJECT_STATE.md` §Decided without a spec.
 > Batchmode compile clean, EditMode **169/169** (155 pre-existing + 14 new). Branched off
 > `feature/T-021-server-movement` for doc continuity while PR #16/#17 were open; rebuilt from `main`
-> once both merged. Awaiting developer review/commit.
+> once both merged.
 
 > **T-031 skipped for now (2026-09-15, developer decision)** — no spec sheet covers tilemaps,
 > Y-sort, collision, or camera zoom, and it's inherently visual (Editor-only verification). Needs
 > either the missing numbers/behavior from the developer or a spec-writing session first.
 
-> **T-032 implemented and verified (2026-09-15), not yet committed** — `Chunk`
+> **T-032 merged (2026-09-15, [PR #18](https://github.com/yhw1737/surv/pull/18))** — `Chunk`
 > (`Assets/Scripts/World/Chunks/Chunk.cs`) matches the spec's struct exactly (32×32 `Tile[]`,
 > `List<WorldObject>`, `LastSimulatedTime`); `Tile`/`WorldObject` are minimal placeholders pending
 > T-035/landmark work (see `PROJECT_STATE.md` §Decided without a spec). `ChunkManager` loads the
 > union of every player's 3×3 neighborhood and unloads+saves anything that falls out, via
 > constructor-injected load/save delegates (no SQLite dependency yet — `ChunkSerializer` is T-033).
 > New `Isle.Core.Vec2Int` (integer coordinate, no `UnityEngine` dependency). Batchmode compile
-> clean, EditMode **182/182** (169 pre-existing + 13 new). Same branch as T-030. Awaiting developer
-> review/commit.
+> clean, EditMode **182/182** (169 pre-existing + 13 new). Same branch as T-030.
 
-> **T-033 implemented and verified (2026-09-15), not yet committed** — `ChunkSerializer`
+> **T-033 merged (2026-09-15, [PR #18](https://github.com/yhw1737/surv/pull/18))** — `ChunkSerializer`
 > (`Assets/Scripts/World/Chunks/ChunkSerializer.cs`) via `com.gilzoide.sqlite-net`, one row per
 > chunk keyed by coordinate, storing JSON **text** rather than the spec's literal BLOB (developer
 > wants save files inspectable for mod debugging — see `PROJECT_STATE.md` §Decided without a
 > spec). Batchmode compile clean, EditMode **184/184** (182 pre-existing + 2 new). Same branch as
-> T-030/T-032. Awaiting developer review/commit.
+> T-030/T-032.
 
 > **T-034 explicitly deferred (2026-09-15, developer decision)** — builds later, bundled with the
 > Phase 4/6 systems it depends on (inventory, crops, cooking). Not blocked, just not now; no
 > placeholder version wanted.
 
-> **T-035/T-036 implemented and verified (2026-09-15), not yet committed** — `IslandGenerator`
+> **T-035/T-036 merged (2026-09-15, [PR #18](https://github.com/yhw1737/surv/pull/18))** — `IslandGenerator`
 > (`Assets/Scripts/World/Generation/IslandGenerator.cs`) paints biome per-tile as a pure function
 > of (seed, position): elliptical falloff for coast vs. interior, hashed-grid patches for the
 > forest/marsh mix, per the developer's shape answer. `LandmarkPlacer` places the fixed counts
@@ -163,7 +162,7 @@ stood up now so the solo beta is already a listen-server session with one client
 > (2-minute) target — that target isn't reachable for all 6 pairs on a 384-tile island (achieved
 > ~129 tiles for seed 42; see `PROJECT_STATE.md` §Decided without a spec for the full finding).
 > Batchmode compile clean, EditMode **194/194** (184 pre-existing + 10 new). Same branch as
-> T-030/T-032/T-033. Awaiting developer review/commit.
+> T-030/T-032/T-033.
 
 - [x] **T-030** `WorldClock` in-game time
 - [ ] **T-031** Tilemap, Y-sort, collision, 3-step camera zoom — skipped, no spec + visual-only
@@ -175,11 +174,47 @@ stood up now so the solo beta is already a listen-server session with one client
 
 ## Phase 4 · Inventory
 
-- [ ] **T-040** `GridInventory` structure + EditMode tests
-- [ ] **T-041** `WeightCalculator` + 5 verification cases
-- [ ] **T-042** Grid UI + dragging
-- [ ] **T-043** ★ Rotate (R), Ctrl+click bulk move, Shift+drag split. **Do not defer**
-- [ ] **T-044** Equipment slots + bag expansion
+> **T-040, T-041 implemented and verified (2026-09-15), not yet committed.** `GridInventory`
+> (`Assets/Scripts/Gameplay/Inventory/GridInventory.cs`) — pure structure, no weight/UI/network
+> (T-041/T-042/T-045). `TryPlace` checks in-bounds + AABB overlap against existing placements
+> (spec: no L-shaped items, so AABB is sufficient); rotation swaps the existing `GridSize`'s W/H
+> rather than adding a new type. No literal placement verification table in the spec (its table
+> covers §Weight) — test cases derived from the placement rules directly, see `PROJECT_STATE.md`
+> §Decided without a spec. `WeightCalculator`
+> (`Assets/Scripts/Gameplay/Inventory/WeightCalculator.cs`) — the spec's formula and 5-row
+> verification table copied verbatim, no invented values. Batchmode compile clean, EditMode
+> **211/211** (194 pre-existing at the start of T-040 + 7 + 10 new). Branch:
+> `feature/T-040-grid-inventory`.
+>
+> **T-042/T-043 implemented (2026-09-15)**, same branch. Pushed everything pure into
+> `GridInventory.cs` (`Placement.Count`, `FindFreePosition`, `TryMoveTo`, `MoveAllTo`, `AutoSort`,
+> `TrySplit`, `TotalWeightKg`, all EditMode-tested) and confined the untestable surface to three new
+> `Scripts/UI/Inventory/*.cs` MonoBehaviours (`GridView`, `DragHandler`, `ItemTooltip`). Batchmode
+> compile clean, EditMode **224/224** (211 pre-existing + 13 new). Unlike T-031 (no spec at all),
+> `SYS-INV-01` fully specifies this feature — only its UI half can't be verified by an EditMode test,
+> so it's built in full and handed to the developer as a manual-test checklist instead of being
+> skipped. Branch: `feature/T-040-grid-inventory`.
+>
+> **T-044 implemented (2026-09-15)**, same branch. `ItemDef` gained `EquipSlot`/`BagGrid` (schema
+> fields the spec's own §Containers table names but nothing had wired up yet); `EquipSlots.cs`
+> (pure, EditMode-tested) holds the eight named slots and opens a `GridInventory` when a bag-type
+> item is equipped. UI: `EquipSlotView`/`EquipDragHandler` (new) — drag an item onto a slot to equip,
+> drag the equipped icon back out to unequip; `DragHandler` now also recognizes `EquipSlotView` as a
+> drop target. Batchmode compile clean, EditMode **232/232** (224 pre-existing + 8 new). Branch:
+> `feature/T-040-grid-inventory`.
+>
+> **Manual-test harness added (2026-09-16).** T-042/T-043/T-044's UI was built but unreachable —
+> no scene ever had a Canvas/EventSystem/wired `GridView`, so there was nothing to actually press
+> Play on. Added `InventoryDemo.cs`, a runtime bootstrap (add the component to any GameObject,
+> press Play) that builds the whole test setup itself: Canvas, EventSystem, a paired player-bag +
+> warehouse `GridView`, all 8 `EquipSlotView`s, and a few sample items. See `PROJECT_STATE.md` for
+> the full checklist and the reasoning for fabricating sample items in C#.
+
+- [x] **T-040** `GridInventory` structure + EditMode tests
+- [x] **T-041** `WeightCalculator` + 5 verification cases
+- [x] **T-042** Grid UI + dragging
+- [x] **T-043** ★ Rotate (R), Ctrl+click bulk move, Shift+drag split. **Do not defer**
+- [x] **T-044** Equipment slots + bag expansion
 - [ ] **T-045** Server-authoritative sync + rollback UI
 
 > The two-player crate test (**T-046**) moved to Phase 10 — it needs two clients. T-045 still
