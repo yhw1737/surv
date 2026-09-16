@@ -7,7 +7,7 @@
 
 - Last updated: **2026-09-16**
 - Phase: **Phase 3 done except T-031 (skipped, needs spec) and T-034 (deferred to Phase 4/6). Phase 4 (inventory): T-040 through T-045 all implemented — T-045 not yet committed.**
-- Task: **T-045 (server-authoritative inventory sync + rollback UI) implemented on `feature/T-045-inventory-network`, not yet committed.** New `InventoryNetwork` (`NetworkBehaviour`) holds server-authoritative bag + equip slots for a player's own body only (warehouse/crates stay local, Phase 6 scope); `GridView`/`EquipSlotView` gained a `Network` property, `DragHandler`/`EquipDragHandler` branch on it with the local (non-networked) path byte-for-byte unchanged. Wired onto `player_rig_placeholder.prefab`. Batchmode EditMode run **238/238**, 0 failures — see In progress/unfinished and Next for the manual-test checklist. T-040~T-044 remain merged into `main` — [PR #19](https://github.com/yhw1737/surv/pull/19). Developer pressed Play repeatedly and reported bugs/requests each time, all fixed the same day: round 1 (unstyled Auto-Sort bar, no item/panel labels), round 2 (NullReferenceException crash, grids overlapping, item sizes not reflected), round 3 (drop position mismatched the dragged icon, tooltip flickering), round 4 (sword equip-slot fixture bug, Q/E rotate-in-place feature — later corrected), round 5 (Q/E moved to rotate-while-dragging instead, tooltip z-order behind newer UI, tooltip now follows the cursor), round 6 (backpack-unequip UI desync, split-drag visual gap + merge-on-drop-back, Q/E reliability fix, Ctrl+click-unequip + equipped-item tooltip), round 7 (Ctrl+click merge-onto-stack, dragged icon z-order above other panels, backpack contents can now bulk-move to the warehouse) — see Next for all seven rounds and the checklist. `docs/BACKLOG.md` also gained a Tier 2/3 modding note (dragselect/AllowTool-style mods need a DLL loader + Harmony-style patch mechanism, not just a richer JSON schema) — parked, not built, per Absolute Rule 6. Developer then actually ran the network checklist (one build + one Editor instance) and reported 6 findings; one was a real bug — `DragHandler.TryDrop`'s networked guard only checked the drag source, not the destination, so a local item dragged into the Networked Bag silently bypassed the server — now fixed to check both sides. The other 5 are expected/cosmetic/unrelated-system, see Next for the full breakdown. Developer then
+- Task: **T-045 (server-authoritative inventory sync + rollback UI) implemented, committed on `feature/T-045-inventory-network`, and open as [PR #20](https://github.com/yhw1737/surv/pull/20).** New `InventoryNetwork` (`NetworkBehaviour`) holds server-authoritative bag + equip slots for a player's own body only (warehouse/crates stay local, Phase 6 scope); `GridView`/`EquipSlotView` gained a `Network` property, `DragHandler`/`EquipDragHandler` branch on it with the local (non-networked) path byte-for-byte unchanged. Wired onto `player_rig_placeholder.prefab`. Batchmode EditMode run **238/238**, 0 failures — see In progress/unfinished and Next for the manual-test checklist. T-040~T-044 remain merged into `main` — [PR #19](https://github.com/yhw1737/surv/pull/19). Developer pressed Play repeatedly and reported bugs/requests each time, all fixed the same day: round 1 (unstyled Auto-Sort bar, no item/panel labels), round 2 (NullReferenceException crash, grids overlapping, item sizes not reflected), round 3 (drop position mismatched the dragged icon, tooltip flickering), round 4 (sword equip-slot fixture bug, Q/E rotate-in-place feature — later corrected), round 5 (Q/E moved to rotate-while-dragging instead, tooltip z-order behind newer UI, tooltip now follows the cursor), round 6 (backpack-unequip UI desync, split-drag visual gap + merge-on-drop-back, Q/E reliability fix, Ctrl+click-unequip + equipped-item tooltip), round 7 (Ctrl+click merge-onto-stack, dragged icon z-order above other panels, backpack contents can now bulk-move to the warehouse) — see Next for all seven rounds and the checklist. `docs/BACKLOG.md` also gained a Tier 2/3 modding note (dragselect/AllowTool-style mods need a DLL loader + Harmony-style patch mechanism, not just a richer JSON schema) — parked, not built, per Absolute Rule 6. Developer then actually ran the network checklist (one build + one Editor instance) and reported 6 findings; one was a real bug — `DragHandler.TryDrop`'s networked guard only checked the drag source, not the destination, so a local item dragged into the Networked Bag silently bypassed the server — now fixed to check both sides. The other 5 are expected/cosmetic/unrelated-system, see Next for the full breakdown. Developer then
 spotted two more gaps in the checklist/harness itself: the Networked Bag had no way to be seeded
 with a test item (fixed — `InventoryNetwork.SeedTestItems`), and equipping the backpack into the
 Networked Bag's own row doesn't open a "Backpack (opened)" panel (developer decided: leave out of
@@ -25,7 +25,7 @@ stage 2 · solo beta
 Phase 1  foundation           [x] 10/10 T-010..T-019  ← done
 Phase 2  netcode skeleton     [x] 2/2   T-020..T-021 ← done, both merged into main (PR #16, #17, 2026-09-15)
 Phase 3  world                [ ] 5/7   T-030, T-032, T-033, T-035, T-036 merged (PR #18, 2026-09-15); T-031 skipped, T-034 deferred
-Phase 4  inventory            [x] 6/6   T-040..T-044 merged into main (PR #19); T-045 implemented, not yet committed (2026-09-16)
+Phase 4  inventory            [x] 6/6   T-040..T-044 merged into main (PR #19); T-045 open (PR #20, 2026-09-16)
 Phase 5  survival + skills    [ ] 0/8
 Phase 6  production loop      [ ] 0/9
 Phase 7  crafting + cooking   [ ] 0/10
@@ -649,11 +649,11 @@ split, equipment slots + bag expansion) are implemented, verified, and merged in
 ([PR #19](https://github.com/yhw1737/surv/pull/19), 2026-09-16) — see Completed. `InventoryDemo.cs`
 makes the UI half actually reachable in the Editor (see Next).
 
-**T-045** (server-authoritative inventory sync + rollback UI) is implemented and committed on
-`feature/T-045-inventory-network`, batchmode-verified (238/238) — see Completed for the full file
-list and Decided without a spec for the scope/identification/single-in-flight judgment calls. Needs
-a live client/server session to verify the network round-trip itself; see the manual-test checklist
-in Next.
+**T-045** (server-authoritative inventory sync + rollback UI) is implemented, committed on
+`feature/T-045-inventory-network`, and open as [PR #20](https://github.com/yhw1737/surv/pull/20) —
+batchmode-verified (238/238); see Completed for the full file list and Decided without a spec for
+the scope/identification/single-in-flight judgment calls. Needs a live client/server session to
+verify the network round-trip itself; see the manual-test checklist in Next.
 
 ## Next
 
