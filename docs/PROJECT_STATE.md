@@ -6,10 +6,15 @@
 ## Header
 
 - Last updated: **2026-09-16**
-- Phase: **Phase 3 done except T-031 (skipped, needs spec) and T-034 (deferred to Phase 4/6). Phase 4 (inventory): T-040 through T-044 done and merged, T-045 remaining.**
-- Task: **T-040~T-044 (grid inventory, weight, equip slots + bag expansion) merged into `main` — [PR #19](https://github.com/yhw1737/surv/pull/19).** Developer pressed Play repeatedly and reported bugs/requests each time, all fixed the same day: round 1 (unstyled Auto-Sort bar, no item/panel labels), round 2 (NullReferenceException crash, grids overlapping, item sizes not reflected), round 3 (drop position mismatched the dragged icon, tooltip flickering), round 4 (sword equip-slot fixture bug, Q/E rotate-in-place feature — later corrected), round 5 (Q/E moved to rotate-while-dragging instead, tooltip z-order behind newer UI, tooltip now follows the cursor), round 6 (backpack-unequip UI desync, split-drag visual gap + merge-on-drop-back, Q/E reliability fix, Ctrl+click-unequip + equipped-item tooltip), round 7 (Ctrl+click merge-onto-stack, dragged icon z-order above other panels, backpack contents can now bulk-move to the warehouse) — see Next for all seven rounds and the checklist. `docs/BACKLOG.md` also gained a Tier 2/3 modding note (dragselect/AllowTool-style mods need a DLL loader + Harmony-style patch mechanism, not just a richer JSON schema) — parked, not built, per Absolute Rule 6.
-- Branch: **main** (local feature branches for T-020/T-021/T-030/T-040 deleted post-merge; only `main` remains locally)
-- Pending commit: **none**
+- Phase: **Phase 3 done except T-031 (skipped, needs spec) and T-034 (deferred to Phase 4/6). Phase 4 (inventory): T-040 through T-045 all implemented — T-045 not yet committed.**
+- Task: **T-045 (server-authoritative inventory sync + rollback UI) implemented, committed on `feature/T-045-inventory-network`, and open as [PR #20](https://github.com/yhw1737/surv/pull/20).** New `InventoryNetwork` (`NetworkBehaviour`) holds server-authoritative bag + equip slots for a player's own body only (warehouse/crates stay local, Phase 6 scope); `GridView`/`EquipSlotView` gained a `Network` property, `DragHandler`/`EquipDragHandler` branch on it with the local (non-networked) path byte-for-byte unchanged. Wired onto `player_rig_placeholder.prefab`. Batchmode EditMode run **238/238**, 0 failures — see In progress/unfinished and Next for the manual-test checklist. T-040~T-044 remain merged into `main` — [PR #19](https://github.com/yhw1737/surv/pull/19). Developer pressed Play repeatedly and reported bugs/requests each time, all fixed the same day: round 1 (unstyled Auto-Sort bar, no item/panel labels), round 2 (NullReferenceException crash, grids overlapping, item sizes not reflected), round 3 (drop position mismatched the dragged icon, tooltip flickering), round 4 (sword equip-slot fixture bug, Q/E rotate-in-place feature — later corrected), round 5 (Q/E moved to rotate-while-dragging instead, tooltip z-order behind newer UI, tooltip now follows the cursor), round 6 (backpack-unequip UI desync, split-drag visual gap + merge-on-drop-back, Q/E reliability fix, Ctrl+click-unequip + equipped-item tooltip), round 7 (Ctrl+click merge-onto-stack, dragged icon z-order above other panels, backpack contents can now bulk-move to the warehouse) — see Next for all seven rounds and the checklist. `docs/BACKLOG.md` also gained a Tier 2/3 modding note (dragselect/AllowTool-style mods need a DLL loader + Harmony-style patch mechanism, not just a richer JSON schema) — parked, not built, per Absolute Rule 6. Developer then actually ran the network checklist (one build + one Editor instance) and reported 6 findings; one was a real bug — `DragHandler.TryDrop`'s networked guard only checked the drag source, not the destination, so a local item dragged into the Networked Bag silently bypassed the server — now fixed to check both sides. The other 5 are expected/cosmetic/unrelated-system, see Next for the full breakdown. Developer then
+spotted two more gaps in the checklist/harness itself: the Networked Bag had no way to be seeded
+with a test item (fixed — `InventoryNetwork.SeedTestItems`), and equipping the backpack into the
+Networked Bag's own row doesn't open a "Backpack (opened)" panel (developer decided: leave out of
+scope for T-045). Developer then asked for this to be committed and a PR opened.
+- Branch: **feature/T-045-inventory-network** (branched from `main` post-PR#19; local feature branches for T-020/T-021/T-030/T-040 deleted post-merge)
+- Pending commit: **none — developer requested commit + PR (2026-09-16), see below for the link
+  once opened.**
 
 ## Progress
 
@@ -20,7 +25,7 @@ stage 2 · solo beta
 Phase 1  foundation           [x] 10/10 T-010..T-019  ← done
 Phase 2  netcode skeleton     [x] 2/2   T-020..T-021 ← done, both merged into main (PR #16, #17, 2026-09-15)
 Phase 3  world                [ ] 5/7   T-030, T-032, T-033, T-035, T-036 merged (PR #18, 2026-09-15); T-031 skipped, T-034 deferred
-Phase 4  inventory            [ ] 5/6   T-040..T-044 merged into main (PR #19, 2026-09-16); T-045 remaining
+Phase 4  inventory            [x] 6/6   T-040..T-044 merged into main (PR #19); T-045 open (PR #20, 2026-09-16)
 Phase 5  survival + skills    [ ] 0/8
 Phase 6  production loop      [ ] 0/9
 Phase 7  crafting + cooking   [ ] 0/10
@@ -581,6 +586,58 @@ Phase 13 modding + polish     [ ] 0/7
     pre-existing + 8 new). **The UI half (`EquipSlotView`/`EquipDragHandler`) is not
     EditMode-testable** — see the manual-test checklist in Next.
 
+- **T-045**: server-authoritative inventory sync + rollback UI (SYS-NET-01 "Inventory" row —
+  server-only, no prediction; Absolute Rule 2). Scoped to a player's own bag + equip slots only —
+  see Decided without a spec for why the warehouse/crates stay local.
+  - `Assets/Scripts/Gameplay/Inventory/InventoryNetwork.cs` (new) — a `NetworkBehaviour`, one per
+    player `NetworkObject`, holding the server's authoritative `GridInventory` bag (6×3) and
+    `EquipSlots`. Four `Request...` methods (move/split within the bag, equip, unequip) send a
+    `[ServerRpc]`; the server validates against its own copy (mirroring the exact local logic
+    `DragHandler`/`EquipSlotView`/`EquipDragHandler` already had) and reports the result back via
+    `[TargetRpc]`. Identifies "which item" by its grid position (`GridInventory.PlacementAt`, new),
+    not a `NamespacedId` — avoids `Isle.Gameplay` needing to reference `Isle.Modding`. `Awake()`
+    also seeds the bag with two throwaway `ItemDef` fixtures (`SeedTestItems`, added after the
+    developer's manual test pass found the Networked Bag otherwise had no legitimate way to get an
+    item into it — see Next's checklist item 1) so the checklist has something to act on.
+  - `Assets/Scripts/Gameplay/Inventory/GridInventory.cs` — added `PlacementAt(Vec2Int)`, an exact
+    lookup by a placement's stored top-left position (used above; also the natural counterpart to
+    `Remove`, which already takes a `Placement`).
+  - `Assets/Tests/EditMode/GridInventoryTests.cs` — 3 new cases for `PlacementAt`: occupied position,
+    empty position, and a non-origin cell of a multi-cell item (must return null — position
+    identification only matches the stored origin, not the whole footprint).
+  - `Assets/Scripts/UI/Inventory/GridView.cs` / `EquipSlotView.cs` — both gained a settable
+    `Network` property (null for local-only views: warehouse, demo crates).
+  - `Assets/Scripts/UI/Inventory/DragHandler.cs` / `EquipDragHandler.cs` — every mutation call site
+    now branches on `_owner.Network != null`; the local (non-networked) path is byte-for-byte
+    unchanged. The networked path sends a request and returns immediately (`true`, meaning "request
+    sent", not "applied") — the actual `Redraw()` happens in the request's result callback once the
+    server's `[TargetRpc]` acks. A networked bag item can only be dropped back into that same bag
+    (rejected onto a warehouse/crate) or unequipped into that same player's networked bag — see
+    Decided without a spec.
+  - `OnEndDrag` in both files: moved the dragged icon's `CanvasGroup.alpha`/`blocksRaycasts` reset
+    from the top of the method to the bottom (reached only on total failure) — this alone makes a
+    pending networked request render as translucent until its ack's `Redraw()` replaces the icon,
+    with zero extra code, since the local success path's `Redraw()` still runs synchronously before
+    the reset would matter.
+  - `Assets/Scripts/UI/Inventory/InventoryDemo.cs` — added an isolated "Networked Bag (T-045)"
+    section, deliberately separate from the existing sample Player Bag/Warehouse/Equip-slots demo.
+    Polls (`WaitForNetworkedBag` coroutine, `FindObjectsByType<InventoryNetwork>()` for one with
+    `IsOwner == true`) since the player's `NetworkObject` may not have spawned yet when the demo
+    starts, then binds a `GridView` to `network.Bag` and one `EquipSlotView` per slot to
+    `network.Slots`, both with `Network` set.
+  - `Assets/Scripts/Gameplay/Isle.Gameplay.asmdef` — added `FishNet.Runtime` (for
+    `NetworkBehaviour`/`ServerRpc`/`TargetRpc`). `Assets/Scripts/UI/Isle.UI.asmdef` — same addition,
+    needed because `GridView`/`EquipSlotView`'s new `Network` property exposes `InventoryNetwork`
+    (a `NetworkBehaviour`) in `Isle.UI`'s own public surface.
+  - `Assets/Prefabs/Characters/player_rig_placeholder.prefab` — added an `InventoryNetwork`
+    component (new `.meta` GUID generated for the new script) to the same root GameObject that
+    already carries `NetworkObject` and `PlayerMovement`.
+  - Verified: batchmode compile **0 `error CS`**; full EditMode suite **238/238 passed** — the
+    first real batchmode run in a while, not a hand-count (see In progress/unfinished below for the
+    now-resolved gap and a `-quit`/`-runTests` gotcha it surfaced). **The network round-trip itself
+    (translucent-pending render, rollback on a denied move) is not EditMode-testable** — needs a
+    live client/server session, see the manual-test checklist in Next.
+
 ## In progress / unfinished
 
 T-030, T-032, T-033, T-035, T-036 all merged ([PR #18](https://github.com/yhw1737/surv/pull/18),
@@ -592,12 +649,128 @@ split, equipment slots + bag expansion) are implemented, verified, and merged in
 ([PR #19](https://github.com/yhw1737/surv/pull/19), 2026-09-16) — see Completed. `InventoryDemo.cs`
 makes the UI half actually reachable in the Editor (see Next).
 
+**T-045** (server-authoritative inventory sync + rollback UI) is implemented, committed on
+`feature/T-045-inventory-network`, and open as [PR #20](https://github.com/yhw1737/surv/pull/20) —
+batchmode-verified (238/238); see Completed for the full file list and Decided without a spec for
+the scope/identification/single-in-flight judgment calls. Needs a live client/server session to
+verify the network round-trip itself; see the manual-test checklist in Next.
+
 ## Next
 
-T-040 through T-044 are merged. **T-045** (server-authoritative sync + rollback UI) is next in
-`BACKLOG.md` — it needs a live client/server session to verify (translucent-pending render,
-rollback on a denied move), so expect the same "build it fully, then manual-test checklist"
-treatment once it's done.
+**T-045 manual test checklist for the developer** — none of this is covered by the EditMode suite;
+it needs at least two clients (Host + Client, or two standalone builds) against the same session,
+since the whole point is server vs. owning-client behaviour. Press Play with `InventoryDemo` in the
+scene, start the client/server session however the project currently does that (`IsleNetworkManager`,
+T-020/T-021), and once each player's own `InventoryNetwork` spawns, a third "Networked Bag (T-045)"
+panel should appear below the existing sample panels:
+
+1. **Networked bag appears** — once your own player's `NetworkObject` spawns, a "Networked Bag
+   (T-045)" grid + a full row of equip slots should appear (`InventoryDemo.WaitForNetworkedBag`);
+   it starts with two test-support fixtures (`InventoryNetwork.SeedTestItems`, not shipped content)
+   so the rest of this checklist has something to move/split/equip/drag out — a `main_hand`-tagged
+   gear item at (0,0) and a stack of 3 at (1,0).
+2. **Move within the networked bag** — drag an item to an empty cell inside this bag; it should go
+   translucent immediately, then resolve to fully opaque at the new cell shortly after (the round
+   trip to the server and back) — not snap there instantly the way the local demo bag does.
+3. **Rejected move rolls back visually** — drag an item onto a cell already occupied inside this
+   bag; it should stay translucent briefly, then snap back to its original cell once the server's
+   rejection comes back, never disappearing or duplicating.
+4. **Split within the networked bag** — Shift+drag part of a stack to an empty cell in this same
+   bag; same translucent-then-resolve behaviour as #2, ending with two correctly-counted stacks.
+5. **Equip from the networked bag** — drag an item from this bag onto one of its own equip slots
+   (matching `EquipSlot`); it should go translucent, then land on the slot and disappear from the
+   bag once acked.
+6. **Unequip into the networked bag** — drag an equipped item on this row back into this bag; same
+   translucent-then-resolve pattern, landing in the bag once acked.
+7. **Cross-container drop is rejected** — drag an item from this networked bag onto the *local*
+   demo warehouse (or the local demo bag) instead; it should refuse and snap back — this is the
+   deliberate Phase-6-scope limitation (`DragHandler.TryDrop`'s `target == _owner` check), not a
+   bug. Confirm the reverse also fails: dragging a *local* item onto the networked bag.
+8. **Unequip into a different container is rejected** — if reachable, try dragging an item equipped
+   in this row into the local demo warehouse/bag instead of this networked bag; should refuse
+   (`EquipDragHandler.UnequipIntoNetworked`'s `target.Network != _owner.Network` check).
+9. **Ctrl+click is a no-op on the networked panel** — Ctrl+click an item in this bag or an equipped
+   item on this row; nothing should happen (no `PairedView` is wired for the networked demo panel —
+   expected, not a bug, since Ctrl+click routes through local-only code).
+10. **Host (listen-server) self-play doesn't double-apply** — if testing as the host (server +
+    owning client in one process), confirm a move/equip/split/unequip each apply exactly once, not
+    twice or with a visible flicker (`InventoryNetwork`'s `!IsServer` guard in each `Request...`'s
+    callback exists specifically for this).
+11. **Two separate players don't see each other's networked bags** — with two clients connected,
+    confirm each player's "Networked Bag (T-045)" panel only reflects their own `InventoryNetwork`
+    (`IsOwner`-filtered) — nobody sees or can drag into another player's bag.
+
+**Developer ran the checklist (2026-09-16, one build + one Editor instance) and reported 6 findings
+— investigated, one real bug found and fixed:**
+
+1. **Position sync depends on launch order** (Editor-first: build player's position doesn't sync;
+   build-first: works) — **not fixed, not fully explained.** `PlayerMovement.cs`'s prediction code
+   is symmetric per-process; nothing in it explains an order dependency. Leading hypothesis:
+   `IsleNetworkManager.Start()` races both instances' `ServerManager.StartConnection()` for the same
+   `localhost:7770` bind (see In progress/unfinished's connection-method note) — which process
+   actually wins that race isn't guaranteed to match launch order (Editor's domain-reload/Play-mode
+   entry adds variable delay a standalone build doesn't have). Next step if this recurs: check each
+   instance's Console for the Tugboat bind success/failure log line to see who actually became host,
+   rather than assuming from launch order.
+2. **Equip slots look like "2 rows"** — expected, not a bug. `InventoryDemo.BuildEquipRow` (the
+   pre-existing local demo row, `y = -320`) and `InventoryDemo.WaitForNetworkedBag`'s own equip row
+   (`y = -420 - 100`) are two separate single-row panels for two separate `EquipSlots` instances
+   (local demo vs. the player's real `InventoryNetwork.Slots`), stacked vertically — not a wrapped
+   row.
+3. **Backpack-open panel renders on top of the Networked Bag panel** — confirmed, cosmetic-only.
+   `BuildEquipRow`'s backpack-open handler places its "Backpack (opened)" grid at `bagY = y - 100f`
+   = `-420`; `WaitForNetworkedBag` independently hardcodes its own panel at `y = -420`. Same `x`
+   (`Margin`) too, so they land in the exact same rect by coincidence — both are demo-harness-only
+   layout constants, not shipped UI, so not worth spending a task on; only fix if it gets in the way
+   of further manual testing.
+4. **Networked Bag → other storage move is rejected** — confirmed correct, matches checklist #7's
+   deliberate Phase-6-scope limitation.
+5. **Item equipped from the Networked Bag "disappears"** — **real bug, found and fixed.** Root
+   cause: checklist #7 also asks to test the *reverse* of #4 (dragging a **local** item into the
+   Networked Bag), and that direction was never actually rejected. `DragHandler.TryDrop`'s network
+   guard only checked `_owner.Network` (the drag source), never `target.Network` (the destination) —
+   `EquipDragHandler.UnequipIntoNetworked` already checked both sides correctly, but `TryDrop` didn't
+   mirror it. So dragging a local item into the Networked Bag silently placed it straight into
+   `network.Bag` client-side only, with the server never told. Equipping that item then always failed
+   server-side (the server's `Bag.PlacementAt` doesn't have it) — but `TryEquipNetworked` always
+   returns `true` immediately (fire-and-forget), so `OnEndDrag`'s failure-cleanup path never ran, and
+   the dragged icon (already reparented to the canvas root) was left behind as a stray dimmed "ghost"
+   next to a fresh, correct icon from `Redraw()`. Looked like the item vanishing. **Fixed:**
+   `DragHandler.TryDrop`'s guard now checks `_owner.Network != null || target.Network != null`,
+   rejecting both directions like `EquipDragHandler` already did.
+6. **Server shutdown → no crash, but players disappear** — not a bug, believed to be FishNet's
+   default disconnect behaviour (no custom `OnServerConnectionState`/despawn-on-disconnect code
+   exists anywhere in the project — grepped, none found). No persistence system exists yet
+   (world-state save/load is unscoped), so a despawned player on disconnect is expected for now, not
+   something to fix in T-045.
+
+**Developer then spotted two gaps in the checklist/harness itself (2026-09-16), both confirmed by
+re-reading `InventoryNetwork.cs`/`InventoryDemo.cs` — neither is a T-045 sync bug, both are
+demo-harness/scope decisions, recorded here rather than silently resolved:**
+
+1. **Checklist #7's "drag out, rejected" half was untestable as written — fixed.**
+   `InventoryNetwork.Awake()` only did `Bag = new GridInventory(BagWidth, BagHeight)` — no seed
+   item, and nothing else in the codebase wrote into `network.Bag` (grepped for
+   `network.Bag`/`Network.Bag`, only reads found in `GridView`/`EquipSlotView`/`DragHandler`/
+   `InventoryDemo`). Since #5 fixed the one path that used to sneak a local item in without server
+   approval, there was no legitimate way left to get an item into the Networked Bag at all.
+   **Fixed:** `InventoryNetwork.SeedTestItems()` (called from `Awake()`) places two throwaway
+   `ItemDef` fixtures — same reasoning as `InventoryDemo.cs`'s sample items, Absolute Rule 1 is
+   about game content, not test fixtures. Runs identically on the server's and the owning client's
+   instance (both hit the same deterministic `Awake()`), so both start in sync with no RPC needed —
+   same reasoning as the class's "no snapshot sync back" remark. Batchmode EditMode re-verified
+   238/238 after this change.
+2. **Equipping the backpack into the Networked Bag's own equip row does not open a "Backpack
+   (opened)" panel.** `InventoryDemo.BuildEquipRow` (the local demo row) wires a `Changed` listener
+   on the "back" slot that opens/closes one; `WaitForNetworkedBag`'s equip-slot loop builds the same
+   `EquipSlotView`s but never wires an equivalent listener — confirmed by reading both loops side by
+   side. **Decision (developer, 2026-09-16): leave as-is, out of scope for T-045.** T-045 is about
+   server-authoritative sync, not UI parity across every demo panel.
+
+T-040 through T-045 are all implemented; T-045 is committed on `feature/T-045-inventory-network`
+and a PR is open (see In progress/unfinished for the link). `BACKLOG.md`'s Phase 4 is now 6/6 — the
+next task to pick up is Phase 5 (survival + skills), once the developer has re-run the checklist
+(item #7 both directions, now testable with the seeded items) and the PR is merged.
 
 **Correction from an earlier reading of the developer's "keep developing" instruction** (recorded
 once, still applies going forward): it does not mean stop at the first task needing manual testing
@@ -622,11 +795,14 @@ items are fabricated in C# rather than real content.
 `InventoryDemo` component to it, press Play. Two grids, 8 equip slots and two "move all" buttons
 appear on screen immediately — no other setup needed.
 
-Automated batchmode compile verification for this file is still pending — the developer's own
-Editor was already open on the project when this was written, and a second batchmode instance
-can't take the project lock, so this was checked by hand instead of via the usual
-`-runTests`/`0 error CS` run. Worth a real compile pass once convenient (closing the Editor and
-re-running batchmode, or just pressing Play and checking the Console).
+~~Automated batchmode compile verification for this file is still pending~~ **Resolved
+2026-09-16 (T-045 session):** the Editor wasn't holding the project lock this time, so a real
+`-batchmode -runTests -testPlatform EditMode` pass finally ran (not just a hand count) — caught a
+real bug too: `Isle.UI`'s asmdef was missing a `FishNet.Runtime` reference the moment
+`InventoryNetwork` became visible in its public surface (`GridView.Network`), which a hand-check
+would have missed. One gotcha for next time: **don't pass `-quit` alongside `-runTests`** — Unity
+quits on the initial asset-refresh/compile pass before the test run ever starts, silently
+producing no results file and no error.
 
 **Screenshot-driven fixes (2026-09-16):** the developer pressed Play and sent a screenshot with two
 problems, both now fixed:
@@ -1591,6 +1767,33 @@ blocking anything right now.
   placeholder generator is **T-017** (Phase 1) and the palette is **T-160** (opens Phase 11); the
   document's order of work was re-sequenced to match, and the rest of it is now explicitly a plan
   for Phase 11 rather than a prerequisite for coding.
+- **T-045 scoped `InventoryNetwork` authority to the player's own bag + equip slots only, not the
+  warehouse/crates.** SYS-NET-01 requires server authority for inventory but doesn't say which
+  containers; a crate/warehouse is a `WorldObject`, and that type is still a bare def-id + position
+  placeholder with no `NetworkObject` or reach/ownership model (T-032, above). Networking that is
+  Phase 6 scope once world objects have a network identity to validate reach/ownership against.
+  Until then, `DragHandler`/`EquipDragHandler` reject a drop that would move a networked bag item
+  into an un-networked container rather than silently falling back to a local, non-authoritative
+  mutation — a deliberate limitation to call out in the manual-test checklist, not a bug.
+- **`InventoryNetwork` RPCs identify "which item" by its grid position (`GridInventory.PlacementAt`),
+  not by a `NamespacedId`.** Resolving an id through `DefRegistry` would need `Isle.Gameplay` to
+  reference `Isle.Modding`, which the dependency direction (`UI → Gameplay → World → Networking →
+  Data → Core`) doesn't allow. A position always uniquely identifies one placement within a single
+  player's own bag, so nothing is lost by keying off it instead.
+- **No snapshot-sync protocol for a player's own bag/slots.** Since only that same player's own
+  requests can ever mutate their bag or equip slots, server and owning-client copies can't drift as
+  long as every mutation goes through `InventoryNetwork` (Absolute Rule 2) — so there's nothing for
+  a periodic/on-join snapshot to reconcile. Revisit if a system besides the owner ever needs to
+  mutate a player's bag (e.g. a "steal" mechanic).
+- **`InventoryNetwork` assumes one in-flight request at a time** (a single `Action<bool>` field, no
+  request id/queue) — a solo player drives one drag/click at a time, and this is LAN/listen-server
+  play (max 4 players), so an ack always lands well before the next request could be sent. Marked
+  with a `ponytail:` comment; revisit with a request id if real internet play is ever added.
+- **`InventoryNetwork` doesn't enforce a weight-limit hard block.** SYS-INV-01 §Weight never
+  specifies one — it's a continuous movement-speed penalty (see the `WeightCalculator` entry above)
+  with no consumer wired up yet, so there's no rule to enforce server-side. Reach/ownership checks
+  (SYS-NET-01 §Server validation) also don't apply: both containers are the player's own body,
+  always in reach, and `[ServerRpc]`'s default `RequireOwnership` covers ownership for free.
 
 ## Operational notes
 

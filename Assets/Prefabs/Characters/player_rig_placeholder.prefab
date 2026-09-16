@@ -380,6 +380,7 @@ GameObject:
   - component: {fileID: 3892718679702316232}
   - component: {fileID: 9100000000000001}
   - component: {fileID: 9100000000000002}
+  - component: {fileID: 9100000000000003}
   m_Layer: 0
   m_Name: player_rig_placeholder
   m_TagString: Untagged
@@ -513,6 +514,18 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 9100000000000001}
   _networkObjectCache: {fileID: 0}
   _tickCallbacks: 6
+--- !u!114 &9100000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2460558508985687320}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a924d7d30a924fb9a1788fa429e81a13, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Isle.Gameplay::Isle.Gameplay.Inventory.InventoryNetwork
 --- !u!1 &2494495060308166555
 GameObject:
   m_ObjectHideFlags: 0

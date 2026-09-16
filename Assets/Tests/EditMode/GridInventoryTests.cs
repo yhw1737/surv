@@ -106,6 +106,37 @@ namespace Isle.Tests.EditMode
         }
 
         [Test]
+        public void PlacementAt_OccupiedPosition_ReturnsPlacement()
+        {
+            var inventory = new GridInventory(width: 6, height: 3);
+            var item = Item(2, 2);
+            inventory.TryPlace(item, new Vec2Int(1, 1));
+
+            var placement = inventory.PlacementAt(new Vec2Int(1, 1));
+            Assert.IsNotNull(placement);
+            Assert.AreEqual(item, placement.Value.Item);
+        }
+
+        [Test]
+        public void PlacementAt_EmptyPosition_ReturnsNull()
+        {
+            var inventory = new GridInventory(width: 6, height: 3);
+
+            Assert.IsNull(inventory.PlacementAt(new Vec2Int(0, 0)));
+        }
+
+        // T-045: InventoryNetwork identifies "which item" by its stored top-left position — a cell
+        // inside a multi-cell item's footprint but not that origin must not match.
+        [Test]
+        public void PlacementAt_NonOriginCellOfMultiCellItem_ReturnsNull()
+        {
+            var inventory = new GridInventory(width: 6, height: 3);
+            inventory.TryPlace(Item(2, 2), new Vec2Int(0, 0));
+
+            Assert.IsNull(inventory.PlacementAt(new Vec2Int(1, 1)));
+        }
+
+        [Test]
         public void FindFreePosition_EmptyGrid_ReturnsOrigin()
         {
             var inventory = new GridInventory(width: 6, height: 3);

@@ -209,13 +209,29 @@ stood up now so the solo beta is already a listen-server session with one client
 > press Play) that builds the whole test setup itself: Canvas, EventSystem, a paired player-bag +
 > warehouse `GridView`, all 8 `EquipSlotView`s, and a few sample items. See `PROJECT_STATE.md` for
 > the full checklist and the reasoning for fabricating sample items in C#.
+>
+> **T-045 implemented (2026-09-16)**, `feature/T-045-inventory-network`. New `InventoryNetwork`
+> (`Scripts/Gameplay/Inventory/InventoryNetwork.cs`, a `NetworkBehaviour`) holds the server's
+> authoritative copy of one player's bag + equip slots; client requests a move/split/equip/unequip
+> by grid position, a `[ServerRpc]` validates and applies against the server's own copy, a
+> `[TargetRpc]` reports the result back to the owner. Scoped to the player's own bag/slots only —
+> warehouse/crates stay local-only (Phase 6, `WorldObject` has no network identity yet). Wired onto
+> `player_rig_placeholder.prefab` alongside `PlayerMovement`. `GridView`/`EquipSlotView` gained a
+> `Network` property; `DragHandler`/`EquipDragHandler` branch on it (byte-for-byte the old local
+> behaviour when unset). See `PROJECT_STATE.md` §Decided without a spec for the scope/identification/
+> single-in-flight judgment calls. Batchmode compile clean, EditMode **238/238** — first actual
+> batchmode run in a while (earlier "232/232" figures were hand-counted, not run, per the
+> now-resolved gap below); 3 new `PlacementAt` cases added this session, the rest of the delta is
+> `[TestCase]`-expanded counts a static grep undercounts. Needs a live
+> client/server session to verify the translucent-pending render and rollback — see the manual-test
+> checklist in `PROJECT_STATE.md`.
 
 - [x] **T-040** `GridInventory` structure + EditMode tests
 - [x] **T-041** `WeightCalculator` + 5 verification cases
 - [x] **T-042** Grid UI + dragging
 - [x] **T-043** ★ Rotate (R), Ctrl+click bulk move, Shift+drag split. **Do not defer**
 - [x] **T-044** Equipment slots + bag expansion
-- [ ] **T-045** Server-authoritative sync + rollback UI
+- [x] **T-045** Server-authoritative sync + rollback UI
 
 > The two-player crate test (**T-046**) moved to Phase 10 — it needs two clients. T-045 still
 > lands here, because inventory authority is architecture, not a multiplayer feature.
