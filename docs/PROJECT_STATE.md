@@ -6,10 +6,10 @@
 ## Header
 
 - Last updated: **2026-09-16**
-- Phase: **Phase 3 done except T-031 (skipped, needs spec) and T-034 (deferred to Phase 4/6). Phase 4 (inventory) in progress: T-040 through T-044 done.**
-- Task: **T-040~T-044 (grid inventory, weight, equip slots + bag expansion) committed and PR opened — [PR #19](https://github.com/yhw1737/surv/pull/19), awaiting merge.** Developer pressed Play repeatedly and reported bugs/requests each time, all fixed the same day: round 1 (unstyled Auto-Sort bar, no item/panel labels), round 2 (NullReferenceException crash, grids overlapping, item sizes not reflected), round 3 (drop position mismatched the dragged icon, tooltip flickering), round 4 (sword equip-slot fixture bug, Q/E rotate-in-place feature — later corrected), round 5 (Q/E moved to rotate-while-dragging instead, tooltip z-order behind newer UI, tooltip now follows the cursor), round 6 (backpack-unequip UI desync, split-drag visual gap + merge-on-drop-back, Q/E reliability fix, Ctrl+click-unequip + equipped-item tooltip), round 7 (Ctrl+click merge-onto-stack, dragged icon z-order above other panels, backpack contents can now bulk-move to the warehouse) — see Next for all seven rounds and the checklist.**
-- Branch: **feature/T-040-grid-inventory**
-- Pending commit: **none — committed as `b252ac7`, pushed, [PR #19](https://github.com/yhw1737/surv/pull/19) open against `main`**
+- Phase: **Phase 3 done except T-031 (skipped, needs spec) and T-034 (deferred to Phase 4/6). Phase 4 (inventory): T-040 through T-044 done and merged, T-045 remaining.**
+- Task: **T-040~T-044 (grid inventory, weight, equip slots + bag expansion) merged into `main` — [PR #19](https://github.com/yhw1737/surv/pull/19).** Developer pressed Play repeatedly and reported bugs/requests each time, all fixed the same day: round 1 (unstyled Auto-Sort bar, no item/panel labels), round 2 (NullReferenceException crash, grids overlapping, item sizes not reflected), round 3 (drop position mismatched the dragged icon, tooltip flickering), round 4 (sword equip-slot fixture bug, Q/E rotate-in-place feature — later corrected), round 5 (Q/E moved to rotate-while-dragging instead, tooltip z-order behind newer UI, tooltip now follows the cursor), round 6 (backpack-unequip UI desync, split-drag visual gap + merge-on-drop-back, Q/E reliability fix, Ctrl+click-unequip + equipped-item tooltip), round 7 (Ctrl+click merge-onto-stack, dragged icon z-order above other panels, backpack contents can now bulk-move to the warehouse) — see Next for all seven rounds and the checklist. `docs/BACKLOG.md` also gained a Tier 2/3 modding note (dragselect/AllowTool-style mods need a DLL loader + Harmony-style patch mechanism, not just a richer JSON schema) — parked, not built, per Absolute Rule 6.
+- Branch: **main** (local feature branches for T-020/T-021/T-030/T-040 deleted post-merge; only `main` remains locally)
+- Pending commit: **none**
 
 ## Progress
 
@@ -20,7 +20,7 @@ stage 2 · solo beta
 Phase 1  foundation           [x] 10/10 T-010..T-019  ← done
 Phase 2  netcode skeleton     [x] 2/2   T-020..T-021 ← done, both merged into main (PR #16, #17, 2026-09-15)
 Phase 3  world                [ ] 5/7   T-030, T-032, T-033, T-035, T-036 merged (PR #18, 2026-09-15); T-031 skipped, T-034 deferred
-Phase 4  inventory            [ ] 5/6   T-040..T-044 implemented, not yet committed; T-042/T-043/T-044's UI half needs manual test
+Phase 4  inventory            [ ] 5/6   T-040..T-044 merged into main (PR #19, 2026-09-16); T-045 remaining
 Phase 5  survival + skills    [ ] 0/8
 Phase 6  production loop      [ ] 0/9
 Phase 7  crafting + cooking   [ ] 0/10
@@ -588,16 +588,16 @@ T-030, T-032, T-033, T-035, T-036 all merged ([PR #18](https://github.com/yhw173
 **Phase 3 is done except T-031 (skipped, needs a spec) and T-034 (deferred to Phase 4/6).**
 
 **T-040 through T-044** (`GridInventory`, `WeightCalculator`, grid UI + dragging/rotate/bulk-move/
-split, equipment slots + bag expansion) are implemented and verified on `feature/T-040-grid-inventory`
-— see Completed. `InventoryDemo.cs` makes the UI half actually reachable in the Editor (see Next).
-Not yet committed, awaiting developer review.
+split, equipment slots + bag expansion) are implemented, verified, and merged into `main`
+([PR #19](https://github.com/yhw1737/surv/pull/19), 2026-09-16) — see Completed. `InventoryDemo.cs`
+makes the UI half actually reachable in the Editor (see Next).
 
 ## Next
 
-T-040 through T-044 are done pending developer review/commit instruction. **T-045**
-(server-authoritative sync + rollback UI) is next in `BACKLOG.md` — it needs a live client/server
-session to verify (translucent-pending render, rollback on a denied move), so expect the same
-"build it fully, then manual-test checklist" treatment once it's done.
+T-040 through T-044 are merged. **T-045** (server-authoritative sync + rollback UI) is next in
+`BACKLOG.md` — it needs a live client/server session to verify (translucent-pending render,
+rollback on a denied move), so expect the same "build it fully, then manual-test checklist"
+treatment once it's done.
 
 **Correction from an earlier reading of the developer's "keep developing" instruction** (recorded
 once, still applies going forward): it does not mean stop at the first task needing manual testing
@@ -1702,8 +1702,8 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #15 | feature/T-015-hot-reload | T-015 | [PR #15](https://github.com/yhw1737/surv/pull/15) — **merged to main** |
 | #16 | feature/T-020-fishnet-bootstrap | T-020 | [PR #16](https://github.com/yhw1737/surv/pull/16) — **merged to main** |
 | #17 | feature/T-021-server-movement | T-021 | [PR #17](https://github.com/yhw1737/surv/pull/17) — **merged to main** |
-| #18 | feature/T-030-world-clock | T-030 + T-032 + T-033 + T-035 + T-036 | [PR #18](https://github.com/yhw1737/surv/pull/18) — awaiting merge |
-| #19 | feature/T-040-grid-inventory | T-040 + T-041 + T-042 + T-043 + T-044 | [PR #19](https://github.com/yhw1737/surv/pull/19) — awaiting merge |
+| #18 | feature/T-030-world-clock | T-030 + T-032 + T-033 + T-035 + T-036 | [PR #18](https://github.com/yhw1737/surv/pull/18) — **merged to main** |
+| #19 | feature/T-040-grid-inventory | T-040 + T-041 + T-042 + T-043 + T-044 | [PR #19](https://github.com/yhw1737/surv/pull/19) — **merged to main** |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
