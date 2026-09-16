@@ -80,8 +80,6 @@ namespace Isle.UI.Inventory
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            _canvasGroup.alpha = 1f;
-            _canvasGroup.blocksRaycasts = true;
             _dragging = false;
 
             foreach (var result in eventData.hovered)
@@ -90,6 +88,10 @@ namespace Isle.UI.Inventory
                 if (target != null && TryDrop(target)) return;
             }
 
+            // See DragHandler.OnEndDrag — reset here, not up front, so a pending networked request
+            // (T-045) stays dimmed until its ack's Redraw() replaces this icon.
+            _canvasGroup.alpha = 1f;
+            _canvasGroup.blocksRaycasts = true;
             _rect.SetParent(_dragStartParent, false);
             _rect.anchoredPosition = _dragStartPosition;
         }
@@ -121,6 +123,8 @@ namespace Isle.UI.Inventory
         /// the equip back if the destination doesn't fit. Shared by drag-drop and Ctrl+click.</summary>
         bool UnequipInto(GridView target, Vec2Int position, bool rotated)
         {
+            if (_owner.Network != null) return UnequipIntoNetworked(target, position, rotated);
+
             // Unequip first: fails safely (item stays put) if the slot's bag still holds items.
             if (!_owner.Slots.Unequip(_owner.SlotName)) return false;
 
@@ -136,6 +140,23 @@ namespace Isle.UI.Inventory
             _owner.Slots.TryEquip(_owner.SlotName, _item);
             _owner.Redraw();
             return false;
+        }
+
+        /// <summary>T-045: only unequipping into the same player's own networked bag has server
+        /// authority (see <c>InventoryNetwork</c>'s class remarks) — reject a drop onto anything
+        /// else (e.g. a warehouse) rather than silently bypass it locally.</summary>
+        bool UnequipIntoNetworked(GridView target, Vec2Int position, bool rotated)
+        {
+            if (target.Network != _owner.Network) return false;
+
+            var owner = _owner;
+            owner.Network.RequestUnequip(owner.SlotName, position, rotated, ok =>
+            {
+                owner.Redraw();
+                target.Redraw();
+                if (ok) owner.Changed?.Invoke();
+            });
+            return true;
         }
     }
 }

@@ -77,6 +77,16 @@ namespace Isle.Gameplay.Inventory
 
         public bool Remove(Placement placement) => _placements.Remove(placement);
 
+        /// <summary>The placement anchored exactly at <paramref name="position"/>, or null. Added for
+        /// T-045: a network request identifies "which item" by where it already sits in this
+        /// container, rather than by definition id — there's nothing to resolve from a wire id when
+        /// the item is already here.</summary>
+        public Placement? PlacementAt(Vec2Int position)
+        {
+            var index = _placements.FindIndex(p => p.Position == position);
+            return index >= 0 ? _placements[index] : null;
+        }
+
         /// <summary>First position (row-major scan) that fits <paramref name="size"/>, or null if none does.
         /// Backs bulk move, move-all and auto-sort — none of them care which free spot is used, just that one is found.</summary>
         public Vec2Int? FindFreePosition(GridSize size, bool rotated = false)

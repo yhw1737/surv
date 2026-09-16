@@ -115,8 +115,6 @@ namespace Isle.UI.Inventory
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            _canvasGroup.alpha = 1f;
-            _canvasGroup.blocksRaycasts = true;
             _dragging = false;
 
             if (_splitGhost != null)
@@ -134,7 +132,11 @@ namespace Isle.UI.Inventory
 
             // Snap back on any failure — an item must never disappear on a bad drop. On success the
             // icon gets destroyed by Redraw() regardless of its (reparented) current parent, so only
-            // the failure path needs to undo the OnBeginDrag reparent.
+            // the failure path needs to undo the OnBeginDrag reparent. Reset alpha/raycasts here too,
+            // not up front (T-045): a pending networked request has already returned true by this
+            // point, and stays dimmed until its ack's Redraw() replaces this icon outright.
+            _canvasGroup.alpha = 1f;
+            _canvasGroup.blocksRaycasts = true;
             _rect.SetParent(_dragStartParent, false);
             _rect.anchoredPosition = _dragStartPosition;
         }
@@ -152,10 +154,26 @@ namespace Isle.UI.Inventory
         /// <summary>Ignores Shift/split state — equip items are single units, there's no "equip half a stack".</summary>
         bool TryEquip(EquipSlotView slotTarget)
         {
+            if (_owner.Network != null) return TryEquipNetworked(slotTarget);
+
             if (!slotTarget.TryEquipDrop(_placement.Item)) return false;
 
             _owner.Inventory.Remove(_placement);
             _owner.Redraw();
+            return true;
+        }
+
+        /// <summary>T-045: request only, no local mutation — <see cref="InventoryNetwork"/>'s result
+        /// callback redraws both once the server acks (or rejects).</summary>
+        bool TryEquipNetworked(EquipSlotView slotTarget)
+        {
+            var owner = _owner;
+            owner.Network.RequestEquip(_placement.Position, slotTarget.SlotName, ok =>
+            {
+                owner.Redraw();
+                slotTarget.Redraw();
+                if (ok) slotTarget.Changed?.Invoke();
+            });
             return true;
         }
 
@@ -168,6 +186,15 @@ namespace Isle.UI.Inventory
             var screenPosition = RectTransformUtility.WorldToScreenPoint(camera, _rect.position);
             var cell = target.ScreenToCell(screenPosition, camera);
 
+            // T-045: only bag-internal moves are networked — a crate/warehouse has no server
+            // authority yet (InventoryNetwork's class remarks), so reject rather than let a
+            // networked bag item silently teleport into an unauthoritative container. Checking
+            // only _owner.Network left the reverse direction (local -> networked bag) open: it
+            // fell through to the plain local branch below and placed the item straight into
+            // target.Inventory (the server's Bag object) without ever asking the server, leaving
+            // the client's copy holding an item the server never agreed to. Guard on either side.
+            if (_owner.Network != null || target.Network != null) return target == _owner && TryDropNetworked(cell);
+
             if (_dragCount < _placement.Count)
                 return _owner.Inventory.TrySplit(_placement, _dragCount, target.Inventory, cell, _dragRotated)
                        && FinishDrop(target);
@@ -178,6 +205,17 @@ namespace Isle.UI.Inventory
 
             _owner.Inventory.Remove(_placement);
             return FinishDrop(target);
+        }
+
+        bool TryDropNetworked(Vec2Int cell)
+        {
+            var owner = _owner;
+            var from = _placement.Position;
+            if (_dragCount < _placement.Count)
+                owner.Network.RequestSplitWithinBag(from, _dragCount, cell, _dragRotated, _ => owner.Redraw());
+            else
+                owner.Network.RequestMoveWithinBag(from, cell, _dragRotated, _ => owner.Redraw());
+            return true;
         }
 
         bool MoveWithinSameView(Vec2Int cell)

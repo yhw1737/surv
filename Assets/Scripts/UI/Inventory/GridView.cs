@@ -35,6 +35,11 @@ namespace Isle.UI.Inventory
         /// it was opened next to). Null when this view has no counterpart open.</summary>
         public GridView PairedView { get; set; }
 
+        /// <summary>Non-null when this view is bound to a player's server-authoritative bag (T-045)
+        /// — <see cref="DragHandler"/> routes mutations through it instead of touching
+        /// <see cref="Inventory"/> directly. Null for local-only views (warehouse, demo crates).</summary>
+        public InventoryNetwork Network { get; set; }
+
         /// <summary>SYS-INV-01 §Required UX: auto-sort is warehouse-only, bags stay manual.</summary>
         public bool IsWarehouse { get; set; }
 

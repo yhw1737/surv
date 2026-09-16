@@ -32,6 +32,11 @@ namespace Isle.UI.Inventory
         /// always works.</summary>
         public GridView PairedView { get; set; }
 
+        /// <summary>Non-null when this slot is bound to a player's server-authoritative equip slots
+        /// (T-045) — <see cref="EquipDragHandler"/> routes mutations through it instead of touching
+        /// <see cref="Slots"/> directly.</summary>
+        public InventoryNetwork Network { get; set; }
+
         [SerializeField] RectTransform _itemLayer;
 
         /// <summary>Fires after any successful equip/unequip through this slot.</summary>

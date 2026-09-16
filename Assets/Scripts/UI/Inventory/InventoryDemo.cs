@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Linq;
 using Isle.Core;
 using Isle.Data;
 using Isle.Gameplay.Inventory;
@@ -65,6 +67,35 @@ namespace Isle.UI.Inventory
             BuildMoveAllButton(canvas, "Warehouse -> Bag", warehouseView, ref x, -Margin - TitleHeight - 32f);
 
             BuildEquipRow(canvas, slots, bagView, warehouseView);
+
+            StartCoroutine(WaitForNetworkedBag(canvas));
+        }
+
+        /// <summary>T-045: a separate panel for the local player's server-authoritative bag + equip
+        /// slots, deliberately independent of the sample containers above — this one is real
+        /// gameplay state (<see cref="InventoryNetwork"/>), not throwaway fixtures. Polls because the
+        /// player's <c>NetworkObject</c> may not have spawned yet when this demo starts.</summary>
+        IEnumerator WaitForNetworkedBag(Canvas canvas)
+        {
+            InventoryNetwork network;
+            do
+            {
+                network = FindObjectsByType<InventoryNetwork>(FindObjectsSortMode.None).FirstOrDefault(n => n.IsOwner);
+                if (network == null) yield return new WaitForSeconds(0.5f);
+            } while (network == null);
+
+            const float y = -420f;
+            var x = Margin;
+            var bagView = BuildGridView(canvas, "Networked Bag (T-045)", network.Bag, false, ref x, y);
+            bagView.Network = network;
+
+            var slotX = Margin;
+            foreach (var slotName in EquipSlots.All)
+            {
+                var slotView = BuildEquipSlotView(canvas, slotName, network.Slots, slotName, ref slotX, y - 100f);
+                slotView.Network = network;
+                slotView.PairedView = bagView;
+            }
         }
 
         void BuildEquipRow(Canvas canvas, EquipSlots slots, GridView bagView, GridView warehouseView)
