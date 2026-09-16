@@ -5,11 +5,11 @@
 
 ## Header
 
-- Last updated: **2026-09-15**
-- Phase: **Phase 3 — world, in progress (5/7, only T-031 skipped and T-034 deferred left — see below)**
-- Task: **T-020/T-021 done, confirmed, committed, and merged into `main`** (PR #16, #17 both merged 2026-09-15). T-030 (`WorldClock`), T-032 (`Chunk`/`ChunkManager`), T-033 (`ChunkSerializer`), T-035 (`IslandGenerator`), T-036 (`LandmarkPlacer`) implemented, verified, committed, and pushed — [PR #18](https://github.com/yhw1737/surv/pull/18), awaiting the developer's review/merge
-- Branch: **feature/T-030-world-clock** — rebuilt from `main` after the #16/#17 merges (previously stacked on `feature/T-021-server-movement` for doc continuity while those PRs were open; that's no longer needed now that `main` is current). T-032/T-033/T-035/T-036 all continued on the same branch and batched into one PR. Pushed, [PR #18](https://github.com/yhw1737/surv/pull/18) open against `main`
-- Pending commit: **none — committed (6 commits: one per task + one docs commit) and pushed, [PR #18](https://github.com/yhw1737/surv/pull/18) opened 2026-09-15, awaiting developer review/merge**
+- Last updated: **2026-09-16**
+- Phase: **Phase 3 done except T-031 (skipped, needs spec) and T-034 (deferred to Phase 4/6). Phase 4 (inventory) in progress: T-040 through T-044 done.**
+- Task: **T-040~T-044 (grid inventory, weight, equip slots + bag expansion) committed and PR opened — [PR #19](https://github.com/yhw1737/surv/pull/19), awaiting merge.** Developer pressed Play repeatedly and reported bugs/requests each time, all fixed the same day: round 1 (unstyled Auto-Sort bar, no item/panel labels), round 2 (NullReferenceException crash, grids overlapping, item sizes not reflected), round 3 (drop position mismatched the dragged icon, tooltip flickering), round 4 (sword equip-slot fixture bug, Q/E rotate-in-place feature — later corrected), round 5 (Q/E moved to rotate-while-dragging instead, tooltip z-order behind newer UI, tooltip now follows the cursor), round 6 (backpack-unequip UI desync, split-drag visual gap + merge-on-drop-back, Q/E reliability fix, Ctrl+click-unequip + equipped-item tooltip), round 7 (Ctrl+click merge-onto-stack, dragged icon z-order above other panels, backpack contents can now bulk-move to the warehouse) — see Next for all seven rounds and the checklist.**
+- Branch: **feature/T-040-grid-inventory**
+- Pending commit: **none — committed as `b252ac7`, pushed, [PR #19](https://github.com/yhw1737/surv/pull/19) open against `main`**
 
 ## Progress
 
@@ -19,8 +19,8 @@ Phase 0  project setup        [x] 3/3   T-000..T-002
 stage 2 · solo beta
 Phase 1  foundation           [x] 10/10 T-010..T-019  ← done
 Phase 2  netcode skeleton     [x] 2/2   T-020..T-021 ← done, both merged into main (PR #16, #17, 2026-09-15)
-Phase 3  world                [ ] 5/7   T-030, T-032, T-033, T-035, T-036 done, verified 2026-09-15 (not yet committed); T-031 skipped, T-034 deferred
-Phase 4  inventory            [ ] 0/6
+Phase 3  world                [ ] 5/7   T-030, T-032, T-033, T-035, T-036 merged (PR #18, 2026-09-15); T-031 skipped, T-034 deferred
+Phase 4  inventory            [ ] 5/6   T-040..T-044 implemented, not yet committed; T-042/T-043/T-044's UI half needs manual test
 Phase 5  survival + skills    [ ] 0/8
 Phase 6  production loop      [ ] 0/9
 Phase 7  crafting + cooking   [ ] 0/10
@@ -385,9 +385,7 @@ Phase 13 modding + polish     [ ] 0/7
     `Isle.Tests.EditMode` already referenced `Isle.World`.
   - Verified: batchmode compile **0 `error CS`**; full EditMode suite **169/169 passed** (155
     pre-existing + 14 new), run twice (once per branch base, see Decided without a spec).
-  - **Not committed yet** — implemented and verified this session on the assistant's own initiative
-    (following this file's own "Next" pointer, Phase 2 being done), not from a fresh explicit
-    instruction. Awaiting developer review before commit/PR.
+  - **Merged** — [PR #18](https://github.com/yhw1737/surv/pull/18), 2026-09-15.
 
 - **T-032**: `Chunk` + `ChunkManager` load/unload (SYS-WORLD-01 §Chunks). Same branch/session as
   T-030, continued per the developer's "keep going through logic-only tasks" instruction (T-031
@@ -475,24 +473,442 @@ Phase 13 modding + polish     [ ] 0/7
   - Verified: batchmode compile **0 `error CS`**; full EditMode suite **194/194 passed** (184
     pre-existing + 10 new).
 
+- **T-040**: `GridInventory` structure (SYS-INV-01 §Placement) — pure data structure only, no
+  weight/UI/network (those are T-041/T-042/T-045).
+  - `Assets/Scripts/Gameplay/Inventory/GridInventory.cs` (new) — `GridInventory` holds a
+    `Width`/`Height` and a list of `Placement` (item + `Vec2Int` position + rotated flag).
+    `TryPlace` checks bounds and an AABB overlap against every existing placement (spec: "no
+    L-shaped items", so AABB is sufficient). `Placement.EffectiveSize()` swaps `W`/`H` when
+    rotated — reuses the existing `GridSize` (`Assets/Scripts/Data/Shared.cs`) rather than adding
+    a second grid-size type. One instance per container; a bag is a second instance, not a resize
+    of the base grid, matching "the base grid never grows".
+  - `Assets/Tests/EditMode/GridInventoryTests.cs` (new) — in-bounds placement, out-of-bounds
+    rejected, negative position rejected, overlap rejected, adjacent (non-overlapping) accepted,
+    rotation swaps W/H (a 1×4 item fits a 3-tall container only rotated), remove frees its cells.
+    No literal verification table exists for placement (the spec's table is for §Weight, T-041's
+    scope) — see Decided without a spec.
+  - No asmdef changes — `Isle.Gameplay` already references `Isle.Data`.
+  - Verified: batchmode compile **0 `error CS`**; full EditMode suite **201/201 passed** (194
+    pre-existing + 7 new).
+
+- **T-041**: `WeightCalculator` (SYS-INV-01 §Weight) — static pure, formula copied verbatim from
+  the spec, no invented values.
+  - `Assets/Scripts/Gameplay/Inventory/WeightCalculator.cs` (new) — `SpeedMultiplier`,
+    `StaminaDrainMultiplier`, `IsOverloaded`, and the four constants (`FreeWeightKg=15.0`,
+    `MaxWeightKg=45.0`, `MaxSpeedPenalty=0.50`, `OverloadSpeedMult=0.35`) straight from the spec
+    table. `StaminaDrainMultiplier` uses the same `clamp((total-Free)/range, 0, 1)` formula
+    regardless of overload — the spec's pseudocode only overrides `speedMult` in the overload
+    branch, not the stamina formula below it, so overload doesn't clamp it any further than the
+    formula already does.
+  - `Assets/Tests/EditMode/WeightCalculatorTests.cs` (new, written before the implementation) —
+    the spec's own 5-row verification table (10/15/30/45/50 kg → 1.000/1.000/0.750/0.500/0.350
+    speedMult, roll yes/yes/yes/yes/no) copied verbatim as `TestCase`s, plus a
+    `StaminaDrainMultiplier` table computed directly from the formula (1.0/1.0/1.4/1.8/1.8) — no
+    judgment call needed here, unlike T-040, since the formula is exact.
+  - No asmdef changes.
+  - Verified: batchmode compile **0 `error CS`**; full EditMode suite **211/211 passed** (201
+    pre-existing + 10 new).
+
+- **T-042/T-043**: Grid UI + dragging, ★ rotate/bulk-move/split (SYS-INV-01 §Required UX) — treated
+  as one task, per the backlog's own note that they're tightly coupled and non-deferrable together.
+  Everything that's pure logic went into `GridInventory.cs` (EditMode-tested); only the genuinely
+  visual/input-driven glue is a MonoBehaviour.
+  - `Assets/Scripts/Gameplay/Inventory/GridInventory.cs` — `Placement` gained `Count` (default 1,
+    additive, existing `TryPlace` calls unaffected). New pure methods: `FindFreePosition` (first-fit
+    row-major scan, backs bulk move/move-all/auto-sort), `TryMoveTo`/`MoveAllTo` (Ctrl+click and
+    "move all"), `TrySplit` (Shift+drag split — all-or-nothing, rolls back the source on any
+    destination failure, rejects a same-position no-op split), `AutoSort` (warehouse-only auto-sort
+    button — packs into a scratch grid first so a packing failure can't leave the live inventory
+    half-sorted), `TotalWeightKg` (bridges to `WeightCalculator` for the UI's weight readout).
+  - `Assets/Tests/EditMode/GridInventoryTests.cs` — 13 new cases, written alongside the
+    implementation: `FindFreePosition` (empty grid, row-wrap, no room), `TryMoveTo`/`MoveAllTo` (fits,
+    no room, partial fit), `TrySplit` (partial count, full-count rejected, destination-full rollback,
+    same-spot rejected), `AutoSort` (largest packs first), `TotalWeightKg`.
+  - `Assets/Scripts/UI/Isle.UI.asmdef` — added `Unity.InputSystem` (R/Ctrl/Shift detection via
+    `Keyboard.current`, matching `PlayerMovement.cs`'s existing convention) and `UnityEngine.UI`
+    (Canvas/Image/Text) to `references`. Neither was there before — this is the project's first
+    Canvas/UI feature.
+  - `Assets/Scripts/UI/Inventory/GridView.cs` (new) — MonoBehaviour wrapping one `GridInventory`;
+    draws cells + item icons at runtime via `PlaceholderVisuals` (no baked prefabs, same convention
+    as `PlaceholderIcons`). `PairedView` (settable at runtime by whoever opens a paired container UI)
+    drives Ctrl+click/move-all's destination; `IsWarehouse` gates the auto-sort button
+    (spec: warehouse only, bags stay manual). `CellSizePx = 32` is a placeholder UI dimension
+    (Absolute Rule 7), not a spec value.
+  - `Assets/Scripts/UI/Inventory/DragHandler.cs` (new) — one per spawned item icon.
+    `OnPointerClick` does the Ctrl+click bulk move. `OnBeginDrag` reads Shift at drag-start to decide
+    the drag count (half the stack, or all of it). `OnDrag` polls `rKey.wasPressedThisFrame` each
+    frame to flip a visual-only rotation flag (square items excluded — can't meaningfully rotate).
+    `OnEndDrag` raycasts for the drop target `GridView` and routes through `TrySplit` or a plain
+    remove+place move; any failure snaps the icon back to its start position so an item can never
+    disappear on a bad drop.
+  - `Assets/Scripts/UI/Inventory/ItemTooltip.cs` (new) — hover tooltip showing only fields that
+    exist today (name as a raw lang key, weight, size, stack count). Freshness/quality/enchants/
+    crafter are explicitly omitted — see Decided without a spec.
+  - Verified: batchmode compile **0 `error CS`**; full EditMode suite **224/224 passed** (211
+    pre-existing + 13 new). **The UI/drag half (`GridView`/`DragHandler`/`ItemTooltip`) is not
+    EditMode-testable** — see the manual-test checklist in Next.
+
+- **T-044**: equipment slots + bag expansion (SYS-INV-01 §Containers: "Equipment slots: `Head Chest
+  Legs Feet Back Belt MainHand OffHand`", "Bags add a separate grid; the base grid never grows").
+  - `Assets/Scripts/Data/ItemDef.cs` — two new fields the spec's own tables name but nothing had
+    wired up yet: `EquipSlot` (string, one of `head chest legs feet back belt main_hand off_hand`,
+    null for non-equippable items — a plain string, same reasoning as `SkillDef.Pool`, T-018) and
+    `BagGrid` (`GridSize?`, bag-type equipment only — the separate grid it opens when equipped,
+    distinct from `Grid`, the bag item's own footprint while it sits inside another container).
+    `docs/modding/SCHEMA.md` §Items updated to match.
+  - `Assets/Scripts/Gameplay/Inventory/EquipSlots.cs` (new) — one `ItemDef` per named slot
+    (`EquipSlots.All`, the fixed eight); `TryEquip` checks the item's own `EquipSlot` matches and the
+    slot is free (no implicit swap), and opens a `GridInventory` sized from `BagGrid` if the item is
+    a bag. `Unequip` fails — leaving the item equipped — if its bag still holds items, so unequipping
+    can never make items vanish.
+  - `Assets/Tests/EditMode/EquipSlotsTests.cs` (new) — 8 cases: matching/mismatched slot,
+    already-occupied slot, bag item opens a `GridInventory` of the right size, non-bag item opens
+    none, unequip empty bag succeeds, unequip non-empty bag fails, unequip nothing-equipped fails.
+  - `Assets/Scripts/UI/Inventory/EquipSlotView.cs` (new) — one equip slot's UI. Drag-drop onto it is
+    routed by `DragHandler` (extended to recognize `EquipSlotView` as a second kind of drop target,
+    alongside `GridView`); the slot itself doesn't spawn or bind a bag's `GridView` — that's scene
+    wiring it doesn't own — instead it exposes a `UnityEvent Changed` for whoever does own that
+    wiring to hook up in the Inspector.
+  - `Assets/Scripts/UI/Inventory/EquipDragHandler.cs` (new) — drags an equipped item back out into a
+    grid; mirrors `DragHandler`'s rotate-while-dragging logic but stays a separate, smaller class
+    since equip items have no split/bulk-move/tooltip concerns. Unequips first (fails safely, item
+    stays put, if the bag isn't empty), then tries to place at the destination, rolling the equip
+    back if the destination doesn't fit.
+  - `Assets/Scripts/UI/Inventory/DragHandler.cs` — `FindTargetView` generalized to `FindInHovered<T>`
+    so `OnEndDrag` can check for either a `GridView` or an `EquipSlotView` among the hovered targets.
+  - No further asmdef changes — `Isle.UI` already referenced everything T-044's UI needed.
+  - Verified: batchmode compile **0 `error CS`**; full EditMode suite **232/232 passed** (224
+    pre-existing + 8 new). **The UI half (`EquipSlotView`/`EquipDragHandler`) is not
+    EditMode-testable** — see the manual-test checklist in Next.
+
 ## In progress / unfinished
 
-T-030 (`WorldClock`), T-032 (`Chunk`/`ChunkManager`), T-033 (`ChunkSerializer`), T-035
-(`IslandGenerator`), and T-036 (`LandmarkPlacer`) are implemented and verified but **not
-committed** — awaiting developer review/commit decision (one batched PR planned — see Operational
-notes). T-034 is explicitly **deferred**, not blocked (see below) — nothing to build for it right
-now. **Phase 3 is down to just T-031 (skipped) and T-034 (deferred)** — everything else is done.
+T-030, T-032, T-033, T-035, T-036 all merged ([PR #18](https://github.com/yhw1737/surv/pull/18),
+2026-09-15). T-034 is explicitly **deferred**, not blocked — nothing to build for it right now.
+**Phase 3 is done except T-031 (skipped, needs a spec) and T-034 (deferred to Phase 4/6).**
+
+**T-040 through T-044** (`GridInventory`, `WeightCalculator`, grid UI + dragging/rotate/bulk-move/
+split, equipment slots + bag expansion) are implemented and verified on `feature/T-040-grid-inventory`
+— see Completed. `InventoryDemo.cs` makes the UI half actually reachable in the Editor (see Next).
+Not yet committed, awaiting developer review.
 
 ## Next
 
-PR #16 and PR #17 both merged into `main` (2026-09-15). T-030, T-032, T-033, T-035, and T-036 are
-implemented and verified on a branch rebuilt from the now-current `main`, awaiting review/commit.
+T-040 through T-044 are done pending developer review/commit instruction. **T-045**
+(server-authoritative sync + rollback UI) is next in `BACKLOG.md` — it needs a live client/server
+session to verify (translucent-pending render, rollback on a denied move), so expect the same
+"build it fully, then manual-test checklist" treatment once it's done.
+
+**Correction from an earlier reading of the developer's "keep developing" instruction** (recorded
+once, still applies going forward): it does not mean stop at the first task needing manual testing
+the way no-spec `T-031` was skipped — `SYS-INV-01` fully specifies T-042/T-043/T-044, so the right
+move is to build the whole feature and hand the developer a manual-test checklist for the part an
+EditMode test can't reach (the UI/drag behaviour itself), not to halt before writing it.
+
+**Where to actually run this (fixed 2026-09-16):** the first version of this checklist assumed a
+Canvas/EventSystem/wired `GridView`s already existed somewhere to test against — they didn't.
+`Assets/Scenes/SampleScene.unity` was never touched by any of T-042/T-043/T-044, so there was no
+way to reach any of this in the Editor. Fixed by adding `Scripts/UI/Inventory/InventoryDemo.cs`, a
+runtime bootstrap in the same "generate everything at runtime, nothing baked" style as
+`PlaceholderVisuals` — it builds its own Canvas + EventSystem + two `GridView`s (a 6×4 "player bag"
+paired with an 8×6 "warehouse", `IsWarehouse` on the warehouse) + all 8 `EquipSlotView`s + a
+handful of throwaway sample items (a 1×3 sword, a stack of 6 potions, a 2×2 helmet for `head`, a
+2×2 backpack for `back` with a 4×4 bag), entirely in code. `GridView`/`EquipSlotView` were also
+changed to build their own `_cellLayer`/`_itemLayer`/auto-sort-button when left unassigned, instead
+of requiring a hand-wired prefab that doesn't exist — see Decided without a spec for why the sample
+items are fabricated in C# rather than real content.
+
+**To run it:** open `SampleScene` (or any scene), add an empty GameObject, add the
+`InventoryDemo` component to it, press Play. Two grids, 8 equip slots and two "move all" buttons
+appear on screen immediately — no other setup needed.
+
+Automated batchmode compile verification for this file is still pending — the developer's own
+Editor was already open on the project when this was written, and a second batchmode instance
+can't take the project lock, so this was checked by hand instead of via the usual
+`-runTests`/`0 error CS` run. Worth a real compile pass once convenient (closing the Editor and
+re-running batchmode, or just pressing Play and checking the Console).
+
+**Screenshot-driven fixes (2026-09-16):** the developer pressed Play and sent a screenshot with two
+problems, both now fixed:
+
+1. **Auto-Sort button looked like an unstyled white bar cutting through the warehouse grid.**
+   `GridView.BuildAutoSortButton()` added an `Image` but never set its colour, so it rendered at
+   Unity's default opaque white, sitting only 4px below the last cell row. Fixed: explicit dark-grey
+   background colour and the gap widened to 8px.
+2. **"테스트할 아이템들 어딨어 어디서봐" — no way to tell items or panels apart without hovering.**
+   The only identification was `ItemTooltip`'s hover-only tooltip, and there was nothing at all
+   labelling which grid was the bag vs. the warehouse. Fixed two ways: `GridView.BuildLabel` now
+   draws a permanent, non-raycast-blocking name label (+ stack count) directly on every item icon in
+   both `GridView.Redraw()` and `EquipSlotView.Redraw()`; and `InventoryDemo` now draws a title label
+   ("Player Bag", "Warehouse (Auto-Sort)", "Backpack (opened)", each equip slot's own name) above
+   every panel, with the vertical layout constants recalculated so the new titles don't crowd
+   anything below them.
+
+**Round 2 fixes (2026-09-16):** pressing Play after round 1 hit a `NullReferenceException` and
+three more visual/interaction bugs, all from the same underlying two defects:
+
+1. **Crash**: `GridView.BuildAutoSortButton()` threw a `NullReferenceException` on
+   `label.text = "Auto-Sort";`, aborting `Start()` before it ever reached the "move all" buttons or
+   the equip row (fully explaining why neither appeared in the screenshot — not a separate bug).
+   Root cause: `Image` and `Text` (both `Graphic`-derived) were put on the same GameObject alongside
+   `Button`. Every other label in the codebase (`BuildTitle`, `BuildLabel`) already put `Text` on its
+   own child GameObject and worked fine — that's the pattern this was missing. Fixed in
+   `BuildAutoSortButton` by extracting a shared `GridView.BuildButtonLabel` helper (a stretched,
+   non-raycast child label) and reusing it from `InventoryDemo.BuildMoveAllButton` (same defect,
+   just never yet exercised because `Start()` crashed first) and `ItemTooltip.EnsurePanel` (same
+   defect, latent until the first hover).
+2. **Grids overlapping / item sizes not reflected**: `GridView.BuildCells()`'s cell rect,
+   `GridView.Redraw()`'s item-icon rect, and `EquipSlotView.Redraw()`'s icon rect never explicitly
+   set `anchorMin`/`anchorMax`/`pivot`, unlike every other dynamically-built RectTransform in this
+   codebase (`CreateLayer`, `BuildTitle`, the panel rect, etc.), all of which use a top-left
+   `(0,1)` anchor/pivot to match this codebase's `anchoredPosition = (x*CellSizePx, -y*CellSizePx)`
+   convention. Left at Unity's non-top-left default, cells and icons rendered at
+   systematically wrong, size-dependent offsets from their intended grid position — this is what
+   read as "inventories overlap" and "item sizes aren't reflected". Fixed by adding the explicit
+   top-left anchor/pivot line to all three.
+3. **Drag not moving items properly**: no separate bug found in `DragHandler`/`EquipDragHandler` or
+   in `GridInventory`'s placement/move logic (both reviewed line-by-line) — the drag math itself is
+   correct. This was very likely a symptom of #2: overlapping, mispositioned icons make it easy to
+   grab or drop onto the wrong spot. No dedicated fix beyond #2; re-test after this round before
+   assuming anything else is wrong here.
+
+**Round 3 fixes (2026-09-16):** developer confirmed round 2 fixed the overlap and sizing, and
+reported two more issues — both root-caused and fixed:
+
+1. **Drop position didn't match where the item visually landed.** `DragHandler.TryDrop`/
+   `EquipDragHandler.TryDrop` computed the drop cell from the raw pointer position
+   (`eventData.position`), not from where the dragged icon itself was drawn — since the pointer can
+   grab an icon anywhere over its area (not just its top-left corner) and `OnDrag` preserves that
+   grab offset for the whole drag, the cell the pointer ended up over and the cell the icon visually
+   snapped from were often different. Fixed both `TryDrop`s to convert the icon's own rect position
+   (its pivot is the top-left corner, `GridView.Redraw`/round 2) to a screen point and feed that into
+   `ScreenToCell` instead of the raw pointer position — the cell now matches what's on screen.
+2. **Tooltip flickering.** `ItemTooltip.EnsurePanel`'s panel `Image` was raycast-blocking by
+   Unity's default, and the panel is placed directly under the cursor on hover — so every time it
+   appeared it ate the pointer, immediately firing `OnPointerExit` on the item icon underneath,
+   hiding the panel, re-exposing the icon, and re-entering: an every-frame show/hide loop. Fixed by
+   setting the panel's `Image.raycastTarget = false`, matching every other non-interactive visual in
+   this codebase (labels already do this).
+
+**Round 4 fixes (2026-09-16):** developer confirmed round 3 fixed the drop position and tooltip,
+then reported one bug and requested one new feature:
+
+1. **Sword didn't equip onto `main_hand`.** Not a bug in `EquipSlots`/`EquipSlotView`/
+   `EquipDragHandler` — all three were checked and are correct. Root cause: `InventoryDemo`'s own
+   sword fixture never set `equip_slot`, so `EquipSlots.TryEquip("main_hand", sword)` could never
+   match (`item.EquipSlot != slot` always true). Fixed by adding `equipSlot: "main_hand"` to the
+   sword's `Item(...)` call — a fixture data fix, not a design decision (see the existing "fabricated
+   sample items" entry in Decided without a spec; the fixture already had this reasoning applied to
+   its other three items).
+2. **Q/E rotate, first attempt: rotate-in-place while hovering a stored item.** Implemented, then
+   the developer corrected it the same day (see Round 5) — hovering a settled item and rotating it
+   with nothing moving didn't read as sensible UX once tried, unlike an extraction-shooter reference
+   (Escape from Tarkov) where rotation only ever happens mid-drag.
+
+**Round 5 fixes (2026-09-16):** developer tried round 4 and asked for a different shape for the Q/E
+feature, plus two more bugs:
+
+1. **Q/E rotate moved from "hover a stored item" to "while dragging", replacing round 4's
+   rotate-in-place entirely.** Removed `DragHandler`'s hover tracking (`IPointerEnterHandler`/
+   `IPointerExitHandler`, `_hovering`, `Update()`, `TryRotateInPlace()`) and instead widened the
+   existing R-while-dragging check in both `DragHandler.OnDrag` and `EquipDragHandler.OnDrag` to
+   also accept Q or E (`kb.rKey.wasPressedThisFrame || kb.qKey.wasPressedThisFrame ||
+   kb.eKey.wasPressedThisFrame`) — same toggle, three keys. This is the Tarkov-style behaviour the
+   developer asked to match: rotation only exists as a live preview on the item currently being
+   dragged.
+2. **Tooltip rendering behind newer UI (e.g. items inside an opened backpack bag).**
+   `ItemTooltip._panel` is a lazily-created singleton (`EnsurePanel`, first hover anywhere creates
+   it) parented under the Canvas; anything built into the Canvas *after* that first hover (like the
+   backpack's bag `GridView`, which only exists once the backpack is equipped) sits later in sibling
+   order and renders on top of it by Unity UI's default "last sibling wins" stacking. Fixed by
+   calling `_panel.transform.SetAsLastSibling()` every time the panel is shown (`OnPointerEnter`).
+3. **Tooltip should track the cursor, anchored by its own corner, not float centred wherever it was
+   first shown.** `_panel.transform.position = eventData.position` only fired once per hover
+   (`OnPointerEnter`), and the panel had no anchor/pivot set, so Unity's RectTransform default put
+   its *centre* at the cursor rather than a corner. Fixed both parts: `EnsurePanel` now sets
+   `anchorMin = anchorMax = pivot = (0, 1)` (this codebase's usual top-left convention, matching
+   every other dynamically-built rect), and a new `ItemTooltip.Update()` re-reads
+   `Mouse.current.position.ReadValue()` every frame the panel is active, not just on enter, so the
+   box now follows the mouse continuously with its top-left corner glued to the cursor.
+
+**Round 6 fixes (2026-09-16):** developer tried round 5 and sent a screenshot (equip works) plus
+four more reports:
+
+1. **Unequipping a backpack via drag left its "opened" bag view on screen.** Functionally the
+   unequip and the item's return to the source grid both worked — this was a UI-sync bug.
+   `EquipSlotView.Changed` (the event `InventoryDemo` listens on to show/hide the opened bag grid)
+   was only ever fired from `TryEquipDrop` (the equip path); `EquipDragHandler`'s unequip path
+   called `_owner.Redraw()` directly and never fired `Changed` at all, so nothing ever told
+   `InventoryDemo` the bag had closed. Fixed by factoring `EquipDragHandler`'s drop logic into a
+   shared `UnequipInto` that fires `Changed` on every successful unequip.
+2. **Shift+drag split: the remainder looked like it vanished from its original cell while
+   dragging.** Root cause: there's one icon GameObject per placement, and the drag moves that exact
+   icon with the pointer — so while a split is in progress, nothing else is drawn at the source
+   cell until the drop finishes and `Redraw()` rebuilds it (this is why it "worked" the instant the
+   mouse was released; it was purely a mid-drag rendering gap). Fixed by spawning a plain,
+   non-interactive placeholder icon (`GridView.SpawnGhostIcon`) at the source cell showing the
+   remainder count for the duration of the drag, destroyed in `OnEndDrag` regardless of outcome.
+   **Also fixed, same report: dragging a split-off stack back onto its sibling didn't recombine
+   it.** `GridInventory.TryPlace` only ever either fit into empty space or rejected on overlap —
+   there was no merge path at all. Added one: if the destination position/rotation exactly matches
+   an existing placement of the *same* `ItemDef` reference, `TryPlace` now merges into its count
+   instead of rejecting. Reference equality (not an `Id` comparison) because defs are held by
+   reference throughout this codebase (`ARCHITECTURE.md` §Patterns) and the fixture items in
+   `InventoryDemo` don't set `Id` at all — two EditMode cases added
+   (`TryPlace_SameItemSamePositionAndRotation_MergesCount`,
+   `TryPlace_DifferentItemSamePosition_StillFails`, the latter guarding that two distinct item defs
+   at the same spot still correctly reject as an overlap).
+3. **Q/E rotation itself was flaky — Q never registered, E worked once and late.** Real bug, not a
+   misunderstanding: the round 5 fix checked the rotate keys inside `OnDrag`, but Unity only calls
+   `IDragHandler.OnDrag` on frames the pointer actually *moves* — holding the mouse still while
+   tapping Q/E meant the check often never ran on the frame the key was pressed, and
+   `wasPressedThisFrame` had already expired by the next `OnDrag` call. Moved the key check into a
+   plain `Update()` (guarded by a new `_dragging` flag, same polling convention as
+   `PlayerMovement`'s WASD) in both `DragHandler` and `EquipDragHandler`, so it runs every frame
+   regardless of mouse movement. **Scope note, not silently invented:** the request describes Q
+   rotating left / E rotating right "indefinitely", but `Placement.Rotated` (SYS-INV-01) is a single
+   bool — only two orientations exist for a rectangle, there's no third or fourth state to cycle
+   into, and a plain placeholder box has no visible "front" to tell 0°/180° or 90°/270° apart even
+   if there were. Both keys now reliably toggle the same two-state flip; a real 4-orientation model
+   would be a `SYS-INV-01` change, not something to invent here — flagged back to the developer
+   rather than building it.
+4. **Ctrl+click didn't unequip, and equipped items showed no tooltip.** Neither existed — `EquipDragHandler`
+   had no `IPointerClickHandler`, and `EquipSlotView.Redraw()` never attached an `ItemTooltip`.
+   Added both: `EquipDragHandler.OnPointerClick` Ctrl+click-unequips into a new
+   `EquipSlotView.PairedView` (wired to the player's bag in `InventoryDemo`), reusing the same
+   `UnequipInto` helper as drag-out; and the equipped icon now also gets an `ItemTooltip`, fed a
+   bare `Placement` (no real grid position/rotation exists for an equipped item, so a placeholder
+   one is built just to reuse the existing name/weight/size display).
+
+**Two new `GridInventoryTests` cases added this round** (merge behaviour, point 2 above) — not yet
+run through batchmode, same standing gap as every round before this one (the developer's own Editor
+holds the project lock); last confirmed batchmode run was T-044's 232/232.
+
+**Round 7 fixes (2026-09-16):** developer tried round 6, kept Q/E as-is for now (item 3 below), and
+sent three more reports:
+
+1. **Ctrl+click didn't merge onto a matching stack, only drag did.** `GridInventory.TryMoveTo`
+   (backs `DragHandler.OnPointerClick`'s Ctrl+click bulk-move, and `MoveAllTo`) always called
+   `FindFreePosition` and placed there — it never checked whether the destination already held the
+   same item. Extracted a shared `GridInventory.FindPlacementSpot(item, rotated)`: returns an
+   existing matching item's own position/rotation to merge into (via `TryPlace`'s existing merge
+   path), or the first free spot otherwise. `TryMoveTo` now calls this, so Ctrl+click, "move all",
+   and auto-move all merge onto a matching stack the same way an exact-cell drag already did.
+   `EquipDragHandler.OnPointerClick` (Ctrl+click-unequip) had the identical gap — it also called
+   `FindFreePosition` directly — so it was switched to the same shared helper. One new EditMode case
+   (`TryMoveTo_MatchingItemAlreadyInDestination_MergesIntoIt`); the free-position branch was already
+   covered by the pre-existing `TryMoveTo_FitsInDestination_MovesAndFreesSource`.
+2. **The dragged icon rendered behind other UI panels during a drag.** Root cause: the icon stays
+   parented under its own `GridView`'s item layer for the whole drag, so `SetAsLastSibling()` inside
+   that layer only ever wins against its own view's siblings — Unity draws whole subtrees in
+   hierarchy order, so a different, later-drawn panel (e.g. dragging from the bag over the
+   warehouse) always drew its cells on top of the icon still following the pointer, regardless of
+   sibling order inside the bag. Fixed by reparenting the dragged icon to the canvas root
+   (`worldPositionStays: true`, so it doesn't jump) and calling `SetAsLastSibling()` there instead,
+   in both `DragHandler.OnBeginDrag` and `EquipDragHandler.OnBeginDrag`. On a successful drop the
+   icon is destroyed by the usual `Redraw()` regardless of its (reparented) location, so only the
+   snap-back-on-failure path needs to restore the original parent — both `OnEndDrag`s now do that
+   before resetting `anchoredPosition`.
+3. **Q/E direction request:** developer said leave it as the current reliable two-state toggle for
+   now, revisit later if needed. No change made; not re-flagging further this round.
+4. **Items inside an opened backpack couldn't bulk-move or Ctrl+click.** The backpack's bag
+   `GridView` (spawned in `InventoryDemo` when the backpack gets equipped) never had a `PairedView`
+   set, so both `DragHandler.OnPointerClick` (Ctrl+click) and any move-all button had nowhere to
+   send items. Wired it to the warehouse for now (`bagGridView.PairedView = warehouseView` —
+   explicit developer instruction: "일단은 warehouse로", not a permanent decision) and added a
+   "Backpack -> Warehouse" move-all button alongside the opened bag view, built and destroyed
+   together with it.
+
+**Three new `GridInventoryTests` cases added across rounds 6-7**, still not run through batchmode —
+same standing gap, last confirmed batchmode run remains T-044's 232/232.
+
+**Manual test checklist for the developer** — none of this is covered by the EditMode suite; press
+Play with `InventoryDemo` in the scene (see above) and work through:
+
+1. **Placement + snapping** — drag an item icon onto an empty cell; it should snap to that cell and
+   stay there on release.
+2. **Overlap rejection** — drag an item onto cells already occupied by another item; it should
+   snap back to its original spot, not overlap or disappear.
+3. **Rotate while dragging (R, Q or E)** — start dragging a non-square item, press `R`, `Q` or `E`;
+   the icon should flip width/height while still following the pointer, any of the three keys
+   toggling the same orientation. Dropping commits whatever orientation was showing.
+4. **Square items don't rotate** — same test on a square item; `R`/`Q`/`E` should do nothing.
+5. **Ctrl+click bulk move** — with a paired view open (e.g. crate next to the player's bag),
+   Ctrl+click an item; it should jump to the first free spot in the other container without
+   dragging.
+6. **Move all button** — click "move all" on a container with a paired view open; every item that
+   fits in the destination should move there, leftovers (if the destination is too small) stay
+   behind.
+7. **Auto-sort button (warehouse only)** — confirm the button only appears on a `GridView` with
+   `IsWarehouse` set; clicking it repacks the warehouse's items largest-first with no gaps and no
+   item lost.
+8. **Shift+drag split** — hold Shift, start dragging a stack of more than 1; drop half of it into an
+   empty area; the original stack should show the remainder count and a new stack with the split
+   count should appear at the drop point.
+9. **Split onto a full destination** — try a Shift+drag split onto cells that don't fit; the
+   original stack should be untouched (no partial split, no item lost).
+10. **Hover tooltip** — hover any item icon; a tooltip should appear showing the item's (raw lang
+    key) name, size, weight and stack count. It should disappear when the pointer leaves the icon.
+11. **Equip an item** — drag an item whose `EquipSlot` matches a slot (e.g. a sword with
+    `equip_slot: "main_hand"`) onto that `EquipSlotView`; it should leave the source grid and appear
+    on the slot.
+12. **Equip rejects a mismatched item** — drag an item onto a slot it doesn't belong to (e.g. a
+    sword onto the `head` slot); it should bounce back to its original grid position, not equip.
+13. **Equip a backpack opens its bag** — equip the sample backpack into the `back` slot (it starts
+    in the player bag grid, already sized 2×2 with a 4×4 bag); `InventoryDemo` listens to the
+    slot's `Changed` event and should show a new 4×4 grid below the equip row, starting empty.
+    Unequipping it should make that grid disappear again.
+14. **Unequip** — drag the equipped icon back out of its slot onto an open grid; it should leave the
+    slot and land in the grid, respecting rotation (R) the same as any other drag.
+15. **Unequip blocked while the bag has items** — put an item inside an equipped backpack's bag grid,
+    then try to drag the backpack itself out of the `back` slot; it should refuse (snap back), and
+    the item inside the bag must still be there afterward.
+16. **Sword equips** — drag the sample sword onto `main_hand`; it should now leave the bag and
+    appear on the slot (round 4 fixture fix).
+17. **Q/E do nothing while just hovering** — hover a non-square stored item without dragging and
+    press `Q`/`E`; nothing should happen (rotation only exists mid-drag as of round 5).
+18. **Tooltip stays on top of a backpack's bag grid** — equip the sample backpack (opens its own bag
+    grid below the equip row), hover an item placed inside that bag; the tooltip must render above
+    the bag grid, not behind it.
+19. **Tooltip follows the cursor** — hover an item and move the mouse around while still hovering
+    it; the tooltip's top-left corner should track the cursor continuously, not stay fixed at
+    wherever the hover started.
+20. **Unequip a backpack closes its bag view** — equip the backpack (opens the bag grid), then drag
+    it back out of the `back` slot into any open grid; the bag grid must disappear immediately.
+21. **Q/E rotate while holding the mouse still** — start dragging a non-square item, don't move the
+    mouse at all, tap `Q` then `E`; both should rotate the icon immediately, every time, with no
+    missed presses (round 6 fixed a real bug here — rotation used to only register on frames the
+    mouse moved).
+22. **Split-drag shows the remainder in place** — Shift+drag part of a stack; while still dragging
+    (before releasing), the original cell should still show a placeholder icon with the remaining
+    count, not look empty.
+23. **Dragging a split stack back onto its sibling merges them** — after a Shift+drag split, drag
+    the smaller stack back onto the leftover stack's exact cell; they should recombine into one
+    stack with the summed count, not bounce back or sit stacked as two overlapping items.
+24. **Ctrl+click unequips** — Ctrl+click an equipped item (no drag); it should move to the player's
+    bag's first free spot and leave the slot.
+25. **Equipped items show a tooltip** — hover an equipped item; the same name/weight/size tooltip
+    from the grid should appear.
+26. **Ctrl+click merges onto a matching stack** — put two separate stacks of the same fixture item in
+    the bag and the warehouse; Ctrl+click the bag one. It should merge into the warehouse stack's
+    count rather than landing in a new empty spot. Same check for Ctrl+click-unequipping an item
+    that already has a matching stack sitting in the paired bag.
+27. **Dragged icon renders above every panel, not just its own** — drag an item from the bag so the
+    pointer passes over the warehouse (or vice versa); the dragged icon must stay visibly on top of
+    the panel underneath for the whole drag, not disappear behind its cells.
+28. **A failed drop still lands back in the right place visually** — drag an item somewhere invalid
+    (off any grid, or a full cell) and release; it should snap back to its exact original cell, not
+    end up reparented somewhere visually wrong.
+29. **Backpack contents can bulk-move to the warehouse** — equip the backpack, put an item inside it,
+    then both Ctrl+click that item and use the new "Backpack -> Warehouse" button; either should move
+    it into the warehouse grid.
 
 **Session note (2026-09-15):** the developer authorized working through consecutive Phase 3 tasks
 in one sitting without stopping to ask after each one, batching everything into a single PR
 instead of the usual one-PR-per-task — but only up to the first task that needs the developer's
 own visual/manual check, or that hits a genuinely missing spec value (rule 3: "if a value is
-missing, ask — do not invent one"). **T-031** ("Tilemap, Y-sort, collision, 3-step camera zoom")
+missing, ask — do not invent one"). The same authorization was repeated for Phase 4 later the same
+day, and hit its own stopping point at T-042 (see above). **T-031** ("Tilemap, Y-sort, collision, 3-step camera zoom")
 hit the first kind — it's tilemap rendering/camera behavior with no spec sheet anywhere, and no way
 to verify it except looking at the Editor — so the developer said to skip it and continue with the
 logic-only tasks instead. The tasks after it hit the second kind, one by one — the developer
@@ -540,6 +956,90 @@ blocking anything right now.
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-09-16 — T-042/T-043/T-044 manual test harness: fabricated sample items in C#, not real content
+  `InventoryDemo.cs` (see Next) needed a few concrete items to place, equip and drag for the manual
+  test checklist — a sword, a stack of potions, a helmet, a backpack. The project has **zero** real
+  item definitions anywhere (`StreamingAssets/definitions/items` doesn't exist yet, no `ItemDef`
+  JSON has ever been written), so there was no real content to load through `DefinitionBootstrap`
+  instead. Built them the same way `GridInventoryTests`/`EquipSlotsTests` already do — throwaway
+  `new ItemDef { ... }` instances with placeholder names/weights, never touching the mod content
+  pipeline or `StreamingAssets`. This is a test fixture, not shipped content, so Absolute Rule 1
+  ("no hardcoded content") doesn't apply the way it would to a real item def — the same reasoning
+  the test suite already relies on. Revisit once real item JSON exists; the demo should switch to
+  loading a couple of real items by ID instead of fabricating its own.
+- ### 2026-09-16 — T-042/T-043/T-044: `GridView`/`EquipSlotView` build their own child RectTransforms when unwired
+  Both were originally written assuming a hand-wired prefab would supply `_cellLayer`/`_itemLayer`/
+  `_autoSortButton` via the Inspector — but no such prefab exists (nothing is baked, per project
+  convention), and the developer had no way to build one without instructions that didn't exist
+  either. Changed `Bind()` on both to create these children itself when the field is left null,
+  so either a future hand-authored prefab (Inspector wiring) or a pure runtime caller (`InventoryDemo`,
+  no wiring at all) both work unchanged. No behavior change for a hand-wired prefab — this only
+  fills in what would otherwise be a null reference.
+- ### 2026-09-15 — T-044: `Belt` pouch's "×2" isn't representable by a single `belt` equip slot — flagged, not resolved
+  `SYS-INV-01` §Containers names exactly eight equip slots including one `Belt`, but its own
+  container table lists "Belt pouch | 2×2 ×2" — two pouches at once. `EquipSlots` as built holds
+  **one** item per slot, so it can only ever open one 2×2 bag on `belt`, not two. Went with the
+  simple single-slot model rather than inventing a resolution (a second `belt_2` slot? one item that
+  represents "a pair of pouches" with a combined grid? two independent bags under one slot key?) —
+  none of those is stated anywhere, and guessing wrong here would need reverting UI wiring, not just
+  a number. **Needs the developer's answer** before belt pouches specifically are modeled further;
+  every other container/slot in the table is unaffected.
+
+- ### 2026-09-15 — T-044: `ItemDef.EquipSlot`/`BagGrid` added as plain fields, not a new definition type
+  `SYS-INV-01` §Location doesn't list a schema file for equip data at all — only `EquipSlots.cs`
+  (engine logic). The eight slot names and the bag-size table are already fully specified in
+  §Containers, so exposing them as two new `ItemDef` fields is wiring up existing spec facts, not
+  inventing values (same category as T-011's original field set). `EquipSlot` is a plain string, not
+  an enum, matching the `SkillDef.Pool` precedent (T-018) — closed sets are a validator concern here,
+  not a type-system one.
+
+- ### 2026-09-15 — T-042/T-043: stack count lives on `Placement`, not a separate `ItemStack` type
+  `SYS-INV-01` §Location lists `ItemStack.cs` as a file, and §Required UX makes "split stack"
+  non-deferrable, but nothing in `ItemDef`/`Placement`/`GridInventory` modeled a quantity at all, and
+  no backlog task (`T-040`..`T-045`) explicitly owns building `ItemStack.cs`. Added a `Count` field
+  directly to the existing `Placement` struct (default 1, additive constructor/`TryPlace` parameter —
+  every pre-existing call site is unaffected) instead of introducing a whole new type for a single
+  int. Revisit if a future task needs `ItemStack` to carry more than a count (e.g. per-unit
+  durability/freshness) — nothing here forecloses that, it just doesn't build it before something
+  needs it.
+
+- ### 2026-09-15 — T-043: `AutoSort` ordering — descending footprint area, first-fit
+  `SYS-INV-01` §Open questions itself lists "Warehouse auto-sort ordering (by tag? size?
+  frequency?)" as unresolved. Picked size-descending (largest items packed first, first-fit by scan
+  order) because it's the standard bin-packing heuristic that minimizes leftover gaps, and it's the
+  only one of the three options that needs no data the game doesn't already track (frequency-of-use
+  isn't recorded anywhere; tag-based ordering has no defined tag priority). `AutoSort` packs into a
+  scratch grid first and only commits if every item re-places, so a bad heuristic can waste space but
+  can never lose an item. Flagged in case the developer wants a specific ordering rule written into
+  the spec.
+
+- ### 2026-09-15 — T-042: tooltip omits freshness/quality/enchants/crafter; item name shown as its raw lang key
+  `SYS-INV-01` §Required UX asks the tooltip to show "weight/size/freshness/quality/enchants/
+  crafter", but only weight and size exist on `ItemDef`/`Placement` today — spoilage-instance
+  tracking, item quality, enchants and crafting attribution are all unbuilt systems with no owning
+  fields anywhere yet. `ItemTooltip` shows only what actually exists (name, weight, size, stack
+  count); the rest is a documented gap, not invented data. Separately, no localization/lang-table
+  loader exists anywhere in the project, so the tooltip shows `ItemDef.Name`'s raw lang key (e.g.
+  `"@item.raw_meat"`) rather than translated text — the same placeholder-stage honesty
+  `PlaceholderIcons` already uses for missing art. Building a localization system now would be a
+  second system touched in one session; left for whichever task actually owns `lang/*.json` loading.
+
+- ### 2026-09-15 — T-042: `GridView.CellSizePx = 32` is a placeholder UI dimension
+  No spec value exists for on-screen cell size — `SYS-INV-01` only defines grid *cell counts*
+  (6×3, 10×6, etc.), not pixels. Reused `PlaceholderIcons.IconSizePx`'s existing 32px constant
+  (ART_PIPELINE §Style: "one tile = 32px") for consistency rather than inventing an unrelated number.
+  Per Absolute Rule 7, this is a placeholder dimension, not a spec value — free to change once real
+  UI art/layout exists (T-160+).
+
+- ### 2026-09-15 — T-040: no verification table for placement, tests derived from the placement rules
+  `SYS-INV-01`'s only "Verification" table (±0.001 tolerance, 5 rows) is for §Weight — T-041's
+  scope, not T-040's. §Placement states rules in prose ("in bounds and empty", "rotation swaps W
+  and H", "AABB overlap is sufficient — no L-shapes") but gives no worked test cases. `GridInventoryTests`
+  derives 7 cases directly from those rules (in-bounds, out-of-bounds, negative position, overlap,
+  adjacent-non-overlap, rotation, remove) rather than inventing numbers — nothing here is a made-up
+  formula value, just test coverage for prose rules that had none. Flagged in case the developer
+  wants specific placement scenarios added to the spec itself later.
 
 - ### 2026-09-15 — T-036: landmark minimum separation converted from the spec's crossing pace, not `PlayerMovement.BaseSpeed`
   The developer's answer was "≥2 minutes walking distance apart", which needs a tile-distance
@@ -1203,6 +1703,7 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #16 | feature/T-020-fishnet-bootstrap | T-020 | [PR #16](https://github.com/yhw1737/surv/pull/16) — **merged to main** |
 | #17 | feature/T-021-server-movement | T-021 | [PR #17](https://github.com/yhw1737/surv/pull/17) — **merged to main** |
 | #18 | feature/T-030-world-clock | T-030 + T-032 + T-033 + T-035 + T-036 | [PR #18](https://github.com/yhw1737/surv/pull/18) — awaiting merge |
+| #19 | feature/T-040-grid-inventory | T-040 + T-041 + T-042 + T-043 + T-044 | [PR #19](https://github.com/yhw1737/surv/pull/19) — awaiting merge |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came

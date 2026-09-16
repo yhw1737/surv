@@ -29,6 +29,17 @@ namespace Isle.Data
 
         /// <summary>Null for inedible items.</summary>
         public NutritionSpec Nutrition { get; init; }
+
+        /// <summary>One of <c>head chest legs feet back belt main_hand off_hand</c> (SYS-INV-01
+        /// §Containers), null for items that can't be equipped. A plain string, not an enum — same
+        /// reasoning as <see cref="SkillDef.Pool"/> (T-018): the closed set is a validator concern.</summary>
+        public string EquipSlot { get; init; }
+
+        /// <summary>Bag-type equipment only (backpacks, belt pouches): the separate grid it opens
+        /// when equipped (SYS-INV-01 §Containers: "Bags add a separate grid; the base grid never
+        /// grows"). Null for non-bag equipment. Distinct from <see cref="Grid"/>, which is this
+        /// item's own footprint while it sits inside another container.</summary>
+        public GridSize? BagGrid { get; init; }
     }
 
     /// <summary>Spoilage inputs. Progress is computed in one elapsed-time pass (ARCHITECTURE §Deferred simulation).</summary>
