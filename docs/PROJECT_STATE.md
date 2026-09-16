@@ -7,9 +7,9 @@
 
 - Last updated: **2026-09-16**
 - Phase: **Phase 3 done except T-031 (skipped, needs spec) and T-034 (deferred to Phase 4/6). Phase 4 (inventory) in progress: T-040 through T-044 done.**
-- Task: **T-044 (equipment slots + bag expansion) implemented and verified (EditMode half only), not yet committed. Added `InventoryDemo.cs` so the T-042/T-043/T-044 UI/drag behaviour is actually reachable in the Editor (it wasn't — see Decided without a spec, 2026-09-16). Developer pressed Play repeatedly and reported bugs/requests each time, all fixed the same day: round 1 (unstyled Auto-Sort bar, no item/panel labels), round 2 (NullReferenceException crash, grids overlapping, item sizes not reflected), round 3 (drop position mismatched the dragged icon, tooltip flickering), round 4 (sword equip-slot fixture bug, Q/E rotate-in-place feature — later corrected), round 5 (Q/E moved to rotate-while-dragging instead, tooltip z-order behind newer UI, tooltip now follows the cursor), round 6 (backpack-unequip UI desync, split-drag visual gap + merge-on-drop-back, Q/E reliability fix, Ctrl+click-unequip + equipped-item tooltip), round 7 (Ctrl+click merge-onto-stack, dragged icon z-order above other panels, backpack contents can now bulk-move to the warehouse) — see Next for all seven rounds and the checklist.**
+- Task: **T-040~T-044 (grid inventory, weight, equip slots + bag expansion) committed and PR opened — [PR #19](https://github.com/yhw1737/surv/pull/19), awaiting merge.** Developer pressed Play repeatedly and reported bugs/requests each time, all fixed the same day: round 1 (unstyled Auto-Sort bar, no item/panel labels), round 2 (NullReferenceException crash, grids overlapping, item sizes not reflected), round 3 (drop position mismatched the dragged icon, tooltip flickering), round 4 (sword equip-slot fixture bug, Q/E rotate-in-place feature — later corrected), round 5 (Q/E moved to rotate-while-dragging instead, tooltip z-order behind newer UI, tooltip now follows the cursor), round 6 (backpack-unequip UI desync, split-drag visual gap + merge-on-drop-back, Q/E reliability fix, Ctrl+click-unequip + equipped-item tooltip), round 7 (Ctrl+click merge-onto-stack, dragged icon z-order above other panels, backpack contents can now bulk-move to the warehouse) — see Next for all seven rounds and the checklist.**
 - Branch: **feature/T-040-grid-inventory**
-- Pending commit: **`GridInventory.cs`/`GridInventoryTests.cs`, `WeightCalculator.cs`/`WeightCalculatorTests.cs`, `EquipSlots.cs`/`EquipSlotsTests.cs`, `ItemDef.cs` (+`EquipSlot`/`BagGrid`), `Scripts/UI/Inventory/{GridView,DragHandler,ItemTooltip,EquipSlotView,EquipDragHandler,InventoryDemo}.cs`, `Isle.UI.asmdef`, `docs/modding/SCHEMA.md`, awaiting developer review/commit instruction**
+- Pending commit: **none — committed as `b252ac7`, pushed, [PR #19](https://github.com/yhw1737/surv/pull/19) open against `main`**
 
 ## Progress
 
@@ -1703,6 +1703,7 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #16 | feature/T-020-fishnet-bootstrap | T-020 | [PR #16](https://github.com/yhw1737/surv/pull/16) — **merged to main** |
 | #17 | feature/T-021-server-movement | T-021 | [PR #17](https://github.com/yhw1737/surv/pull/17) — **merged to main** |
 | #18 | feature/T-030-world-clock | T-030 + T-032 + T-033 + T-035 + T-036 | [PR #18](https://github.com/yhw1737/surv/pull/18) — awaiting merge |
+| #19 | feature/T-040-grid-inventory | T-040 + T-041 + T-042 + T-043 + T-044 | [PR #19](https://github.com/yhw1737/surv/pull/19) — awaiting merge |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
