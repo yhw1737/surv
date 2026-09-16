@@ -381,7 +381,19 @@ Everything here is **outside ISLE Core**. New ideas go here only.
 - Crop breeding (8 traits, two-parent crossing, named cultivars)
 - Four seasons
 - Dedicated servers + 8 players + server browser
-- Modding Tier 2 (Lua) / Tier 3 (C#)
+- **Modding Tier 2 (Lua) / Tier 3 (C#)** — needed for interaction-level mods like RimWorld's
+  `dragselect` (drag across a row of quantity arrows to auto-click every one) or `AllowTool`
+  (bulk-select/priority tools). These change *behavior*, not content, so Tier 1's JSON-only
+  pipeline (`DefinitionLoader`/`ReferenceResolver`/`DefRegistry`) can't express them no matter
+  how the schema grows. RimWorld's equivalent is Harmony (runtime monkey-patching of arbitrary
+  methods) plus a plain DLL loader — both viable here since Mono is pinned specifically to keep
+  this door open (`ADR-001`). Two pieces neither exists yet: a mod-assembly loader (scan a mods
+  folder, `Assembly.LoadFrom`, run a discovered entry point) and a patch mechanism (Harmony, or
+  hand-authored hooks in `Modding/Hooks/` per `ARCHITECTURE.md`'s reserved folder — Harmony covers
+  far more surface for far less code). A trust-model call is needed too: RimWorld just trusts mod
+  code outright, which is fine for UI-only mods like dragselect (they only relay clicks a player
+  could already make one at a time) but needs more thought for anything that could bypass server
+  authority (Absolute Rule 2). Write `docs/specs/SYS-MOD-0x` before building.
 - Sailing + new biomes
 - Castaway NPCs
 - Gamepad support
