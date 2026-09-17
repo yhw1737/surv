@@ -309,6 +309,19 @@ Buffs are the timed-status vocabulary a `grant_buff` reference points at (SYS-BU
 time. **Buffs never carry a combat-stat effect** (`+X attack power`, `+X weapon damage`) — SYS-COOK-01's
 rule, enforced here because it is `BuffDef`'s as much as cooking's.
 
+### World objects
+```json
+{
+  "id": "isle:campfire",
+  "name": "@world_object.campfire",
+  "tags": ["station/campfire"]
+}
+```
+The def a placed `WorldObjectInstance` resolves against (world-object-interaction work,
+PROJECT_STATE.md §Decided without a spec) — currently just an id, a name, and tags, since nothing
+beyond tag-based proximity queries (SYS-SURV-01's fire bonus: "within 5 tiles of a campfire") reads
+one yet. `tags` reuses the existing `station/*` group rather than inventing a new one.
+
 ## Patch system
 
 **A mod that wholly redefines `isle:mackerel` collides with every other mod that touches it.** Patch instead — an abbreviated RFC 6902.

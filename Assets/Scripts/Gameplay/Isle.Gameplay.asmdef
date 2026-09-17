@@ -1,7 +1,7 @@
 {
     "name": "Isle.Gameplay",
     "rootNamespace": "Isle.Gameplay",
-    "references": ["Isle.Core", "Isle.Data", "Isle.Networking", "Isle.World", "FishNet.Runtime"],
+    "references": ["Isle.Core", "Isle.Data", "Isle.Networking", "Isle.World", "FishNet.Runtime", "Unity.InputSystem"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
