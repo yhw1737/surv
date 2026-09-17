@@ -48,5 +48,14 @@ namespace Isle.Gameplay.Inventory
             _bags.Remove(slot);
             return true;
         }
+
+        /// <summary>Drops everything equipped at once (SYS-SURV-01 §Death — "drop entire inventory
+        /// including equipment"), bypassing <see cref="Unequip"/>'s "bag still has items" guard —
+        /// on death nothing is coming back into these slots, so nothing to protect.</summary>
+        public void Clear()
+        {
+            _equipped.Clear();
+            _bags.Clear();
+        }
     }
 }

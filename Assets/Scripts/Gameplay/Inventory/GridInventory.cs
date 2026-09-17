@@ -77,6 +77,11 @@ namespace Isle.Gameplay.Inventory
 
         public bool Remove(Placement placement) => _placements.Remove(placement);
 
+        /// <summary>Drops every placement at once (SYS-SURV-01 §Death — "drop entire inventory").
+        /// Bypasses no rule <see cref="Remove"/> has (there's no fail case), just avoids the caller
+        /// having to snapshot-then-loop over a list it's about to empty.</summary>
+        public void Clear() => _placements.Clear();
+
         /// <summary>The placement anchored exactly at <paramref name="position"/>, or null. Added for
         /// T-045: a network request identifies "which item" by where it already sits in this
         /// container, rather than by definition id — there's nothing to resolve from a wire id when

@@ -14,10 +14,15 @@
 
 ## Volume estimate (ISLE Core)
 
+> **2026-09-17: the jointed cutout rig this table assumed is retired.** Character/graphics design
+> is undecided again (`docs/design/GDD.md` §Character presentation,
+> `docs/PROJECT_STATE.md` Blocked / needs the developer item 9). The two rows below describe the
+> retired approach — treat their counts as void until a real design is chosen in Phase 11.
+
 | Category | Count | Difficulty | Notes |
 |---|---|---|---|
-| Character rig parts | 12–16 | 🔴 high | head, torso, 4 arm, 4 leg, 2 hand |
-| Character animations | 12 clips | 🔴 high | idle, walk, run, roll, flip, 3 attacks, gather, fish, butcher, death |
+| Character rig parts | ~~12–16~~ undecided | 🔴 high | ~~head, torso, 4 arm, 4 leg, 2 hand~~ retired 2026-09-17, no replacement estimate yet |
+| Character animations | ~~12 clips~~ undecided | 🔴 high | ~~idle, walk, run, roll, flip, 3 attacks, gather, fish, butcher, death~~ same retirement |
 | Equipment sprites | 40–60 | 🟠 med | 8–12 each across 5 slots |
 | Item icons | **150–200** | 🟡 low | high volume |
 | Weapon sprites | 20–30 | 🟠 med | |
@@ -36,9 +41,9 @@
 
 | Category | Approach | Why |
 |---|---|---|
-| **Character rig** | **yourself or commission** | The face of the game; it sets the style. Spend time here |
-| Character animation | yourself (rig-based) | Cutout means parts are the hard part; animation is fast |
-| Equipment sprites | yourself (reuse rig parts) | ~20 min each once the rig exists |
+| **Character rig** | ~~yourself or commission~~ **undecided, 2026-09-17** | Retired with the jointed rig — the face of the game still sets the style, but the *approach* (rig vs. sprite sheets vs. something else) isn't chosen |
+| Character animation | ~~yourself (rig-based)~~ undecided | Depends entirely on whatever the eventual character approach turns out to be |
+| Equipment sprites | ~~yourself (reuse rig parts)~~ undecided | No rig parts to reuse until a design exists |
 | **Item icons** | **buy + retouch** | High volume, low individuality. Drawing these is a bad trade |
 | Weapon sprites | yourself | Must align with rig sockets |
 | **Creatures** | **buy or commission** | Animation volume is large — the worst thing to hand-draw |
@@ -60,30 +65,34 @@ Fix this first or purchased assets will never blend.
 | Property | Value |
 |---|---|
 | Tile size | 32 × 32 px |
-| Character height | ~48 px (1.5 tiles) |
-| Pixel perfect | **no** — smooth sprites suit cutout rigging |
+| Character height | ~48 px (1.5 tiles) — carried over from the retired rig, unconfirmed for whatever replaces it |
+| Pixel perfect | **no** — smooth sprites suit cutout rigging *(rig-specific reasoning, void since 2026-09-17; revisit once a character approach is chosen)* |
 | Outline | yes, dark brown (not black) |
 | Palette | fixed 32–48 colors |
 | Tone | warm tropical; cool teal only at night |
 | Perspective | top-down 3/4 |
 | Shadow | ellipse under characters and objects |
 
-> **Do not choose pixel art.** Running IK on a cutout rig breaks the pixel grid. Rig method and art style are a linked decision.
+> ~~**Do not choose pixel art.** Running IK on a cutout rig breaks the pixel grid. Rig method and art style are a linked decision.~~ This constraint only held for the now-retired cutout rig — re-evaluate once a real character approach is chosen in Phase 11.
 
 Define 48 colors in `Art/palette.png` and remap every asset — including purchased ones — through it. **This single step removes the patchwork feel.**
 
-## Rig spec (matches SYS-CHAR-01)
+## ~~Rig spec (matches SYS-CHAR-01)~~ — retired 2026-09-17
+
+> This section described the T-001/T-002 jointed cutout rig, now deleted from the codebase
+> (`docs/PROJECT_STATE.md` Blocked / needs the developer item 9). Kept here struck through as a
+> record of the approach that was tried and abandoned, not as a spec to build against.
 
 ```
-Character.psd            layer names become bone names — typos break the rig
-├─ Head
-├─ Torso
-├─ Arm_Front_Upper / Arm_Front_Lower / Hand_Front
-├─ Arm_Back_Upper  / Arm_Back_Lower  / Hand_Back
-├─ Leg_Front_Upper / Leg_Front_Lower / Foot_Front
-└─ Leg_Back_Upper  / Leg_Back_Lower  / Foot_Back
+~~Character.psd            layer names become bone names — typos break the rig~~
+~~├─ Head~~
+~~├─ Torso~~
+~~├─ Arm_Front_Upper / Arm_Front_Lower / Hand_Front~~
+~~├─ Arm_Back_Upper  / Arm_Back_Lower  / Hand_Back~~
+~~├─ Leg_Front_Upper / Leg_Front_Lower / Foot_Front~~
+~~└─ Leg_Back_Upper  / Leg_Back_Lower  / Foot_Back~~
 ```
-Draw joints with generous overlap so rotation never opens a gap. Equipment uses the same part structure for swap rendering.
+~~Draw joints with generous overlap so rotation never opens a gap. Equipment uses the same part structure for swap rendering.~~
 
 ## Naming
 
@@ -108,7 +117,7 @@ solid fill. No pixel work, nothing hand-drawn, nothing to keep in sync with a de
 | Target | Placeholder shape |
 |---|---|
 | Item icons | solid rounded rectangle, tag-derived colour, first letter |
-| Characters | the `T-001` capsule rig (already built) |
+| Characters | ~~the `T-001` capsule rig~~ **retired 2026-09-17** — now `PlayerVisual`: one large body circle (also the face) + two small hand circles either side, generated the same way as everything else in this table (`PlaceholderVisuals`, `T-017`). See `docs/design/GDD.md` §Character presentation |
 | Creatures | coloured circle, radius from body weight |
 | Weapons / tools | solid rectangle at the grip socket |
 | Tiles | solid colour per terrain |
@@ -150,7 +159,9 @@ Reordered 2026-09-06 to match the four-stage build order.
    (Phases 2–10: no art work at all)
 --- Phase 11, in this order -----------------------------------------
 2  Fix the 48-colour palette      T-160     half a day
-3  Character rig PSD              T-003–6   required before G1
+3  Character design + rig PSD     T-003–6   required before G1 — approach undecided since
+                                             2026-09-17 (see §Rig spec); pick one before this
+                                             starts, it's no longer just "draw the PSD"
 4  Item icons (buy + retouch)     T-161     the long pole, 150–200
 5  Five creatures                 T-162     buy or commission
 6  Tilesets + world objects       T-163
@@ -167,7 +178,9 @@ design changes.
 those can fail for want of a sprite.
 
 ## Open questions
-- Commission or draw the character rig (depends on budget)
+- ~~Commission or draw the character rig (depends on budget)~~ **Premature as of 2026-09-17** — the
+  rig approach itself is retired and undecided; this question can't be answered until a character
+  design exists to commission or draw
 - Candidate asset packs
 - Music direction (ambient? acoustic?)
 - Concrete visual concept for artifact VFX

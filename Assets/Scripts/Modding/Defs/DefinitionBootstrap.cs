@@ -10,7 +10,7 @@ namespace Isle.Modding.Defs
     /// <c>ModLoader</c>/<c>LoadOrderResolver</c>/<c>PatchApplier</c>, not this; <see cref="Load"/> is
     /// what that pipeline will eventually call per mod, not a replacement for it.
     /// <para>
-    /// The eleven types are named explicitly rather than looped over via reflection, matching
+    /// The twelve types are named explicitly rather than looped over via reflection, matching
     /// <see cref="ReferenceResolver"/>'s style — there's no common base beyond <see cref="IDefinition"/>
     /// to loop over generically without one.
     /// </para>
@@ -32,6 +32,7 @@ namespace Isle.Modding.Defs
             DefRegistry.Register(defs.Crops);
             DefRegistry.Register(defs.Skills);
             DefRegistry.Register(defs.Buffs);
+            DefRegistry.Register(defs.WorldObjects);
             DefRegistry.Freeze();
 
             return errors;
@@ -54,6 +55,7 @@ namespace Isle.Modding.Defs
             DefRegistry.Reload(defs.Crops);
             DefRegistry.Reload(defs.Skills);
             DefRegistry.Reload(defs.Buffs);
+            DefRegistry.Reload(defs.WorldObjects);
 
             return errors;
         }
@@ -73,6 +75,7 @@ namespace Isle.Modding.Defs
                 Crops = DefinitionLoader.LoadAll<CropDef>(Path.Combine(contentRoot, "crops")),
                 Skills = DefinitionLoader.LoadAll<SkillDef>(Path.Combine(contentRoot, "skills")),
                 Buffs = DefinitionLoader.LoadAll<BuffDef>(Path.Combine(contentRoot, "buffs")),
+                WorldObjects = DefinitionLoader.LoadAll<WorldObjectDef>(Path.Combine(contentRoot, "world_objects")),
             };
 
             ReferenceResolver.ResolveItemRefs(defs.Items, defs.Recipes, defs.Enchants, defs.Creatures, defs.Fish, defs.Crops, defs.CookMethods);
@@ -81,7 +84,8 @@ namespace Isle.Modding.Defs
             foreach (ILoadResult result in new ILoadResult[]
                      {
                          defs.Items, defs.Creatures, defs.Fish, defs.CookMethods, defs.Recipes,
-                         defs.Weapons, defs.Artifacts, defs.Enchants, defs.Crops, defs.Skills, defs.Buffs
+                         defs.Weapons, defs.Artifacts, defs.Enchants, defs.Crops, defs.Skills, defs.Buffs,
+                         defs.WorldObjects
                      })
                 errors.AddRange(result.Errors);
 
@@ -101,6 +105,7 @@ namespace Isle.Modding.Defs
             public LoadResult<CropDef> Crops;
             public LoadResult<SkillDef> Skills;
             public LoadResult<BuffDef> Buffs;
+            public LoadResult<WorldObjectDef> WorldObjects;
         }
     }
 }

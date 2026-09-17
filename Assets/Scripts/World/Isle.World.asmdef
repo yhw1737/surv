@@ -1,7 +1,7 @@
 {
     "name": "Isle.World",
     "rootNamespace": "Isle.World",
-    "references": ["Isle.Core", "Isle.Data", "Isle.Networking", "Gilzoide.SqliteNet"],
+    "references": ["Isle.Core", "Isle.Data", "Isle.Networking", "Isle.Modding", "FishNet.Runtime", "Gilzoide.SqliteNet"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

@@ -29,8 +29,16 @@
 - [x] **T-001** Placeholder character rig — now serves as the box stand-in (SYS-CHAR-01 §Rig)
 - [x] **T-002** IK Manager 2D — Limb solver on front arm, look-at on head
 
-> T-001/T-002 are done and stay in the tree. They are not thrown away — they become the
-> placeholder, and Phase 11 resumes from them.
+> ~~T-001/T-002 are done and stay in the tree. They are not thrown away — they become the
+> placeholder, and Phase 11 resumes from them.~~
+>
+> **Superseded 2026-09-17.** The developer asked to retire the jointed cutout rig entirely; the
+> source (`PlaceholderRigBuilder`, `CharacterRigIk`, `CharacterRig`) is deleted, not kept as a
+> Phase 11 starting point. Character/graphics design is undecided again — see
+> `docs/design/GDD.md` §Character presentation and `docs/PROJECT_STATE.md` Blocked / needs the
+> developer item 9. Left `[x]` above since the tasks themselves were genuinely done at the time;
+> Phase 11's T-003–T-006 can no longer assume they have this rig to "resume from" and will need a
+> fresh design decision first (see §Rig spec's status in `docs/ART_PIPELINE.md`).
 
 ## Phase 1 · Foundation — definitions. Keep this order
 
@@ -115,8 +123,9 @@ stood up now so the solo beta is already a listen-server session with one client
       drain rate and enemy attack power; enemy HP is unaffected at every tier; bosses may get faster
       patterns on top of that at higher tiers (developer decision, 2026-09-10). Peaceful matches
       Minecraft's peaceful mode. No spec sheet yet — write it before coding (workflow: spec before
-      code). Touches `SYS-SURV-01` (T-050) and `SYS-COMBAT-01` (T-110), neither built yet, so this
-      isn't blocking anything today.
+      code). Touches `SYS-SURV-01` (T-050, now built — `VitalsCalculator.HungerBaseRate`/
+      `ThirstBaseRate` is where a difficulty multiplier would apply) and `SYS-COMBAT-01` (T-110,
+      not built yet), so this still isn't blocking anything today.
 
 ## Phase 3 · World
 
@@ -238,12 +247,32 @@ stood up now so the solo beta is already a listen-server session with one client
 
 ## Phase 5 · Survival + skills
 
-- [ ] **T-050** `Vitals` — 5 gauges (SYS-SURV-01)
-- [ ] **T-051** Temperature + wetness + campfire
+- [x] **T-050** `Vitals` — 5 gauges (SYS-SURV-01)
+- [x] **T-051** Temperature + wetness + campfire
 - [ ] **T-052** Six water sources
-- [ ] **T-060** `XpCurve` + `SkillSet`
-- [ ] **T-061** ★ `FocusCalculator` + 9 verification cases (SYS-SKILL-01)
-- [ ] **T-062** `ActivityTracker` 7-day median
+
+> T-051 is fully implemented: `SYS-WORLD-02-weather.md` (new spec, real ambient/rain numbers,
+> plus a four-season cycle added the same session) plus `WorldTime`/`WeatherController`, and a
+> functional (placeholder-shape) campfire —
+> `WorldObjectDef`/`WorldObjectInstance`/`WorldObjectRegistry`/`CampfireInteraction`/
+> `PlayerInteraction`. Pulled forward from T-163's Phase 11 slot ahead of schedule at the
+> developer's request — see PROJECT_STATE.md. Not yet play-tested (scene/prefab assembly is
+> Unity-editor-only, see PROJECT_STATE.md Next). T-163 itself still owns the real tileset/world-object
+> **art** once Phase 11 starts; today's work is placeholder-shape logic only. T-052's drink
+> interaction can now reuse the same world-object/interaction system — no longer blocked.
+> **2026-09-17**: extended with Snow (Winter's precipitation), independent `ColdSnap`/`HeatWave`
+> temperature events, and a per-map randomized Summer/Winter temperature pool
+> (`RollSeasonTempOffset`) at the developer's request. See PROJECT_STATE.md Header/Decided without
+> a spec for every invented number — not yet reported to or corrected by the developer.
+> **2026-09-17, same day**: developer did the scene/prefab assembly and play-tested; found the
+> campfire never warmed the player and health drained constantly, root-caused to
+> `DefinitionBootstrap.Load` never being called at runtime (fixed with
+> `DefinitionBootstrapRunner`) — see PROJECT_STATE.md Decided without a spec. Also added a debug
+> red/gray `CampfireInteraction` visual and corrected the manual-test walkthrough (don't
+> hand-place a player — `PlayerSpawner` already does it). Retest pending.
+- [x] **T-060** `XpCurve` + `SkillSet` — landed inside T-018's rewrite (PR #13)
+- [x] **T-061** ★ `FocusCalculator` + 9 verification cases (SYS-SKILL-01) — landed inside T-018's rewrite (PR #13)
+- [x] **T-062** `ActivityTracker` 7-day median — landed inside T-018's rewrite (PR #13)
 - [ ] **T-063** Skill UI — split production/combat tabs, **show focus as a bonus**
 - [ ] **T-064** `RustSystem` (flag, default off)
 
@@ -327,8 +356,10 @@ Stage 4. Nothing here is a prerequisite for anything above it; that is the whole
 - [ ] **T-163** Tilesets (3 biomes) + world objects
 - [ ] **T-164** UI art pass
 
-> **SYS-CHAR-01 must be rewritten for quarter view before T-003 starts** — it is currently written
-> for a pure side view. See PROJECT_STATE.
+> **SYS-CHAR-01 must be rewritten before T-003 starts** — not just for quarter view. **2026-09-17:**
+> the jointed cutout rig it specifies is retired outright (see T-001/T-002's superseding note
+> above); a character design needs to be chosen from scratch, then SYS-CHAR-01 rewritten (or
+> replaced) to match, before any of T-003–T-006 can start. See PROJECT_STATE.
 >
 > **G1 fails →** try plan B (8-direction sprites, forearm IK only) for two weeks. If that fails too, ADR-001 §10 review.
 >
