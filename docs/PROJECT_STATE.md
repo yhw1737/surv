@@ -16,8 +16,12 @@ and merged into `main` the same day (2026-09-16). **See Operational notes for a 
 recorded this session: AI attribution was wrongly added to the PR body and two commit messages,
 against CLAUDE.md's own explicit rule — fixed on the PR body, flagged as unresolved on the two
 already-merged commit messages (history rewrite on `main` needs the developer's own call).**
-- Branch: **`feature/T-050-vitals`**, off `main`, not merged — nothing committed on it yet.
-- Pending commit: **T-050 (`Vitals` — 5 gauges, SYS-SURV-01) implemented, not committed**, plus
+- Branch: **`feature/T-050-vitals`**, off `main`, not merged. **Committed and pushed 2026-09-17**
+  (6 commits) — [PR #21](https://github.com/yhw1737/surv/pull/21) opened, not yet merged. The
+  paragraphs below narrate the branch's history while everything was still uncommitted; left as-is
+  as the session log, not rewritten now that it's a PR.
+- Pending commit (historical, now committed — see above): **T-050 (`Vitals` — 5 gauges,
+  SYS-SURV-01) implemented**, plus
   the buildable half of **T-051** (wet-penalty decay, fire-bonus falloff) on the same branch. New
   `VitalsCalculator` (★ static pure), `Vitals` (`NetworkBehaviour`, server authority) and
   `DeathHandler` in `Assets/Scripts/Gameplay/Character/`; both wired onto
