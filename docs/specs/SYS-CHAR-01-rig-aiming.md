@@ -1,12 +1,25 @@
 # SYS-CHAR-01 · Rig, movement, aiming
 
-> ## ⚠️ Status: deferred to Phase 11 — and this sheet needs a rewrite before it is used
+> ## ⚠️ Status: deferred to Phase 11, and the jointed-rig approach below is fully retired
 > **2026-09-04 developer decision, rescheduled 2026-09-06.** Characters stay placeholder shapes
 > while the systems get built (`BACKLOG.md` priority banner). T-003–T-006 moved from Phase 0 to
 > **Phase 11**, after the solo beta (Phase 9) and multiplayer (Phase 10) — art is the last of the
 > four build stages.
 >
-> **Two things in this sheet are now wrong and must be fixed before T-003 starts:**
+> **2026-09-17 developer decision — supersedes the two rework notes below.** The T-001/T-002 jointed
+> cutout rig (`PlaceholderRigBuilder`, `CharacterRigIk`, `CharacterRig`) is not being reworked for
+> quarter view — it's retired outright, and the source files are deleted. Character/graphics design
+> is **undecided** again past a brief interim placeholder (`PlayerVisual` —
+> `docs/PROJECT_STATE.md` §In progress/unfinished and §Decided without a spec, 2026-09-17): one
+> large body circle acting as the face, two small hand circles either side of it. **§Rig, §Angles'
+> flip machinery, and §Weapon grips below describe the retired approach and do not apply to
+> whatever T-003–T-006 eventually builds** — a full rewrite (or a fresh spec) is Phase 11 work, not
+> done here. The **movement** and **network** sections' *data contracts* (`aimAngle`, `facingSign`,
+> `moveSpeed`) are unaffected by the rig's retirement — Absolute Rule 7 already required gameplay to
+> depend only on that data, never on rig internals — so they remain the right target for whatever
+> visual eventually consumes them.
+>
+> **Two things in this sheet were already wrong before the 2026-09-17 retirement, and still are:**
 >
 > 1. **Perspective.** Everything below assumes a *pure side view* — hence left/right sprites,
 >    overlapping limbs, and the flip machinery. The actual character is **quarter view**:
@@ -15,8 +28,6 @@
 >    §Rig, §Angles and the flip section all need reworking for that.
 > 2. **Weapon-driven rig complexity is dropped.** §Weapon grips is no longer a reason to keep the
 >    part count high. Revisit it with the artifact animation needs (T-122), not before.
->
-> The **movement**, **network** and **plan B** sections are unaffected and still authoritative.
 >
 > 3. **§Network lands in Phase 10, not with the rig.** `aimAngle` sync and the `facingSign` event
 >    are T-022. Until then a solo listen-server session drives both locally.

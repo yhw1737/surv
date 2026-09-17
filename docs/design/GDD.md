@@ -60,27 +60,18 @@ Every system derives from these. A feature that fits none of them is not built.
 
 > **Deferred to Phase 11 (2026-09-04, rescheduled 2026-09-06).** Placeholder shapes until the
 > solo beta and multiplayer are proven — art is the last of the four build stages.
-> The perspective is **quarter view** — side-on, angled slightly toward the camera and slightly
-> from above (`ART_PIPELINE` `top-down 3/4`), *not* the pure side view the rig below assumes.
-> `SYS-CHAR-01` carries the full list of what that changes.
+>
+> **Retired 2026-09-17.** The jointed cutout rig previously described here (left/right sprites,
+> torso/head/arm IK, the flip transition) is retired outright, not just deferred — see
+> `SYS-CHAR-01`'s status banner and `docs/PROJECT_STATE.md`'s Blocked / needs the developer item 9.
+> Character/graphics design is **undecided** again; a real design lands in Phase 11. Until then,
+> the interim placeholder is only this, given directly by the developer with no spec behind it:
+> one large circle for the body, which also serves as the face, and two small circles for hands,
+> positioned either side of the body — in this top-down game "either side" is both left/right and
+> front/back at once, so there's no separate front-facing shape. Implementation:
+> `Isle.Gameplay.Character.PlayerVisual`.
 
-Left/right sprites, with head, torso, arms, and weapon tracking the mouse.
-
-```
-Root
- Hip
-   Leg_L / Leg_R          follow movement direction
-   Torso                   ±20° twist toward mouse
-     Head                  look-at, ±70°
-     Arm_Back              IK → support grip
-     Arm_Front → Socket    IK → aim point
-```
-
-Lower body follows movement, upper body follows the mouse — this is what makes backpedaling and strafing read correctly. Past 70° behind, the whole sprite flips with a transition animation.
-
-**Why cutout rigging:** frame animation explodes as items × directions × actions. For a solo developer it is not a choice.
-
-Spec: `SYS-CHAR-01`
+Spec: `SYS-CHAR-01` (status banner only — the rig content is retired, see above)
 
 ## Survival loop
 
