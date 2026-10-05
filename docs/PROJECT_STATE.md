@@ -7,7 +7,8 @@
 
 - Last updated: **2026-10-06**
 - **Current work (2026-10-06): art overhaul, step 1 — cartoon stick figure.** Branch
-  `feature/art-cartoon-stickman` off `main` (after PR #23), **uncommitted**. Developer moved the art stage
+  `feature/art-cartoon-stickman` off `main` (after PR #23), committed and opened as
+  [PR #24](https://github.com/yhw1737/surv/pull/24), not yet merged. Developer moved the art stage
   forward: "이미지·디자인에 관한 모든 걸 개편 … 매우 부드러운 애니메이션이 기본, 졸라맨 카툰, 고해상도·고프레임,
   팬시 팬츠 어드벤처 벤치마킹, 모든 장비는 졸라맨 위에 그려질 수 있어야". New spec
   `docs/specs/SYS-CHAR-02-stickman.md` (replaces SYS-CHAR-01's retired rig; `PlayerVisual`'s circles deleted). See the 2026-10-06 art entry under the prototype notes below and Decided without a spec.
@@ -311,7 +312,7 @@ already-merged commit messages (history rewrite on `main` needs the developer's 
     width and marsh/forest patches have ragged edges; ponds are bigger (radius 4–16). Visually checked by
     dumping shapes, a ground chunk and the map to PNG. **Verified:** EditMode **519/519**, PlayMode **2/2**.
   - **2026-10-06 — art overhaul step 1: cartoon stick figure (SYS-CHAR-02), branch `feature/art-cartoon-stickman`,
-    uncommitted.** New `Assets/Scripts/UI/Art/` (namespace `Isle.UI.Art`, presentation only): `AnimMath.cs`
+    [PR #24](https://github.com/yhw1737/surv/pull/24).** New `Assets/Scripts/UI/Art/` (namespace `Isle.UI.Art`, presentation only): `AnimMath.cs`
     (`TwoBoneIk`, critically damped `Spring`, `TickInterpolation`, `Gait`), `VectorMesh` (strokes/disks/ellipses/
     polygons into one mesh, rebuilt each frame), shader `Assets/Resources/IsleVector.shader` (`fwidth` AA edges, lit by
     URP 2D lights, sRGB vertex colours converted to linear), `StickFigureAnimator` (procedural idle/walk/run, swing,
