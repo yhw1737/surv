@@ -322,6 +322,55 @@ PROJECT_STATE.md §Decided without a spec) — currently just an id, a name, and
 beyond tag-based proximity queries (SYS-SURV-01's fire bonus: "within 5 tiles of a campfire") reads
 one yet. `tags` reuses the existing `station/*` group rather than inventing a new one.
 
+### Prototype additions (2026-10-03, solo-loop prototype)
+
+Fields added for the solo prototype. Each one is a schema change, so each is listed here.
+
+**World objects** — resource nodes and water, placed by the island generator (SYS-WORLD-03):
+
+```json
+{
+  "id": "isle:tree",
+  "name": "@world_object.tree",
+  "tags": ["node/tree", "wood"],
+  "spawn":  { "biomes": ["isle:forest"], "density": 0.012 },
+  "gather": { "item": "isle:wood", "count": 2, "uses": 3, "respawn_minutes": 60, "stamina_cost": 6 }
+}
+```
+
+| Block | Fields | Meaning |
+|---|---|---|
+| `spawn` | `biomes`, `density` | Per-tile chance on matching land. Same shape as a creature's `spawn` |
+| `gather` | `item`, `count`, `uses`, `respawn_minutes`, `stamina_cost` | One harvest per interact. Depleted nodes return after `respawn_minutes` in-game |
+| `drink` | `source` | A `WaterSource` name in snake_case. The thirst value comes from `VitalsCalculator`, not the def |
+| `fishing` | `depth` | Where a line can be cast. Terrain comes from the def's `water/*` tag, water temperature from ambient |
+
+**Items** — `weapon` (optional): the `isle:` id of the `WeaponDef` this item wields as. Omitted means the
+item is not a weapon.
+
+**Weapons** — the fists fallback is picked by tag `weapon/unarmed`, not by id, so no C# names it.
+
+**Creatures** — `combat` block, read by the creature AI (SYS-COMBAT-01 §Creature AI):
+
+| Field | Meaning |
+|---|---|
+| `vision_tiles` | Radius the AI preset reacts within |
+| `move_speed`, `chase_speed` | Idle wander speed, and speed while fleeing or charging |
+| `damage`, `attack_range_tiles`, `attack_interval_seconds` | Strikes against the player |
+| `alert_seconds` | Alert-then-flee preset only: how long it watches before running |
+
+AI presets (`ai`): `isle:skittish` (flees on sight), `isle:territorial_charger` (charges on sight),
+`isle:alert_then_flee` (alerts, then flees), `isle:ambusher` (lies still, charges at close range).
+
+`butcher.yields[].count` — units dropped per yield (prototype shortcut for SYS-HUNT-01's kg-to-units
+conversion, which isn't specced). Unset means 1.
+
+**Fish** — `rig_allowed` lists rigs (the prototype has `handline` only). `habitat.terrain` matches the water
+tag suffix (`saltwater`, `freshwater`). `habitat.time` accepts `any` or a `DayPhase` name.
+
+**Recipes** — `station` is optional. Omitted means crafted by hand. A station is a world-object def id that
+must be lit within reach.
+
 ## Patch system
 
 **A mod that wholly redefines `isle:mackerel` collides with every other mod that touches it.** Patch instead — an abbreviated RFC 6902.
@@ -371,3 +420,30 @@ This document constrains us before it serves modders.
 - Hand-write JSON Schema files or generate from `Data` classes? (generation preferred)
 - Steam Workshop path detection
 - Handling in-flight crafting during hot reload
+
+### Prototype additions, round 4 (2026-10-04)
+
+| Type | Field | Meaning |
+|---|---|---|
+| Item | `places` | World-object id this item becomes when placed (kits) |
+| Item | `warmth` | Degrees added to `clothingBonus` while equipped |
+| Item | `light_radius` | Tiles of light while equipped (torch) |
+| World object | `storage` `{w,h}` | Container grid (crate 10×6) |
+| World object | `rain_catcher` `{capacity, fill_per_second}` | Collects rain; one drink per unit, +40 thirst |
+| World object | `light_radius` | Tiles of light while active (lit campfire) |
+| Weapon | `ammo` | Item each shot uses up — set means the weapon is ranged |
+| Weapon | `projectile_speed` | Tiles per second |
+| Creature | `spawn.time` | Now also the creature's waking hours — it sleeps outside them |
+| Item | `spoilage` | Now live: `base_hours` until it becomes `result`. `temp_factor` not applied yet |
+
+### Prototype additions, round 5 (2026-10-05)
+
+| Type | Field | Meaning |
+|---|---|---|
+| Item | `plants` | Crop id a seed plants (its `places` names the plot object) |
+| Item | `armor` | Added to `totalArmor` while worn |
+| Gather | `tool_tag`, `tool_bonus` | Extra units when the main-hand item carries the tag |
+| Cook method | `max_buffs`, `max_buffs_min_groups` | Stew/ferment's two-buff rule as data |
+| Cook method | `result_grid` | Grid every dish of the method shrinks to (dry: 1×1) |
+| Cook method | `eat_raw` | The method applied when food is eaten uncooked (`isle:raw`) |
+| Weapon/item tag | `tool/rod` | A held rod switches fishing to the rod rig and its minigame |

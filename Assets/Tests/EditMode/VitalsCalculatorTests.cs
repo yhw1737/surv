@@ -79,13 +79,16 @@ namespace Isle.Tests.EditMode
             Assert.AreEqual(expectSalty ? 1.4f : 1.0f, SaltMultiplier(minutesSince), Tolerance);
         }
 
-        [TestCase(27.99f, -0.5f)]
-        [TestCase(28f, 0f)]
-        [TestCase(44f, 0f)]
-        [TestCase(44.01f, -0.5f)]
-        public void TemperatureHpDrainPerSecond_OutsideBands_Applies0_5(float temperature, float expected)
+        [TestCase(27.99f, 1f, -0.5f)]
+        [TestCase(27.99f, 0f, 0f)]
+        [TestCase(28f, 0.5f, -0.25f)]
+        [TestCase(44f, 0f, 0f)]
+        [TestCase(44.01f, 0f, -0.5f)]
+        [TestCase(44.01f, 0.4f, -0.7f)]
+        public void TemperatureHpDrainPerSecond_ScalesHypothermiaBySeverityHeatstrokeUnchanged(
+            float temperature, float hypothermiaSeverity, float expected)
         {
-            Assert.AreEqual(expected, TemperatureHpDrainPerSecond(temperature), Tolerance);
+            Assert.AreEqual(expected, TemperatureHpDrainPerSecond(temperature, hypothermiaSeverity), Tolerance);
         }
 
         [Test]
@@ -154,6 +157,59 @@ namespace Isle.Tests.EditMode
         public void FireBonusAtDistance_LinearFalloffWithinFiveTiles(float distanceTiles, float expected)
         {
             Assert.AreEqual(expected, FireBonusAtDistance(distanceTiles), Tolerance);
+        }
+
+        // 2026-09-19: hypothermia severity curve, benchmarked from RimWorld's publicly documented
+        // temperature-hediff mechanic (§Temperature "Hypothermia severity" — see spec for the
+        // citation trail). Heatstroke keeps its old flat rule; its curve's exact control points
+        // aren't published anywhere open, so it isn't touched here.
+
+        [Test]
+        public void HypothermiaSeverityGrowthPerSecond_Case7_Excess20_Returns0_00129()
+        {
+            Assert.AreEqual(0.00129f, HypothermiaSeverityGrowthPerSecond(temperature: 8f), Tolerance);
+        }
+
+        [Test]
+        public void HypothermiaSeverityGrowthPerSecond_Case8_Excess1BelowFloor_ClampsTo0_00075()
+        {
+            Assert.AreEqual(0.00075f, HypothermiaSeverityGrowthPerSecond(temperature: 27f), Tolerance);
+        }
+
+        [Test]
+        public void HypothermiaSeverityGrowthPerSecond_NoExcess_ReturnsZero()
+        {
+            Assert.AreEqual(0f, HypothermiaSeverityGrowthPerSecond(temperature: 28f), Tolerance);
+        }
+
+        [TestCase(0.556f, 0.015f)]
+        [TestCase(0.8f, 0.015f)]
+        [TestCase(0.056f, 0.0015f)]
+        [TestCase(0f, 0.0015f)]
+        [TestCase(0.306f, 0.00825f)]
+        public void HypothermiaSeverityRecoveryPerSecond_Cases9To11_InterpolatesBetweenAnchors(
+            float severity, float expected)
+        {
+            Assert.AreEqual(expected, HypothermiaSeverityRecoveryPerSecond(severity), Tolerance);
+        }
+
+        [Test]
+        public void HypothermiaSeverityDeltaPerSecond_Cold_ReturnsGrowth()
+        {
+            Assert.AreEqual(0.00129f, HypothermiaSeverityDeltaPerSecond(temperature: 8f, severity: 0f), Tolerance);
+        }
+
+        [Test]
+        public void HypothermiaSeverityDeltaPerSecond_Safe_ReturnsNegativeRecovery()
+        {
+            Assert.AreEqual(-0.015f, HypothermiaSeverityDeltaPerSecond(temperature: 30f, severity: 0.6f), Tolerance);
+        }
+
+        [TestCase(0.5f, -0.25f)]
+        [TestCase(1f, -0.5f)]
+        public void TemperatureHpDrainPerSecond_Cases12To13_ScalesWithFullSeverityRange(float severity, float expected)
+        {
+            Assert.AreEqual(expected, TemperatureHpDrainPerSecond(temperature: 20f, hypothermiaSeverity: severity), Tolerance);
         }
     }
 }

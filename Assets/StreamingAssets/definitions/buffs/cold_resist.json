@@ -1,0 +1,11 @@
+{
+  "id": "isle:cold_resist",
+  "name": "@buff.cold_resist",
+  "duration_min": 180,
+  "effects": [
+    {
+      "type": "hypothermia_threshold_shift",
+      "value": -5
+    }
+  ]
+}

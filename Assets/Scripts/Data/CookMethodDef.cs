@@ -28,6 +28,20 @@ namespace Isle.Data
 
         /// <summary>Language key for the procedural dish name, e.g. <c>"@pattern.steam_baked"</c>.</summary>
         public string Naming { get; init; }
+
+        /// <summary>Buffs one dish may grant (SYS-COOK-01: 1, stew and ferment 2). Default 1.</summary>
+        public int MaxBuffs { get; init; } = 1;
+
+        /// <summary>Distinct ingredient groups needed before <see cref="MaxBuffs"/> above 1 applies (stew: 3; ferment: 0 = always).</summary>
+        public int MaxBuffsMinGroups { get; init; }
+
+        /// <summary>Grid every dish of this method shrinks to (SYS-COOK-01 / SYS-INV-01: drying turns 2×2 meat into
+        /// 1×1). Null keeps the largest ingredient's grid.</summary>
+        public GridSize? ResultGrid { get; init; }
+
+        /// <summary>This method is what eating an uncooked item counts as (SYS-COOK-01 <c>isle:raw</c>): its modifiers
+        /// and reactions apply when food is eaten straight from the bag.</summary>
+        public bool EatRaw { get; init; }
     }
 
     /// <summary>What the method accepts (SYS-COOK-01 step 1).</summary>

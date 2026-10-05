@@ -5,7 +5,7 @@
 
 ## Header
 
-- Last updated: **2026-09-17**
+- Last updated: **2026-10-03**
 - Phase: **Phase 3 done except T-031 (skipped, needs spec) and T-034 (deferred to Phase 4/6). Phase 4 (inventory) is done — T-040 through T-045 all implemented and merged into `main`.**
 - Task: **T-045 (server-authoritative inventory sync + rollback UI) merged into `main`** via [PR #20](https://github.com/yhw1737/surv/pull/20), 2026-09-16 — Phase 4 is complete. New `InventoryNetwork` (`NetworkBehaviour`) holds server-authoritative bag + equip slots for a player's own body only (warehouse/crates stay local, Phase 6 scope); `GridView`/`EquipSlotView` gained a `Network` property, `DragHandler`/`EquipDragHandler` branch on it with the local (non-networked) path byte-for-byte unchanged. Wired onto `player_rig_placeholder.prefab`. Batchmode EditMode run **238/238**, 0 failures — see In progress/unfinished and Next for the manual-test checklist. T-040~T-044 remain merged into `main` — [PR #19](https://github.com/yhw1737/surv/pull/19). Developer pressed Play repeatedly and reported bugs/requests each time, all fixed the same day: round 1 (unstyled Auto-Sort bar, no item/panel labels), round 2 (NullReferenceException crash, grids overlapping, item sizes not reflected), round 3 (drop position mismatched the dragged icon, tooltip flickering), round 4 (sword equip-slot fixture bug, Q/E rotate-in-place feature — later corrected), round 5 (Q/E moved to rotate-while-dragging instead, tooltip z-order behind newer UI, tooltip now follows the cursor), round 6 (backpack-unequip UI desync, split-drag visual gap + merge-on-drop-back, Q/E reliability fix, Ctrl+click-unequip + equipped-item tooltip), round 7 (Ctrl+click merge-onto-stack, dragged icon z-order above other panels, backpack contents can now bulk-move to the warehouse) — see Next for all seven rounds and the checklist. `docs/BACKLOG.md` also gained a Tier 2/3 modding note (dragselect/AllowTool-style mods need a DLL loader + Harmony-style patch mechanism, not just a richer JSON schema) — parked, not built, per Absolute Rule 6. Developer then actually ran the network checklist (one build + one Editor instance) and reported 6 findings; one was a real bug — `DragHandler.TryDrop`'s networked guard only checked the drag source, not the destination, so a local item dragged into the Networked Bag silently bypassed the server — now fixed to check both sides. The other 5 are expected/cosmetic/unrelated-system, see Next for the full breakdown. Developer then
 spotted two more gaps in the checklist/harness itself: the Networked Bag had no way to be seeded
@@ -130,6 +130,133 @@ already-merged commit messages (history rewrite on `main` needs the developer's 
   project a running Editor instance already has open. The change is compile-reviewed only; ask the
   developer to press Play and confirm the campfire warms now.
 
+- Branch: **`feature/T-051-hypothermia-severity`**, off `main` (which now includes PR #21), not
+  committed. **2026-09-19:** developer asked for RimWorld's severity-scaling hypothermia/heatstroke
+  drain to be benchmarked where the underlying logic is openly documented and not copyrighted, and
+  left blank piece-by-piece where it can't legitimately be followed ("그런 곡선화 이런 로직이
+  오픈되어있고, 저작권이 없으면 벤치마킹하고, 따라할 수 없으면 일단 공백으로 놔둬"). Researched the
+  RimWorld Wiki's `Ailments`/`Temperature` pages (community-observed behavior, not decompiled
+  source): hypothermia severity growth is `max(excessBeyondSafeThreshold * 6.45e-5, 0.00075)` per
+  real second once temperature drops below a safe threshold; recovery once safe again is linear
+  between two documented anchors, 0.15%/s at severity ≤5.6% up to 1.5%/s at severity ≥55.6%.
+  Heatstroke's growth curve is a nonlinear `SimpleCurve` whose exact control points are **not**
+  published anywhere open (only the qualitative shape and a floor value) — obtaining them would mean
+  pulling from a decompiled game-file mirror, which is copying, not benchmarking, so per the
+  developer's own instruction heatstroke is left untouched (still the old flat `> 44°C → HP −0.5/s`
+  rule). Implemented on ISLE's own 28°C `HypothermiaHpTemp` threshold: `VitalsCalculator` gained
+  `HypothermiaSeverityGrowthPerSecond`, `HypothermiaSeverityRecoveryPerSecond`,
+  `HypothermiaSeverityDeltaPerSecond`, and `TemperatureHpDrainPerSecond` grew a second
+  `hypothermiaSeverity` parameter — HP drain now scales with the persisted severity value (0→1) up to
+  the old −0.5/s ceiling, instead of snapping on/off at the temperature threshold. `Vitals` gained a
+  persisted `HypothermiaSeverity` property, updated once per tick and reset on respawn. Spec
+  (`SYS-SURV-01-vitals.md`) and tests (`VitalsCalculatorTests.cs`) written before the implementation,
+  per the usual ordering. Batchmode EditMode **329/329**, 0 failures. **Not yet play-tested live**
+  — no cold ambient environment has been observed running in a live session yet.
+
+- **2026-10-03 — solo-loop prototype, on `feature/prototype-solo-loop` (off the T-051 working tree, not
+  committed).** Developer asked for a playable prototype that "feels like a real game", with every
+  judgment call made autonomously and the dev order in BACKLOG.md no longer binding. Built the solo
+  loop as a vertical slice on top of the existing systems, all in one island scene:
+  - **Island is visible and walkable.** `IslandWorld` generates the island from a random seed each start
+    (`IslandGenerator`, unchanged), paints it as one 384×384 texture (one tile = one pixel), and centres
+    it on world origin. `PlayerCamera` tracks the local player.
+  - **Gathering and water.** Trees, rocks, berry bushes, streams, standing water and seawater are placed
+    from their defs' `spawn` blocks (`ResourcePlacer`, deterministic per seed). `E` drinks (water first),
+    then harvests (`CmdInteract`). Depleted nodes respawn in in-game time.
+  - **Hunting and combat.** Rabbits flee at 8 tiles, boars charge at 6 (`CreatureBrain`, SYS-COMBAT-01).
+    Left-click strikes the nearest creature in reach with the equipped weapon, or fists. Damage is
+    `PowerCalculator` → `DamageResolver` (both verification tables from the spec). Kills drop
+    `butcher.yields`.
+  - **Crafting and cooking.** `C` opens a craft window; stone spear is hand-crafted, cooking is a
+    campfire recipe (`isle:cook_meat`, lit station within reach). Bag items: click to wield or eat.
+  - **Fishing (handline only).** `F` casts at a water spot. `FishSelector` implements SYS-FISH-01's
+    species table (no tension minigame — Rod is deferred).
+  - **Rest.** `R` at a lit campfire during Night skips to 07:00 and refills stamina.
+  - **Round 3 (2026-10-04, "한 시간 정도 더").** Feedback and depth on top of the loop:
+    item toasts, floating damage numbers, creature HP bars and alert "!", a red flash when hurt, a swing ring;
+    death drops the whole inventory as a loot pile (recover it with `E`), respawn at the last lit/rested
+    campfire, the body is frozen and ignored by creatures while dead; overflow loot drops on the ground;
+    weapon swap/stow from the bag; minimap (`M`); key help (`H`); **save/load** (JSON, autosave 60 s and on
+    quit, `F9` deletes); the sea is now a wall for players and creatures; the map paints the sea (it was sand)
+    and harvestable nodes are drawn as shapes that fade when depleted; fixed a half-tile offset between
+    node positions and map pixels; creatures repopulate; **crocodile** (`isle:ambusher`, marsh); debug items
+    no longer seeded into the bag. Rebalanced so the boar and crocodile are beatable at full health with the
+    spear. **Verified:** EditMode **387/387**; PlayMode **2/2**, and the live-scene test now drives the real
+    ServerRpcs on the host end to end — harvest tree and rock, craft spear, drink seawater, kill a rabbit,
+    wield, cook at the campfire, eat, die (pile + frozen), respawn after 15 s, recover the pile.
+  - **Round 4 (2026-10-04, "기능적으로 많이 추가").** New systems, each driven by def data:
+    sprint (Shift, ×1.65, 12 stamina/s), dodge roll (Space, 0.6 s, i-frames 0.1–0.45 s, 25 stamina, blocked when
+    overloaded) and carried-weight slowdown — all SYS-CHAR-01/SYS-INV-01/SYS-SURV-01 numbers; walking now
+    counts as Walking for hunger/thirst. **Building**: items with `places` become structures (campfire kit,
+    wooden crate 10×6 with a store/take panel, rain catcher that fills in rain, +40 thirst per drink) with a
+    mouse placement preview validated the same way on the server. **Clothing**: any `equip_slot` item can be
+    worn; `warmth` feeds `Vitals.ClothingBonus` (fur cloak +6, from hides now dropped by all four creatures).
+    **Coconut palms** on the coast (2×2, +30 thirst). **Lights**: lit campfires and a held torch cast flickering
+    2D point lights. **Creature schedules**: outside their `spawn.time` creatures sleep (tinted, no reaction)
+    until hit. **Weather overlay** for rain and snow. **Esc menu** (resume, save now, new island, save and
+    quit). **Food spoilage** with freshness shown in the bag; spoiled food turns into rotten food. **Short bow
+    and arrows** (SYS-COMBAT-01 §Ranged: 0.8 s full charge, ×0.4 uncharged, 12/20-tile falloff, stance sway),
+    server-measured charge, host-simulated projectiles. HUD clicks no longer swing the weapon; E prefers the
+    nearer of a harvest node and a structure.
+    **Bugs found and fixed this round:** (1) a code-built `NetworkObject` that is never spawned logs a FishNet
+    error — this was latent in round 1's `CampfireSpawner`; `WorldObjectInstance` is now a plain
+    `MonoBehaviour` and structures carry no `NetworkObject`. (2) The live-scene test resumed the previous
+    test run's save (the save system working, but polluting tests) and wrote a save into the player's real
+    persistentDataPath on editor quit; tests now use a scratch path and destroy `SaveGame` in teardown, and
+    the stray test save was deleted. (3) The rabbit-kill test step only passed by luck (heavy rabbits survive one
+    punch). **Verified:** EditMode **426/426**; PlayMode **2/2**, now also covering crate place/store/take,
+    cloak warmth and a full bow draw-and-loose through the real ServerRpcs.
+  - **Round 5 (2026-10-05, "ㅈㄴ 개발 많이").** Inventory: `InventoryOps` gives/takes across the base carry
+    plus equipped bags (merge first, then free space, then rotated), so 1×4 items fit the 6×3 carry; every item
+    path uses it. SYS-INV-01 sizes applied (spear/rod 1×4, bow 2×3, hatchet 1×2). **Backpacks** (straw 5×5, leather
+    6×7 — spec sizes). **Tools**: stone hatchet/pickaxe give the node's `tool_bonus` (+2 wood / +2 stone).
+    **Armor**: worn `armor` feeds SYS-COMBAT-01's `totalArmor` on creature hits (hide cap/fur cloak/leggings).
+    **Workbench** station gates advanced recipes. **Plant fiber** from tall grass. **Farming**: seeds place a crop
+    plot; growth follows SYS-WORLD-01's deferred formula from the planting time (a rest skip grows it); berry and
+    flax crops. **Rod fishing** with SYS-FISH-01's tension minigame (spec rates, patterns, halfWindow, solo ×0.4
+    drain); the catch is cut into raw fish by weight × edible ratio. **Cooking (SYS-COOK-01)**: resolver with
+    method modifiers, tag reactions (hierarchy), buff cap, care tag, failure; generated dishes (`DishFactory`, same
+    combination = same item, saved by recipe key); raw eating goes through `isle:raw`; satiety fatigue; methods
+    grill/boil/dry with pot and drying-rack stations; K cooking window. **Buffs (SYS-BUFF-01)** now act: warm,
+    endurance, hydrated, cold_resist, food_poisoning, steady_hand (bow sway). Overloaded weight now halts stamina
+    regen (SYS-INV-01). Recovering a death pile re-equips bags/gear first so everything fits.
+    Old fixed recipes `cook_meat`/`cook_fish` and items `cooked_meat`/`cooked_fish` removed (spec: no hardcoded
+    cooking recipes). **Verified:** EditMode **472/472**; PlayMode **2/2** — the live run now also covers armor,
+    backpack, hatchet bonus, planting → growth → harvest, a rod fight's full lifecycle, and grill → eat → buff.
+    Also added from SYS-INV-01's container table: warehouse 20×10 (world object), hunter's backpack 6×8, belt
+    pouch 2×2 (one pouch; the spec's "×2" and "quick-access priority" aren't built). Container panel titles now
+    show the container's own name.
+  - **Round 6 (2026-10-05, developer's first play-test feedback).** (1) Removed the T-042~044 `InventoryDemo`
+    test harness GameObject from `SampleScene` (it built a canvas with sample bag/warehouse panels on Play).
+    (2) Melee, arrows and creature strikes now measure reach to the creature's **body edge**
+    (`BodyReach`, `combat.body_radius_tiles` scaled by the cube root of weight) — big creatures were nearly
+    unhittable because reach was measured to their centre. (3) Every creature, node and structure now draws a
+    distinct procedural silhouette from a def `visual` block (`ShapeLibrary`: tree, palm, rock, bush, grass,
+    water, rabbit, deer, boar, crocodile, campfire, crate, …) with name labels nearby; previously all four
+    creatures shared one colour (hashed from their common first tag `animal`). (4) The help line now covers
+    mouse holds (bow, reel), bag buttons and every E use. **Verification:** the developer had the Editor
+    open, so batchmode couldn't run; all assemblies compiled out-of-editor with Unity's own Roslyn and the
+    Editor's last compiler arguments — **0 errors**. EditMode/PlayMode suites need a rerun once the Editor is
+    closed (new: `BodyReachTests`, `ShapeLibraryTests`).
+  - **Round 6b (same day, second feedback).** Tab toggles the bag panel (it was always on, with no key, so it
+    wasn't findable). Dishes are now named after their **heaviest** ingredient with the rest listed
+    ("Grilled raw meat with berries") — the old rule (highest hunger) named a meat+berries grill "Grilled
+    berries". Hovering a bag item shows a tooltip: ingredients, what eating it gives (raw food through
+    `isle:raw`, as the server applies it), buffs with durations, hours until spoiled, armor/warmth/bag size,
+    weight. **Verified:** EditMode **482/482**, PlayMode **2/2** (batchmode, Editor closed).
+  - **Deer (2026-10-04).** Third creature, with the Alert state from SYS-COMBAT-01. Deer alerts on sight, then flees after `combat.alert_seconds` = 2 s **[invented]**. Density, weight (50 kg, σ 0.2, 30–80) and yield (4 meat) are all **[invented]**. EditMode 374/374, PlayMode 2/2.
+  - **HUD.** IMGUI, no prefabs to wire: five gauges, clock, weather, interaction prompt, bag, craft
+    window, death text. Day/night dims the global 2D light.
+  - **Verified:** EditMode **370/370** (+41 new cases: spec power/damage tables, creature AI presets, weight roll,
+    placement determinism and density, respawn conversion, crafting ingredient counting, fish weighting
+    and roulette, clock rest, replenish). PlayMode **2/2**: a pure-logic smoke (island + nodes + creatures)
+    and a live `SampleScene` host run (player spawns, campfire/creature loop runs 3 s, no errors).
+    **Not verified:** any click-through — the RPC paths (`CmdInteract`, `CmdAttack`, `CmdCraft`,
+    `CmdFish`, `CmdRest`, `CmdUse`) only run in a real Play session. See In progress / unfinished.
+  - **Deliberately not built** (scope, not oversight): cooking resolver/tag reactions (T-100–T-102),
+    brewing (T-107), tension minigame and Rod (T-081), save/load (T-150), disease, frostbite, multi-player
+    sync of nodes and creatures (Phase 10), loot on the ground for a full bag, skill XP progression.
+
 ## Progress
 
 ```
@@ -140,7 +267,7 @@ Phase 1  foundation           [x] 10/10 T-010..T-019  ← done
 Phase 2  netcode skeleton     [x] 2/2   T-020..T-021 ← done, both merged into main (PR #16, #17, 2026-09-15)
 Phase 3  world                [ ] 5/7   T-030, T-032, T-033, T-035, T-036 merged (PR #18, 2026-09-15); T-031 skipped, T-034 deferred
 Phase 4  inventory            [x] 6/6   T-040..T-044 merged (PR #19); T-045 merged (PR #20, 2026-09-16) ← done
-Phase 5  survival + skills    [ ] 4/8   T-060..T-062 landed inside T-018's rewrite (PR #13); T-050 implemented this session, not yet merged; T-051 now fully implemented (wet decay, fire falloff, real weather + campfire distance), not yet merged; T-052, T-063, T-064 remain
+Phase 5  survival + skills    [ ] 4/8   T-060..T-062 landed inside T-018's rewrite (PR #13); T-050 merged (PR #21); T-051 fully implemented (wet decay, fire falloff, real weather + campfire distance, hypothermia severity), not yet merged; T-052 partly (3 of 6 water sources, as world objects), T-063, T-064 remain. Prototype (2026-10-03) also touched T-070/T-071/T-080/T-110/T-115 — see BACKLOG notes
 Phase 6  production loop      [ ] 0/9
 Phase 7  crafting + cooking   [ ] 0/10
 Phase 8  combat               [ ] 0/6
@@ -921,6 +1048,38 @@ benchmarking" explicitly:
      gap in it.
   Reported both options to the developer instead of picking one — see the session's own report for
   which (if either) gets built this session.
+
+- **2026-10-03 — prototype, awaiting the developer's Play-mode check.** Nothing from the list below has
+  been seen in a live window; compile and both test suites pass, and the live host test runs clean.
+  Please play through once and report:
+  1. Walk around the island. Is the map readable, and does the camera follow you?
+  2. `E` near water drinks (Thirst goes up). `E` near a tree or rock harvests (bag gains wood/stone).
+  3. `C` shows the craft window. Stone spear crafts once you have 2 wood and 1 stone.
+  4. Left-click near a rabbit: does it flee? Does the boar charge you? Does a kill drop raw meat?
+  5. `E` on the campfire lights it (red). Then cook raw meat via the craft window.
+  6. `F` near water: do fish turn up in the bag?
+  7. At night, `R` at a lit campfire jumps to morning.
+  8. Die: your items drop as a brown pile; you respawn after 15 s at the last campfire you lit (or the
+     origin); walk back and press `E` on the pile to recover everything.
+  9. (round 3) Toasts, damage numbers, HP bars, minimap (`M`), help (`H`). Quit and relaunch — do you resume
+     on the same island with the same bag? `F9` then relaunch should give a new island.
+  10. Approach a marsh: crocodiles lie still and lunge within 3 tiles. Is that fun or just unfair?
+  11. (round 4) Shift sprint and Space roll — do they feel right? Does a heavy bag slow you?
+  12. Craft a crate kit and place it (button → green/red preview → left-click). Store and take items.
+  13. Craft a fur cloak (3 hides) and wear it; at night your temperature should stay above 28 °C.
+  14. Craft a torch, equip it, and walk around at night. Light a campfire at night.
+  15. Craft a bow and arrows; hold left-click to draw (bar turns green at full), release to shoot.
+  16. Watch raw meat's freshness tick down in the bag; Esc opens the menu.
+  17. (round 5) Tall grass → fiber → straw backpack; equip it and see a second bag section.
+  18. Build a workbench; craft a hatchet/pickaxe and check trees/rocks give more.
+  19. Craft hide armor; does a boar hurt less?
+  20. Plant berry seeds; rest through a night and harvest.
+  21. Craft a rod (workbench); F at water, hold LMB to keep the needle in the green band.
+  22. K at a lit campfire: grill meat or fish, eat it, see the buff under the gauges. Eat the same dish
+      repeatedly and notice it satisfies less.
+  Things I expect to be wrong and want to hear about: balance (numbers above), the HUD layout at small
+  window sizes, and whether the scene's own Campfire gets used instead of a second one (`CampfireSpawner`
+  skips when one exists).
 
 ## Next
 
@@ -2391,6 +2550,179 @@ since it's server-side gauge math with no UI yet:
   (`-batchmode -nographics -runTests -testPlatform EditMode`, no `-quit`) confirms **315/315**, 0
   failures — the current, verified count.
 
+- **2026-09-19 — hypothermia severity: reused `HypothermiaHpTemp` (28°C) as the RimWorld-style
+  "safe threshold" instead of inventing a separate number.** The spec's existing `< 28 → HP −0.5/s`
+  band already was ISLE's own "unsafe" line; RimWorld's mechanic needs one safe threshold to measure
+  excess against, so the existing constant does double duty rather than adding a second one nobody
+  asked for.
+- **2026-09-19 — HP drain scales with persisted `HypothermiaSeverity`, not instantaneous
+  `Temperature`.** Mirrors RimWorld's own hediff-persists-independently-of-momentary-exposure
+  behavior — a player who warms up for a moment doesn't instantly stop taking damage, the severity
+  has to decay back down first. Not explicitly requested, but implied by "벤치마킹" of a mechanic
+  whose entire point is that persistence.
+- **2026-09-19 — heatstroke's curve, and RimWorld's frostbite mechanic (severity ≥37% + ambient
+  ≤0°C → damage chance), both deliberately NOT implemented.** Heatstroke: no legitimately open
+  source for the curve's exact numbers (see Header). Frostbite: not requested, and ISLE has no
+  disease/damage-chance system to hook a new one into (Absolute Rule 6).
+
+- **2026-10-03 — prototype: every number below is a placeholder chosen to make the loop playable.**
+  Each lives in a JSON def, so tuning is an edit, not a code change. None of it has been reported to the
+  developer yet. Items marked **[spec]** came from a spec sheet; everything else is **[invented]**.
+
+  | Where | Value | Tag |
+  |---|---|---|
+  | Tree / rock / berry density, uses, respawn, yield | 0.012 / 0.004 / 0.006; 3·4·2 uses; 60·90·45 min; 2·1·2 units | [invented] |
+  | Water density (seawater / standing / stream) | 0.02 / 0.004 / 0.003 | [invented] |
+  | Gather stamina cost | 6 | [spec] SYS-SURV-01 |
+  | Stone spear: base power, attack speed, reach, stamina | 20, 0.8/s, 2.0 tiles, 8 | [invented] |
+  | Fists: base power, attack speed, reach, stamina | 14, 1.5/s, 1.2 tiles, 4 | [invented] |
+  | Rabbit: weight, HP/kg, vision, speeds, yield | 3 kg (σ 0.2), 1.5, 8 tiles, 1.2 / 3.0, 2 meat | weight/vision [spec] SYS-COMBAT-01 table, rest [invented] |
+  | Boar: weight, HP/kg, vision, damage, cooldown, yield | 62 kg (σ 0.28), 2.4, 6 tiles, 10 dmg / 1.5 s, 6 meat | weight/HP/kg/vision [spec], damage/cooldown/yield [invented] |
+  | Food: meat, cooked meat, berries, raw fish, cooked fish (hunger) | 6 / 30 / 8 / 5 / 24 | [invented] |
+  | Fish depths, time, cast cooldown | sea 0–20 / 0–10, stream 0–5 (day), 3 s between casts | [invented] |
+  | Depth/temperature mismatch factor | ×0.15 (same as terrain) | [invented] — spec says "falling off" with no curve |
+  | Campfire rest wakes at | 07:00 | [invented] — no sleep in any spec |
+  | Stamina refill on rest | full | [invented] |
+  | World starts at | 06:00 (not midnight) | [invented] — first screen should be day |
+  | Campfire spawn offset from origin | (+2, 0) tiles, only if the scene has none | [invented] |
+  | Map + HUD: camera half-height, day/night brightness | 4.5 tiles; 1.0 / 0.7 / 0.6 / 0.35 | [invented] presentation |
+  | Stone spear base power (round 3) | 20 → **30** (SYS-COMBAT-01's own reference weapon uses 30) | [invented], rebalanced |
+  | Boar damage (round 3) | 10 → **6** per 1.5 s | [invented], rebalanced |
+  | Crocodile: weight, HP/kg, vision, damage, cooldown, yield, density | 200 kg (σ 0.25, 100–400), 0.3, 3 tiles, 18 / 2 s, 8 meat, 0.0004 marsh | [invented] — only "marsh, ambush from water" is spec |
+  | Deer alert time | 2 s | [invented] |
+  | Creature repopulation | 1 per def per 30 s, never within 15 tiles of a player | [invented] — no spec for creature respawn |
+  | Autosave interval | 60 s | [invented] |
+  | Respawn offset from lit campfire | 1 tile below | [invented] |
+  | Roll speed | same as sprint (×1.65) | [invented] — SYS-CHAR-01 gives duration and i-frames, not speed |
+  | Structure placement | reach 2, min spacing 1, not on the player's tile (0.6) | [invented] |
+  | Crate grid | 10×6 | [spec] SYS-INV-01 §Containers |
+  | Rain catcher | capacity 4 drinks, +0.05 per second of rain; +40 thirst per drink | capacity/rate [invented], +40 [spec] |
+  | Recipes: campfire kit, crate kit, rain catcher kit, fur cloak, torch, short bow, arrows | 3 wood+2 stone; 6 wood; 3 wood+1 hide; 3 hide; 2 wood; 3 wood+1 hide; 1 wood+1 stone → 5 | [invented] |
+  | Fur cloak warmth | +6 (night 24 °C + 6 = 30, above the 28 °C hypothermia line) | [invented] |
+  | Hide drops | rabbit 1, deer 2, boar 2, crocodile 3 | [invented] |
+  | Torch / campfire light radius | 5 / 7 tiles | [invented] presentation |
+  | Coconut palm | coast 0.006, 1 coconut × 2 uses, 120 min; coconut 2×2, hunger 2 | thirst +30 and "bulky" [spec], rest [invented] |
+  | Spoilage (base hours) | raw meat 24, raw fish 18, berries 48, cooked meat 72, cooked fish 60, coconut 120 → rotten food | [invented] |
+  | Short bow | base power 26, 1.2 shots/s, arrow speed 18 tiles/s, hit radius 0.45 | [invented] |
+  | Bow draw stamina | 5/s of draw | [spec] SYS-SURV-01 |
+  | Creature active hours | rabbit/deer dawn–dusk, boar day–dusk, crocodile day–night; hit wakes for 10 s | [invented] |
+  | Backpack sizes | straw 5×5, leather 6×7 | [spec] SYS-INV-01 |
+  | Item sizes | spear / rod 1×4, bow 2×3, hatchet 1×2 | [spec] SYS-INV-01 |
+  | Tool bonus | hatchet +2 wood, pickaxe +2 stone | [invented] |
+  | Armor values | hide cap 8, fur cloak 10 (+6 warmth, now chest), leggings 10 | [invented] |
+  | Recipes (round 5) | hatchet, pickaxe, backpacks, armor, workbench, pot, rack, rod, seeds | all [invented] |
+  | Tall grass | forest+marsh 0.01, 2 fiber × 2 uses, 30 min | [invented] |
+  | Crops | berry 1 day → 6 berries; flax 1 day → 8 fiber; seeds 3 berries → 2, 4 fiber → 2 | [invented] |
+  | Fishing minigame meter rate | 0.5/s outside the band (2 s fails) | [invented] — spec gives no rate |
+  | Rod fish | snapper/sea bass/pike weights, patterns, windows, stamina; catch = weight × edible 0.6 ÷ 0.4 kg per raw fish | [invented] |
+  | Rod rig level | Lv 5 requirement ignored — no fishing XP exists | deviation from SYS-FISH-01 table |
+  | Cooking level | fixed at 1 (SkillSet's start) — so boil (Lv 4) and dry (Lv 12) show as locked | blocked by missing XP table |
+  | Grill / boil reactions | grill: fish→steady_hand, meat→endurance, fruit→hydrated; boil: meat/fish→warm, fruit→hydrated; spoiled→food_poisoning everywhere | spoiled [spec], rest [invented] |
+  | Dish spoilage | ingredient base_hours × preservation ÷ 0.30 (raw's preservation) | [invented] reading of a relative column |
+  | Food poisoning HP drain | 0.05 HP/s for 8 h; stamina max ×0.7 | drain [invented], ×0.7 and 8 h [spec] |
+  | Raw eating | food eaten from the bag goes through `isle:raw` (hunger ×0.6) | [spec] method, applying it to plain eating is a reading |
+
+- **2026-10-03 — hunting and combat run in the Gameplay assembly, not `Isle.Combat`.** SYS-COMBAT-01's
+  location list says `Scripts/Combat/`. `Isle.Gameplay` needs the combat calculators, and `Isle.Combat`
+  depends on `Isle.Gameplay` — putting them in `Isle.Combat` would be a cycle. `Gameplay/Combat/` holds
+  the pure parts, `Gameplay/Hunting/CreatureDirector` the runtime. Revisit when Phase 8 splits the
+  assemblies.
+
+- **2026-10-03 — creature and resource-node state is host-only, not networked.** Nodes and creatures live
+  as server-side plain objects; a second client won't see them. The prototype is solo, so this is
+  acceptable until Phase 10 (SYS-NET-01's sync of world objects). The campfire is the one networked
+  object: `CampfireSpawner` builds it in code (`NetworkObject` + `WorldObjectInstance` + `Spawn`) so no
+  prefab reference has to be serialized. **Unverified in a live session** — the PlayMode host test shows
+  it spawns without errors, not that a client can interact with it.
+
+- **2026-10-03 — `WorldObjectInstance.Initialize(defId)`** is public so code can name a def before
+  `Awake`. Used only by `CampfireSpawner`. Scene-placed instances keep the serialized field.
+
+- **2026-10-03 — interact key `E` is one action with priority: drink > harvest > station.** Standing
+  next to water and a tree drinks, not chops. Fishing is `F`, so it doesn't compete with drinking.
+
+- **2026-10-03 — eating ignores sanitation risk.** `nutrition.sanitation_risk` is in the defs but no
+  disease system reads it yet (SYS-SURV-01 §Disease is unbuilt).
+
+- **2026-10-03 — craft is instant.** `time_sec` is in the recipe defs but not waited on, since the
+  crafting timer / minigame system (T-091) isn't built.
+
+- **2026-10-03 — loot that doesn't fit the bag is lost.** No ground-drop object exists. Same gap as
+  SYS-SURV-01's death drop.
+
+- **2026-10-03 — `PrototypeBootstrap` also reinstalls on `SceneManager.sceneLoaded`.** The live
+  `SampleScene` PlayMode test showed `RuntimeInitializeOnLoadMethod(AfterSceneLoad)` doesn't re-fire for a
+  scene loaded after the first one.
+
+- **2026-10-03 — assembly references added:** `Isle.Gameplay` → `Isle.Modding` (for `DefRegistry`);
+  `Isle.UI` → `Isle.Modding`, `Unity.RenderPipelines.Universal.2D.Runtime` (for `Light2D`);
+  `Isle.Tests.PlayMode` → `FishNet.Runtime`, `Unity.InputSystem`, `Isle.Networking`, `Isle.Combat`. No
+  dependency cycle introduced.
+
+- **2026-10-04 — respawn shelter = last campfire lit or rested at.** SYS-SURV-01 lists "how respawn shelters
+  are designated" as an open question; this is a prototype answer, not a spec decision. Report to the developer.
+
+- **2026-10-04 — save is a JSON file, not SQLite.** ADR-001 puts world state in SQLite; the prototype has one
+  island and no streamed chunks, so `SaveGame` writes `isle_save.json` with `JsonUtility`. Creatures, weather
+  and the season temperature roll are not saved and re-roll on load. Move into `ChunkSerializer`'s database
+  when chunks go live.
+
+- **2026-10-04 — no skill XP.** SYS-SKILL-01 says per-action base XP lives in `docs/content/xp_table.md`
+  (not yet written) and explicitly not to invent it. Every action still uses skill level 0. **Needs the
+  developer's numbers** before skills can grow.
+
+- **2026-10-04 — no item spoilage.** SYS-WORLD-01/SYS-HUNT-01 give the formula, but per-stack freshness needs
+  `GridInventory` stacks to carry state (today identical items merge by reference). Left for a dedicated task.
+
+- **2026-10-04 — dead/frozen and `GameFeed` are host-only.** `PlayerMovement.Frozen` and the static
+  `GameFeed` events reach the owning client only because a listen-server host shares the instance. Phase 10
+  needs a SyncVar / RPCs.
+
+- **2026-10-04 — `InventoryNetwork.SeedTestItems` removed.** It put two `@item.debug_net_*` items in every
+  bag for the T-045 manual checklist (merged long ago); in the prototype they showed up as junk.
+
+- **2026-10-04 — live-scene PlayMode test loads `SampleScene` once.** FishNet can't re-initialise the scene's
+  placed Campfire `NetworkObject` on a second load in the same session, so the smoke check and the gameplay
+  flow share one test method.
+
+- **2026-10-05 — a dish's main ingredient is its heaviest one.** SYS-COOK-01's naming says
+  "{method} {mainIngredient}" without defining "main"; weight is the reading that makes "smoked boar shoulder"
+  out of boar + herbs. Side ingredients join the name through `pattern.<method>_with`.
+
+- **2026-10-05 — creature body radius is gameplay data, the sprite follows it.** `combat.body_radius_tiles`
+  (rabbit 0.22, deer 0.45, boar 0.45, crocodile 0.6 — [invented]) drives reach; the silhouette is drawn at
+  2.2× that radius. `visual` (shape/colour/size) is presentation only (Absolute Rule 7) and is the placeholder
+  ART_PIPELINE stage 4 replaces.
+
+- **2026-10-05 — stew/ferment's two-buff rule is def data, not method ids.** SYS-COOK-01's pseudocode tests
+  `method == isle:stew`; doing that in C# breaks Absolute Rule 1, so `CookMethodDef` gained `max_buffs` and
+  `max_buffs_min_groups`. The "ingredient groups" are SCHEMA's Ingredient-type tag row, held as a constant.
+
+- **2026-10-05 — dishes are runtime items.** No def file per dish (spec: no hardcoded recipes). `DishFactory`
+  builds one `ItemDef` per (method, ingredient set) and the save stores `dish|<method>|<ingredients>` to rebuild
+  it. Quality isn't computed (no formula in the spec) — every dish is Common, no adjective. weightScale is 1 (no
+  per-individual item weights).
+
+- **2026-10-05 — `InventoryOps` is now the single give/take path** for players (carry + equipped bags). A pile
+  pickup equips empty-slot gear first (bags before anything else) so a death pile can be fully recovered.
+
+- **2026-10-04 — spoilage is per item type per bag, not per stack.** `GridInventory` placements carry no state
+  and identical items merge by reference, so new items join the existing type's clock. `temp_factor` is not
+  applied (SCHEMA calls it "multiplier per degree" with no reference temperature — needs a spec value). Crates
+  don't spoil food, and spoilage isn't saved (resets on load).
+
+- **2026-10-04 — "uncharged" bow shots are anything below 0.8 s.** SYS-COMBAT-01 gives full charge and an
+  uncharged ×0.4 only; a partial charge counts as uncharged rather than interpolating.
+
+- **2026-10-04 — `WorldObjectInstance` is a `MonoBehaviour`, not a `NetworkBehaviour`.** It never used any
+  networking, and code-built structures can't be spawned NetworkObjects (no prefab id). SampleScene's placed
+  Campfire keeps its `NetworkObject` (now with no behaviours on it). World-object state sync is Phase 10.
+
+- **2026-10-04 — `IInteractable.Interact` now takes the acting player** (`GameObject user`) so a rain catcher
+  can make that player drink and a crate can open for them.
+
+- **2026-10-03 — heatstroke is still the flat `> 44 °C → HP −0.5/s` rule.** Unchanged from 2026-09-19.
+
 ## Operational notes
 
 - **2026-09-15 session batching:** the developer asked to skip the normal one-task-stop-and-ask
@@ -2419,6 +2751,12 @@ since it's server-side gauge math with no UI yet:
   compilation still succeed (they run before the licence check), only the test runner is gated.
   Start the Hub, and `-runTests` works. CI (GameCI) has no Hub, so it needs a licence activated
   its own way — solve that when CI lands, not before.
+- **Compile check while the Editor is open (2026-10-05):** batchmode can't open a project the Editor holds,
+  but the Editor's last compiler arguments live in `Library/Bee/artifacts/<dag>/Isle.*.rsp`. Rewriting each
+  one's source list to the current files and redirecting `-out`/`Isle.*` references to a scratch folder, then
+  running `Unity.app/Contents/NetCoreRuntime/dotnet Unity.app/Contents/DotNetSdkRoslyn/csc.dll @rsp` in
+  dependency order, compiles the whole project without touching the Editor or `Library/`. Compiles only —
+  tests still need batchmode or the Editor's Test Runner.
 - **Close the Unity Editor before a headless `-batchmode` run.** Two instances cannot open one
   project; batchmode aborts with exit 1 and *"another Unity instance is running with this project
   open"*. With the Editor open instead, focusing its window triggers the asset refresh, and
@@ -2585,6 +2923,8 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #18 | feature/T-030-world-clock | T-030 + T-032 + T-033 + T-035 + T-036 | [PR #18](https://github.com/yhw1737/surv/pull/18) — **merged to main** |
 | #19 | feature/T-040-grid-inventory | T-040 + T-041 + T-042 + T-043 + T-044 | [PR #19](https://github.com/yhw1737/surv/pull/19) — **merged to main** |
 | #20 | feature/T-045-inventory-network | T-045 | [PR #20](https://github.com/yhw1737/surv/pull/20) — **merged to main** |
+| #21 | feature/T-050-vitals | T-050 + T-051 (weather, world objects, seasons, snow/cold-snap/heat-wave) | [PR #21](https://github.com/yhw1737/surv/pull/21) — **merged to main** |
+| #22 | feature/prototype-solo-loop | Solo-loop prototype (gather, drink, hunt, combat, craft, cook, fish, rest, HUD) | not committed — awaiting the developer's play-test |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came

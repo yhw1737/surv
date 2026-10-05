@@ -1,0 +1,17 @@
+{
+  "id": "isle:warehouse",
+  "name": "@world_object.warehouse",
+  "tags": [
+    "container",
+    "wood"
+  ],
+  "storage": {
+    "w": 20,
+    "h": 10
+  },
+  "visual": {
+    "shape": "warehouse",
+    "color": "#9A6F42",
+    "size": 1.6
+  }
+}

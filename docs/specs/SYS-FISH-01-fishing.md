@@ -96,3 +96,22 @@ Scripts/Gameplay/Fishing/
 - How depth is determined (tile property? distance from shore?)
 - Underwater vision for spearing
 - Second player's input scheme in a co-op fight
+
+## Prototype scope (2026-10-03)
+
+Implemented: **Handline only** (Lv 0, trash fish) — species selection and roulette roll, no tension
+minigame. `Gameplay/Fishing/FishSelector.cs` implements §Species selection; Rod and the minigame wait on
+T-081. Key `F` casts at the nearest water spot with a `fishing` block.
+
+| Input | Source in the prototype |
+|---|---|
+| depth | `world_objects[].fishing.depth` (seawater 10, stream 1, standing water 2 — **[invented]**) |
+| water temperature | ambient temperature (no water-temperature model exists) **[invented]** |
+| terrain | the spot's `water/*` tag suffix |
+| time of day | `DayPhase`, lower-cased |
+| bait | none — every cast uses the 0.3 default (matches §Species selection verification 1) |
+| fishing level | 0 (no fishing skill is tracked on the player yet) |
+
+Not spec-given, invented: depth/temperature mismatch uses the same ×0.15 as terrain mismatch (no falloff
+curve in the spec); cast cooldown 3 s stands in for the bite wait. Both are recorded in PROJECT_STATE.md
+§Decided without a spec.

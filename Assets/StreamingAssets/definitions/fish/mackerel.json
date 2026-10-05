@@ -1,0 +1,61 @@
+{
+  "id": "isle:mackerel",
+  "name": "@fish.mackerel",
+  "tags": [
+    "fish",
+    "fish/saltwater",
+    "raw"
+  ],
+  "weight_dist": {
+    "type": "lognormal",
+    "mean": 0.8,
+    "sigma": 0.4,
+    "min": 0.15,
+    "max": 4.5
+  },
+  "habitat": {
+    "depth": [
+      0,
+      20
+    ],
+    "water_temp": [
+      5,
+      30
+    ],
+    "terrain": [
+      "saltwater"
+    ],
+    "time": [
+      "any"
+    ],
+    "weather": [
+      "any"
+    ]
+  },
+  "bait_affinity": {},
+  "rig_allowed": [
+    "handline",
+    "rod"
+  ],
+  "min_skill": 0,
+  "fight": {
+    "pattern": "straight",
+    "tension_window": 0.22,
+    "stamina": 60,
+    "coop_threshold_kg": 3.0
+  },
+  "butcher": {
+    "edible_ratio": 0.7,
+    "condition_range": [
+      0.7,
+      1.3
+    ],
+    "yields": [
+      {
+        "item": "isle:raw_fish",
+        "share": 1.0,
+        "count": 1
+      }
+    ]
+  }
+}

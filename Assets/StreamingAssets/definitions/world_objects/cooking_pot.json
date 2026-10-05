@@ -1,0 +1,13 @@
+{
+  "id": "isle:cooking_pot",
+  "name": "@world_object.cooking_pot",
+  "tags": [
+    "station/pot",
+    "stone"
+  ],
+  "visual": {
+    "shape": "pot",
+    "color": "#555555",
+    "size": 0.9
+  }
+}

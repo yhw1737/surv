@@ -13,6 +13,9 @@ namespace Isle.Gameplay.World
         WorldObjectInstance _instance;
         SpriteRenderer _renderer;
 
+        /// <summary>Unlit fires are drawn dim; lit ones also cast light (LightRig), so the two read apart.</summary>
+        static readonly Color UnlitTint = new(0.45f, 0.45f, 0.45f);
+
         void Awake()
         {
             _instance = GetComponent<WorldObjectInstance>();
@@ -24,9 +27,9 @@ namespace Isle.Gameplay.World
         // reads correctly where server and client are the same process (host mode).
         void Update()
         {
-            if (_renderer != null) _renderer.color = _instance.IsActive ? Color.red : Color.gray;
+            if (_renderer != null) _renderer.color = _instance.IsActive ? Color.white : UnlitTint;
         }
 
-        public void Interact() => _instance.IsActive = !_instance.IsActive;
+        public void Interact(GameObject user) => _instance.IsActive = !_instance.IsActive;
     }
 }

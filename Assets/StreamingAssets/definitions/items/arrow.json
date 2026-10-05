@@ -1,0 +1,15 @@
+{
+  "id": "isle:arrow",
+  "name": "@item.arrow",
+  "tags": [
+    "ammo",
+    "wood",
+    "stone"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.05,
+  "stack": 30
+}

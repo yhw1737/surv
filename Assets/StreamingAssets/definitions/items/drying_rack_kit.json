@@ -1,0 +1,15 @@
+{
+  "id": "isle:drying_rack_kit",
+  "name": "@item.drying_rack_kit",
+  "tags": [
+    "placeable",
+    "wood"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 3.0,
+  "stack": 1,
+  "places": "isle:drying_rack"
+}

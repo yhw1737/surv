@@ -68,6 +68,16 @@ namespace Isle.Gameplay.Character
         public const float FireBonusMax = 8f;
         public const float FireBonusRangeTiles = 5f;
 
+        // §Temperature — hypothermia severity curve, benchmarked from RimWorld's publicly
+        // documented temperature-hediff mechanic (spec's own "Hypothermia severity" section has
+        // the citation trail). Heatstroke has no equivalent curve — see TemperatureHpDrainPerSecond.
+        public const float HypothermiaSeverityGrowthPerExcessDegreePerSecond = 6.45e-5f;
+        public const float HypothermiaSeverityGrowthFloorPerSecond = 0.00075f;
+        public const float HypothermiaSeverityRecoveryLowSeverity = 0.056f;
+        public const float HypothermiaSeverityRecoveryHighSeverity = 0.556f;
+        public const float HypothermiaSeverityRecoveryLowRatePerSecond = 0.0015f;
+        public const float HypothermiaSeverityRecoveryHighRatePerSecond = 0.015f;
+
         // §Stamina.
         public const float StaminaRegenDelaySeconds = 1.2f;
         public const float StaminaRegenPerSecondBase = 18f;
@@ -132,10 +142,46 @@ namespace Isle.Gameplay.Character
         public static float FireBonusAtDistance(float distanceTiles) =>
             Math.Max(0f, FireBonusMax * (1f - distanceTiles / FireBonusRangeTiles));
 
-        /// <summary>§Temperature band table's two HP-drain rows, in HP per real second.</summary>
-        public static float TemperatureHpDrainPerSecond(float temperature) =>
-            temperature < HypothermiaHpTemp ? -HypothermiaHpDrainPerSecond :
-            temperature > HeatstrokeHpTemp ? -HeatstrokeHpDrainPerSecond : 0f;
+        /// <summary>§Temperature "Hypothermia severity": excess below <see cref="HypothermiaHpTemp"/>,
+        /// floor-clamped once any excess exists (RimWorld-benchmarked, linear).</summary>
+        public static float HypothermiaSeverityGrowthPerSecond(float temperature)
+        {
+            var excess = HypothermiaHpTemp - temperature;
+            return excess > 0f
+                ? Math.Max(excess * HypothermiaSeverityGrowthPerExcessDegreePerSecond, HypothermiaSeverityGrowthFloorPerSecond)
+                : 0f;
+        }
+
+        /// <summary>§Temperature "Hypothermia severity" recovery: linear interpolation between the
+        /// two documented anchors (5.6% severity → 0.15%/s, 55.6% → 1.5%/s), clamped flat beyond
+        /// either end — the wiki gives no shape past these two points.</summary>
+        public static float HypothermiaSeverityRecoveryPerSecond(float severity)
+        {
+            var t = Math.Clamp(
+                (severity - HypothermiaSeverityRecoveryLowSeverity) /
+                (HypothermiaSeverityRecoveryHighSeverity - HypothermiaSeverityRecoveryLowSeverity),
+                0f, 1f);
+            return HypothermiaSeverityRecoveryLowRatePerSecond +
+                t * (HypothermiaSeverityRecoveryHighRatePerSecond - HypothermiaSeverityRecoveryLowRatePerSecond);
+        }
+
+        /// <summary>Signed severity change per real second: growth while cold, recovery (negative)
+        /// once back at or above <see cref="HypothermiaHpTemp"/>. Caller clamps the running total to
+        /// [0, 1] and scales by elapsed time.</summary>
+        public static float HypothermiaSeverityDeltaPerSecond(float temperature, float severity) =>
+            temperature < HypothermiaHpTemp
+                ? HypothermiaSeverityGrowthPerSecond(temperature)
+                : -HypothermiaSeverityRecoveryPerSecond(severity);
+
+        /// <summary>§Temperature band table's HP-drain rows. Hypothermia now scales with
+        /// <paramref name="hypothermiaSeverity"/> — <see cref="HypothermiaHpDrainPerSecond"/> is the
+        /// ceiling at 100% severity, not a flat rate gated on the current instant's temperature (the
+        /// severity persists and decays independently, see <see cref="HypothermiaSeverityDeltaPerSecond"/>).
+        /// Heatstroke is unchanged: still a flat rate gated on <paramref name="temperature"/> alone —
+        /// no benchmarked curve exists for it, see spec.</summary>
+        public static float TemperatureHpDrainPerSecond(float temperature, float hypothermiaSeverity) =>
+            -HypothermiaHpDrainPerSecond * hypothermiaSeverity +
+            (temperature > HeatstrokeHpTemp ? -HeatstrokeHpDrainPerSecond : 0f);
 
         public static bool IsHeatstroke(float temperature) => temperature > HeatstrokeHpTemp;
 
@@ -169,5 +215,9 @@ namespace Isle.Gameplay.Character
             WaterSource.Coconut => 30f,
             _ => throw new ArgumentOutOfRangeException(nameof(source)),
         };
+
+        /// <summary>Food and drink: add to a gauge, clamped to the 0–100 range. Negative amounts are
+        /// not a second drain path — drains go through the per-minute formulas above.</summary>
+        public static float Replenish(float current, float amount) => Math.Clamp(current + amount, 0f, GaugeMax);
     }
 }

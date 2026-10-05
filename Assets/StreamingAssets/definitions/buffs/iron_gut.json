@@ -1,0 +1,11 @@
+{
+  "id": "isle:iron_gut",
+  "name": "@buff.iron_gut",
+  "duration_min": 180,
+  "effects": [
+    {
+      "type": "disease_chance_mult",
+      "value": 0.6
+    }
+  ]
+}

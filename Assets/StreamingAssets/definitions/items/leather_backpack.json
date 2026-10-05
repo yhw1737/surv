@@ -1,0 +1,19 @@
+{
+  "id": "isle:leather_backpack",
+  "name": "@item.leather_backpack",
+  "tags": [
+    "bag",
+    "leather"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 3
+  },
+  "weight": 2.0,
+  "stack": 1,
+  "equip_slot": "back",
+  "bag_grid": {
+    "w": 6,
+    "h": 7
+  }
+}

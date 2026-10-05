@@ -1,0 +1,16 @@
+{
+  "id": "isle:craft_hide_cap",
+  "name": "@recipe.hide_cap",
+  "ingredients": [
+    {
+      "item": "isle:hide",
+      "count": 2
+    }
+  ],
+  "output": {
+    "item": "isle:hide_cap",
+    "count": 1
+  },
+  "time_sec": 3,
+  "station": "isle:workbench"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "isle:endurance",
+  "name": "@buff.endurance",
+  "duration_min": 180,
+  "effects": [
+    {
+      "type": "stamina_regen_mult",
+      "value": 1.25
+    }
+  ]
+}

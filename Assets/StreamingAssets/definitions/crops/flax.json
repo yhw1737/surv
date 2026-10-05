@@ -1,0 +1,23 @@
+{
+  "id": "isle:flax",
+  "name": "@crop.flax",
+  "tags": [
+    "crop",
+    "cloth"
+  ],
+  "output": {
+    "item": "isle:fiber",
+    "base_count": 8
+  },
+  "growth_days": 1,
+  "traits": {
+    "growth_speed": {
+      "base": 50,
+      "variance": 10
+    },
+    "yield": {
+      "base": 50,
+      "variance": 10
+    }
+  }
+}

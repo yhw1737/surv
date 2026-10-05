@@ -1,0 +1,24 @@
+{
+  "id": "isle:short_bow",
+  "name": "@weapon.short_bow",
+  "tags": [
+    "weapon",
+    "weapon/bow",
+    "wood"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 3
+  },
+  "weight": 1.0,
+  "combat_skill": "isle:ranged",
+  "base_power": 26,
+  "attack_speed": 1.2,
+  "reach": 0,
+  "stamina_cost": 0,
+  "grip": "two_hand",
+  "quality_enabled": false,
+  "durability": 80,
+  "ammo": "isle:arrow",
+  "projectile_speed": 18
+}

@@ -1,0 +1,16 @@
+{
+  "id": "isle:craft_fur_cloak",
+  "name": "@recipe.fur_cloak",
+  "ingredients": [
+    {
+      "item": "isle:hide",
+      "count": 3
+    }
+  ],
+  "output": {
+    "item": "isle:fur_cloak",
+    "count": 1
+  },
+  "time_sec": 3,
+  "station": "isle:workbench"
+}

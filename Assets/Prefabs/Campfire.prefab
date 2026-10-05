@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 2807203400045968049}
   - component: {fileID: 3383241471797228429}
   - component: {fileID: 876322490944534063}
+  - component: {fileID: 4514570132264590143}
   m_Layer: 0
   m_Name: Campfire
   m_TagString: Untagged
@@ -105,9 +106,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19f9884d70114123be47d0aeb682f0d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Isle.World::Isle.World.Objects.WorldObjectInstance
-  _componentIndexCache: 255
-  _addedNetworkObject: {fileID: 3383241471797228429}
-  _networkObjectCache: {fileID: 0}
   _defId: isle:campfire
 --- !u!114 &3383241471797228429
 MonoBehaviour:
@@ -127,7 +125,8 @@ MonoBehaviour:
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
-  NetworkBehaviours: []
+  NetworkBehaviours:
+  - {fileID: 4514570132264590143}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -138,7 +137,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: 0
+  _initializedTimestamp: -8584105170773259948
   _localLevelOfDetailCalculationType: 0
   _useLevelOfDetail: 0
   _useRootLevelOfDetail: 1
@@ -157,15 +156,15 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 65535
+  <PrefabId>k__BackingField: 1
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 8239499041951770565
   SceneId: 0
   SerializedTransformProperties:
-    Position: {x: 0, y: 0, z: 0}
-    Rotation: {x: 0, y: 0, z: 0, w: 0}
-    Scale: {x: 0, y: 0, z: 0}
-    IsValid: 0
+    Position: {x: 1.65227, y: 1.02087, z: 0}
+    Rotation: {x: 0, y: 0, z: 0, w: 1}
+    Scale: {x: 1, y: 1, z: 1}
+    IsValid: 1
 --- !u!114 &876322490944534063
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -178,3 +177,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b314e66c4ef47c197a356d7298d7215, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Isle.Gameplay::Isle.Gameplay.World.CampfireInteraction
+--- !u!114 &4514570132264590143
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8950725089680728588}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6a39c46bf52104ba8efe3100bce3f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FishNet.Runtime::FishNet.Object.EmptyNetworkBehaviour
+  _componentIndexCache: 0
+  _addedNetworkObject: {fileID: 3383241471797228429}
+  _networkObjectCache: {fileID: 3383241471797228429}

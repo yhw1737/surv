@@ -1,0 +1,15 @@
+{
+  "id": "isle:warehouse_kit",
+  "name": "@item.warehouse_kit",
+  "tags": [
+    "placeable",
+    "wood"
+  ],
+  "grid": {
+    "w": 3,
+    "h": 2
+  },
+  "weight": 15.0,
+  "stack": 1,
+  "places": "isle:warehouse"
+}

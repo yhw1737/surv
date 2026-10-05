@@ -1,0 +1,23 @@
+{
+  "id": "isle:berry_crop",
+  "name": "@crop.berry",
+  "tags": [
+    "crop",
+    "fruit"
+  ],
+  "output": {
+    "item": "isle:berries",
+    "base_count": 6
+  },
+  "growth_days": 1,
+  "traits": {
+    "growth_speed": {
+      "base": 50,
+      "variance": 10
+    },
+    "yield": {
+      "base": 50,
+      "variance": 10
+    }
+  }
+}

@@ -122,3 +122,27 @@ Scripts/Combat/
 - Enemy stagger duration on hit
 - Arrow recovery chance
 - Weapon durability loss rate
+
+## Prototype scope (2026-10-03)
+
+Implemented from this sheet: §Power (`PowerCalculator.FinalPower`, verification 1–5), §Damage
+(`DamageResolver.Damage`, verification 6–7), and §Creature AI presets (`CreatureBrain.Next`) with the
+four-state machine with Alert (Deer, 2 s alert then flee — the noise trigger is not built, so alert is on sight). Crocodile is an `isle:ambusher`: same transitions as the charger, 3-tile vision, never wanders. All four creatures in the §Creature AI table now exist; their numbers come from their defs.
+
+| Not yet | Why |
+|---|---|
+| Skill-scaled power | No combat skill tracked on the player yet — every swing uses level 0 (skill floor 0.5) |
+| Armor | No armor items exist; `totalArmor` is 0 |
+| Quality tiers, enchants, situational multipliers | Items carry no quality yet; all multipliers are 1.0 |
+| Melee combo, block, parry, dodge | T-111 / T-114 |
+| Hit detection, lag compensation | T-113. The prototype uses a reach check from the attacker's server-side position |
+
+Code location: the sheet's `Scripts/Combat/` folder is `Scripts/Gameplay/Combat/` for now. `Isle.Combat` can't
+hold these, because `Isle.Gameplay` needs them and `Isle.Combat` depends on `Isle.Gameplay`. See PROJECT_STATE.md
+§Decided without a spec.
+
+### Ranged (prototype, 2026-10-04)
+
+`RangedCalculator`: full charge 0.8 s else ×0.4; ×0.6 past 12 tiles, gone at 20; sway radius
+`1.8 × (1 − Lv/50) × stanceMult` applied as a random offset to the aim point; sprinting can't aim. The server
+measures the draw itself. Hit = first creature within 0.45 tiles of the arrow's path **[invented]**.

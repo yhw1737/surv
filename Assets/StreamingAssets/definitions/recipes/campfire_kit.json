@@ -1,0 +1,19 @@
+{
+  "id": "isle:craft_campfire_kit",
+  "name": "@recipe.campfire_kit",
+  "ingredients": [
+    {
+      "item": "isle:wood",
+      "count": 3
+    },
+    {
+      "item": "isle:stone",
+      "count": 2
+    }
+  ],
+  "output": {
+    "item": "isle:campfire_kit",
+    "count": 1
+  },
+  "time_sec": 3
+}

@@ -2,6 +2,14 @@ using FishNet.Object;
 using Isle.World.Objects;
 using Isle.World.Time;
 using Isle.World.Weather;
+using Isle.Gameplay.Inventory;
+using Isle.Networking;
+using System.Collections.Generic;
+using Isle.Core.Ids;
+using Isle.Data;
+using Isle.Gameplay.Buffs;
+using Isle.Gameplay.Cooking;
+using Isle.Modding.Defs;
 using UnityEngine;
 
 namespace Isle.Gameplay.Character
@@ -56,6 +64,12 @@ namespace Isle.Gameplay.Character
         /// value <see cref="SetWet"/> sets manually for a future swimming event.</summary>
         public float WetPenalty { get; private set; }
 
+        /// <summary>0–1, §Temperature's "Hypothermia severity" (2026-09-19) — grows while
+        /// <see cref="Temperature"/> is below <see cref="VitalsCalculator.HypothermiaHpTemp"/>, decays
+        /// back towards 0 once it isn't. Drives <see cref="VitalsCalculator.TemperatureHpDrainPerSecond"/>'s
+        /// hypothermia component; heatstroke has no equivalent (see spec, no benchmarked curve exists).</summary>
+        public float HypothermiaSeverity { get; private set; }
+
         public float MinutesSinceSaltyFood { get; set; } = float.MaxValue;
 
         // SCHEMA.md §World objects — Absolute Rule 4 (connect via tags), not a hardcoded def id.
@@ -64,9 +78,31 @@ namespace Isle.Gameplay.Character
         float _accumulatedSeconds;
         float _secondsSinceLastStaminaSpend = float.MaxValue;
 
+        /// <summary>SYS-SURV-01 §Stamina table: sprint 12/s, dodge roll 25.</summary>
+        public const float SprintStaminaPerSecond = 12f;
+        public const float RollStaminaCost = 25f;
+
+        PlayerMovement _movement;
+
+        void Awake()
+        {
+            if (TryGetComponent(out _movement)) _movement.RollStarted += OnRollStarted;
+        }
+
+        void OnDestroy()
+        {
+            if (_movement != null) _movement.RollStarted -= OnRollStarted;
+        }
+
+        void OnRollStarted()
+        {
+            if (IsServer) SpendStamina(RollStaminaCost);
+        }
+
         void Update()
         {
             if (!IsServer) return;
+            UpdateMovementRules();
 
             _accumulatedSeconds += Time.deltaTime;
             while (_accumulatedSeconds >= TickIntervalSeconds)
@@ -76,12 +112,86 @@ namespace Isle.Gameplay.Character
             }
         }
 
+        /// <summary>Pushes the rules the movement layer can't see: carried weight (SYS-INV-01 §Weight) and whether
+        /// there's stamina to sprint or roll; pays for sprinting and sets the activity hunger/thirst drain reads.</summary>
+        void UpdateMovementRules()
+        {
+            if (_movement == null) return;
+
+            ClothingBonus = WornWarmth();
+            var weight = CarriedWeightKg();
+            _movement.WeightMultiplier = WeightCalculator.SpeedMultiplier(weight);
+            _movement.SprintAllowed = Stamina > 0f;
+            _movement.RollAllowed = Stamina >= RollStaminaCost && !WeightCalculator.IsOverloaded(weight);
+
+            if (_movement.IsSprinting) SpendStamina(SprintStaminaPerSecond * Time.deltaTime);
+            CurrentActivity = _movement.IsSprinting ? Activity.Sprinting : _movement.IsMoving ? Activity.Walking : Activity.Idle;
+        }
+
+        /// <summary>Sum of every equipped item's <c>warmth</c> — SYS-SURV-01's <c>clothingBonus</c>.</summary>
+        float WornWarmth()
+        {
+            if (!TryGetComponent<InventoryNetwork>(out var inventory)) return 0f;
+            var total = 0f;
+            foreach (var slot in EquipSlots.All) total += inventory.Slots.Get(slot)?.Warmth ?? 0f;
+            return total;
+        }
+
+        /// <summary>SYS-COMBAT-01 §Damage <c>totalArmor</c>: every worn item's <c>armor</c>.</summary>
+        public float WornArmor()
+        {
+            if (!TryGetComponent<InventoryNetwork>(out var inventory)) return 0f;
+            var total = 0f;
+            foreach (var slot in EquipSlots.All) total += inventory.Slots.Get(slot)?.Armor ?? 0f;
+            return total;
+        }
+
+        float CarriedWeightKg()
+        {
+            if (!TryGetComponent<InventoryNetwork>(out var inventory)) return 0f;
+            var total = inventory.Bag.TotalWeightKg();
+            foreach (var slot in EquipSlots.All)
+            {
+                total += inventory.Slots.Get(slot)?.Weight ?? 0f;
+                total += inventory.Slots.BagFor(slot)?.TotalWeightKg() ?? 0f;
+            }
+            return total;
+        }
+
+        /// <summary>Active buffs (SYS-BUFF-01), keyed by def, with expiry on the world clock.</summary>
+        public BuffSet Buffs { get; } = new();
+
+        /// <summary>SYS-COOK-01 §Satiety fatigue, per player.</summary>
+        public SatietyTracker Satiety { get; } = new();
+
+        public static long NowMinutes => WorldTime.Instance != null ? WorldTime.Instance.Clock.TotalMinutes : 0;
+
+        /// <summary>Defs of every buff active now — what each formula below reads its multipliers from.</summary>
+        public List<BuffDef> ActiveBuffs()
+        {
+            var active = new List<BuffDef>();
+            foreach (var id in Buffs.ActiveBuffIds(NowMinutes))
+                if (DefRegistry.TryGet<BuffDef>(id, out var buff)) active.Add(buff);
+            return active;
+        }
+
+        /// <summary>Server-side: grants a buff, its duration stretched by a dish's buff_duration / care tag.</summary>
+        public void GrantBuff(NamespacedId buffId, float durationMult)
+        {
+            if (!IsServer || !DefRegistry.TryGet<BuffDef>(buffId, out var buff)) return;
+            Buffs.Grant(new BuffDef { Id = buff.Id, Name = buff.Name, Effects = buff.Effects, DurationMin = (long)(buff.DurationMin * durationMult) }, NowMinutes);
+        }
+
         void Tick()
         {
+            var buffs = ActiveBuffs();
             var heatstroke = VitalsCalculator.IsHeatstroke(Temperature);
             var hungerDelta = VitalsCalculator.HungerDrainPerHour(CurrentActivity, Temperature) / 60f;
             var thirstDelta = VitalsCalculator.ThirstDrainPerHour(CurrentActivity, AmbientTemp, MinutesSinceSaltyFood) / 60f
-                * (heatstroke ? 2f : 1f);
+                * (heatstroke ? 2f : 1f) * BuffEffects.Mult(buffs, "thirst_drain_mult");
+            if (TryGetComponent<InventoryNetwork>(out var carried))
+                foreach (var container in carried.Containers()) SpoilageTracker.Live.Tick(container, inGameMinutes: 1f);
+
             Hunger = Mathf.Clamp(Hunger - hungerDelta, 0f, VitalsCalculator.GaugeMax);
             Thirst = Mathf.Clamp(Thirst - thirstDelta, 0f, VitalsCalculator.GaugeMax);
 
@@ -94,19 +204,31 @@ namespace Isle.Gameplay.Character
 
             var fireBonus = VitalsCalculator.FireBonusAtDistance(NearestCampfireDistanceTiles);
             var target = VitalsCalculator.TargetTemperature(AmbientTemp, ClothingBonus, fireBonus, WetPenalty);
-            Temperature = VitalsCalculator.ApproachTemperature(Temperature, target, inGameMinutes: 1f);
+            // SYS-BUFF-01 warm: the whole approach rate is scaled, so a minute moves Temperature less in either direction.
+            Temperature = VitalsCalculator.ApproachTemperature(Temperature, target, inGameMinutes: BuffEffects.Mult(buffs, "temp_approach_rate_mult"));
+
+            // SYS-BUFF-01 cold_resist shifts the hypothermia line down; feeding a correspondingly warmer temperature
+            // into the unchanged formula is the same thing.
+            var hypothermiaShift = BuffEffects.Sum(buffs, "hypothermia_threshold_shift");
+            var severityDelta = VitalsCalculator.HypothermiaSeverityDeltaPerSecond(Temperature - hypothermiaShift, HypothermiaSeverity) * TickIntervalSeconds;
+            HypothermiaSeverity = Mathf.Clamp01(HypothermiaSeverity + severityDelta);
 
             var hpDelta = (VitalsCalculator.ZeroGaugeHpDrainPerSecond(Hunger, Thirst)
-                + VitalsCalculator.TemperatureHpDrainPerSecond(Temperature)) * TickIntervalSeconds;
+                + VitalsCalculator.TemperatureHpDrainPerSecond(Temperature - hypothermiaShift, HypothermiaSeverity)
+                - BuffEffects.Sum(buffs, "hp_drain_per_sec")) * TickIntervalSeconds;
             Health = Mathf.Clamp(Health + hpDelta, 0f, VitalsCalculator.GaugeMax);
+            // A lower stamina ceiling (food poisoning) applies at once, not only when regenerating.
+            Stamina = Mathf.Min(Stamina, VitalsCalculator.GaugeMax * BuffEffects.Mult(buffs, "stamina_max_mult"));
 
             _secondsSinceLastStaminaSpend += TickIntervalSeconds;
             if (_secondsSinceLastStaminaSpend >= VitalsCalculator.StaminaRegenDelaySeconds)
             {
-                // ponytail: overweight factor hardcoded to 1 (no penalty) — SYS-INV-01's weight
-                // limit has no consumer yet (InventoryNetwork remarks); wire it in once it does.
-                var regen = VitalsCalculator.StaminaRegenPerSecondAt(overweightFactor: 1f, Hunger, Thirst) * TickIntervalSeconds;
-                var maxStamina = VitalsCalculator.GaugeMax * VitalsCalculator.MaxStaminaFactor(Hunger, Thirst);
+                // SYS-INV-01 §Weight: "stamina regen halted" when overloaded.
+                var overweightFactor = WeightCalculator.IsOverloaded(CarriedWeightKg()) ? 0f : 1f;
+                var regen = VitalsCalculator.StaminaRegenPerSecondAt(overweightFactor, Hunger, Thirst) * TickIntervalSeconds
+                    * BuffEffects.Mult(buffs, "stamina_regen_mult");
+                var maxStamina = VitalsCalculator.GaugeMax * VitalsCalculator.MaxStaminaFactor(Hunger, Thirst)
+                    * BuffEffects.Mult(buffs, "stamina_max_mult");
                 Stamina = Mathf.Clamp(Stamina + regen, 0f, maxStamina);
             }
 
@@ -126,7 +248,47 @@ namespace Isle.Gameplay.Character
         public void Drink(WaterSource source)
         {
             if (!IsServer) return;
-            Thirst = Mathf.Clamp(Thirst + VitalsCalculator.DrinkThirstDelta(source), 0f, VitalsCalculator.GaugeMax);
+            Thirst = VitalsCalculator.Replenish(Thirst, VitalsCalculator.DrinkThirstDelta(source));
+        }
+
+        /// <summary>Server-side eating. Hunger and thirst deltas come from the item's nutrition block
+        /// (SCHEMA §Items), applied as-is — no per-item numbers live in C#.</summary>
+        public void Eat(float hungerDelta, float thirstDelta)
+        {
+            if (!IsServer) return;
+            Hunger = VitalsCalculator.Replenish(Hunger, hungerDelta);
+            Thirst = VitalsCalculator.Replenish(Thirst, thirstDelta);
+        }
+
+        /// <summary>Server-side rest at a campfire: stamina comes back in full. The time skip itself is
+        /// <c>WorldClock.AdvanceToNextMinuteOfDay</c>; hunger and thirst are not ticked during it (prototype shortcut).</summary>
+        public void Rest()
+        {
+            if (!IsServer) return;
+            Stamina = VitalsCalculator.GaugeMax;
+        }
+
+        /// <summary>Server-side: loading a save puts every gauge back as recorded.</summary>
+        public void Restore(float health, float hunger, float thirst, float stamina, float temperature, float hypothermiaSeverity)
+        {
+            if (!IsServer) return;
+            Health = health;
+            Hunger = hunger;
+            Thirst = thirst;
+            Stamina = stamina;
+            Temperature = temperature;
+            HypothermiaSeverity = hypothermiaSeverity;
+        }
+
+        /// <summary>Server-side damage from a creature or any other source. Health 0 is handled by
+        /// <see cref="Tick"/>, which calls <see cref="DeathHandler.Die"/>.</summary>
+        public void TakeDamage(float amount)
+        {
+            if (!IsServer || amount <= 0f) return;
+            if (_movement != null && _movement.IsInvulnerable) return; // dodge roll i-frames
+            var taken = Combat.DamageResolver.Damage(amount, WornArmor());
+            Health = Mathf.Clamp(Health - taken, 0f, VitalsCalculator.GaugeMax);
+            Feedback.GameFeed.RaisePlayerHit(taken);
         }
 
         /// <summary>Server-side "got wet" event for a future swimming system to call (§Temperature:
@@ -150,6 +312,8 @@ namespace Isle.Gameplay.Character
             Stamina = VitalsCalculator.GaugeMax;
             Health = VitalsCalculator.GaugeMax;
             WetPenalty = 0f;
+            HypothermiaSeverity = 0f;
+            foreach (var id in new List<NamespacedId>(Buffs.ActiveBuffIds(NowMinutes))) Buffs.Clear(id);
         }
     }
 }

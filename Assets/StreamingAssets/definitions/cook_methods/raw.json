@@ -1,0 +1,33 @@
+{
+  "id": "isle:raw",
+  "name": "@cook_method.raw",
+  "unlock_skill": {
+    "skill": "isle:cooking",
+    "level": 1
+  },
+  "duration_sec": 3,
+  "input": {
+    "min_items": 1,
+    "max_items": 1,
+    "requires_water_ml": 0
+  },
+  "modifiers": {
+    "hunger": 0.6,
+    "thirst": 1.0,
+    "preservation": 0.3,
+    "buff_power": 0.0,
+    "buff_duration": 0.0,
+    "nutrition_retention": 1.0
+  },
+  "tag_reactions": [
+    {
+      "when": [
+        "spoiled"
+      ],
+      "grant_buff": "isle:food_poisoning",
+      "power": 2.0
+    }
+  ],
+  "naming": "@pattern.raw",
+  "eat_raw": true
+}

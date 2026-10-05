@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Isle.Core.Ids;
 using UnityEngine;
 
 namespace Isle.World.Objects
@@ -28,6 +29,19 @@ namespace Isle.World.Objects
                 if (distance < nearest) nearest = distance;
             }
             return nearest;
+        }
+
+        /// <summary>True when an <i>active</i> instance of <paramref name="defId"/> is within reach — the
+        /// station check for a recipe (SCHEMA §Craft recipes: <c>station</c>). Lit only, same as
+        /// <see cref="NearestDistanceTiles"/>: an unlit campfire doesn't cook.</summary>
+        public static bool IsActiveNear(Vector2 fromPosition, NamespacedId defId, float maxDistanceTiles)
+        {
+            foreach (var instance in _instances)
+            {
+                if (!instance.IsActive || instance.Def == null || instance.Def.Id != defId) continue;
+                if (Vector2.Distance(fromPosition, instance.transform.position) <= maxDistanceTiles) return true;
+            }
+            return false;
         }
 
         /// <summary>Nearest instance within <paramref name="maxDistanceTiles"/> carrying an

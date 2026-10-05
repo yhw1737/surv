@@ -1,0 +1,16 @@
+{
+  "id": "isle:craft_cooking_pot_kit",
+  "name": "@recipe.cooking_pot_kit",
+  "station": "isle:workbench",
+  "ingredients": [
+    {
+      "item": "isle:stone",
+      "count": 5
+    }
+  ],
+  "output": {
+    "item": "isle:cooking_pot_kit",
+    "count": 1
+  },
+  "time_sec": 4
+}

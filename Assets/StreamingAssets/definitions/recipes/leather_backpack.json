@@ -1,0 +1,20 @@
+{
+  "id": "isle:craft_leather_backpack",
+  "name": "@recipe.leather_backpack",
+  "ingredients": [
+    {
+      "item": "isle:hide",
+      "count": 6
+    },
+    {
+      "item": "isle:fiber",
+      "count": 4
+    }
+  ],
+  "output": {
+    "item": "isle:leather_backpack",
+    "count": 1
+  },
+  "time_sec": 3,
+  "station": "isle:workbench"
+}

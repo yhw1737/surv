@@ -1,0 +1,15 @@
+{
+  "id": "isle:flax_seeds",
+  "name": "@item.flax_seeds",
+  "tags": [
+    "seed"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.05,
+  "stack": 20,
+  "places": "isle:crop_plot",
+  "plants": "isle:flax"
+}

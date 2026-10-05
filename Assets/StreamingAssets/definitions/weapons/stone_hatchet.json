@@ -1,0 +1,22 @@
+{
+  "id": "isle:stone_hatchet",
+  "name": "@weapon.stone_hatchet",
+  "tags": [
+    "weapon",
+    "weapon/blade",
+    "tool/axe"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 2
+  },
+  "weight": 1.2,
+  "combat_skill": "isle:melee",
+  "base_power": 22,
+  "attack_speed": 1.2,
+  "reach": 1.3,
+  "stamina_cost": 6,
+  "grip": "one_hand",
+  "quality_enabled": false,
+  "durability": 80
+}

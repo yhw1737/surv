@@ -1,0 +1,20 @@
+{
+  "id": "isle:craft_hunters_backpack",
+  "name": "@recipe.hunters_backpack",
+  "station": "isle:workbench",
+  "ingredients": [
+    {
+      "item": "isle:hide",
+      "count": 10
+    },
+    {
+      "item": "isle:fiber",
+      "count": 6
+    }
+  ],
+  "output": {
+    "item": "isle:hunters_backpack",
+    "count": 1
+  },
+  "time_sec": 6
+}

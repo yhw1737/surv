@@ -1,0 +1,15 @@
+{
+  "id": "isle:cooking_pot_kit",
+  "name": "@item.cooking_pot_kit",
+  "tags": [
+    "placeable",
+    "stone"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 4.0,
+  "stack": 1,
+  "places": "isle:cooking_pot"
+}

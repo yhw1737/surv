@@ -1,0 +1,24 @@
+{
+  "id": "isle:coconut",
+  "name": "@item.coconut",
+  "tags": [
+    "food",
+    "fruit"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 1.0,
+  "stack": 4,
+  "nutrition": {
+    "hunger": 2,
+    "thirst": 30,
+    "sanitation_risk": 0.0
+  },
+  "spoilage": {
+    "base_hours": 120,
+    "temp_factor": 0,
+    "result": "isle:rotten_food"
+  }
+}

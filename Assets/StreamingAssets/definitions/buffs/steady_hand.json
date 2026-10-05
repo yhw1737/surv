@@ -1,0 +1,11 @@
+{
+  "id": "isle:steady_hand",
+  "name": "@buff.steady_hand",
+  "duration_min": 180,
+  "effects": [
+    {
+      "type": "aim_sway_mult",
+      "value": 0.7
+    }
+  ]
+}

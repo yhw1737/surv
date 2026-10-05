@@ -1,0 +1,13 @@
+{
+  "id": "isle:workbench",
+  "name": "@world_object.workbench",
+  "tags": [
+    "station/workbench",
+    "wood"
+  ],
+  "visual": {
+    "shape": "workbench",
+    "color": "#B0824E",
+    "size": 1.1
+  }
+}

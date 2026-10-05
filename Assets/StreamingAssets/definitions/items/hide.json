@@ -1,0 +1,14 @@
+{
+  "id": "isle:hide",
+  "name": "@item.hide",
+  "tags": [
+    "material",
+    "leather"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.6,
+  "stack": 10
+}

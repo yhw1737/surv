@@ -1,0 +1,15 @@
+{
+  "id": "isle:craft_berry_seeds",
+  "name": "@recipe.berry_seeds",
+  "ingredients": [
+    {
+      "item": "isle:berries",
+      "count": 3
+    }
+  ],
+  "output": {
+    "item": "isle:berry_seeds",
+    "count": 2
+  },
+  "time_sec": 2
+}
