@@ -40,6 +40,7 @@ namespace Isle.UI.Prototype
             root.AddComponent<DayNightLight>();
             root.AddComponent<PrototypeHud>();
             root.AddComponent<PlayerCamera>();
+            root.AddComponent<Isle.UI.Art.StickFigureDirector>();
             root.AddComponent<FeedbackOverlay>();
             root.AddComponent<MapState>();
             root.AddComponent<Minimap>();

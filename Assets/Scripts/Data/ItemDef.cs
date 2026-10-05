@@ -74,6 +74,12 @@ namespace Isle.Data
 
         /// <summary>Tiles of light cast while equipped (a torch). 0 casts none.</summary>
         public float LightRadius { get; init; }
+
+        /// <summary>How this item looks worn on the stick figure (SYS-CHAR-02). Null: not drawn while worn.</summary>
+        public WearSpec Wear { get; init; }
+
+        /// <summary>How this item looks held in the figure's hand (SYS-CHAR-02). Null: not drawn while held.</summary>
+        public HoldSpec Hold { get; init; }
     }
 
     /// <summary>Spoilage inputs. Progress is computed in one elapsed-time pass (ARCHITECTURE §Deferred simulation).</summary>

@@ -380,6 +380,13 @@ Stage 4. Nothing here is a prerequisite for anything above it; that is the whole
 - [ ] **T-163** Tilesets (3 biomes) + world objects
 - [ ] **T-164** UI art pass
 
+> **2026-10-06 — art stage brought forward by the developer.** SYS-CHAR-02 (cartoon stick figure, vector
+> rendering, procedural animation, data-driven equipment drawing) replaces SYS-CHAR-01's rig. Step 1, the player
+> figure, is built on `feature/art-cartoon-stickman` — it covers what T-003 (aim facing), T-004 (flip transition:
+> a squash turn) and T-005 (grips: per-style hold drawing) were for. Remaining overhaul steps, in order: cartoon
+> creatures (procedural quadrupeds), trees/rocks/world objects restyle, ground, UI. T-160/T-161–T-164 to be
+> re-scoped against the vector style once those land.
+>
 > **SYS-CHAR-01 must be rewritten before T-003 starts** — not just for quarter view. **2026-09-17:**
 > the jointed cutout rig it specifies is retired outright (see T-001/T-002's superseding note
 > above); a character design needs to be chosen from scratch, then SYS-CHAR-01 rewritten (or

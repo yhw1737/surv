@@ -457,3 +457,14 @@ This document constrains us before it serves modders.
 | Item | `requires` `{skill, level}` | Level needed to use the item for its purpose (rod: Fishing 5) |
 | World object fishing | `skill` | The skill a water spot fishes with |
 | Recipe | `skills` | Now enforced: every requirement's level must be met to craft |
+
+### Equipment on the stick figure (2026-10-06)
+
+Presentation only — gameplay never reads these (Absolute Rule 7). Rules and styles: `docs/specs/SYS-CHAR-02-stickman.md`.
+
+| Type | Field | Meaning |
+|---|---|---|
+| Item | `wear` `{style, color}` | How the item looks worn. `style`: `cap hood shirt cloak pants boots backpack pouch` |
+| Item | `hold` `{style, length, color, tip}` | How the item looks held. `style`: `spear hatchet pickaxe rod torch bow sword`; `length` in tiles; `tip` colours the head (blade, stone, flame) |
+
+No block means the item isn't drawn on the figure. An unknown style falls back to a generic shape in the item's colour, so a mod item with a new style still shows.

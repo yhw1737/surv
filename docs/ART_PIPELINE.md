@@ -1,5 +1,12 @@
 # Art pipeline and sourcing
 
+> ### 2026-10-06 — developer art direction supersedes the "art last" schedule and the style table below
+> Cartoon **stick-figure** characters ("졸라맨"), benchmarked on The Fancy Pants Adventure's look — thick loose
+> black line work, round expressive head, bright flat colours, very smooth exaggerated animation — drawn as
+> **resolution-independent vector meshes** at the display's frame rate, with all equipment drawable on the figure.
+> Spec: `docs/specs/SYS-CHAR-02-stickman.md`. Creatures, world objects, ground and UI follow the same cartoon
+> line-art language. Outlines are now near-black (#16130F) — the "dark brown, never black" rule is replaced.
+
 > **The real bottleneck for a solo developer is art, not code.**
 > AI writes an inventory system in a day. It does not draw 200 item icons.
 

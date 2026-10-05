@@ -108,4 +108,24 @@ namespace Isle.Data
         public float Base { get; init; }
         public float PerUnit { get; init; }
     }
+
+    /// <summary>SYS-CHAR-02 §Equipment: how an equipped item is drawn on the stick figure — what, not where. Style is
+    /// one of <c>cap hood shirt cloak pants boots backpack pouch</c>; unknown styles fall back to a generic shape.
+    /// Presentation only (Absolute Rule 7).</summary>
+    public sealed class WearSpec
+    {
+        public string Style { get; init; }
+        public string Color { get; init; }
+    }
+
+    /// <summary>SYS-CHAR-02 §Equipment: how a held item is drawn in the figure's hand. Style is one of
+    /// <c>spear hatchet pickaxe rod torch bow sword</c>. <see cref="Length"/> in tiles; <see cref="Tip"/> colours the head
+    /// (blade, stone, flame). Presentation only.</summary>
+    public sealed class HoldSpec
+    {
+        public string Style { get; init; }
+        public float Length { get; init; } = 1f;
+        public string Color { get; init; }
+        public string Tip { get; init; }
+    }
 }

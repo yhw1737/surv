@@ -5,7 +5,12 @@
 
 ## Header
 
-- Last updated: **2026-10-05**
+- Last updated: **2026-10-06**
+- **Current work (2026-10-06): art overhaul, step 1 — cartoon stick figure.** Branch
+  `feature/art-cartoon-stickman` off `main` (after PR #23), **uncommitted**. Developer moved the art stage
+  forward: "이미지·디자인에 관한 모든 걸 개편 … 매우 부드러운 애니메이션이 기본, 졸라맨 카툰, 고해상도·고프레임,
+  팬시 팬츠 어드벤처 벤치마킹, 모든 장비는 졸라맨 위에 그려질 수 있어야". New spec
+  `docs/specs/SYS-CHAR-02-stickman.md` (replaces SYS-CHAR-01's retired rig; `PlayerVisual`'s circles deleted). See the 2026-10-06 art entry under the prototype notes below and Decided without a spec.
 - Phase: **Phase 3 done except T-031 (skipped, needs spec) and T-034 (deferred to Phase 4/6). Phase 4 (inventory) is done — T-040 through T-045 all implemented and merged into `main`.**
 - Task: **T-045 (server-authoritative inventory sync + rollback UI) merged into `main`** via [PR #20](https://github.com/yhw1737/surv/pull/20), 2026-09-16 — Phase 4 is complete. New `InventoryNetwork` (`NetworkBehaviour`) holds server-authoritative bag + equip slots for a player's own body only (warehouse/crates stay local, Phase 6 scope); `GridView`/`EquipSlotView` gained a `Network` property, `DragHandler`/`EquipDragHandler` branch on it with the local (non-networked) path byte-for-byte unchanged. Wired onto `player_rig_placeholder.prefab`. Batchmode EditMode run **238/238**, 0 failures — see In progress/unfinished and Next for the manual-test checklist. T-040~T-044 remain merged into `main` — [PR #19](https://github.com/yhw1737/surv/pull/19). Developer pressed Play repeatedly and reported bugs/requests each time, all fixed the same day: round 1 (unstyled Auto-Sort bar, no item/panel labels), round 2 (NullReferenceException crash, grids overlapping, item sizes not reflected), round 3 (drop position mismatched the dragged icon, tooltip flickering), round 4 (sword equip-slot fixture bug, Q/E rotate-in-place feature — later corrected), round 5 (Q/E moved to rotate-while-dragging instead, tooltip z-order behind newer UI, tooltip now follows the cursor), round 6 (backpack-unequip UI desync, split-drag visual gap + merge-on-drop-back, Q/E reliability fix, Ctrl+click-unequip + equipped-item tooltip), round 7 (Ctrl+click merge-onto-stack, dragged icon z-order above other panels, backpack contents can now bulk-move to the warehouse) — see Next for all seven rounds and the checklist. `docs/BACKLOG.md` also gained a Tier 2/3 modding note (dragselect/AllowTool-style mods need a DLL loader + Harmony-style patch mechanism, not just a richer JSON schema) — parked, not built, per Absolute Rule 6. Developer then actually ran the network checklist (one build + one Editor instance) and reported 6 findings; one was a real bug — `DragHandler.TryDrop`'s networked guard only checked the drag source, not the destination, so a local item dragged into the Networked Bag silently bypassed the server — now fixed to check both sides. The other 5 are expected/cosmetic/unrelated-system, see Next for the full breakdown. Developer then
 spotted two more gaps in the checklist/harness itself: the Networked Bag had no way to be seeded
@@ -305,6 +310,26 @@ already-merged commit messages (history rewrite on `main` needs the developer's 
     and borders are smooth curves and smooth multi-scale noise instead of texel grain. Beaches now vary in
     width and marsh/forest patches have ragged edges; ponds are bigger (radius 4–16). Visually checked by
     dumping shapes, a ground chunk and the map to PNG. **Verified:** EditMode **519/519**, PlayMode **2/2**.
+  - **2026-10-06 — art overhaul step 1: cartoon stick figure (SYS-CHAR-02), branch `feature/art-cartoon-stickman`,
+    uncommitted.** New `Assets/Scripts/UI/Art/` (namespace `Isle.UI.Art`, presentation only): `AnimMath.cs`
+    (`TwoBoneIk`, critically damped `Spring`, `TickInterpolation`, `Gait`), `VectorMesh` (strokes/disks/ellipses/
+    polygons into one mesh, rebuilt each frame), shader `Assets/Resources/IsleVector.shader` (`fwidth` AA edges, lit by
+    URP 2D lights, sRGB vertex colours converted to linear), `StickFigureAnimator` (procedural idle/walk/run, swing,
+    gather loop, cast/bite/reel, bow draw, roll spin, dead topple, turn squash, blink — all spring-blended),
+    `StickFigureDrawer` (look + every `wear`/`hold` style), `StickFigureView` (one per player on its own GameObject,
+    drawn at a position interpolated between 30 Hz ticks; reads `PlayerMovement`, `PlayerInteraction`, `DeathHandler`,
+    `InventoryNetwork.Slots`), `StickFigureDirector` (added by
+    `PrototypeBootstrap`; spawns views, vSync on + 120 fps fallback). `PlayerCamera` now follows the drawn
+    position. Data: `ItemDef.Wear`/`Hold` (`WearSpec`/`HoldSpec` in `Shared.cs`) and `wear`/`hold` blocks on the 13
+    equippable starter items. `Renderer2D.asset` transparency sort → custom axis (0,1,0); the figure uses sorting order
+    2 like standing nodes so it interleaves with trees by height on screen. **`PlayerVisual` (the three placeholder
+    circles) deleted** with its 4 tests and its component removed from `player_rig_placeholder.prefab` — developer saw
+    the old sprite still showing and asked for it gone. **Verified:** EditMode **531/531** (+16 new: `StickMathTests` 10,
+    `StickFigureAnimatorTests` 6; −4 `PlayerVisualTests`), PlayMode
+    **2/2** with no figure errors in the live-scene log; poses and a walk cycle rendered through the shader to PNG in
+    batchmode and inspected. **Not verified:** the figure inside the running game (batchmode can't run the URP camera)
+    — the developer should look in Play mode. **Not done yet** (next steps of the overhaul): cartoon creatures,
+    world objects/trees restyle, ground, UI.
   - **Deer (2026-10-04).** Third creature, with the Alert state from SYS-COMBAT-01. Deer alerts on sight, then flees after `combat.alert_seconds` = 2 s **[invented]**. Density, weight (50 kg, σ 0.2, 30–80) and yield (4 meat) are all **[invented]**. EditMode 374/374, PlayMode 2/2.
   - **HUD.** IMGUI, no prefabs to wire: five gauges, clock, weather, interaction prompt, bag, craft
     window, death text. Day/night dims the global 2D light.
@@ -1693,6 +1718,15 @@ since it's server-side gauge math with no UI yet:
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-10-06 — SYS-CHAR-02 stick figure: every look/animation number is [invented]
+  Developer gave the direction (stick-figure cartoon, Fancy Pants feel, smooth, high-res, high-fps, all equipment
+  drawn on the figure) but no numbers. Presentation values only — none touch balance: skeleton (hip 0.64, torso 0.40,
+  neck→head 0.32, thigh/shin 0.33, arms 0.26+0.26 tiles), limb stroke 0.085, head r 0.30 + 0.05 outline, ink #16130F,
+  back-limb ink #4A433C, gait stride 1.1 tiles/cycle, full gait at 1.5 tiles/s, step lift 0.11–0.16, bob 0.03, lean
+  0.035 rad per tile/s (max 0.22), swing 0.4 s, gather loop 0.7 s, full bow draw 1 s, spring frequencies 6–40,
+  teleport snap 3 tiles, `wear`/`hold` colours and lengths on the 13 starter items. ART_PIPELINE's old "outlines
+  dark brown, never black" rule is overridden by near-black ink (noted at the top of ART_PIPELINE). Tune freely.
 
 - ### 2026-09-16 — `SYS-WORLD-02-weather.md` §Season: four-season cycle, numbers invented again
   Developer asked for seasons on top of the already-invented weather table ("날씨는 계절도

@@ -15,7 +15,6 @@ GameObject:
   - component: {fileID: 9100000000000004}
   - component: {fileID: 9100000000000005}
   - component: {fileID: 3959488681870180924}
-  - component: {fileID: 9100000000000006}
   m_Layer: 0
   m_Name: player_rig_placeholder
   m_TagString: Untagged
@@ -171,15 +170,3 @@ MonoBehaviour:
   _componentIndexCache: 255
   _addedNetworkObject: {fileID: 9100000000000001}
   _networkObjectCache: {fileID: 0}
---- !u!114 &9100000000000006
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2460558508985687320}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e9bbd602e4914fdb96e3fea4032ab9d4, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Isle.Gameplay::Isle.Gameplay.Character.PlayerVisual

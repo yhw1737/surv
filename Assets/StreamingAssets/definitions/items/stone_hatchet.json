@@ -13,5 +13,11 @@
   "weight": 1.2,
   "stack": 1,
   "equip_slot": "main_hand",
-  "weapon": "isle:stone_hatchet"
+  "weapon": "isle:stone_hatchet",
+  "hold": {
+    "style": "hatchet",
+    "length": 0.7,
+    "color": "#8A6A48",
+    "tip": "#9FA4AA"
+  }
 }

@@ -15,5 +15,9 @@
   "bag_grid": {
     "w": 2,
     "h": 2
+  },
+  "wear": {
+    "style": "pouch",
+    "color": "#8A5A36"
   }
 }
