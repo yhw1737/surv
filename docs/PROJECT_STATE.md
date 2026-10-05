@@ -3017,7 +3017,8 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #19 | feature/T-040-grid-inventory | T-040 + T-041 + T-042 + T-043 + T-044 | [PR #19](https://github.com/yhw1737/surv/pull/19) — **merged to main** |
 | #20 | feature/T-045-inventory-network | T-045 | [PR #20](https://github.com/yhw1737/surv/pull/20) — **merged to main** |
 | #21 | feature/T-050-vitals | T-050 + T-051 (weather, world objects, seasons, snow/cold-snap/heat-wave) | [PR #21](https://github.com/yhw1737/surv/pull/21) — **merged to main** |
-| #22 | feature/prototype-solo-loop | Solo-loop prototype + T-051 hypothermia severity | [PR #22](https://github.com/yhw1737/surv/pull/22) — open, not yet merged |
+| #22 | feature/prototype-solo-loop | Solo-loop prototype + T-051 hypothermia severity | [PR #22](https://github.com/yhw1737/surv/pull/22) — **merged to main** |
+| #23 | feature/T-063-xp-skills | T-063 XP/skills + water/fishing/gathering + island/fog/map + perf/high-res | [PR #23](https://github.com/yhw1737/surv/pull/23) — open, not yet merged |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came
