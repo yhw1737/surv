@@ -99,4 +99,13 @@ namespace Isle.Data
         public string Color { get; init; }
         public float Size { get; init; } = 1f;
     }
+
+    /// <summary>XP an action grants (docs/content/xp_table.md): <c>base + per_unit × units</c> to <c>skill</c>, before
+    /// the focus multiplier. What "units" means is the action's (items harvested, ingredients, fish kg).</summary>
+    public sealed class XpAward
+    {
+        public NamespacedId Skill { get; init; }
+        public float Base { get; init; }
+        public float PerUnit { get; init; }
+    }
 }

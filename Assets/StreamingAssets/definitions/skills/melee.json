@@ -1,0 +1,6 @@
+{
+  "id": "isle:melee",
+  "name": "@skill.melee",
+  "pool": "combat",
+  "xp_per_damage": 1.0
+}

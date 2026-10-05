@@ -41,6 +41,7 @@ namespace Isle.UI.Prototype
             root.AddComponent<PrototypeHud>();
             root.AddComponent<PlayerCamera>();
             root.AddComponent<FeedbackOverlay>();
+            root.AddComponent<MapState>();
             root.AddComponent<Minimap>();
             root.AddComponent<LightRig>();
             root.AddComponent<WeatherOverlay>();

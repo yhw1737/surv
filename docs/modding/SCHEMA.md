@@ -447,3 +447,13 @@ This document constrains us before it serves modders.
 | Cook method | `result_grid` | Grid every dish of the method shrinks to (dry: 1×1) |
 | Cook method | `eat_raw` | The method applied when food is eaten uncooked (`isle:raw`) |
 | Weapon/item tag | `tool/rod` | A held rod switches fishing to the rod rig and its minigame |
+
+### XP and skills (2026-10-05)
+
+| Type | Field | Meaning |
+|---|---|---|
+| Gather / crop / recipe / cook method / fish | `xp` `{skill, base, per_unit}` | XP granted, before the focus multiplier (`docs/content/xp_table.md`) |
+| Skill | `xp_per_damage` | Combat skills: XP per point of damage dealt |
+| Item | `requires` `{skill, level}` | Level needed to use the item for its purpose (rod: Fishing 5) |
+| World object fishing | `skill` | The skill a water spot fishes with |
+| Recipe | `skills` | Now enforced: every requirement's level must be met to craft |

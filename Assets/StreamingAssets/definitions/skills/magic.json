@@ -1,0 +1,6 @@
+{
+  "id": "isle:magic",
+  "name": "@skill.magic",
+  "pool": "combat",
+  "xp_per_damage": 1.0
+}

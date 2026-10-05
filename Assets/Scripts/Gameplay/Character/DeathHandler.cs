@@ -73,8 +73,12 @@ namespace Isle.Gameplay.Character
             return items;
         }
 
+        /// <summary>Game time the body respawns at — for the death screen's countdown.</summary>
+        public float RespawnAt { get; private set; }
+
         IEnumerator RespawnAfterDelay()
         {
+            RespawnAt = Time.time + RespawnDelaySeconds;
             yield return new WaitForSeconds(RespawnDelaySeconds);
             Respawn();
         }

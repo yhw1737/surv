@@ -15,8 +15,9 @@ namespace Isle.Tests.EditMode
 
             var sprite = PlaceholderIcons.ItemIcon(def);
 
-            Assert.AreEqual(32, sprite.rect.width);
-            Assert.AreEqual(32, sprite.rect.height);
+            // One tile in world/UI terms, whatever the texture resolution behind it.
+            Assert.AreEqual(1f, sprite.bounds.size.x, 1e-4f);
+            Assert.AreEqual(1f, sprite.bounds.size.y, 1e-4f);
         }
 
         [Test]

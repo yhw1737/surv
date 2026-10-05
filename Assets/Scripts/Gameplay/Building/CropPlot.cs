@@ -59,7 +59,7 @@ namespace Isle.Gameplay.Building
                 return;
             }
             if (!user.TryGetComponent<PlayerInteraction>(out var player)) return;
-            player.GiveHarvest(Crop.Output.Item, Crop.Output.BaseCount);
+            player.GiveHarvest(Crop.Output.Item, Crop.Output.BaseCount, Crop.Xp);
             StructureFactory.Remove(GetComponent<WorldObjectInstance>());
         }
     }

@@ -14,12 +14,18 @@
   },
   "gather": {
     "item": "isle:stone",
-    "count": 1,
-    "uses": 4,
-    "respawn_minutes": 90,
+    "count": 2,
+    "uses": 2,
+    "respawn_minutes": 7200,
     "stamina_cost": 6,
     "tool_tag": "tool/pickaxe",
-    "tool_bonus": 2
+    "tool_bonus": 2,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 35,
+      "per_unit": 0
+    },
+    "time_sec": 8
   },
   "visual": {
     "shape": "rock",

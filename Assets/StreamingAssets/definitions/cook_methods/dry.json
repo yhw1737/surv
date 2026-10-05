@@ -33,5 +33,10 @@
   "result_grid": {
     "w": 1,
     "h": 1
+  },
+  "xp": {
+    "skill": "isle:cooking",
+    "base": 40,
+    "per_unit": 15
   }
 }

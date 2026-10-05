@@ -16,7 +16,7 @@
   "habitat": {
     "depth": [
       0,
-      5
+      4
     ],
     "water_temp": [
       5,
@@ -58,5 +58,10 @@
         "count": 1
       }
     ]
+  },
+  "xp": {
+    "skill": "isle:fishing",
+    "base": 35,
+    "per_unit": 0
   }
 }

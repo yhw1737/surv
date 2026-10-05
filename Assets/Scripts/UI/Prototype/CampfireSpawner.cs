@@ -29,14 +29,14 @@ namespace Isle.UI.Prototype
             _built = true;
 
             // Scene-placed objects (SampleScene's Campfire) carry a prefab sprite; give them their def's silhouette too.
-            foreach (var existing in FindObjectsByType<WorldObjectInstance>(FindObjectsSortMode.None))
+            foreach (var existing in WorldObjectRegistry.All)
                 if (existing.Def?.Visual != null && existing.TryGetComponent<SpriteRenderer>(out var renderer))
                 {
                     renderer.sprite = ShapeLibrary.Sprite(existing.Def.Visual.Shape, ShapeLibrary.ParseColour(existing.Def.Visual.Color, Color.white));
                     existing.transform.localScale = Vector3.one * existing.Def.Visual.Size;
                 }
 
-            foreach (var existing in FindObjectsByType<WorldObjectInstance>(FindObjectsSortMode.None))
+            foreach (var existing in WorldObjectRegistry.All)
                 if (existing.HasTag(CampfireTag)) return;
 
             var defs = DefRegistry.AllWithTag<WorldObjectDef>(CampfireTag);

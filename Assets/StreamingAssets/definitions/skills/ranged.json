@@ -1,0 +1,6 @@
+{
+  "id": "isle:ranged",
+  "name": "@skill.ranged",
+  "pool": "combat",
+  "xp_per_damage": 1.5
+}

@@ -69,6 +69,12 @@ namespace Isle.Tests.PlayMode
             Assert.Greater(CreatureDirector.Instance.Creatures.Count, 0, "no creatures spawned in the live scene");
             Assert.IsNotNull(FindLocalPlayer().GetComponent<Vitals>());
 
+            // SYS-MAP-01: the spawn is revealed within a moment, the far side of the map isn't.
+            var map = Isle.UI.Prototype.MapState.Instance;
+            Assert.IsNotNull(map, "MapState not installed");
+            Assert.IsTrue(map.IsExplored(FindLocalPlayer().transform.position), "spawn never revealed");
+            Assert.IsFalse(map.IsExplored(FindLocalPlayer().transform.position + new Vector3(400f, 400f)), "fog revealed too far");
+
             // Same session: FishNet can't re-initialise SampleScene's placed Campfire on a second load, so the
             // gameplay flow runs here rather than in its own test.
             yield return GatherCraftDrinkHunt();
@@ -85,17 +91,20 @@ namespace Isle.Tests.PlayMode
             var world = IslandWorld.Instance;
             inventory.Bag.Clear();
 
+            // Harvests take time now (SYS-WORLD-03); a master gatherer keeps the test short (tree 10 s → 3 s).
+            player.Skills.Restore(NamespacedId.Parse("isle:gathering"), Isle.Gameplay.Skills.XpCurve.TotalXpTo(50));
             yield return HarvestNearest(player, world, "isle:tree");
             yield return HarvestNearest(player, world, "isle:rock");
-            Assert.AreEqual(2, CountOf(inventory, "isle:wood"), "tree harvest");
-            Assert.AreEqual(1, CountOf(inventory, "isle:stone"), "rock harvest");
+            Assert.AreEqual(4, CountOf(inventory, "isle:wood"), "tree harvest");
+            Assert.Greater(player.Skills.TotalXp(NamespacedId.Parse("isle:gathering")), 0d, "harvesting earned no gathering XP");
+            Assert.AreEqual(2, CountOf(inventory, "isle:stone"), "rock harvest");
 
             player.RequestCraft("isle:craft_stone_spear");
             yield return WaitUntil(() => CountOf(inventory, "isle:stone_spear") == 1, 3f, "spear never crafted");
-            Assert.AreEqual(0, CountOf(inventory, "isle:wood"), "wood not consumed");
+            Assert.AreEqual(2, CountOf(inventory, "isle:wood"), "wood not consumed");
 
-            var sea = world.Nodes.First(n => n.Def.Id.Value == "isle:seawater");
-            Teleport(player, sea.Position);
+            // Drinking is from terrain water now: stand on the shore and E drinks the sea.
+            Teleport(player, CoastSpot(world).Shore);
             var thirstBefore = vitals.Thirst;
             player.RequestInteract();
             yield return WaitUntil(() => vitals.Thirst < thirstBefore - 10f, 3f, "seawater didn't lower thirst");
@@ -142,11 +151,12 @@ namespace Isle.Tests.PlayMode
             Assert.AreEqual(0, CountOf(inventory, "isle:crate_kit"), "kit not consumed");
 
             Give(inventory, "isle:wood", 5);
+            var woodHeld = CountOf(inventory, "isle:wood");
             player.RequestStore("isle:wood");
             yield return WaitUntil(() => crate.Contents.Placements.Any(pl => pl.Item.Id.Value == "isle:wood"), 3f, "wood never stored");
             Assert.AreEqual(0, CountOf(inventory, "isle:wood"));
             player.RequestTake("isle:wood");
-            yield return WaitUntil(() => CountOf(inventory, "isle:wood") == 5, 3f, "wood never taken back");
+            yield return WaitUntil(() => CountOf(inventory, "isle:wood") == woodHeld, 3f, "wood never taken back");
 
             // Clothing: a worn cloak feeds Vitals.ClothingBonus.
             Give(inventory, "isle:fur_cloak", 1);
@@ -170,7 +180,7 @@ namespace Isle.Tests.PlayMode
             yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:stone_hatchet", 3f, "hatchet never equipped");
             var woodBefore = CountOf(inventory, "isle:wood");
             yield return HarvestNearest(player, world, "isle:tree");
-            Assert.AreEqual(woodBefore + 4, CountOf(inventory, "isle:wood"), "hatchet bonus not applied");
+            Assert.AreEqual(woodBefore + 6, CountOf(inventory, "isle:wood"), "hatchet bonus not applied");
 
             // Ranged: equip a bow, draw for a full charge, loose. Sway makes the hit itself random at level 0, so
             // the check is that an arrow was spent and a projectile flew and expired.
@@ -206,10 +216,17 @@ namespace Isle.Tests.PlayMode
             Give(inventory, "isle:fishing_rod", 1);
             player.RequestEquipItem("isle:fishing_rod");
             yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:fishing_rod", 3f, "rod never equipped");
-            var seaSpot = world.Nodes.First(n => n.Def.Id.Value == "isle:seawater");
-            Teleport(player, seaSpot.Position);
-            yield return new WaitForSeconds(3.1f); // handline cast earlier set the cast cooldown
-            player.RequestFish();
+            // Cast → bite → hook (SYS-FISH-01 prototype revision). Below Fishing 5 the rod fishes as a handline:
+            // hooking lands the fish with no fight.
+            var (shore, sea) = CoastSpot(world);
+            Teleport(player, shore);
+            var fishBefore = CountOf(inventory, "isle:raw_fish");
+            yield return CastAndHook(player, sea);
+            Assert.IsNull(player.Fight, "rod worked below Fishing 5");
+            yield return WaitUntil(() => CountOf(inventory, "isle:raw_fish") > fishBefore, 2f, "handline hook landed nothing");
+
+            player.Skills.Restore(NamespacedId.Parse("isle:fishing"), Isle.Gameplay.Skills.XpCurve.TotalXpTo(5));
+            yield return CastAndHook(player, sea);
             yield return WaitUntil(() => player.Fight != null, 3f, "no fight started");
             Assert.Greater(player.FightWeightKg, 0f);
             yield return WaitUntil(() => player.Fight == null, 8f, "fight never ended");
@@ -239,12 +256,12 @@ namespace Isle.Tests.PlayMode
         IEnumerator HarvestNearest(PlayerInteraction player, IslandWorld world, string defId)
         {
             var node = world.Nodes.First(n => n.Def.Id.Value == defId && n.IsHarvestable &&
-                !world.Nodes.Any(w => w.IsDrinkable && Vector2.Distance(w.Position, n.Position) < 3f) &&
+                world.NearestWater(n.Position, 3f) == null &&
                 !world.Nodes.Any(o => o != n && o.IsHarvestable && Vector2.Distance(o.Position, n.Position) < 2.5f));
             Teleport(player, node.Position);
             var usesBefore = node.UsesLeft;
             player.RequestInteract();
-            yield return WaitUntil(() => node.UsesLeft < usesBefore, 3f, defId + " was never harvested");
+            yield return WaitUntil(() => node.UsesLeft < usesBefore, 15f, defId + " was never harvested");
         }
 
         static ItemDef Dish(InventoryNetwork inventory) =>
@@ -254,6 +271,35 @@ namespace Isle.Tests.PlayMode
         {
             var item = DefRegistry.Get<ItemDef>(NamespacedId.Parse(itemId));
             Assert.IsTrue(InventoryOps.TryGive(inventory.Containers(), item, count), $"test setup: no room for {itemId}");
+        }
+
+        /// <summary>A dry, node-free land tile right next to the sea, and that sea tile.</summary>
+        static (Vector2 Shore, Vector2 Sea) CoastSpot(IslandWorld world)
+        {
+            var size = Isle.World.Generation.IslandGenerator.Size;
+            foreach (var direction in new[] { new Isle.Core.Vec2Int(1, 0), new Isle.Core.Vec2Int(-1, 0), new Isle.Core.Vec2Int(0, 1), new Isle.Core.Vec2Int(0, -1) })
+                for (var offset = -20; offset <= 20; offset += 4)
+                {
+                    var tile = new Isle.Core.Vec2Int(size / 2 + (direction.Y != 0 ? offset : 0), size / 2 + (direction.X != 0 ? offset : 0));
+                    while (world.IsWalkable(IslandWorld.TileToWorld(tile)) || world.WaterAt(tile) != null && world.WaterAt(tile).Ocean == false)
+                        tile = new Isle.Core.Vec2Int(tile.X + direction.X, tile.Y + direction.Y);
+                    if (world.WaterAt(tile)?.Ocean != true) continue;
+                    var shore = new Isle.Core.Vec2Int(tile.X - direction.X, tile.Y - direction.Y);
+                    var shoreWorld = IslandWorld.TileToWorld(shore);
+                    if (!world.IsWalkable(shoreWorld) || world.Nodes.Any(n => Vector2.Distance(n.Position, shoreWorld) < 2.5f)) continue;
+                    return (shoreWorld, IslandWorld.TileToWorld(tile));
+                }
+            Assert.Fail("no clear coast spot");
+            return default;
+        }
+
+        static IEnumerator CastAndHook(PlayerInteraction player, Vector2 water)
+        {
+            player.RequestCast(water);
+            yield return WaitUntil(() => player.Cast != null, 3f, "cast never landed");
+            yield return WaitUntil(() => player.Cast == null || player.Cast.State == Isle.Gameplay.Fishing.CastState.Bite, 14f, "nothing ever bit");
+            player.RequestHook();
+            yield return WaitUntil(() => player.Cast == null, 3f, "hook never resolved");
         }
 
         static void Teleport(PlayerInteraction player, Vector2 position) =>

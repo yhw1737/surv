@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using FishNet.Object;
+using Isle.Core;
 using Isle.Core.Ids;
 using Isle.Data;
 using Isle.Gameplay.Combat;
@@ -12,6 +13,7 @@ using Isle.Gameplay.Feedback;
 using Isle.Gameplay.Fishing;
 using Isle.Gameplay.Hunting;
 using Isle.Gameplay.Inventory;
+using Isle.Gameplay.Skills;
 using Isle.Modding.Defs;
 using Isle.Networking;
 using Isle.World.Island;
@@ -58,17 +60,83 @@ namespace Isle.Gameplay.Character
         /// <summary>Tag on a campfire def, the same tag <c>Vitals</c> uses for its warmth check (SCHEMA §Station).</summary>
         const string CampfireTag = "station/campfire";
 
-        /// <summary>Seconds between casts. Stands in for the bite wait, which SYS-FISH-01 doesn't spec for handline. [invented]</summary>
-        const float CastCooldownSeconds = 3f;
 
-        /// <summary>No combat skill is tracked on the player yet, so every swing is untrained (SYS-COMBAT-01
-        /// skill floor 0.5). ponytail: wire the real melee level from SkillSet when skills reach the HUD.</summary>
-        const int UntrainedSkillLevel = 0;
+        static readonly List<PlayerInteraction> _all = new();
+
+        /// <summary>Every player in the scene — a registry instead of FindObjectsByType, which allocated an array
+        /// per call from a dozen per-frame call sites (a GC stutter source on the big island).</summary>
+        public static IReadOnlyList<PlayerInteraction> All => _all;
+
+        /// <summary>This machine's own player, or null before it spawns.</summary>
+        public static PlayerInteraction Local
+        {
+            get
+            {
+                foreach (var player in _all)
+                    if (player.IsOwner) return player;
+                return null;
+            }
+        }
+
+        void OnEnable() => _all.Add(this);
+        void OnDisable() => _all.Remove(this);
+
+        SkillProgress _skills;
+
+        /// <summary>This player's skills (SYS-SKILL-01): XP earned and the levels it buys. Server state; the owning
+        /// host's HUD reads it directly. ponytail: not synced to a remote client — Phase 10.</summary>
+        public SkillProgress Skills => _skills ??= new SkillProgress(DefRegistry.All<SkillDef>());
+
+        public int LevelOf(NamespacedId skill) => skill.IsValid ? Skills.Level(skill) : 1;
+
+        /// <summary>SYS-SKILL-01 focus multiplier for <paramref name="skill"/>: what one base XP is worth right now.</summary>
+        public float FocusMultiplier(NamespacedId skill) => FocusCalculator.Multiplier(FocusOf(skill));
+
+        /// <summary>SYS-SKILL-01 Focus_i (0..1) for <paramref name="skill"/>.</summary>
+        public float FocusOf(NamespacedId skill) =>
+            Skills.Skills.Count == 0 ? 1f : FocusCalculator.Focus(Skills.Levels, Skills.Skills, skill, ActivePlayers());
+
+        /// <summary>SYS-SKILL-01: n = median distinct active players over the last 7 in-game days. One shared
+        /// tracker per world, fed once per in-game day with the players connected then.</summary>
+        static readonly ActivityTracker Activity = new();
+        static long _lastRecordedDay = -1;
+
+        static int ActivePlayers()
+        {
+            var day = WorldTime.Instance != null ? WorldTime.Instance.Clock.TotalMinutes / WorldClock.MinutesPerDay : 0;
+            if (day != _lastRecordedDay)
+            {
+                _lastRecordedDay = day;
+                Activity.RecordDay(Mathf.Max(1, PlayerInteraction.All.Count));
+            }
+            return Mathf.Max(1, Activity.MedianActivePlayers());
+        }
+
+        /// <summary>Server-side: grants an action's XP (docs/content/xp_table.md) through the focus multiplier.</summary>
+        public void AwardXp(XpAward award, float units)
+        {
+            if (award == null || !award.Skill.IsValid) return;
+            Grant(award.Skill, SkillProgress.Amount(award, units));
+        }
+
+        void AwardCombatXp(WeaponDef weapon, float damageDealt)
+        {
+            if (weapon == null || damageDealt <= 0f || !DefRegistry.TryGet<SkillDef>(weapon.CombatSkill, out var skill)) return;
+            Grant(skill.Id, damageDealt * skill.XpPerDamage);
+        }
+
+        void Grant(NamespacedId skill, float baseXp)
+        {
+            if (baseXp <= 0f) return;
+            var before = Skills.Level(skill);
+            var amount = baseXp * FocusMultiplier(skill);
+            var after = Skills.AddXp(skill, amount);
+            GameFeed.RaiseXpGained(skill, amount, after > before ? after : 0);
+        }
 
         float _nextAttackAt;
 
         bool IsDead => TryGetComponent<DeathHandler>(out var death) && death.IsDead;
-        float _nextCastAt;
 
         void Update()
         {
@@ -78,7 +146,12 @@ namespace Isle.Gameplay.Character
             if (kb != null && kb.eKey.wasPressedThisFrame) RequestInteract();
 
             var mouse = Mouse.current;
-            if (Fight != null)
+            if (Cast != null)
+            {
+                // A line is out: the left button hooks a bite; nothing else.
+                if (mouse != null && mouse.leftButton.wasPressedThisFrame && !PointerGate.Captured) CmdHook();
+            }
+            else if (Fight != null)
             {
                 // While a fish is on, the left button reels instead of attacking.
                 var reeling = mouse != null && mouse.leftButton.isPressed;
@@ -108,7 +181,11 @@ namespace Isle.Gameplay.Character
                 }
             }
 
-            if (kb != null && kb.fKey.wasPressedThisFrame) RequestFish();
+            if (kb != null && kb.fKey.wasPressedThisFrame)
+            {
+                if (Cast != null) CmdReelIn();
+                else if (MouseWorld() is { } aim) RequestCast(aim);
+            }
             if (kb != null && kb.rKey.wasPressedThisFrame) RequestRest();
         }
 
@@ -136,7 +213,6 @@ namespace Isle.Gameplay.Character
         public void RequestAttack() => CmdAttack();
         public void RequestCraft(string recipeId) => CmdCraft(recipeId);
         public void RequestUse(string itemId) => CmdUse(itemId);
-        public void RequestFish() => CmdFish();
         public void RequestRest() => CmdRest();
         public void RequestEquipItem(string itemId) => CmdEquipItem(itemId);
         public void RequestUnequipSlot(string slot) => CmdUnequipSlot(slot);
@@ -148,7 +224,7 @@ namespace Isle.Gameplay.Character
         public static List<Vector2> StructurePositions()
         {
             var positions = new List<Vector2>();
-            foreach (var instance in FindObjectsByType<WorldObjectInstance>(FindObjectsSortMode.None))
+            foreach (var instance in WorldObjectRegistry.All)
                 positions.Add(instance.transform.position);
             return positions;
         }
@@ -176,32 +252,39 @@ namespace Isle.Gameplay.Character
                 return;
             }
 
-            var drink = world.NearestNode(transform.position, ReachTiles, n => n.IsDrinkable);
-            if (drink != null)
+            // Pressing E again while gathering stops it.
+            if (Gathering != null)
             {
-                if (TryParseWaterSource(drink.Def.Drink.Source, out var source) && TryGetComponent<Vitals>(out var vitals))
-                    vitals.Drink(source);
+                CancelGather();
                 return;
             }
 
-            var harvest = world.NearestNode(transform.position, ReachTiles, n => n.IsHarvestable);
-            var nearStation = WorldObjectRegistry.NearestInteractable(transform.position, ReachTiles);
-            // A crate or fire right next to you wins over a tree a little further off.
-            if (harvest != null && nearStation != null &&
-                Vector2.Distance(transform.position, nearStation.transform.position) < Vector2.Distance(transform.position, harvest.Position))
-                harvest = null;
-            if (harvest != null)
+            // The nearest of: a harvestable node, a structure, a water tile — so a tree on a pond's shore can still be cut.
+            var here = (Vector2)transform.position;
+            var harvest = world.NearestNode(here, ReachTiles, n => n.IsHarvestable);
+            var nearStation = WorldObjectRegistry.NearestInteractable(here, ReachTiles);
+            var waterTile = world.NearestWater(here, ReachTiles);
+            var harvestDistance = harvest != null ? Vector2.Distance(here, harvest.Position) : float.MaxValue;
+            var stationDistance = nearStation != null ? Vector2.Distance(here, nearStation.transform.position) : float.MaxValue;
+            var waterDistance = waterTile != null ? Vector2.Distance(here, IslandWorld.TileToWorld(waterTile.Value)) : float.MaxValue;
+
+            if (waterDistance < harvestDistance && waterDistance < stationDistance)
             {
-                if (!TryGetComponent<Vitals>(out var vitals) || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
+                var body = world.WaterAt(waterTile.Value);
+                if (body?.Drink != null && TryParseWaterSource(body.Drink.Source, out var source) && TryGetComponent<Vitals>(out var drinker))
+                    drinker.Drink(source);
+                return;
+            }
+
+            if (harvest != null && harvestDistance <= stationDistance)
+            {
+                if (!TryGetComponent<Vitals>(out var vitals)) return;
                 if (vitals.Stamina < harvest.Def.Gather.StaminaCost)
                 {
                     GameFeed.RaiseNotice("@ui.too_tired");
                     return;
                 }
-                if (!world.TryHarvest(harvest, out var item, out var count)) return;
-                vitals.SpendStamina(harvest.Def.Gather.StaminaCost);
-                count += ToolBonus(inventory, harvest.Def.Gather);
-                GiveItem(inventory, item, count);
+                StartGather(harvest);
                 return;
             }
 
@@ -239,12 +322,61 @@ namespace Isle.Gameplay.Character
             var director = CreatureDirector.Instance;
             if (director == null) return;
 
-            var power = PowerCalculator.FinalPower(weapon.BasePower, UntrainedSkillLevel);
+            var power = PowerCalculator.FinalPower(weapon.BasePower, LevelOf(weapon.CombatSkill));
             var damage = DamageResolver.Damage(power, totalArmor: 0f);
             var loot = new List<(NamespacedId Item, int Count)>();
-            if (!director.TryStrike(transform.position, weapon.Reach, damage, loot)) return;
+            var dealt = director.TryStrike(transform.position, weapon.Reach, damage, loot);
+            if (dealt < 0f) return;
+            AwardCombatXp(weapon, dealt);
 
             foreach (var (item, count) in loot) GiveItem(inventory, item, count);
+        }
+
+        /// <summary>SYS-WORLD-03 §Gathering: the node being harvested, or null. Harvests take time; moving away or
+        /// pressing E again cancels. Server state the owning host's HUD reads for the progress bar.</summary>
+        public ResourceNode Gathering { get; private set; }
+
+        /// <summary>0..1 through the current harvest.</summary>
+        public float GatherProgress => Gathering == null || _gatherSeconds <= 0f ? 0f : Mathf.Clamp01((Time.time - _gatherStartedAt) / _gatherSeconds);
+
+        /// <summary>Moving further than this from where the harvest started cancels it. [invented]</summary>
+        const float GatherLeashTiles = 0.3f;
+
+        float _gatherStartedAt;
+        float _gatherSeconds;
+        Vector2 _gatherFrom;
+
+        void StartGather(ResourceNode node)
+        {
+            Gathering = node;
+            _gatherFrom = transform.position;
+            _gatherStartedAt = Time.time;
+            var skill = node.Def.Gather.Xp?.Skill ?? default;
+            _gatherSeconds = node.Def.Gather.TimeSec <= 0f ? 0f : GatherCalculator.GatherSeconds(node.Def.Gather.TimeSec, LevelOf(skill));
+        }
+
+        void CancelGather() => Gathering = null;
+
+        void UpdateGather()
+        {
+            if (Gathering == null) return;
+            if (IsDead || Vector2.Distance(transform.position, _gatherFrom) > GatherLeashTiles || !Gathering.IsHarvestable)
+            {
+                if (!IsDead && Gathering.IsHarvestable) GameFeed.RaiseNotice("@ui.gather_cancelled");
+                CancelGather();
+                return;
+            }
+            if (Time.time - _gatherStartedAt < _gatherSeconds) return;
+
+            var node = Gathering;
+            Gathering = null;
+            var world = IslandWorld.Instance;
+            if (world == null || !TryGetComponent<Vitals>(out var vitals) || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            if (!world.TryHarvest(node, out var item, out var count)) return;
+            vitals.SpendStamina(node.Def.Gather.StaminaCost);
+            AwardXp(node.Def.Gather.Xp, count);
+            count += ToolBonus(inventory, node.Def.Gather);
+            GiveItem(inventory, item, count);
         }
 
         /// <summary>The fight in progress, or null. Server state; the owning host's HUD reads it directly.
@@ -262,7 +394,10 @@ namespace Isle.Gameplay.Character
 
         void FixedUpdate()
         {
-            if (!IsServer || Fight == null) return;
+            if (!IsServer) return;
+            UpdateGather();
+            UpdateCast();
+            if (Fight == null) return;
             if (IsDead || Vector2.Distance(transform.position, _fightSpot) > FightLeashTiles)
             {
                 EndFight("@ui.fish_lost");
@@ -276,6 +411,7 @@ namespace Isle.Gameplay.Character
                     if (TryGetComponent<InventoryNetwork>(out var inventory))
                         foreach (var yield in FightFish.Butcher?.Yields ?? Array.Empty<ButcherYield>())
                             GiveItem(inventory, yield.Item, Mathf.Max(1, Mathf.RoundToInt(FightWeightKg * (FightFish.Butcher?.EdibleRatio ?? 1f) * yield.Share / FishUnitKg)));
+                    AwardXp(FightFish.Xp, FightWeightKg);
                     EndFight("@ui.fish_caught");
                     break;
                 case FightResult.LineBroke:
@@ -348,13 +484,14 @@ namespace Isle.Gameplay.Character
             if (weapon.AttackSpeed > 0f) _nextAttackAt = Time.time + 1f / weapon.AttackSpeed;
 
             var origin = (Vector2)transform.position;
-            var sway = RangedCalculator.SwayRadiusTiles(UntrainedSkillLevel, stance) * Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "aim_sway_mult");
+            var sway = RangedCalculator.SwayRadiusTiles(LevelOf(weapon.CombatSkill), stance) * Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "aim_sway_mult");
             var aim = new Vector2(aimX, aimY) + UnityEngine.Random.insideUnitCircle * sway;
             var direction = (aim - origin).sqrMagnitude > 0.0001f ? (aim - origin).normalized : Vector2.right;
-            var damage = PowerCalculator.FinalPower(weapon.BasePower, UntrainedSkillLevel) * RangedCalculator.ChargeMult(charge);
+            var damage = PowerCalculator.FinalPower(weapon.BasePower, LevelOf(weapon.CombatSkill)) * RangedCalculator.ChargeMult(charge);
 
             Projectiles.Instance.Fire(origin + direction * MuzzleOffsetTiles, direction, weapon.ProjectileSpeed, damage,
-                loot => { foreach (var (item, count) in loot) GiveItem(inventory, item, count); });
+                loot => { foreach (var (item, count) in loot) GiveItem(inventory, item, count); },
+                dealt => AwardCombatXp(weapon, dealt));
         }
 
         Stance CurrentStance()
@@ -364,37 +501,114 @@ namespace Isle.Gameplay.Character
             return movement.IsMoving ? Stance.Moving : Stance.Standing;
         }
 
+        /// <summary>SYS-FISH-01 prototype revision: cast range, bite wait and hook window. All [invented].</summary>
+        const float CastRangeTiles = 8f;
+        const float MinBiteSeconds = 4f, MaxBiteSeconds = 12f;
+        const float HookWindowSeconds = 1f;
+
+        /// <summary>The line in the water, or null. Server state; the host's HUD draws the bobber and the "!".</summary>
+        public FishingCast Cast { get; private set; }
+        public Vector2 CastPoint { get; private set; }
+
+        Vec2Int _castTile;
+        string _castRig;
+        bool _hookClicked;
+
+        public void RequestCast(Vector2 at) => CmdCast(at.x, at.y);
+        public void RequestHook() => CmdHook();
+
+        /// <summary>Throws the line at a water tile within range. The fish isn't chosen yet — that happens at the bite.</summary>
         [ServerRpc]
-        void CmdFish()
+        void CmdCast(float x, float y)
         {
-            if (IsDead) return;
-            if (Time.time < _nextCastAt) return;
+            if (IsDead || Cast != null || Fight != null) return;
             var world = IslandWorld.Instance;
             if (world == null || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
 
-            if (Fight != null) return;
-            var spot = world.NearestNode(transform.position, ReachTiles, n => n.Def.Fishing != null);
-            if (spot == null) return;
-            var held = inventory.Slots.Get(MainHandSlot);
-            var rig = held?.Tags != null && held.Tags.Contains(RodTag) ? RodRig : HandlineRig;
+            var target = new Vector2(x, y);
+            var tile = IslandWorld.WorldToTile(target);
+            var body = world.WaterAt(tile);
+            if (body?.Fishing == null || Vector2.Distance(transform.position, IslandWorld.TileToWorld(tile)) > CastRangeTiles)
+            {
+                GameFeed.RaiseNotice("@ui.cast_needs_water");
+                return;
+            }
 
-            _nextCastAt = Time.time + CastCooldownSeconds;
+            var held = inventory.Slots.Get(MainHandSlot);
+            _castRig = held?.Tags != null && held.Tags.Contains(RodTag) ? RodRig : HandlineRig;
+            if (_castRig == RodRig && held.Requires != null && LevelOf(held.Requires.Skill) < held.Requires.Level)
+            {
+                GameFeed.RaiseNotice("@ui.rod_locked");
+                _castRig = HandlineRig;
+            }
+
+            CancelGather();
+            _castTile = tile;
+            CastPoint = IslandWorld.TileToWorld(tile);
+            _fightSpot = transform.position;
+            _hookClicked = false;
+            Cast = new FishingCast(UnityEngine.Random.Range(MinBiteSeconds, MaxBiteSeconds), HookWindowSeconds);
+        }
+
+        [ServerRpc]
+        void CmdHook() => _hookClicked = true;
+
+        /// <summary>F again with a line out pulls it back in.</summary>
+        [ServerRpc]
+        void CmdReelIn() => Cast = null;
+
+        void UpdateCast()
+        {
+            if (Cast == null) return;
+            if (IsDead || Vector2.Distance(transform.position, _fightSpot) > FightLeashTiles)
+            {
+                Cast = null;
+                GameFeed.RaiseNotice("@ui.reeled_in");
+                return;
+            }
+
+            var before = Cast.State;
+            Cast.Step(Time.fixedDeltaTime, _hookClicked);
+            _hookClicked = false;
+            if (before == CastState.Waiting && Cast.State == CastState.Bite) GameFeed.RaiseNotice("@ui.bite");
+
+            if (Cast.State == CastState.Missed)
+            {
+                Cast = null;
+                GameFeed.RaiseNotice("@ui.fish_lost");
+            }
+            else if (Cast.State == CastState.Hooked)
+            {
+                Cast = null;
+                LandOrFight();
+            }
+        }
+
+        /// <summary>Hooked: roll the species at the bobber's depth and water, then a rod fights it and a handline lands it.</summary>
+        void LandOrFight()
+        {
+            var world = IslandWorld.Instance;
+            if (world == null || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            var body = world.WaterAt(_castTile);
+            if (body?.Fishing == null) return;
+
+            var fishingLevel = LevelOf(body.Fishing.Skill);
             var clock = WorldTime.Instance != null ? WorldTime.Instance.Clock : null;
             var conditions = new FishingConditions(
-                depth: spot.Def.Fishing.Depth,
+                depth: world.DepthAt(_castTile),
                 waterTemp: WeatherController.Instance != null ? WeatherController.Instance.AmbientTemp : 0f,
-                terrain: TerrainOf(spot.Def.Tags),
+                terrain: TerrainOf(body.Tags),
                 time: clock != null ? clock.Phase.ToString().ToLowerInvariant() : string.Empty,
-                fishingLevel: 0);
+                fishingLevel: fishingLevel);
 
-            var fish = FishSelector.Select(DefRegistry.All<FishDef>(), conditions, rig, UnityEngine.Random.value);
+            var fish = FishSelector.Select(DefRegistry.All<FishDef>(), conditions, _castRig, UnityEngine.Random.value);
             if (fish?.Butcher?.Yields == null)
             {
                 GameFeed.RaiseNotice("@ui.no_bite");
                 return;
             }
 
-            if (rig == RodRig && fish.Fight != null)
+            if (_castRig == RodRig && fish.Fight != null)
             {
                 // SYS-FISH-01: a rod hooks a fish of its own rolled weight and the fight decides the catch.
                 var dist = fish.WeightDist;
@@ -402,9 +616,8 @@ namespace Isle.Gameplay.Character
                     ? WeightRoll.Sample(dist.Mean, dist.Sigma, dist.Min, dist.Max, Mathf.Max(UnityEngine.Random.value, 1e-6f), UnityEngine.Random.value)
                     : 1f;
                 FightFish = fish;
-                _fightSpot = transform.position;
                 _reeling = false;
-                Fight = new TensionMinigame(fish.Fight.Pattern, fish.Fight.TensionWindow, fishingLevel: 0, fish.Fight.Stamina,
+                Fight = new TensionMinigame(fish.Fight.Pattern, fish.Fight.TensionWindow, fishingLevel, fish.Fight.Stamina,
                     TensionMinigame.DrainMult(FightWeightKg, fish.Fight.CoopThresholdKg, anglers: 1));
                 GameFeed.RaiseNotice("@ui.fish_on");
                 return;
@@ -412,6 +625,7 @@ namespace Isle.Gameplay.Character
 
             foreach (var yield in fish.Butcher.Yields)
                 GiveItem(inventory, yield.Item, yield.Count > 0 ? yield.Count : 1);
+            AwardXp(fish.Xp, 0f);
         }
 
         /// <summary>Rest at a lit campfire at night: skip to morning and refill stamina. Prototype rule — see
@@ -447,6 +661,11 @@ namespace Isle.Gameplay.Character
             if (!DefRegistry.TryGet<CraftRecipeDef>(recipeId, out var recipe) || recipe.Output == null) return;
             if (!TryGetComponent<InventoryNetwork>(out var inventory)) return;
             if (recipe.Station.IsValid && !WorldObjectRegistry.IsActiveNear(transform.position, recipe.Station, ReachTiles)) return;
+            if (!MeetsSkills(recipe.Skills))
+            {
+                GameFeed.RaiseNotice("@ui.skill_too_low");
+                return;
+            }
 
             var containers = inventory.Containers();
             if (!CraftingCalculator.HasIngredients(recipe.Ingredients, CraftingCalculator.StockOf(containers))) return;
@@ -454,6 +673,7 @@ namespace Isle.Gameplay.Character
 
             // No room check up front: paying frees space, and anything that still doesn't fit drops at your feet.
             ConsumeIngredients(containers, recipe.Ingredients);
+            AwardXp(recipe.Xp, recipe.Ingredients?.Sum(i => i.Count) ?? 0);
             GiveItem(inventory, recipe.Output.Item, recipe.Output.Count);
         }
 
@@ -478,7 +698,7 @@ namespace Isle.Gameplay.Character
             var raw = DishFactory.IsDish(item) ? null : DefRegistry.All<CookMethodDef>().FirstOrDefault(m => m.EatRaw);
             if (raw != null)
             {
-                var result = CookingResolver.Resolve(raw, new[] { item }, CookingLevel, failureRoll: 1f);
+                var result = CookingResolver.Resolve(raw, new[] { item }, CookingLevelFor(raw), failureRoll: 1f);
                 (hunger, thirst, durationMult) = (result.Hunger, result.Thirst, result.BuffDurationMult);
                 buffs = result.Buffs.Select(x => x.Buff);
                 signature = DishFactory.SignatureFor(raw, item);
@@ -496,9 +716,12 @@ namespace Isle.Gameplay.Character
             if (fatigue < 1f) GameFeed.RaiseNotice("@ui.tired_of_dish");
         }
 
-        /// <summary>No cooking skill is tracked yet; SkillSet's own starting level is 1. ponytail: read the player's
-        /// SkillSet once skills are on the player.</summary>
-        const int CookingLevel = 1;
+        /// <summary>The level of the skill a method unlocks with (its <c>unlock_skill.skill</c>) — cooking for the core methods.</summary>
+        int CookingLevelFor(CookMethodDef method) => method.UnlockSkill != null ? LevelOf(method.UnlockSkill.Skill) : 1;
+
+        /// <summary>Every <c>skills</c> requirement on a recipe met (SCHEMA §Craft recipes).</summary>
+        public bool MeetsSkills(SkillRequirement[] requirements) =>
+            requirements == null || requirements.All(r => LevelOf(r.Skill) >= r.Level);
 
         public void RequestCook(string methodId, IEnumerable<string> ingredientIds) => CmdCook(methodId, string.Join(",", ingredientIds));
 
@@ -511,7 +734,7 @@ namespace Isle.Gameplay.Character
             if (!NamespacedId.TryParse(methodText, out var methodId, out _) || !DefRegistry.TryGet<CookMethodDef>(methodId, out var method)) return;
             var ids = (ingredientsText ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries);
             if (!CookingResolver.CountAllowed(method, ids.Length)) return;
-            if (method.UnlockSkill != null && method.UnlockSkill.Level > CookingLevel)
+            if (method.UnlockSkill != null && method.UnlockSkill.Level > CookingLevelFor(method))
             {
                 GameFeed.RaiseNotice("@ui.method_locked");
                 return;
@@ -541,7 +764,7 @@ namespace Isle.Gameplay.Character
                 ingredients.Add(taken);
             }
 
-            var result = CookingResolver.Resolve(method, ingredients, CookingLevel, UnityEngine.Random.value);
+            var result = CookingResolver.Resolve(method, ingredients, CookingLevelFor(method), UnityEngine.Random.value);
             if (result.Failed)
             {
                 if (method.Failure.Result.IsValid) GiveItem(inventory, method.Failure.Result, 1);
@@ -549,6 +772,7 @@ namespace Isle.Gameplay.Character
                 return;
             }
             GiveItem(inventory, DishFactory.Create(method, ingredients, result), 1);
+            AwardXp(method.Xp, ingredients.Count);
         }
 
         /// <summary>Equips an item into its own slot (<c>equip_slot</c>), putting whatever was there back into the
@@ -647,9 +871,10 @@ namespace Isle.Gameplay.Character
         }
 
         /// <summary>Server-side: a harvest from something in the world (a ripe crop) lands in this player's bags.</summary>
-        public void GiveHarvest(NamespacedId item, int count)
+        public void GiveHarvest(NamespacedId item, int count, XpAward xp = null)
         {
             if (TryGetComponent<InventoryNetwork>(out var inventory)) GiveItem(inventory, item, count);
+            AwardXp(xp, count);
         }
 
         WeaponDef EquippedWeapon(InventoryNetwork inventory)

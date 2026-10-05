@@ -25,34 +25,46 @@ namespace Isle.Core.Util
         // ART_PIPELINE §Style: outline is dark brown, never black. Reused from PlaceholderRigBuilder.
         static readonly Color Outline = new Color32(0x3A, 0x2A, 0x1E, 0xFF);
 
+        /// <summary>Placeholders are drawn this many times finer than the pixel size callers ask for, so they stay
+        /// crisp when scaled up on screen; <see cref="AsSprite"/> divides it back out so world size is unchanged.</summary>
+        public const int Supersample = 4;
+
         /// <summary>
-        /// A filled rounded rectangle with a 1px dark outline. <paramref name="cornerRadius"/>
-        /// negative picks a default; passed as half the shorter side, it collapses to a circle
-        /// (see <see cref="Circle"/>), the same trick <c>PlaceholderRigBuilder</c> uses for the head.
+        /// A filled rounded rectangle with a dark outline and anti-aliased edges, at <see cref="Supersample"/>×
+        /// resolution. <paramref name="cornerRadius"/> (in requested pixels) negative picks a default; half the
+        /// shorter side collapses it to a circle (see <see cref="Circle"/>).
         /// </summary>
         public static Texture2D RoundedRect(int width, int height, Color fill, float cornerRadius = -1f)
         {
             if (cornerRadius < 0f) cornerRadius = Mathf.Min(width, height) * 0.3f;
+            var w = width * Supersample;
+            var h = height * Supersample;
+            var radius = cornerRadius * Supersample;
+            var outline = Supersample * 1.2f;
 
-            var tex = new Texture2D(width, height, TextureFormat.RGBA32, mipChain: false);
-            var pixels = new Color[width * height];
-            float halfW = width * 0.5f, halfH = height * 0.5f;
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, mipChain: true) { filterMode = FilterMode.Trilinear };
+            var pixels = new Color[w * h];
+            float halfW = w * 0.5f, halfH = h * 0.5f;
 
-            for (var y = 0; y < height; y++)
-            for (var x = 0; x < width; x++)
+            for (var y = 0; y < h; y++)
+            for (var x = 0; x < w; x++)
             {
                 var px = x + 0.5f - halfW;
                 var py = y + 0.5f - halfH;
-                var qx = Mathf.Abs(px) - (halfW - cornerRadius);
-                var qy = Mathf.Abs(py) - (halfH - cornerRadius);
-                var d = new Vector2(Mathf.Max(qx, 0f), Mathf.Max(qy, 0f)).magnitude
-                        + Mathf.Min(Mathf.Max(qx, qy), 0f) - cornerRadius;
+                var qx = Mathf.Abs(px) - (halfW - radius);
+                var qy = Mathf.Abs(py) - (halfH - radius);
+                // Signed distance to the rounded edge, in texels: negative inside.
+                var d = new Vector2(Mathf.Max(qx, 0f), Mathf.Max(qy, 0f)).magnitude + Mathf.Min(Mathf.Max(qx, qy), 0f) - radius;
 
-                pixels[y * width + x] = d < -1f ? fill : d < 0f ? Outline : Color.clear;
+                var alpha = Mathf.Clamp01(0.5f - d);
+                var fillMix = Mathf.Clamp01(-(d + outline) + 0.5f);
+                var colour = Color.Lerp(Outline, fill, fillMix);
+                colour.a = alpha * fill.a;
+                pixels[y * w + x] = colour;
             }
 
             tex.SetPixels(pixels);
-            tex.Apply();
+            tex.Apply(updateMipmaps: true);
             return tex;
         }
 
@@ -77,8 +89,10 @@ namespace Isle.Core.Util
             return Color.HSVToRGB(hue, 0.55f, 0.85f);
         }
 
+        /// <summary>A sprite from a placeholder texture. <paramref name="pixelsPerUnit"/> is in requested pixels; the
+        /// supersampling is divided back out so the sprite's world size matches the size the texture was asked for.</summary>
         public static Sprite AsSprite(Texture2D texture, float pixelsPerUnit = 32f) =>
-            Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f), pixelsPerUnit);
+            Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f), pixelsPerUnit * Supersample);
 
         static uint Fnv1a(string text)
         {

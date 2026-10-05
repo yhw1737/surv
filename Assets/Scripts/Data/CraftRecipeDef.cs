@@ -21,6 +21,9 @@ namespace Isle.Data
         public RecipeOutput Output { get; init; }
         public float TimeSec { get; init; }
 
+        /// <summary>XP this grants (docs/content/xp_table.md). Null grants none.</summary>
+        public XpAward Xp { get; init; }
+
         /// <summary>Minigame to run, e.g. <c>isle:forging</c>. Invalid means craft instantly.</summary>
         public NamespacedId Minigame { get; init; }
     }

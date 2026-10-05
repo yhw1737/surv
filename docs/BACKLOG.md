@@ -279,7 +279,8 @@ stood up now so the solo beta is already a listen-server session with one client
 - [x] **T-060** `XpCurve` + `SkillSet` — landed inside T-018's rewrite (PR #13)
 - [x] **T-061** ★ `FocusCalculator` + 9 verification cases (SYS-SKILL-01) — landed inside T-018's rewrite (PR #13)
 - [x] **T-062** `ActivityTracker` 7-day median — landed inside T-018's rewrite (PR #13)
-- [ ] **T-063** Skill UI — split production/combat tabs, **show focus as a bonus**
+- [x] **T-063** Skill UI — split production/combat tabs, **show focus as a bonus**
+  > **2026-10-05**: done with the XP table (`docs/content/xp_table.md`, written by delegation), XP awards on every action, level effects and gates, skills window (P), save.
 - [ ] **T-064** `RustSystem` (flag, default off)
 
 ## Phase 6 · Production loop

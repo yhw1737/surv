@@ -50,5 +50,10 @@
     }
   ],
   "naming": "@pattern.grilled",
-  "station": "isle:campfire"
+  "station": "isle:campfire",
+  "xp": {
+    "skill": "isle:cooking",
+    "base": 40,
+    "per_unit": 15
+  }
 }

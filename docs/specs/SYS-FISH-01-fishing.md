@@ -115,3 +115,18 @@ T-081. Key `F` casts at the nearest water spot with a `fishing` block.
 Not spec-given, invented: depth/temperature mismatch uses the same ×0.15 as terrain mismatch (no falloff
 curve in the spec); cast cooldown 3 s stands in for the bite wait. Both are recorded in PROJECT_STATE.md
 §Decided without a spec.
+
+## Prototype revision (2026-10-05): cast, bite, hook
+
+Developer correction: fishing is not instant at a one-tile spot. It happens at real water (ponds, rivers,
+the sea — SYS-WORLD-03 §Water bodies):
+
+1. **Cast** — aim at a water tile with the mouse and press `F`. The target must be water within 8 tiles
+   **[invented]**. A bobber marks it.
+2. **Wait** — a bite comes after 4–12 s **[invented]**. The species is rolled at the bite with §Species
+   selection, using the bobber tile's depth (distance from shore) and its water body's terrain.
+3. **Hook** — a "!" appears; click within 1.0 s **[invented]** or the fish gets away.
+4. **Land it** — with a rod (Fishing 5, the rig table), the §Tension minigame decides the catch. Without a
+   rod it's a handline: hooking is the catch, and only `handline` fish bite (trash fish, the rig table).
+
+Walking more than 3 tiles **[invented]** from where you cast reels in and ends it.

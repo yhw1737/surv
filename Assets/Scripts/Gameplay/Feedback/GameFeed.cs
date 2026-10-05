@@ -30,6 +30,9 @@ namespace Isle.Gameplay.Feedback
         /// <summary>A player opened a container. Typed as <c>object</c> to keep this file free of building types.</summary>
         public static event Action<object> StorageOpened;
 
+        /// <summary>A skill earned XP; <c>newLevel</c> is the level reached when this award levelled it up, else 0.</summary>
+        public static event Action<NamespacedId, float, int> XpGained;
+
         /// <summary>A short status line, as a language key (e.g. <c>"@ui.too_tired"</c>).</summary>
         public static event Action<string> Notice;
 
@@ -39,6 +42,7 @@ namespace Isle.Gameplay.Feedback
         public static void RaisePlayerSwing(Vector2 at, float reach) => PlayerSwing?.Invoke(at, reach);
         public static void RaisePlayerHit(float damage) => PlayerHit?.Invoke(damage);
         public static void RaiseStorageOpened(object box) => StorageOpened?.Invoke(box);
+        public static void RaiseXpGained(NamespacedId skill, float amount, int newLevel) => XpGained?.Invoke(skill, amount, newLevel);
         public static void RaiseNotice(string langKey) => Notice?.Invoke(langKey);
     }
 }

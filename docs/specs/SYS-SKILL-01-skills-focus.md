@@ -54,7 +54,7 @@ XpToNext(L) = round(80 * L^1.6)      // L → L+1
 | 49 | 40,495 | 743,043 |
 | **50** | — | **783,538** |
 
-Target pacing: ~9,000 XP/hour × 1.8 focus → **~48 h to Lv 50**, ~8 h to Lv 25. Per-action XP is tuned to hit this in `docs/content/xp_table.md` (not yet written).
+Target pacing: ~9,000 XP/hour × 1.8 focus → **~48 h to Lv 50**, ~8 h to Lv 25. Per-action XP is tuned to hit this in `docs/content/xp_table.md` (first draft 2026-10-05, values on the content defs' `xp` blocks).
 
 ## Focus
 
@@ -155,7 +155,7 @@ Scripts/Gameplay/Skills/
 `FocusCalculator` and `XpCurve` must not reference Unity — EditMode test targets. XP awards are server-only.
 
 ## Open questions
-- Per-action base XP values (`docs/content/xp_table.md`, not yet written)
+- Per-action base XP values — first draft in `docs/content/xp_table.md` (2026-10-05), pending review
 - **`RustSystem` is unimplemented.** `EnableSkillRust = false` by default and no caller needs it
   yet, so T-018 left it out rather than build against the still-open efficiency curve below
   (Absolute Rule 3 — don't invent a missing value). `decay(XP)` and the hard rules are fully

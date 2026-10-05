@@ -7,6 +7,7 @@ using Isle.Gameplay.Cooking;
 using Isle.Gameplay.Crafting;
 using Isle.Gameplay.Feedback;
 using Isle.Gameplay.Inventory;
+using Isle.Gameplay.Skills;
 using Isle.Modding.Defs;
 using Isle.World.Island;
 using Isle.World.Objects;
@@ -42,6 +43,8 @@ namespace Isle.UI.Prototype
         bool _bagOpen = true;
         ItemDef _hover;
         GridInventory _hoverContainer;
+        bool _skillsOpen;
+        string _skillsTab = "production";
         bool _craftOpen;
         bool _cookOpen;
         string _cookMethod;
@@ -70,6 +73,7 @@ namespace Isle.UI.Prototype
             if (kb != null && kb.cKey.wasPressedThisFrame) _craftOpen = !_craftOpen;
             if (kb != null && kb.kKey.wasPressedThisFrame) _cookOpen = !_cookOpen;
             if (kb != null && kb.tabKey.wasPressedThisFrame) _bagOpen = !_bagOpen;
+            if (kb != null && kb.pKey.wasPressedThisFrame) _skillsOpen = !_skillsOpen;
             if (kb != null && kb.hKey.wasPressedThisFrame) _helpOpen = !_helpOpen;
             if (kb != null && kb.escapeKey.wasPressedThisFrame) _placing = null;
 
@@ -101,7 +105,7 @@ namespace Isle.UI.Prototype
         void FindLocalPlayer()
         {
             _player = null;
-            foreach (var candidate in FindObjectsByType<PlayerInteraction>(FindObjectsSortMode.None))
+            foreach (var candidate in PlayerInteraction.All)
             {
                 if (!candidate.IsOwner) continue;
                 _player = candidate;
@@ -125,6 +129,7 @@ namespace Isle.UI.Prototype
             if (_bagOpen) DrawBag();
             if (_craftOpen) DrawCraftWindow();
             if (_cookOpen) DrawCookWindow();
+            if (_skillsOpen) DrawSkills();
             DrawBuffs();
             if (_openBox != null) DrawBox();
             if (_placing != null) DrawPlacementGhost();
@@ -193,41 +198,46 @@ namespace Isle.UI.Prototype
 
         void DrawPrompt()
         {
-            var prompt = PromptFor(_player.transform.position);
+            var prompt = PromptFor(_player);
             if (string.IsNullOrEmpty(prompt)) return;
             GUI.Label(new Rect(Screen.width * 0.5f - 300f, Screen.height - 80f, 600f, RowHeight), prompt, _title);
         }
 
-        static string PromptFor(Vector3 position)
+        static string PromptFor(PlayerInteraction player)
         {
             var world = IslandWorld.Instance;
             if (world == null) return string.Empty;
+            Vector2 position = player.transform.position;
+
+            if (player.Cast != null)
+                return player.Cast.State == Isle.Gameplay.Fishing.CastState.Bite ? Lang.Get("@ui.hook_now") : Lang.Get("@ui.waiting_bite");
+            if (player.Gathering != null) return Lang.Get("@ui.gathering");
 
             var lines = new List<string>();
             if (LootPiles.Nearest(position, PlayerInteraction.ReachTiles) != null) lines.Add($"[E] {Lang.Get("@ui.pick_up")}");
-            var drink = world.NearestNode(position, PlayerInteraction.ReachTiles, n => n.IsDrinkable);
-            if (drink != null) lines.Add($"[E] {Lang.Get("@ui.drink")} — {Lang.Get(drink.Def.Name)}");
 
             var harvest = world.NearestNode(position, PlayerInteraction.ReachTiles, n => n.IsHarvestable);
             var nearStation = WorldObjectRegistry.NearestInteractable(position, PlayerInteraction.ReachTiles);
-            if (harvest != null && nearStation != null &&
-                Vector2.Distance(position, nearStation.transform.position) < Vector2.Distance(position, harvest.Position))
-                harvest = null;
-            if (harvest != null) lines.Add($"[E] {Lang.Get("@ui.harvest")} — {Lang.Get(harvest.Def.Name)}");
+            var water = world.NearestWater(position, PlayerInteraction.ReachTiles);
+            var harvestDistance = harvest != null ? Vector2.Distance(position, harvest.Position) : float.MaxValue;
+            var stationDistance = nearStation != null ? Vector2.Distance(position, nearStation.transform.position) : float.MaxValue;
+            var waterDistance = water != null ? Vector2.Distance(position, IslandWorld.TileToWorld(water.Value)) : float.MaxValue;
 
-            var spot = world.NearestNode(position, PlayerInteraction.ReachTiles, n => n.Def.Fishing != null);
-            if (spot != null) lines.Add(Lang.Get("@ui.fish_hint"));
-
-            var station = WorldObjectRegistry.NearestInteractable(position, PlayerInteraction.ReachTiles);
-            if (station != null)
+            // Mirrors the server: E goes to whichever of these is nearest.
+            if (waterDistance < harvestDistance && waterDistance < stationDistance)
+                lines.Add($"[E] {Lang.Get("@ui.drink")} — {Lang.Get(world.WaterAt(water.Value).Name)}");
+            else if (harvest != null && harvestDistance <= stationDistance)
+                lines.Add($"[E] {Lang.Get("@ui.harvest")} — {Lang.Get(harvest.Def.Name)}");
+            else if (nearStation != null)
             {
-                var name = Lang.Get(station.Def?.Name);
-                if (station.TryGetComponent<RainCatcher>(out var catcher)) name += $" ({catcher.Water:0.0}/{catcher.Capacity:0})";
-                if (station.TryGetComponent<CropPlot>(out var plot) && plot.Crop != null) name = $"{Lang.Get(plot.Crop.Name)} {plot.Growth * 100f:0}%";
+                var name = Lang.Get(nearStation.Def?.Name);
+                if (nearStation.TryGetComponent<RainCatcher>(out var catcher)) name += $" ({catcher.Water:0.0}/{catcher.Capacity:0})";
+                if (nearStation.TryGetComponent<CropPlot>(out var plot) && plot.Crop != null) name = $"{Lang.Get(plot.Crop.Name)} {plot.Growth * 100f:0}%";
                 lines.Add($"[E] {name}");
-                if (IsNight() && station.HasTag("station/campfire")) lines.Add(Lang.Get("@ui.rest_hint"));
+                if (IsNight() && nearStation.HasTag("station/campfire")) lines.Add(Lang.Get("@ui.rest_hint"));
             }
 
+            if (world.NearestWater(position, 8f) != null) lines.Add(Lang.Get("@ui.fish_hint"));
             return string.Join("   ", lines);
         }
 
@@ -382,11 +392,60 @@ namespace Isle.UI.Prototype
                 var stationOk = !recipe.Station.IsValid || WorldObjectRegistry.IsActiveNear(stationPosition, recipe.Station, PlayerInteraction.ReachTiles);
                 var affordable = CraftingCalculator.HasIngredients(recipe.Ingredients, stock);
 
-                GUI.enabled = stationOk && affordable;
-                if (GUI.Button(new Rect(x, y, PanelWidth, RowHeight - 4f), Lang.Get(recipe.Name)))
+                var skillOk = _player.MeetsSkills(recipe.Skills);
+                var label = Lang.Get(recipe.Name);
+                if (!skillOk)
+                {
+                    var need = recipe.Skills.First(r => _player.LevelOf(r.Skill) < r.Level);
+                    label += $"  ({SkillName(need.Skill)} {Lang.Get("@ui.level")} {need.Level} {Lang.Get("@ui.requires")})";
+                }
+                GUI.enabled = stationOk && affordable && skillOk;
+                if (GUI.Button(new Rect(x, y, PanelWidth, RowHeight - 4f), label))
                     _player.RequestCraft(recipe.Id.Value);
                 GUI.enabled = true;
                 y += RowHeight;
+            }
+        }
+
+        static string SkillName(Isle.Core.Ids.NamespacedId id) =>
+            DefRegistry.TryGet<SkillDef>(id, out var skill) ? Lang.Get(skill.Name) : id.Value;
+
+        /// <summary>T-063: skills split into production and combat tabs, each with its level, progress, and its focus
+        /// shown as a bonus ("Focus 88% — earning 1.86× XP"; SYS-SKILL-01 forbids penalty wording).</summary>
+        void DrawSkills()
+        {
+            const float width = 380f;
+            var skills = _player.Skills.Skills.Where(sk => sk.Pool == _skillsTab).ToList();
+            var x = (Screen.width - width) * 0.5f;
+            var y = Screen.height * 0.18f;
+            Panel(new Rect(x - 8f, y - 8f, width + 16f, 60f + skills.Count * 46f));
+            GUI.Label(new Rect(x, y, width, RowHeight), Lang.Get("@ui.skills"), _title);
+
+            var tabX = x + width - 180f;
+            foreach (var pool in new[] { "production", "combat" })
+            {
+                if (GUI.Toggle(new Rect(tabX, y, 88f, RowHeight - 2f), _skillsTab == pool, Lang.Get("@ui.pool." + pool), GUI.skin.button)) _skillsTab = pool;
+                tabX += 92f;
+            }
+            y += RowHeight + 8f;
+
+            foreach (var skill in skills)
+            {
+                var level = _player.Skills.Level(skill.Id);
+                var progress = _player.Skills.ProgressToNext(skill.Id);
+                GUI.Label(new Rect(x, y, 200f, RowHeight), $"{Lang.Get(skill.Name)}  {Lang.Get("@ui.level")} {level}", _label);
+                var bar = new Rect(x + 170f, y + 6f, width - 170f, 10f);
+                GUI.color = Color.black;
+                GUI.DrawTexture(bar, Texture2D.whiteTexture);
+                GUI.color = new Color(0.45f, 0.75f, 1f);
+                GUI.DrawTexture(new Rect(bar.x + 1f, bar.y + 1f, (bar.width - 2f) * progress, bar.height - 2f), Texture2D.whiteTexture);
+                GUI.color = Color.white;
+
+                var focus = _player.FocusOf(skill.Id);
+                var multiplier = _player.FocusMultiplier(skill.Id);
+                var line = string.Format(Lang.Get("@ui.focus_line"), Mathf.RoundToInt(focus * 100f), multiplier.ToString("0.00"));
+                GUI.Label(new Rect(x + 12f, y + 20f, width, RowHeight), line, _helpStyle);
+                y += 46f;
             }
         }
 
@@ -419,7 +478,7 @@ namespace Isle.UI.Prototype
             foreach (var method in methods)
             {
                 var level = method.UnlockSkill?.Level ?? 1;
-                var locked = level > 1;
+                var locked = method.UnlockSkill != null && _player.LevelOf(method.UnlockSkill.Skill) < level;
                 var stationOk = !method.Station.IsValid || WorldObjectRegistry.IsActiveNear(position, method.Station, PlayerInteraction.ReachTiles);
                 var label = Lang.Get(method.Name);
                 if (locked) label += $"  ({Lang.Get("@ui.needs_level")} {level})";
@@ -574,7 +633,10 @@ namespace Isle.UI.Prototype
 
         void DrawDeath()
         {
-            GUI.Label(new Rect(Screen.width * 0.5f - 160f, Screen.height * 0.4f, 320f, 60f), Lang.Get("@ui.died"), _title);
+            var text = Lang.Get("@ui.died");
+            if (_death != null && _death.IsDead)
+                text += "\n" + string.Format(Lang.Get("@ui.respawn_in"), Mathf.Max(0, Mathf.CeilToInt(_death.RespawnAt - Time.time)));
+            GUI.Label(new Rect(Screen.width * 0.5f - 200f, Screen.height * 0.4f, 400f, 60f), text, _title);
         }
 
         void EnsureStyles()

@@ -21,5 +21,8 @@ namespace Isle.Data
         public string Name { get; init; }
 
         public string Pool { get; init; }
+
+        /// <summary>Combat skills: XP per point of damage dealt (docs/content/xp_table.md). 0 for production skills.</summary>
+        public float XpPerDamage { get; init; }
     }
 }

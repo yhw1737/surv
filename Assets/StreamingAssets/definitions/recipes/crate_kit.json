@@ -11,5 +11,17 @@
     "item": "isle:crate_kit",
     "count": 1
   },
-  "time_sec": 3
+  "time_sec": 3,
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 10,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 1,
+      "primary": true
+    }
+  ]
 }

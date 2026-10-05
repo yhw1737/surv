@@ -12,7 +12,9 @@ namespace Isle.Core.Util
     /// </summary>
     public static class ShapeLibrary
     {
-        const int Size = 64;
+        /// <summary>Texture side in pixels. High enough to stay crisp at the game's zoom (≈120 px per tile) with
+        /// anti-aliased edges — the developer asked for high-resolution images, not pixel art.</summary>
+        const int Size = 256;
 
         // ART_PIPELINE §Style: outline is dark brown, never black.
         static readonly Color Outline = new Color32(0x3A, 0x2A, 0x1E, 0xFF);
@@ -36,7 +38,7 @@ namespace Isle.Core.Util
         {
             if (_cache.TryGetValue((shape, colour), out var sprite)) return sprite;
             var texture = Draw(shape, colour);
-            return _cache[(shape, colour)] = UnityEngine.Sprite.Create(texture, new Rect(0, 0, Size, Size), new Vector2(0.5f, 0.5f), Size);
+            return _cache[(shape, colour)] = UnityEngine.Sprite.Create(texture, new Rect(0, 0, Size, Size), new Vector2(0.5f, 0.5f), Size, 0, SpriteMeshType.FullRect);
         }
 
         /// <summary>"#RRGGBB" from a def, or <paramref name="fallback"/> when missing or malformed.</summary>
@@ -181,65 +183,119 @@ namespace Isle.Core.Util
             return canvas.Finish();
         }
 
-        /// <summary>A tiny fill-only rasteriser in normalised coordinates (0..1, y up), plus a final outline pass.</summary>
+        /// <summary>
+        /// Signed-distance rasteriser in normalised coordinates (0..1, y up). Each primitive is composited with
+        /// anti-aliased coverage, only inside its own bounding box; the silhouette's union distance then draws a
+        /// soft dark outline (ART_PIPELINE: dark brown, never black).
+        /// </summary>
         sealed class Canvas
         {
-            readonly Color[] _pixels = new Color[Size * Size];
+            const float AaWidth = 1f / Size;          // one pixel of edge softening
+            const float OutlineWidth = 3.5f / Size;   // outline thickness, in normalised units
 
-            void Fill(Func<float, float, bool> inside, Color colour)
+            readonly Color[] _pixels = new Color[Size * Size];
+            readonly float[] _union = Fill(float.MaxValue);
+
+            static float[] Fill(float value)
             {
-                for (var y = 0; y < Size; y++)
-                for (var x = 0; x < Size; x++)
-                    if (inside((x + 0.5f) / Size, (y + 0.5f) / Size)) _pixels[y * Size + x] = colour;
+                var array = new float[Size * Size];
+                for (var i = 0; i < array.Length; i++) array[i] = value;
+                return array;
             }
 
-            public void Circle(float cx, float cy, float r, Color c) => Ellipse(cx, cy, r, r, c);
-
-            public void Ellipse(float cx, float cy, float rx, float ry, Color c) =>
-                Fill((x, y) => (x - cx) * (x - cx) / (rx * rx) + (y - cy) * (y - cy) / (ry * ry) <= 1f, c);
-
-            public void Rect(float x0, float y0, float x1, float y1, Color c) =>
-                Fill((x, y) => x >= x0 && x <= x1 && y >= y0 && y <= y1, c);
-
-            public void Tri(float ax, float ay, float bx, float by, float cx, float cy, Color c) =>
-                Fill((x, y) =>
+            void Paint(float minX, float minY, float maxX, float maxY, Func<float, float, float> sdf, Color colour)
+            {
+                var margin = OutlineWidth + 2f * AaWidth;
+                var x0 = Mathf.Clamp(Mathf.FloorToInt((minX - margin) * Size), 0, Size - 1);
+                var x1 = Mathf.Clamp(Mathf.CeilToInt((maxX + margin) * Size), 0, Size - 1);
+                var y0 = Mathf.Clamp(Mathf.FloorToInt((minY - margin) * Size), 0, Size - 1);
+                var y1 = Mathf.Clamp(Mathf.CeilToInt((maxY + margin) * Size), 0, Size - 1);
+                for (var y = y0; y <= y1; y++)
+                for (var x = x0; x <= x1; x++)
                 {
-                    var d1 = Side(x, y, ax, ay, bx, by);
-                    var d2 = Side(x, y, bx, by, cx, cy);
-                    var d3 = Side(x, y, cx, cy, ax, ay);
-                    var negative = d1 < 0 || d2 < 0 || d3 < 0;
-                    var positive = d1 > 0 || d2 > 0 || d3 > 0;
-                    return !(negative && positive);
+                    var i = y * Size + x;
+                    var d = sdf((x + 0.5f) / Size, (y + 0.5f) / Size);
+                    if (d < _union[i]) _union[i] = d;
+                    var coverage = Mathf.Clamp01(0.5f - d / AaWidth);
+                    if (coverage <= 0f) continue;
+                    var dst = _pixels[i];
+                    var a = coverage + dst.a * (1f - coverage);
+                    var rgb = (new Vector3(colour.r, colour.g, colour.b) * coverage + new Vector3(dst.r, dst.g, dst.b) * dst.a * (1f - coverage)) / Mathf.Max(a, 1e-5f);
+                    _pixels[i] = new Color(rgb.x, rgb.y, rgb.z, a);
+                }
+            }
+
+            public void Circle(float cx, float cy, float r, Color c) =>
+                Paint(cx - r, cy - r, cx + r, cy + r, (x, y) => Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) - r, c);
+
+            /// <summary>Approximate ellipse distance — exact on the axes, close enough between them for a placeholder.</summary>
+            public void Ellipse(float cx, float cy, float rx, float ry, Color c) =>
+                Paint(cx - rx, cy - ry, cx + rx, cy + ry, (x, y) =>
+                {
+                    var u = (x - cx) / rx;
+                    var v = (y - cy) / ry;
+                    return (Mathf.Sqrt(u * u + v * v) - 1f) * Mathf.Min(rx, ry);
                 }, c);
 
+            public void Rect(float x0, float y0, float x1, float y1, Color c) =>
+                Paint(x0, y0, x1, y1, (x, y) =>
+                {
+                    var hx = (x1 - x0) * 0.5f;
+                    var hy = (y1 - y0) * 0.5f;
+                    var qx = Mathf.Abs(x - (x0 + hx)) - hx;
+                    var qy = Mathf.Abs(y - (y0 + hy)) - hy;
+                    return new Vector2(Mathf.Max(qx, 0f), Mathf.Max(qy, 0f)).magnitude + Mathf.Min(Mathf.Max(qx, qy), 0f);
+                }, c);
+
+            public void Tri(float ax, float ay, float bx, float by, float cx, float cy, Color c) =>
+                Paint(Mathf.Min(ax, Mathf.Min(bx, cx)), Mathf.Min(ay, Mathf.Min(by, cy)), Mathf.Max(ax, Mathf.Max(bx, cx)), Mathf.Max(ay, Mathf.Max(by, cy)),
+                    (x, y) => TriangleDistance(new Vector2(x, y), new Vector2(ax, ay), new Vector2(bx, by), new Vector2(cx, cy)), c);
+
             public void Line(float ax, float ay, float bx, float by, float halfWidth, Color c) =>
-                Fill((x, y) =>
+                Paint(Mathf.Min(ax, bx) - halfWidth, Mathf.Min(ay, by) - halfWidth, Mathf.Max(ax, bx) + halfWidth, Mathf.Max(ay, by) + halfWidth, (x, y) =>
                 {
                     float vx = bx - ax, vy = by - ay;
                     var t = Mathf.Clamp01(((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy));
                     float dx = x - (ax + vx * t), dy = y - (ay + vy * t);
-                    return dx * dx + dy * dy <= halfWidth * halfWidth;
+                    return Mathf.Sqrt(dx * dx + dy * dy) - halfWidth;
                 }, c);
 
-            static float Side(float px, float py, float ax, float ay, float bx, float by) => (px - bx) * (ay - by) - (ax - bx) * (py - by);
-
-            /// <summary>Outlines every filled pixel that touches empty space, then uploads the texture.</summary>
-            public Texture2D Finish()
+            /// <summary>Exact signed distance to a triangle (negative inside).</summary>
+            static float TriangleDistance(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
             {
-                var result = (Color[])_pixels.Clone();
-                for (var y = 0; y < Size; y++)
-                for (var x = 0; x < Size; x++)
-                {
-                    if (_pixels[y * Size + x].a <= 0f) continue;
-                    if (Empty(x - 1, y) || Empty(x + 1, y) || Empty(x, y - 1) || Empty(x, y + 1)) result[y * Size + x] = Outline;
-                }
-                var texture = new Texture2D(Size, Size, TextureFormat.RGBA32, mipChain: false) { filterMode = FilterMode.Bilinear };
-                texture.SetPixels(result);
-                texture.Apply();
-                return texture;
+                Vector2 e0 = b - a, e1 = c - b, e2 = a - c;
+                Vector2 v0 = p - a, v1 = p - b, v2 = p - c;
+                var pq0 = v0 - e0 * Mathf.Clamp01(Vector2.Dot(v0, e0) / Vector2.Dot(e0, e0));
+                var pq1 = v1 - e1 * Mathf.Clamp01(Vector2.Dot(v1, e1) / Vector2.Dot(e1, e1));
+                var pq2 = v2 - e2 * Mathf.Clamp01(Vector2.Dot(v2, e2) / Vector2.Dot(e2, e2));
+                var s = Mathf.Sign(e0.x * e2.y - e0.y * e2.x);
+                var d0 = new Vector2(Vector2.Dot(pq0, pq0), s * (v0.x * e0.y - v0.y * e0.x));
+                var d1 = new Vector2(Vector2.Dot(pq1, pq1), s * (v1.x * e1.y - v1.y * e1.x));
+                var d2 = new Vector2(Vector2.Dot(pq2, pq2), s * (v2.x * e2.y - v2.y * e2.x));
+                var dmin = Vector2.Min(Vector2.Min(d0, d1), d2);
+                return -Mathf.Sqrt(dmin.x) * Mathf.Sign(dmin.y);
             }
 
-            bool Empty(int x, int y) => x < 0 || y < 0 || x >= Size || y >= Size || _pixels[y * Size + x].a <= 0f;
+            /// <summary>Draws the outline band just inside the silhouette, then uploads (with mipmaps, trilinear).</summary>
+            public Texture2D Finish()
+            {
+                for (var i = 0; i < _pixels.Length; i++)
+                {
+                    var d = _union[i];
+                    if (d > AaWidth) continue;
+                    // Coverage of the band [-OutlineWidth, 0], softened at both edges.
+                    var inner = Mathf.Clamp01(0.5f + (d + OutlineWidth) / AaWidth);
+                    if (inner <= 0f) continue;
+                    var p = _pixels[i];
+                    var mixed = Color.Lerp(p, Outline, inner);
+                    mixed.a = Mathf.Max(p.a, Mathf.Clamp01(0.5f - d / AaWidth));
+                    _pixels[i] = mixed;
+                }
+                var texture = new Texture2D(Size, Size, TextureFormat.RGBA32, mipChain: true) { filterMode = FilterMode.Trilinear, wrapMode = TextureWrapMode.Clamp };
+                texture.SetPixels(_pixels);
+                texture.Apply(updateMipmaps: true);
+                return texture;
+            }
         }
     }
 }

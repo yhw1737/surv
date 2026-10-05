@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using FishNet;
 using Isle.Core;
 using Isle.Core.Ids;
@@ -62,6 +63,10 @@ namespace Isle.Gameplay.Hunting
         /// refills over minutes, not instantly. [invented] — no spec covers creature respawn.</summary>
         const float RepopulateSeconds = 30f;
 
+        /// <summary>Creatures further than this from every player are not simulated or drawn (the map holds hundreds).
+        /// [invented] — comfortably beyond the screen and the 7-tile label range.</summary>
+        const float SimulationRadiusTiles = 60f;
+
         /// <summary>A replacement never appears this close to a player, so nothing pops in on screen.</summary>
         const float RepopulateMinDistanceTiles = 15f;
 
@@ -83,8 +88,15 @@ namespace Isle.Gameplay.Hunting
             }
             if (!InstanceFinder.IsServerStarted || !_spawned) return;
 
-            var players = FindObjectsByType<PlayerInteraction>(FindObjectsSortMode.None);
-            foreach (var creature in _creatures) Think(creature, players);
+            var players = PlayerInteraction.All;
+            foreach (var creature in _creatures)
+            {
+                // Only creatures near a player think and show; the rest wait, frozen, until someone comes by.
+                NearestPlayer(creature.Position, players, out var distance);
+                var awake = distance <= SimulationRadiusTiles;
+                if (creature.View.activeSelf != awake) creature.View.SetActive(awake);
+                if (awake) Think(creature, players);
+            }
 
             if (Time.time >= _nextRepopulateAt)
             {
@@ -95,12 +107,11 @@ namespace Isle.Gameplay.Hunting
 
         /// <summary>Strikes the nearest creature within <paramref name="reachTiles"/>. Returns true when
         /// something was hit; <paramref name="loot"/> is filled only when the hit killed it.</summary>
-        public bool TryStrike(Vector2 from, float reachTiles, float damage, List<(NamespacedId Item, int Count)> loot)
+        /// <returns>Damage dealt, or a negative number when nothing was in reach.</returns>
+        public float TryStrike(Vector2 from, float reachTiles, float damage, List<(NamespacedId Item, int Count)> loot)
         {
             var target = NearestCreature(from, reachTiles);
-            if (target == null) return false;
-            Damage(target, damage, loot);
-            return true;
+            return target == null ? -1f : Damage(target, damage, loot);
         }
 
         /// <summary>Nearest live creature whose body edge is within <paramref name="radiusTiles"/>, or null.</summary>
@@ -120,9 +131,11 @@ namespace Isle.Gameplay.Hunting
 
         /// <summary>Applies damage from any source (melee or a projectile). A survivor reacts — prey flees, the
         /// rest fight back; a kill removes it and adds its <c>butcher.yields</c> to <paramref name="loot"/>.</summary>
-        public void Damage(Creature target, float damage, List<(NamespacedId Item, int Count)> loot)
+        /// <returns>Damage actually taken — capped at the HP it had, so overkill earns no combat XP.</returns>
+        public float Damage(Creature target, float damage, List<(NamespacedId Item, int Count)> loot)
         {
-            if (!_creatures.Contains(target)) return;
+            if (!_creatures.Contains(target)) return 0f;
+            var dealt = Mathf.Min(damage, Mathf.Max(0f, target.Health));
             target.Health -= damage;
             target.LastHitAt = Time.time;
             Feedback.GameFeed.RaiseCreatureHit(target.Position, damage);
@@ -130,7 +143,7 @@ namespace Isle.Gameplay.Hunting
             {
                 var prey = target.Def.Ai.Value == CreatureBrain.Skittish || target.Def.Ai.Value == CreatureBrain.AlertThenFlee;
                 target.State = prey ? CreatureState.Flee : CreatureState.Engage;
-                return;
+                return dealt;
             }
 
             _creatures.Remove(target);
@@ -138,16 +151,25 @@ namespace Isle.Gameplay.Hunting
             if (target.Def.Butcher?.Yields != null)
                 foreach (var yield in target.Def.Butcher.Yields)
                     loot.Add((yield.Item, yield.Count > 0 ? yield.Count : 1));
+            return dealt;
         }
 
         void Spawn(IslandWorld world)
+        {
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            SpawnAll(world);
+            Debug.Log($"[Isle] {_creatures.Count} creatures spawned in {timer.ElapsedMilliseconds} ms");
+        }
+
+        void SpawnAll(IslandWorld world)
         {
             var defs = DefRegistry.All<CreatureDef>();
             for (var i = 0; i < defs.Count; i++)
             {
                 var def = defs[i];
                 if (def.Spawn == null) continue;
-                var tiles = ResourcePlacer.Roll(world.Island, def.Spawn, world.Seed, salt: 5000 + i);
+                var tiles = ResourcePlacer.Roll(world.Island, def.Spawn, world.Seed, salt: 5000 + i)
+                    .Where(t => world.WaterAt(t) == null).ToList();
                 _population[def] = (tiles.Count, tiles);
                 foreach (var tile in tiles) _creatures.Add(Create(def, IslandWorld.TileToWorld(tile)));
             }
@@ -155,7 +177,7 @@ namespace Isle.Gameplay.Hunting
 
         /// <summary>Tops each def back up towards its starting count, one at a time, at one of its own spawn
         /// tiles that no player is near.</summary>
-        void Repopulate(PlayerInteraction[] players)
+        void Repopulate(IReadOnlyList<PlayerInteraction> players)
         {
             foreach (var (def, (target, tiles)) in _population)
             {
@@ -210,6 +232,7 @@ namespace Isle.Gameplay.Hunting
         static GameObject CreateView(CreatureDef def, float radius)
         {
             var view = new GameObject(def.Id.Name);
+            view.hideFlags = HideFlags.HideInHierarchy; // hundreds of these; see IslandWorld's node views
             var renderer = view.AddComponent<SpriteRenderer>();
             var colour = ShapeLibrary.ParseColour(def.Visual?.Color, PlaceholderVisuals.ColorForTags(def.Tags));
             renderer.sprite = ShapeLibrary.Sprite(def.Visual?.Shape, colour);
@@ -218,7 +241,7 @@ namespace Isle.Gameplay.Hunting
             return view;
         }
 
-        void Think(Creature creature, PlayerInteraction[] players)
+        void Think(Creature creature, IReadOnlyList<PlayerInteraction> players)
         {
             var combat = creature.Def.Combat;
             // No combat block means a passive creature: it stays put and never reacts.
@@ -310,7 +333,7 @@ namespace Isle.Gameplay.Hunting
             if (creature.Renderer != null && Mathf.Abs(direction.x) > 0.05f) creature.Renderer.flipX = direction.x < 0f;
         }
 
-        static PlayerInteraction NearestPlayer(Vector2 from, PlayerInteraction[] players, out float distance)
+        static PlayerInteraction NearestPlayer(Vector2 from, IReadOnlyList<PlayerInteraction> players, out float distance)
         {
             PlayerInteraction nearest = null;
             distance = float.PositiveInfinity;
