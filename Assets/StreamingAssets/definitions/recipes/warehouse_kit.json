@@ -1,0 +1,20 @@
+{
+  "id": "isle:craft_warehouse_kit",
+  "name": "@recipe.warehouse_kit",
+  "station": "isle:workbench",
+  "ingredients": [
+    {
+      "item": "isle:wood",
+      "count": 20
+    },
+    {
+      "item": "isle:stone",
+      "count": 6
+    }
+  ],
+  "output": {
+    "item": "isle:warehouse_kit",
+    "count": 1
+  },
+  "time_sec": 6
+}

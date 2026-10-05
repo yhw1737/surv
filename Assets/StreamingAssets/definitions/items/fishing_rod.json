@@ -1,0 +1,16 @@
+{
+  "id": "isle:fishing_rod",
+  "name": "@item.fishing_rod",
+  "tags": [
+    "tool",
+    "tool/rod",
+    "wood"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 4
+  },
+  "weight": 1.5,
+  "stack": 1,
+  "equip_slot": "main_hand"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "isle:craft_torch",
+  "name": "@recipe.torch",
+  "ingredients": [
+    {
+      "item": "isle:wood",
+      "count": 2
+    }
+  ],
+  "output": {
+    "item": "isle:torch",
+    "count": 1
+  },
+  "time_sec": 2
+}

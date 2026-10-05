@@ -1,0 +1,26 @@
+{
+  "id": "isle:berry_bush",
+  "name": "@world_object.berry_bush",
+  "tags": [
+    "node/berry",
+    "fruit"
+  ],
+  "spawn": {
+    "biomes": [
+      "isle:forest"
+    ],
+    "density": 0.006
+  },
+  "gather": {
+    "item": "isle:berries",
+    "count": 2,
+    "uses": 2,
+    "respawn_minutes": 45,
+    "stamina_cost": 6
+  },
+  "visual": {
+    "shape": "bush",
+    "color": "#3C8F45",
+    "size": 0.9
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "isle:craft_drying_rack_kit",
+  "name": "@recipe.drying_rack_kit",
+  "station": "isle:workbench",
+  "ingredients": [
+    {
+      "item": "isle:wood",
+      "count": 4
+    },
+    {
+      "item": "isle:fiber",
+      "count": 4
+    }
+  ],
+  "output": {
+    "item": "isle:drying_rack_kit",
+    "count": 1
+  },
+  "time_sec": 4
+}

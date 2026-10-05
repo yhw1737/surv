@@ -40,6 +40,37 @@ namespace Isle.Data
         /// grows"). Null for non-bag equipment. Distinct from <see cref="Grid"/>, which is this
         /// item's own footprint while it sits inside another container.</summary>
         public GridSize? BagGrid { get; init; }
+
+        /// <summary>The <see cref="WeaponDef"/> this item wields as, when it's a weapon (SCHEMA §Items).
+        /// Invalid (default) for everything else — the item is just an item.</summary>
+        public NamespacedId Weapon { get; init; }
+
+        /// <summary>The <see cref="WorldObjectDef"/> this item becomes when placed (a campfire kit, a crate).
+        /// Invalid (default) for items that can't be placed.</summary>
+        public NamespacedId Places { get; init; }
+
+        /// <summary>Seeds only: the <see cref="CropDef"/> planted when this item is placed (its <see cref="Places"/>
+        /// names the plot object).</summary>
+        public NamespacedId Plants { get; init; }
+
+        /// <summary>Clothing only: degrees added to <c>clothingBonus</c> in SYS-SURV-01's target temperature while
+        /// worn. 0 for everything else.</summary>
+        public float Warmth { get; init; }
+
+        /// <summary>Dishes only: buffs granted on eating, from the cook's tag reactions (SYS-COOK-01).</summary>
+        public NamespacedId[] Buffs { get; init; }
+
+        /// <summary>Dishes only: multiplier on those buffs' durations (method buff_duration, care tag).</summary>
+        public float BuffDurationMult { get; init; } = 1f;
+
+        /// <summary>Dishes only: SYS-COOK-01 dishSignature (method + main ingredient tag), for satiety fatigue.</summary>
+        public string DishSignature { get; init; }
+
+        /// <summary>Armor while worn, summed into SYS-COMBAT-01's <c>totalArmor</c>. 0 for everything else.</summary>
+        public float Armor { get; init; }
+
+        /// <summary>Tiles of light cast while equipped (a torch). 0 casts none.</summary>
+        public float LightRadius { get; init; }
     }
 
     /// <summary>Spoilage inputs. Progress is computed in one elapsed-time pass (ARCHITECTURE §Deferred simulation).</summary>

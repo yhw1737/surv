@@ -1,0 +1,19 @@
+{
+  "id": "isle:craft_arrows",
+  "name": "@recipe.arrows",
+  "ingredients": [
+    {
+      "item": "isle:wood",
+      "count": 1
+    },
+    {
+      "item": "isle:stone",
+      "count": 1
+    }
+  ],
+  "output": {
+    "item": "isle:arrow",
+    "count": 5
+  },
+  "time_sec": 3
+}

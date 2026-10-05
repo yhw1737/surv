@@ -1,0 +1,16 @@
+{
+  "id": "isle:campfire_kit",
+  "name": "@item.campfire_kit",
+  "tags": [
+    "placeable",
+    "wood",
+    "stone"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 1
+  },
+  "weight": 3.0,
+  "stack": 1,
+  "places": "isle:campfire"
+}

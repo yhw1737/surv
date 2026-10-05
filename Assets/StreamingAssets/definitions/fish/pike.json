@@ -1,0 +1,59 @@
+{
+  "id": "isle:pike",
+  "name": "@fish.pike",
+  "tags": [
+    "fish",
+    "fish/freshwater",
+    "raw"
+  ],
+  "weight_dist": {
+    "type": "lognormal",
+    "mean": 2.8,
+    "sigma": 0.35,
+    "min": 0.8,
+    "max": 7.0
+  },
+  "habitat": {
+    "depth": [
+      0,
+      5
+    ],
+    "water_temp": [
+      5,
+      30
+    ],
+    "terrain": [
+      "freshwater"
+    ],
+    "time": [
+      "any"
+    ],
+    "weather": [
+      "any"
+    ]
+  },
+  "bait_affinity": {},
+  "rig_allowed": [
+    "rod"
+  ],
+  "min_skill": 0,
+  "fight": {
+    "pattern": "straight",
+    "tension_window": 0.24,
+    "stamina": 80,
+    "coop_threshold_kg": 3.0
+  },
+  "butcher": {
+    "edible_ratio": 0.6,
+    "condition_range": [
+      0.7,
+      1.3
+    ],
+    "yields": [
+      {
+        "item": "isle:raw_fish",
+        "share": 1.0
+      }
+    ]
+  }
+}

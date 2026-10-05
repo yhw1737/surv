@@ -1,0 +1,15 @@
+{
+  "id": "isle:workbench_kit",
+  "name": "@item.workbench_kit",
+  "tags": [
+    "placeable",
+    "wood"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 8.0,
+  "stack": 1,
+  "places": "isle:workbench"
+}

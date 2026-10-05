@@ -1,0 +1,54 @@
+{
+  "id": "isle:boil",
+  "name": "@cook_method.boil",
+  "unlock_skill": {
+    "skill": "isle:cooking",
+    "level": 4
+  },
+  "duration_sec": 3,
+  "input": {
+    "min_items": 1,
+    "max_items": 3,
+    "requires_water_ml": 0
+  },
+  "modifiers": {
+    "hunger": 1.0,
+    "thirst": 1.8,
+    "preservation": 0.5,
+    "buff_power": 0.9,
+    "buff_duration": 1.0,
+    "nutrition_retention": 0.9
+  },
+  "tag_reactions": [
+    {
+      "when": [
+        "meat"
+      ],
+      "grant_buff": "isle:warm",
+      "power": 1.0
+    },
+    {
+      "when": [
+        "fish"
+      ],
+      "grant_buff": "isle:warm",
+      "power": 0.9
+    },
+    {
+      "when": [
+        "fruit"
+      ],
+      "grant_buff": "isle:hydrated",
+      "power": 1.0
+    },
+    {
+      "when": [
+        "spoiled"
+      ],
+      "grant_buff": "isle:food_poisoning",
+      "power": 2.0
+    }
+  ],
+  "naming": "@pattern.boiled",
+  "station": "isle:cooking_pot"
+}

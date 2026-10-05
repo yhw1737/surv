@@ -1,0 +1,20 @@
+{
+  "id": "isle:craft_fishing_rod",
+  "name": "@recipe.fishing_rod",
+  "station": "isle:workbench",
+  "ingredients": [
+    {
+      "item": "isle:wood",
+      "count": 3
+    },
+    {
+      "item": "isle:fiber",
+      "count": 3
+    }
+  ],
+  "output": {
+    "item": "isle:fishing_rod",
+    "count": 1
+  },
+  "time_sec": 4
+}

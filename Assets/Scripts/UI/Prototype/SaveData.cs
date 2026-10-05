@@ -1,0 +1,102 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace Isle.UI.Prototype
+{
+    /// <summary>
+    /// T-150 prototype save: everything needed to resume one solo island. Plain serializable fields, written
+    /// with Unity's <see cref="JsonUtility"/> so the UI assembly needs no JSON library. Creatures, weather and
+    /// the season temperature roll are not saved — they re-roll on load (PROJECT_STATE.md §Decided without a spec).
+    /// </summary>
+    [Serializable]
+    public sealed class SaveData
+    {
+        /// <summary>Bump when a field changes meaning; an older file is ignored rather than misread.</summary>
+        public const int CurrentVersion = 3;
+
+        public int Version = CurrentVersion;
+        public int Seed;
+        public long TotalMinutes;
+
+        public float Health, Hunger, Thirst, Stamina, Temperature, HypothermiaSeverity;
+        public float PlayerX, PlayerY, ShelterX, ShelterY;
+
+        /// <summary>Everything worn or wielded, one entry per occupied slot.</summary>
+        public List<SavedEquip> Equipped = new();
+
+        public List<SavedStack> Bag = new();
+        public List<SavedNode> Nodes = new();
+        public List<SavedFire> Fires = new();
+        public List<SavedPile> Piles = new();
+        public List<SavedStructure> Structures = new();
+
+        public string ToJson() => JsonUtility.ToJson(this);
+
+        /// <summary>Null when the text isn't a save of the current version.</summary>
+        public static SaveData FromJson(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return null;
+            try
+            {
+                var save = JsonUtility.FromJson<SaveData>(json);
+                return save != null && save.Version == CurrentVersion ? save : null;
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <summary>One equip slot: the item in it, and — for a bag — what the bag holds.</summary>
+    [Serializable]
+    public sealed class SavedEquip
+    {
+        public string Slot;
+        public string Item;
+        public List<SavedStack> Contents = new();
+    }
+
+    [Serializable]
+    public sealed class SavedStack
+    {
+        public string Item;
+        public int X, Y, Count;
+        public bool Rotated;
+    }
+
+    /// <summary>Only nodes that differ from fresh are saved: a depleted node and how long until it's back.</summary>
+    [Serializable]
+    public sealed class SavedNode
+    {
+        public int X, Y, UsesLeft;
+        public float RespawnInSeconds;
+    }
+
+    [Serializable]
+    public sealed class SavedFire
+    {
+        public float X, Y;
+        public bool Lit;
+    }
+
+    /// <summary>A player-built structure: what it is, where, and what it holds.</summary>
+    [Serializable]
+    public sealed class SavedStructure
+    {
+        public string Def;
+        public float X, Y, Water;
+        public string Crop;
+        public long PlantedAt;
+        public bool Lit;
+        public List<SavedStack> Contents = new();
+    }
+
+    [Serializable]
+    public sealed class SavedPile
+    {
+        public float X, Y;
+        public List<SavedStack> Items = new();
+    }
+}

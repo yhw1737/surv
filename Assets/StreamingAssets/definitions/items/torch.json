@@ -1,0 +1,16 @@
+{
+  "id": "isle:torch",
+  "name": "@item.torch",
+  "tags": [
+    "light",
+    "wood"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 2
+  },
+  "weight": 0.5,
+  "stack": 1,
+  "equip_slot": "off_hand",
+  "light_radius": 5
+}

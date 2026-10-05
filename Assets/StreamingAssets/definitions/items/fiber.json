@@ -1,0 +1,14 @@
+{
+  "id": "isle:fiber",
+  "name": "@item.fiber",
+  "tags": [
+    "material",
+    "cloth"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.1,
+  "stack": 40
+}

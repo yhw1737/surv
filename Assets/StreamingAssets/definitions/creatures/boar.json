@@ -1,0 +1,67 @@
+{
+  "id": "isle:boar",
+  "name": "@creature.boar",
+  "tags": [
+    "animal",
+    "mammal",
+    "aggressive"
+  ],
+  "weight_dist": {
+    "type": "lognormal",
+    "mean": 62.0,
+    "sigma": 0.28,
+    "min": 30.0,
+    "max": 120.0
+  },
+  "health_per_kg": 2.4,
+  "ai": "isle:territorial_charger",
+  "spawn": {
+    "biomes": [
+      "isle:forest"
+    ],
+    "time": [
+      "day",
+      "dusk"
+    ],
+    "density": 0.0004
+  },
+  "butcher": {
+    "edible_ratio": 0.5,
+    "condition_range": [
+      0.7,
+      1.3
+    ],
+    "yields": [
+      {
+        "item": "isle:raw_meat",
+        "share": 0.55,
+        "count": 6
+      },
+      {
+        "item": "isle:hide",
+        "share": 0.1,
+        "count": 2,
+        "damage_sensitive": true
+      }
+    ]
+  },
+  "carry": {
+    "inventory_allowed": true,
+    "drag_speed_penalty": 0.0,
+    "coop_carry_penalty": 0.0
+  },
+  "combat": {
+    "vision_tiles": 6,
+    "move_speed": 1.0,
+    "chase_speed": 3.5,
+    "damage": 6,
+    "attack_range_tiles": 1.2,
+    "attack_interval_seconds": 1.5,
+    "body_radius_tiles": 0.45
+  },
+  "visual": {
+    "shape": "boar",
+    "color": "#5A4236",
+    "size": 1.0
+  }
+}

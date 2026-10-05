@@ -1,0 +1,19 @@
+{
+  "id": "isle:belt_pouch",
+  "name": "@item.belt_pouch",
+  "tags": [
+    "bag",
+    "leather"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.3,
+  "stack": 1,
+  "equip_slot": "belt",
+  "bag_grid": {
+    "w": 2,
+    "h": 2
+  }
+}

@@ -1,5 +1,13 @@
 {
   "id": "isle:campfire",
   "name": "@world_object.campfire",
-  "tags": ["station/campfire"]
+  "tags": [
+    "station/campfire"
+  ],
+  "light_radius": 7,
+  "visual": {
+    "shape": "campfire",
+    "color": "#B0824E",
+    "size": 1.0
+  }
 }

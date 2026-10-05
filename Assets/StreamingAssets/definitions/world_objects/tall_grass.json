@@ -1,0 +1,27 @@
+{
+  "id": "isle:tall_grass",
+  "name": "@world_object.tall_grass",
+  "tags": [
+    "node/grass",
+    "cloth"
+  ],
+  "spawn": {
+    "biomes": [
+      "isle:forest",
+      "isle:marsh"
+    ],
+    "density": 0.01
+  },
+  "gather": {
+    "item": "isle:fiber",
+    "count": 2,
+    "uses": 2,
+    "respawn_minutes": 30,
+    "stamina_cost": 6
+  },
+  "visual": {
+    "shape": "grass",
+    "color": "#7DBA4A",
+    "size": 0.8
+  }
+}

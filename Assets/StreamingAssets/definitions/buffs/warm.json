@@ -1,0 +1,11 @@
+{
+  "id": "isle:warm",
+  "name": "@buff.warm",
+  "duration_min": 180,
+  "effects": [
+    {
+      "type": "temp_approach_rate_mult",
+      "value": 0.5
+    }
+  ]
+}

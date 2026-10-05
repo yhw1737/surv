@@ -1,0 +1,12 @@
+{
+  "id": "isle:crop_plot",
+  "name": "@world_object.crop_plot",
+  "tags": [
+    "plot"
+  ],
+  "visual": {
+    "shape": "plot",
+    "color": "#7A5233",
+    "size": 0.95
+  }
+}

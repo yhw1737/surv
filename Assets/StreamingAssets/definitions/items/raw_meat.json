@@ -1,0 +1,25 @@
+{
+  "id": "isle:raw_meat",
+  "name": "@item.raw_meat",
+  "tags": [
+    "food",
+    "meat",
+    "raw"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.5,
+  "stack": 10,
+  "nutrition": {
+    "hunger": 6,
+    "thirst": 0,
+    "sanitation_risk": 0.35
+  },
+  "spoilage": {
+    "base_hours": 24,
+    "temp_factor": 0,
+    "result": "isle:rotten_food"
+  }
+}

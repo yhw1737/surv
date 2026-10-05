@@ -1,0 +1,29 @@
+{
+  "id": "isle:rock",
+  "name": "@world_object.rock",
+  "tags": [
+    "node/rock",
+    "stone"
+  ],
+  "spawn": {
+    "biomes": [
+      "isle:forest",
+      "isle:marsh"
+    ],
+    "density": 0.004
+  },
+  "gather": {
+    "item": "isle:stone",
+    "count": 1,
+    "uses": 4,
+    "respawn_minutes": 90,
+    "stamina_cost": 6,
+    "tool_tag": "tool/pickaxe",
+    "tool_bonus": 2
+  },
+  "visual": {
+    "shape": "rock",
+    "color": "#8C8C8C",
+    "size": 0.9
+  }
+}

@@ -1,6 +1,9 @@
 using System.Collections;
+using System.Collections.Generic;
+using Isle.Data;
 using FishNet.Object;
 using Isle.Gameplay.Inventory;
+using Isle.Networking;
 using UnityEngine;
 
 namespace Isle.Gameplay.Character
@@ -31,22 +34,43 @@ namespace Isle.Gameplay.Character
 
         Vector3 _lastShelter = SpawnPosition;
 
-        /// <summary>Set by whatever shelter-designation system eventually exists (campfire/bed
-        /// interaction) — a no-op stand-in keeps callers compiling once T-051+ adds one.</summary>
+        public Vector3 LastShelter => _lastShelter;
+
+        /// <summary>Set when the player lights or rests at a campfire (prototype answer to SYS-SURV-01's open
+        /// question "how respawn shelters are designated" — PROJECT_STATE.md §Decided without a spec).</summary>
         public void SetLastShelter(Vector3 position) => _lastShelter = position;
 
         public void Die()
         {
             if (!IsServer || IsDead) return;
             IsDead = true;
+            if (TryGetComponent<PlayerMovement>(out var movement)) movement.Frozen = true;
 
             if (TryGetComponent<InventoryNetwork>(out var inventory))
             {
+                LootPiles.Drop(transform.position, Everything(inventory));
                 inventory.Bag.Clear();
                 inventory.Slots.Clear();
             }
 
             StartCoroutine(RespawnAfterDelay());
+        }
+
+        /// <summary>Bag, equipped items, and the contents of any equipped bags — "entire inventory including
+        /// equipment" (SYS-SURV-01 §Death).</summary>
+        static List<(ItemDef Item, int Count)> Everything(InventoryNetwork inventory)
+        {
+            var items = new List<(ItemDef, int)>();
+            foreach (var placed in inventory.Bag.Placements) items.Add((placed.Item, placed.Count));
+            foreach (var slot in EquipSlots.All)
+            {
+                var equipped = inventory.Slots.Get(slot);
+                if (equipped != null) items.Add((equipped, 1));
+                var bag = inventory.Slots.BagFor(slot);
+                if (bag == null) continue;
+                foreach (var placed in bag.Placements) items.Add((placed.Item, placed.Count));
+            }
+            return items;
         }
 
         IEnumerator RespawnAfterDelay()
@@ -59,6 +83,7 @@ namespace Isle.Gameplay.Character
         {
             transform.position = _lastShelter;
             IsDead = false;
+            if (TryGetComponent<PlayerMovement>(out var movement)) movement.Frozen = false;
             if (TryGetComponent<Vitals>(out var vitals)) vitals.ResetOnRespawn();
         }
     }

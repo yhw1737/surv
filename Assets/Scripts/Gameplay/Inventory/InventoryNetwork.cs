@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using FishNet.Connection;
 using FishNet.Object;
 using Isle.Core;
@@ -47,6 +48,15 @@ namespace Isle.Gameplay.Inventory
         public GridInventory Bag { get; private set; }
         public EquipSlots Slots { get; private set; }
 
+        /// <summary>Base carry first, then every equipped bag's grid — the order items are given and taken in.</summary>
+        public List<GridInventory> Containers()
+        {
+            var containers = new List<GridInventory> { Bag };
+            foreach (var slot in EquipSlots.All)
+                if (Slots.BagFor(slot) is { } bag) containers.Add(bag);
+            return containers;
+        }
+
         // ponytail: one in-flight request assumed — a solo player only drives one drag/click at a
         // time, and this is a LAN/listen-server game (max 4 players), so request N's ack always
         // arrives well before request N+1 can be issued. Revisit with a request id if that ever
@@ -57,32 +67,6 @@ namespace Isle.Gameplay.Inventory
         {
             Bag = new GridInventory(BagWidth, BagHeight);
             Slots = new EquipSlots();
-            SeedTestItems();
-        }
-
-        /// <summary>Test-support fixtures only — throwaway <see cref="ItemDef"/>s, same reasoning
-        /// as <c>InventoryDemo.cs</c>'s sample items (no real item defs exist yet, Absolute Rule 1
-        /// is about game content, not test fixtures). Without this the Networked Bag starts and
-        /// stays empty, and half the T-045 manual-test checklist (move/split/equip/drag-out on an
-        /// existing item) has nothing to act on. Runs identically in <c>Awake()</c> on both the
-        /// server's and the owning client's instance of this component, so both start with the same
-        /// items without a network round trip — same "no snapshot sync back" reasoning as the class
-        /// remarks above. Remove once real gameplay (loot pickups, etc.) populates this bag instead.</summary>
-        void SeedTestItems()
-        {
-            var gear = new ItemDef
-            {
-                Name = "@item.debug_net_gear", Grid = new GridSize { W = 1, H = 1 }, Weight = 1f,
-                Tags = new[] { "gear" }, EquipSlot = "main_hand",
-            };
-            var stackable = new ItemDef
-            {
-                Name = "@item.debug_net_stack", Grid = new GridSize { W = 1, H = 1 }, Weight = 0.1f,
-                Tags = new[] { "consumable" },
-            };
-
-            Bag.TryPlace(gear, new Vec2Int(0, 0));
-            Bag.TryPlace(stackable, new Vec2Int(1, 0), count: 3);
         }
 
         public void RequestMoveWithinBag(Vec2Int from, Vec2Int to, bool toRotated, Action<bool> onResult)

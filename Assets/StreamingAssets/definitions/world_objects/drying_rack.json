@@ -1,0 +1,13 @@
+{
+  "id": "isle:drying_rack",
+  "name": "@world_object.drying_rack",
+  "tags": [
+    "station/dryer",
+    "wood"
+  ],
+  "visual": {
+    "shape": "rack",
+    "color": "#C9A26A",
+    "size": 1.0
+  }
+}

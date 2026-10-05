@@ -1,0 +1,19 @@
+{
+  "id": "isle:craft_belt_pouch",
+  "name": "@recipe.belt_pouch",
+  "ingredients": [
+    {
+      "item": "isle:hide",
+      "count": 1
+    },
+    {
+      "item": "isle:fiber",
+      "count": 2
+    }
+  ],
+  "output": {
+    "item": "isle:belt_pouch",
+    "count": 1
+  },
+  "time_sec": 3
+}

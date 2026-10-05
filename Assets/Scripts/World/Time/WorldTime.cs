@@ -17,7 +17,9 @@ namespace Isle.World.Time
         void Awake()
         {
             Instance = this;
-            Clock = new WorldClock();
+            // Starts at 06:00 rather than midnight so the first thing a player sees is the day, not the dark.
+            // Prototype choice — see PROJECT_STATE.md §Decided without a spec.
+            Clock = new WorldClock(startMinutes: 360);
         }
 
         void Update()

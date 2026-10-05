@@ -76,6 +76,10 @@ namespace Isle.Data
         public NamespacedId Item { get; init; }
         public float Share { get; init; }
 
+        /// <summary>Units dropped when this creature dies. Prototype shortcut for SYS-HUNT-01's
+        /// kg-to-units conversion (not specced yet); 0 or unset means 1.</summary>
+        public int Count { get; init; }
+
         /// <summary>Degrades by weapon type and skill — the rule that makes guns cost you the hide.</summary>
         public bool DamageSensitive { get; init; }
 
@@ -85,5 +89,14 @@ namespace Isle.Data
         /// 2026-09-07 so one rule covers every ID.
         /// </summary>
         public NamespacedId QualityFrom { get; init; }
+    }
+
+    /// <summary>Placeholder look (ART_PIPELINE §Placeholders): a shape key from the placeholder library, a "#RRGGBB"
+    /// colour, and a size in tiles. Presentation only — gameplay never reads it (Absolute Rule 7).</summary>
+    public sealed class VisualSpec
+    {
+        public string Shape { get; init; }
+        public string Color { get; init; }
+        public float Size { get; init; } = 1f;
     }
 }

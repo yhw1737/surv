@@ -1,0 +1,16 @@
+{
+  "id": "isle:rain_catcher_kit",
+  "name": "@item.rain_catcher_kit",
+  "tags": [
+    "placeable",
+    "wood",
+    "leather"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 3.0,
+  "stack": 1,
+  "places": "isle:rain_catcher"
+}

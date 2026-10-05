@@ -1,0 +1,17 @@
+{
+  "id": "isle:crate",
+  "name": "@world_object.crate",
+  "tags": [
+    "container",
+    "wood"
+  ],
+  "storage": {
+    "w": 10,
+    "h": 6
+  },
+  "visual": {
+    "shape": "crate",
+    "color": "#B0824E",
+    "size": 0.95
+  }
+}

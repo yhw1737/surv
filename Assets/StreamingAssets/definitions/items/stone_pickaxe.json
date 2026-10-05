@@ -1,0 +1,17 @@
+{
+  "id": "isle:stone_pickaxe",
+  "name": "@item.stone_pickaxe",
+  "tags": [
+    "tool",
+    "tool/pickaxe",
+    "stone"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 2
+  },
+  "weight": 1.4,
+  "stack": 1,
+  "equip_slot": "main_hand",
+  "weapon": "isle:stone_pickaxe"
+}

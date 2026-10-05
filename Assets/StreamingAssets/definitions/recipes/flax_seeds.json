@@ -1,0 +1,15 @@
+{
+  "id": "isle:craft_flax_seeds",
+  "name": "@recipe.flax_seeds",
+  "ingredients": [
+    {
+      "item": "isle:fiber",
+      "count": 4
+    }
+  ],
+  "output": {
+    "item": "isle:flax_seeds",
+    "count": 2
+  },
+  "time_sec": 2
+}

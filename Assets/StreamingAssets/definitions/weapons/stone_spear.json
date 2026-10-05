@@ -1,0 +1,22 @@
+{
+  "id": "isle:stone_spear",
+  "name": "@weapon.stone_spear",
+  "tags": [
+    "weapon",
+    "weapon/spear",
+    "stone"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 4
+  },
+  "weight": 2.0,
+  "combat_skill": "isle:melee",
+  "base_power": 30,
+  "attack_speed": 0.8,
+  "reach": 2.0,
+  "stamina_cost": 8,
+  "grip": "two_hand",
+  "quality_enabled": false,
+  "durability": 60
+}

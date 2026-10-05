@@ -1,0 +1,14 @@
+{
+  "id": "isle:wood",
+  "name": "@item.wood",
+  "tags": [
+    "material",
+    "wood"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 1.0,
+  "stack": 20
+}

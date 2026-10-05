@@ -1,0 +1,28 @@
+{
+  "id": "isle:tree",
+  "name": "@world_object.tree",
+  "tags": [
+    "node/tree",
+    "wood"
+  ],
+  "spawn": {
+    "biomes": [
+      "isle:forest"
+    ],
+    "density": 0.012
+  },
+  "gather": {
+    "item": "isle:wood",
+    "count": 2,
+    "uses": 3,
+    "respawn_minutes": 60,
+    "stamina_cost": 6,
+    "tool_tag": "tool/axe",
+    "tool_bonus": 2
+  },
+  "visual": {
+    "shape": "tree",
+    "color": "#2F7D32",
+    "size": 1.4
+  }
+}

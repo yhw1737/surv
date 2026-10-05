@@ -1,0 +1,37 @@
+{
+  "id": "isle:dry",
+  "name": "@cook_method.dry",
+  "unlock_skill": {
+    "skill": "isle:cooking",
+    "level": 12
+  },
+  "duration_sec": 3,
+  "input": {
+    "min_items": 1,
+    "max_items": 4,
+    "requires_water_ml": 0
+  },
+  "modifiers": {
+    "hunger": 0.7,
+    "thirst": 0.3,
+    "preservation": 4.0,
+    "buff_power": 0.5,
+    "buff_duration": 1.0,
+    "nutrition_retention": 0.7
+  },
+  "tag_reactions": [
+    {
+      "when": [
+        "spoiled"
+      ],
+      "grant_buff": "isle:food_poisoning",
+      "power": 2.0
+    }
+  ],
+  "naming": "@pattern.dried",
+  "station": "isle:drying_rack",
+  "result_grid": {
+    "w": 1,
+    "h": 1
+  }
+}

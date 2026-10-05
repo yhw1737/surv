@@ -1,0 +1,31 @@
+{
+    "name": "Isle.Tests.PlayMode",
+    "rootNamespace": "Isle.Tests.PlayMode",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Isle.Core",
+        "Isle.Data",
+        "Isle.Modding",
+        "Isle.World",
+        "Isle.Gameplay",
+        "Isle.UI",
+        "FishNet.Runtime",
+        "Unity.InputSystem",
+        "Isle.Networking",
+        "Isle.Combat"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

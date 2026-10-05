@@ -1,0 +1,19 @@
+{
+  "id": "isle:rotten_food",
+  "name": "@item.rotten_food",
+  "tags": [
+    "food",
+    "spoiled"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.3,
+  "stack": 20,
+  "nutrition": {
+    "hunger": 2,
+    "thirst": 0,
+    "sanitation_risk": 0.8
+  }
+}

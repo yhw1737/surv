@@ -1,0 +1,16 @@
+{
+  "id": "isle:rain_catcher",
+  "name": "@world_object.rain_catcher",
+  "tags": [
+    "water/rain"
+  ],
+  "rain_catcher": {
+    "capacity": 4,
+    "fill_per_second": 0.05
+  },
+  "visual": {
+    "shape": "rain_catcher",
+    "color": "#8A6A48",
+    "size": 1.0
+  }
+}

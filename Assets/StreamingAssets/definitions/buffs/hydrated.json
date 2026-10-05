@@ -1,0 +1,11 @@
+{
+  "id": "isle:hydrated",
+  "name": "@buff.hydrated",
+  "duration_min": 180,
+  "effects": [
+    {
+      "type": "thirst_drain_mult",
+      "value": 0.7
+    }
+  ]
+}

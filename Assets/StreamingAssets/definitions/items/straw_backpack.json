@@ -1,0 +1,19 @@
+{
+  "id": "isle:straw_backpack",
+  "name": "@item.straw_backpack",
+  "tags": [
+    "bag",
+    "cloth"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 1.0,
+  "stack": 1,
+  "equip_slot": "back",
+  "bag_grid": {
+    "w": 5,
+    "h": 5
+  }
+}

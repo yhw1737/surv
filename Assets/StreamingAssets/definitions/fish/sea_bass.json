@@ -1,0 +1,61 @@
+{
+  "id": "isle:sea_bass",
+  "name": "@fish.sea_bass",
+  "tags": [
+    "fish",
+    "fish/saltwater",
+    "raw"
+  ],
+  "weight_dist": {
+    "type": "lognormal",
+    "mean": 3.2,
+    "sigma": 0.3,
+    "min": 1.0,
+    "max": 8.0
+  },
+  "habitat": {
+    "depth": [
+      0,
+      20
+    ],
+    "water_temp": [
+      5,
+      30
+    ],
+    "terrain": [
+      "saltwater"
+    ],
+    "time": [
+      "dawn",
+      "dusk",
+      "night"
+    ],
+    "weather": [
+      "any"
+    ]
+  },
+  "bait_affinity": {},
+  "rig_allowed": [
+    "rod"
+  ],
+  "min_skill": 0,
+  "fight": {
+    "pattern": "dive",
+    "tension_window": 0.2,
+    "stamina": 120,
+    "coop_threshold_kg": 3.0
+  },
+  "butcher": {
+    "edible_ratio": 0.6,
+    "condition_range": [
+      0.7,
+      1.3
+    ],
+    "yields": [
+      {
+        "item": "isle:raw_fish",
+        "share": 1.0
+      }
+    ]
+  }
+}

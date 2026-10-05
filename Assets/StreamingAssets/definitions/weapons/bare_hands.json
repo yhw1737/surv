@@ -1,0 +1,20 @@
+{
+  "id": "isle:bare_hands",
+  "name": "@weapon.bare_hands",
+  "tags": [
+    "weapon/unarmed"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0,
+  "combat_skill": "isle:melee",
+  "base_power": 14,
+  "attack_speed": 1.5,
+  "reach": 1.2,
+  "stamina_cost": 4,
+  "grip": "one_hand",
+  "quality_enabled": false,
+  "durability": 0
+}

@@ -1,0 +1,17 @@
+{
+  "id": "isle:hide_cap",
+  "name": "@item.hide_cap",
+  "tags": [
+    "clothing",
+    "leather"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.4,
+  "stack": 1,
+  "equip_slot": "head",
+  "warmth": 1,
+  "armor": 8
+}

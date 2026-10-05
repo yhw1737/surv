@@ -1,0 +1,26 @@
+{
+  "id": "isle:palm_tree",
+  "name": "@world_object.palm_tree",
+  "tags": [
+    "node/palm",
+    "fruit"
+  ],
+  "spawn": {
+    "biomes": [
+      "isle:coast"
+    ],
+    "density": 0.006
+  },
+  "gather": {
+    "item": "isle:coconut",
+    "count": 1,
+    "uses": 2,
+    "respawn_minutes": 120,
+    "stamina_cost": 6
+  },
+  "visual": {
+    "shape": "palm",
+    "color": "#3E9B3A",
+    "size": 1.4
+  }
+}

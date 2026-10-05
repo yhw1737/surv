@@ -1,0 +1,25 @@
+{
+  "id": "isle:berries",
+  "name": "@item.berries",
+  "tags": [
+    "food",
+    "fruit",
+    "raw"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.1,
+  "stack": 40,
+  "nutrition": {
+    "hunger": 8,
+    "thirst": 3,
+    "sanitation_risk": 0.0
+  },
+  "spoilage": {
+    "base_hours": 48,
+    "temp_factor": 0,
+    "result": "isle:rotten_food"
+  }
+}

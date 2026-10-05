@@ -35,5 +35,12 @@ namespace Isle.Data
 
         /// <summary>Animation set, e.g. <c>isle:spear_basic</c>.</summary>
         public NamespacedId Moveset { get; init; }
+
+        /// <summary>Ranged weapons only: the item each shot uses up (SYS-COMBAT-01: "Arrows (crafted)").
+        /// Invalid (default) for melee weapons.</summary>
+        public NamespacedId Ammo { get; init; }
+
+        /// <summary>Ranged weapons only: projectile flight speed in tiles per second.</summary>
+        public float ProjectileSpeed { get; init; }
     }
 }
