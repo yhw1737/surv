@@ -12,5 +12,10 @@
   "weight": 1.0,
   "stack": 1,
   "equip_slot": "main_hand",
-  "weapon": "isle:short_bow"
+  "weapon": "isle:short_bow",
+  "hold": {
+    "style": "bow",
+    "length": 1.0,
+    "color": "#8A5A36"
+  }
 }

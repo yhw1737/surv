@@ -13,5 +13,9 @@
   "stack": 1,
   "equip_slot": "legs",
   "warmth": 1,
-  "armor": 10
+  "armor": 10,
+  "wear": {
+    "style": "pants",
+    "color": "#7A5A3E"
+  }
 }

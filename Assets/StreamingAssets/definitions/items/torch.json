@@ -12,5 +12,11 @@
   "weight": 0.5,
   "stack": 1,
   "equip_slot": "off_hand",
-  "light_radius": 5
+  "light_radius": 5,
+  "hold": {
+    "style": "torch",
+    "length": 0.6,
+    "color": "#7A5A3E",
+    "tip": "#FFB23E"
+  }
 }

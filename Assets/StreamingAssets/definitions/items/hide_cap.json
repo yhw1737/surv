@@ -13,5 +13,9 @@
   "stack": 1,
   "equip_slot": "head",
   "warmth": 1,
-  "armor": 8
+  "armor": 8,
+  "wear": {
+    "style": "cap",
+    "color": "#9A7550"
+  }
 }

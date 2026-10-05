@@ -13,5 +13,11 @@
   "weight": 1.4,
   "stack": 1,
   "equip_slot": "main_hand",
-  "weapon": "isle:stone_pickaxe"
+  "weapon": "isle:stone_pickaxe",
+  "hold": {
+    "style": "pickaxe",
+    "length": 0.8,
+    "color": "#8A6A48",
+    "tip": "#9FA4AA"
+  }
 }

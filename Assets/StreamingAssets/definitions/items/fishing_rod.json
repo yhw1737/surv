@@ -17,5 +17,10 @@
     "skill": "isle:fishing",
     "level": 5,
     "primary": true
+  },
+  "hold": {
+    "style": "rod",
+    "length": 1.6,
+    "color": "#A07A4E"
   }
 }

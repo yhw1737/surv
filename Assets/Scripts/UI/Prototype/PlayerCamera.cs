@@ -29,14 +29,16 @@ namespace Isle.UI.Prototype
             _camera.clearFlags = CameraClearFlags.SolidColor;
             _camera.backgroundColor = IslandWorld.SeaColour;
             _camera.orthographicSize = ViewHalfHeightTiles;
-            var goal = new Vector3(target.position.x, target.position.y, _camera.transform.position.z);
+            // Follow the drawn figure, which moves every frame, rather than the transform, which moves per network tick.
+            var at = Isle.UI.Art.StickFigureView.PositionOf(target);
+            var goal = new Vector3(at.x, at.y, _camera.transform.position.z);
             _camera.transform.position = Vector3.Lerp(_camera.transform.position, goal, 1f - Mathf.Exp(-Smoothing * Time.deltaTime));
         }
 
-        static Transform LocalPlayer()
+        static PlayerInteraction LocalPlayer()
         {
             foreach (var player in PlayerInteraction.All)
-                if (player.IsOwner) return player.transform;
+                if (player.IsOwner) return player;
             return null;
         }
     }

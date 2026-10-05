@@ -13,5 +13,9 @@
   "stack": 1,
   "equip_slot": "chest",
   "warmth": 6,
-  "armor": 10
+  "armor": 10,
+  "wear": {
+    "style": "cloak",
+    "color": "#8C6A4A"
+  }
 }
