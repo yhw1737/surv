@@ -13,6 +13,9 @@ namespace Isle.Data
         public CropOutput Output { get; init; }
         public int GrowthDays { get; init; }
 
+        /// <summary>XP this grants (docs/content/xp_table.md). Null grants none.</summary>
+        public XpAward Xp { get; init; }
+
         /// <summary>Parsed but unused — breeding is post-EA (SCHEMA §Crops).</summary>
         public CropTraits Traits { get; init; }
     }

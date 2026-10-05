@@ -24,6 +24,9 @@ namespace Isle.Data
 
         public int MinSkill { get; init; }
         public FightSpec Fight { get; init; }
+
+        /// <summary>XP this grants (docs/content/xp_table.md). Null grants none.</summary>
+        public XpAward Xp { get; init; }
         public ButcherSpec Butcher { get; init; }
     }
 

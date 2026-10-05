@@ -66,5 +66,69 @@ namespace Isle.Tests.EditMode
             Assert.IsTrue(island.IsLand(IslandGenerator.Size / 2, IslandGenerator.Size / 2));
             Assert.IsFalse(island.IsLand(0, 0));
         }
+    
+
+        // SYS-WORLD-03 §Island shape (2026-10-05 revision): 1152 tiles, 1–4 joined blobs, sea border.
+
+        [Test]
+        public void Size_Is1152()
+        {
+            Assert.AreEqual(1152, IslandGenerator.Size);
+        }
+
+        [TestCase(1)]
+        [TestCase(77)]
+        [TestCase(4242)]
+        public void IsLand_BorderAlwaysSea(int seed)
+        {
+            var island = new IslandGenerator(seed);
+            for (var i = 0; i < IslandGenerator.Size; i += 7)
+            {
+                Assert.IsFalse(island.IsLand(i, 10));
+                Assert.IsFalse(island.IsLand(10, i));
+                Assert.IsFalse(island.IsLand(IslandGenerator.Size - 11, i));
+            }
+        }
+
+        [TestCase(1)]
+        [TestCase(77)]
+        [TestCase(4242)]
+        [TestCase(90210)]
+        public void FloodFill_FromCentre_ReachesAllLand(int seed)
+        {
+            var island = new IslandGenerator(seed);
+            var size = IslandGenerator.Size;
+            var seen = new bool[size * size];
+            var queue = new System.Collections.Generic.Queue<(int, int)>();
+            queue.Enqueue((size / 2, size / 2));
+            seen[size / 2 * size + size / 2] = true;
+            var reached = 0;
+            while (queue.Count > 0)
+            {
+                var (x, y) = queue.Dequeue();
+                reached++;
+                foreach (var (nx, ny) in new[] { (x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1) })
+                {
+                    if (nx < 0 || ny < 0 || nx >= size || ny >= size || seen[ny * size + nx] || !island.IsLand(nx, ny)) continue;
+                    seen[ny * size + nx] = true;
+                    queue.Enqueue((nx, ny));
+                }
+            }
+            var land = 0;
+            for (var x = 0; x < size; x++)
+            for (var y = 0; y < size; y++)
+                if (island.IsLand(x, y)) land++;
+            Assert.AreEqual(land, reached, "some land is cut off from the spawn");
+            Assert.Greater(land, size * size / 10, "island too small");
+        }
+
+        [Test]
+        public void BlobCount_VariesAcrossSeeds()
+        {
+            var counts = new System.Collections.Generic.HashSet<int>();
+            for (var seed = 1; seed <= 40; seed++) counts.Add(new IslandGenerator(seed).BlobCount);
+            Assert.GreaterOrEqual(counts.Count, 3, "island shapes don't vary in landmass count");
+        }
+
     }
 }

@@ -108,7 +108,7 @@ namespace Isle.UI.Prototype
 
         static PlayerInteraction LocalPlayer()
         {
-            foreach (var player in FindObjectsByType<PlayerInteraction>(FindObjectsSortMode.None))
+            foreach (var player in PlayerInteraction.All)
                 if (player.IsOwner) return player;
             return null;
         }
@@ -159,11 +159,21 @@ namespace Isle.UI.Prototype
                 }
             }
 
+            if (MapState.Instance != null)
+            {
+                save.Explored = MapState.Instance.Fog.Serialize();
+                foreach (var marker in MapState.Instance.Markers.All)
+                    save.Markers.Add(new SavedMarker { X = marker.Position.x, Y = marker.Position.y, Colour = marker.Colour });
+            }
+
+            foreach (var skill in player.Skills.Skills)
+                save.Skills.Add(new SavedSkill { Id = skill.Id.Value, Xp = player.Skills.TotalXp(skill.Id) });
+
             foreach (var node in world.Nodes)
                 if (node.Def.Gather != null && node.UsesLeft < node.Def.Gather.Uses)
                     save.Nodes.Add(new SavedNode { X = node.Tile.X, Y = node.Tile.Y, UsesLeft = node.UsesLeft, RespawnInSeconds = Mathf.Max(0f, node.RespawnAt - world.Now) });
 
-            foreach (var fire in FindObjectsByType<WorldObjectInstance>(FindObjectsSortMode.None))
+            foreach (var fire in WorldObjectRegistry.All)
             {
                 if (StructureFactory.Built.Contains(fire)) continue; // saved with its contents below
                 save.Fires.Add(new SavedFire { X = fire.transform.position.x, Y = fire.transform.position.y, Lit = fire.IsActive });
@@ -199,11 +209,14 @@ namespace Isle.UI.Prototype
             var world = IslandWorld.Instance;
             WorldTime.Instance?.Clock.SetTotalMinutes(save.TotalMinutes);
 
-            player.transform.position = new Vector3(save.PlayerX, save.PlayerY, player.transform.position.z);
+            // A save from before the island grew (2026-10-05) can point into what is now water: fall back to the spawn.
+            var savedAt = new Vector2(save.PlayerX, save.PlayerY);
+            if (!world.IsWalkable(savedAt)) savedAt = Vector2.zero;
+            player.transform.position = new Vector3(savedAt.x, savedAt.y, player.transform.position.z);
             if (player.TryGetComponent<Vitals>(out var vitals))
                 vitals.Restore(save.Health, save.Hunger, save.Thirst, save.Stamina, save.Temperature, save.HypothermiaSeverity);
             if (player.TryGetComponent<DeathHandler>(out var death))
-                death.SetLastShelter(new Vector3(save.ShelterX, save.ShelterY, 0f));
+                death.SetLastShelter(world.IsWalkable(new Vector2(save.ShelterX, save.ShelterY)) ? new Vector3(save.ShelterX, save.ShelterY, 0f) : Vector3.zero);
 
             if (player.TryGetComponent<InventoryNetwork>(out var inventory))
             {
@@ -221,13 +234,23 @@ namespace Isle.UI.Prototype
                 }
             }
 
+            if (MapState.Instance != null)
+            {
+                MapState.Instance.Load(save.Explored);
+                MapState.Instance.Markers.Clear();
+                foreach (var marker in save.Markers) MapState.Instance.Markers.Add(new Vector2(marker.X, marker.Y), marker.Colour);
+            }
+
+            foreach (var saved in save.Skills)
+                if (NamespacedId.TryParse(saved.Id, out var skillId, out _)) player.Skills.Restore(skillId, saved.Xp);
+
             foreach (var saved in save.Nodes)
             {
                 var node = world.NodeAt(new Vec2Int(saved.X, saved.Y));
                 if (node != null) world.RestoreNode(node, saved.UsesLeft, saved.RespawnInSeconds);
             }
 
-            var fires = FindObjectsByType<WorldObjectInstance>(FindObjectsSortMode.None);
+            var fires = WorldObjectRegistry.All;
             foreach (var saved in save.Fires)
             {
                 var match = fires.FirstOrDefault(f => Vector2.Distance(f.transform.position, new Vector2(saved.X, saved.Y)) < FireMatchTiles);
@@ -239,7 +262,7 @@ namespace Isle.UI.Prototype
                 if (!NamespacedId.TryParse(saved.Def, out var defId, out _) || !DefRegistry.TryGet<WorldObjectDef>(defId, out var def)) continue;
                 var at = new Vector2(saved.X, saved.Y);
                 // The startup campfire may already stand here (CampfireSpawner runs first) — reuse it, don't double it.
-                var built = FindObjectsByType<WorldObjectInstance>(FindObjectsSortMode.None)
+                var built = WorldObjectRegistry.All
                                 .FirstOrDefault(w => w.Def == def && Vector2.Distance(w.transform.position, at) < FireMatchTiles)
                             ?? StructureFactory.Build(def, at);
                 built.IsActive = saved.Lit;

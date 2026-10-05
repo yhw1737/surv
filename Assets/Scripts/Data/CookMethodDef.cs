@@ -42,6 +42,9 @@ namespace Isle.Data
         /// <summary>This method is what eating an uncooked item counts as (SYS-COOK-01 <c>isle:raw</c>): its modifiers
         /// and reactions apply when food is eaten straight from the bag.</summary>
         public bool EatRaw { get; init; }
+
+        /// <summary>XP this grants (docs/content/xp_table.md). Null grants none.</summary>
+        public XpAward Xp { get; init; }
     }
 
     /// <summary>What the method accepts (SYS-COOK-01 step 1).</summary>

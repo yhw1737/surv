@@ -1,0 +1,5 @@
+{
+  "id": "isle:crafting",
+  "name": "@skill.crafting",
+  "pool": "production"
+}

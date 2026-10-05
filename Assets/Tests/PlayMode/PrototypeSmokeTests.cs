@@ -45,7 +45,7 @@ namespace Isle.Tests.PlayMode
             Assert.IsNotNull(IslandWorld.Instance);
             Assert.Greater(IslandWorld.Instance.Nodes.Count, 0, "no resource nodes placed");
             Assert.IsTrue(IslandWorld.Instance.Nodes.Any(n => n.IsHarvestable), "no harvestable node placed");
-            Assert.IsTrue(IslandWorld.Instance.Nodes.Any(n => n.IsDrinkable), "no water source placed");
+            Assert.Greater(IslandWorld.Instance.WaterTileCount, 50, "no ponds or rivers generated");
             Assert.IsNotNull(CreatureDirector.Instance);
             Assert.Greater(CreatureDirector.Instance.Creatures.Count, 0, "no creatures spawned");
         }

@@ -13,12 +13,18 @@
   },
   "gather": {
     "item": "isle:wood",
-    "count": 2,
-    "uses": 3,
-    "respawn_minutes": 60,
+    "count": 4,
+    "uses": 1,
+    "respawn_minutes": 4320,
     "stamina_cost": 6,
     "tool_tag": "tool/axe",
-    "tool_bonus": 2
+    "tool_bonus": 2,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 40,
+      "per_unit": 0
+    },
+    "time_sec": 10
   },
   "visual": {
     "shape": "tree",

@@ -15,8 +15,14 @@
     "item": "isle:coconut",
     "count": 1,
     "uses": 2,
-    "respawn_minutes": 120,
-    "stamina_cost": 6
+    "respawn_minutes": 2880,
+    "stamina_cost": 6,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 30,
+      "per_unit": 0
+    },
+    "time_sec": 6
   },
   "visual": {
     "shape": "palm",

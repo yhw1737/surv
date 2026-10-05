@@ -12,6 +12,9 @@ namespace Isle.World.Objects
     {
         static readonly List<WorldObjectInstance> _instances = new();
 
+        /// <summary>Every live instance — iterate this instead of FindObjectsByType (no per-call allocation).</summary>
+        public static IReadOnlyList<WorldObjectInstance> All => _instances;
+
         public static void Register(WorldObjectInstance instance) => _instances.Add(instance);
         public static void Unregister(WorldObjectInstance instance) => _instances.Remove(instance);
 

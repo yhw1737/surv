@@ -13,7 +13,10 @@ namespace Isle.UI.Prototype
     public sealed class SaveData
     {
         /// <summary>Bump when a field changes meaning; an older file is ignored rather than misread.</summary>
-        public const int CurrentVersion = 3;
+        public const int CurrentVersion = 5;
+
+        /// <summary>Oldest version still readable. v3 only lacks <see cref="Skills"/>, which then start from zero.</summary>
+        public const int MinReadableVersion = 3;
 
         public int Version = CurrentVersion;
         public int Seed;
@@ -30,6 +33,11 @@ namespace Isle.UI.Prototype
         public List<SavedFire> Fires = new();
         public List<SavedPile> Piles = new();
         public List<SavedStructure> Structures = new();
+        public List<SavedSkill> Skills = new();
+
+        /// <summary>SYS-MAP-01: explored fog cells, bit-packed base64. Empty = nothing explored.</summary>
+        public string Explored = string.Empty;
+        public List<SavedMarker> Markers = new();
 
         public string ToJson() => JsonUtility.ToJson(this);
 
@@ -40,13 +48,31 @@ namespace Isle.UI.Prototype
             try
             {
                 var save = JsonUtility.FromJson<SaveData>(json);
-                return save != null && save.Version == CurrentVersion ? save : null;
+                if (save == null || save.Version < MinReadableVersion || save.Version > CurrentVersion) return null;
+                save.Skills ??= new List<SavedSkill>();
+                save.Markers ??= new List<SavedMarker>();
+                save.Explored ??= string.Empty;
+                return save;
             }
             catch (ArgumentException)
             {
                 return null;
             }
         }
+    }
+
+    [Serializable]
+    public sealed class SavedMarker
+    {
+        public float X, Y;
+        public int Colour;
+    }
+
+    [Serializable]
+    public sealed class SavedSkill
+    {
+        public string Id;
+        public double Xp;
     }
 
     /// <summary>One equip slot: the item in it, and — for a bag — what the bag holds.</summary>

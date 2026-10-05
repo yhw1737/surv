@@ -23,6 +23,7 @@ namespace Isle.Gameplay.Combat
             public float Travelled;
             public float Damage;
             public System.Action<List<(NamespacedId, int)>> OnKill;
+            public System.Action<float> OnDamage;
             public GameObject View;
         }
 
@@ -41,7 +42,8 @@ namespace Isle.Gameplay.Combat
         }
 
         /// <param name="onKill">Called with the kill's loot, so the shooter gets it wherever they now stand.</param>
-        public void Fire(Vector2 from, Vector2 direction, float speed, float damage, System.Action<List<(NamespacedId, int)>> onKill)
+        /// <param name="onDamage">Called with the damage a hit actually dealt — the shooter's ranged XP.</param>
+        public void Fire(Vector2 from, Vector2 direction, float speed, float damage, System.Action<List<(NamespacedId, int)>> onKill, System.Action<float> onDamage = null)
         {
             _sprite ??= PlaceholderVisuals.AsSprite(PlaceholderVisuals.RoundedRect(16, 4, new Color(0.9f, 0.85f, 0.7f), cornerRadius: 1f));
             var view = new GameObject("Arrow");
@@ -51,7 +53,7 @@ namespace Isle.Gameplay.Combat
             view.transform.position = from;
             view.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
 
-            _arrows.Add(new Arrow { Position = from, Velocity = direction.normalized * speed, Damage = damage, OnKill = onKill, View = view });
+            _arrows.Add(new Arrow { Position = from, Velocity = direction.normalized * speed, Damage = damage, OnKill = onKill, OnDamage = onDamage, View = view });
         }
 
         void Update()
@@ -69,7 +71,8 @@ namespace Isle.Gameplay.Combat
                 if (hit != null)
                 {
                     var loot = new List<(NamespacedId, int)>();
-                    director.Damage(hit, arrow.Damage * RangedCalculator.RangeMult(arrow.Travelled), loot);
+                    var dealt = director.Damage(hit, arrow.Damage * RangedCalculator.RangeMult(arrow.Travelled), loot);
+                    arrow.OnDamage?.Invoke(dealt);
                     if (loot.Count > 0) arrow.OnKill?.Invoke(loot);
                 }
 

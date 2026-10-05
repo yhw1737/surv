@@ -35,7 +35,7 @@ namespace Isle.UI.Prototype
 
         static Transform LocalPlayer()
         {
-            foreach (var player in FindObjectsByType<PlayerInteraction>(FindObjectsSortMode.None))
+            foreach (var player in PlayerInteraction.All)
                 if (player.IsOwner) return player.transform;
             return null;
         }

@@ -15,9 +15,15 @@
   "gather": {
     "item": "isle:fiber",
     "count": 2,
-    "uses": 2,
-    "respawn_minutes": 30,
-    "stamina_cost": 6
+    "uses": 1,
+    "respawn_minutes": 720,
+    "stamina_cost": 6,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 15,
+      "per_unit": 0
+    },
+    "time_sec": 2
   },
   "visual": {
     "shape": "grass",

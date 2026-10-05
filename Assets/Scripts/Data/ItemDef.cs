@@ -69,6 +69,9 @@ namespace Isle.Data
         /// <summary>Armor while worn, summed into SYS-COMBAT-01's <c>totalArmor</c>. 0 for everything else.</summary>
         public float Armor { get; init; }
 
+        /// <summary>Skill level needed to use this item for its purpose (SYS-FISH-01: the rod needs Fishing 5). Null: none.</summary>
+        public SkillRequirement Requires { get; init; }
+
         /// <summary>Tiles of light cast while equipped (a torch). 0 casts none.</summary>
         public float LightRadius { get; init; }
     }

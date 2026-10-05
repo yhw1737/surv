@@ -20,11 +20,14 @@ namespace Isle.World.Generation
         {
             var tiles = new List<Vec2Int>();
             var threshold = (uint)(spawn.Density * RollScale);
+            // Resolved once per spawn, not per tile: the per-tile string compare allocated tens of millions of
+            // strings on the 1152-tile map and was most of the island's start-up time.
+            var allowed = AllowedBiomes(spawn);
             for (var x = 0; x < IslandGenerator.Size; x++)
             for (var y = 0; y < IslandGenerator.Size; y++)
             {
                 if (!island.IsLand(x, y)) continue;
-                if (!AllowsBiome(spawn, island.BiomeAt(x, y))) continue;
+                if (!allowed[(int)island.BiomeAt(x, y)]) continue;
                 if (IslandGenerator.Hash(seed ^ salt, x, y) % RollScale < threshold) tiles.Add(new Vec2Int(x, y));
             }
             return tiles;
@@ -32,13 +35,18 @@ namespace Isle.World.Generation
 
         /// <summary>Matches a biome against <c>"isle:forest"</c>-style ids. Biomes are a fixed set
         /// (<see cref="Biome"/>), so the name is compared as text rather than registered as a def.</summary>
-        static bool AllowsBiome(SpawnSpec spawn, Biome biome)
+        static bool[] AllowedBiomes(SpawnSpec spawn)
         {
-            if (spawn.Biomes == null) return false;
-            var name = biome.ToString().ToLowerInvariant();
-            foreach (var id in spawn.Biomes)
-                if (id.Name == name) return true;
-            return false;
+            var biomes = (Biome[])System.Enum.GetValues(typeof(Biome));
+            var allowed = new bool[biomes.Length];
+            if (spawn.Biomes == null) return allowed;
+            foreach (var biome in biomes)
+            {
+                var name = biome.ToString().ToLowerInvariant();
+                foreach (var id in spawn.Biomes)
+                    if (id.Name == name) allowed[(int)biome] = true;
+            }
+            return allowed;
         }
     }
 }

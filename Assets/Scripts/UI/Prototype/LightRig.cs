@@ -21,29 +21,30 @@ namespace Isle.UI.Prototype
 
         readonly Dictionary<Transform, Light2D> _lights = new();
         readonly HashSet<Transform> _seen = new();
+        readonly List<Transform> _stale = new();
 
         void LateUpdate()
         {
             _seen.Clear();
 
-            foreach (var instance in FindObjectsByType<WorldObjectInstance>(FindObjectsSortMode.None))
+            foreach (var instance in WorldObjectRegistry.All)
                 if (instance.IsActive && instance.Def != null && instance.Def.LightRadius > 0f)
                     Show(instance.transform, instance.Def.LightRadius);
 
-            foreach (var player in FindObjectsByType<PlayerInteraction>(FindObjectsSortMode.None))
+            foreach (var player in PlayerInteraction.All)
             {
                 var radius = HeldLightRadius(player);
                 if (radius > 0f) Show(player.transform, radius);
             }
 
-            var stale = new List<Transform>();
+            _stale.Clear();
             foreach (var (source, light) in _lights)
             {
                 if (source != null && _seen.Contains(source)) continue;
                 if (light != null) Destroy(light.gameObject);
-                stale.Add(source);
+                _stale.Add(source);
             }
-            foreach (var source in stale) _lights.Remove(source);
+            foreach (var source in _stale) _lights.Remove(source);
         }
 
         static float HeldLightRadius(PlayerInteraction player)

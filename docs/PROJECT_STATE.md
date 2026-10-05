@@ -5,7 +5,7 @@
 
 ## Header
 
-- Last updated: **2026-10-03**
+- Last updated: **2026-10-05**
 - Phase: **Phase 3 done except T-031 (skipped, needs spec) and T-034 (deferred to Phase 4/6). Phase 4 (inventory) is done — T-040 through T-045 all implemented and merged into `main`.**
 - Task: **T-045 (server-authoritative inventory sync + rollback UI) merged into `main`** via [PR #20](https://github.com/yhw1737/surv/pull/20), 2026-09-16 — Phase 4 is complete. New `InventoryNetwork` (`NetworkBehaviour`) holds server-authoritative bag + equip slots for a player's own body only (warehouse/crates stay local, Phase 6 scope); `GridView`/`EquipSlotView` gained a `Network` property, `DragHandler`/`EquipDragHandler` branch on it with the local (non-networked) path byte-for-byte unchanged. Wired onto `player_rig_placeholder.prefab`. Batchmode EditMode run **238/238**, 0 failures — see In progress/unfinished and Next for the manual-test checklist. T-040~T-044 remain merged into `main` — [PR #19](https://github.com/yhw1737/surv/pull/19). Developer pressed Play repeatedly and reported bugs/requests each time, all fixed the same day: round 1 (unstyled Auto-Sort bar, no item/panel labels), round 2 (NullReferenceException crash, grids overlapping, item sizes not reflected), round 3 (drop position mismatched the dragged icon, tooltip flickering), round 4 (sword equip-slot fixture bug, Q/E rotate-in-place feature — later corrected), round 5 (Q/E moved to rotate-while-dragging instead, tooltip z-order behind newer UI, tooltip now follows the cursor), round 6 (backpack-unequip UI desync, split-drag visual gap + merge-on-drop-back, Q/E reliability fix, Ctrl+click-unequip + equipped-item tooltip), round 7 (Ctrl+click merge-onto-stack, dragged icon z-order above other panels, backpack contents can now bulk-move to the warehouse) — see Next for all seven rounds and the checklist. `docs/BACKLOG.md` also gained a Tier 2/3 modding note (dragselect/AllowTool-style mods need a DLL loader + Harmony-style patch mechanism, not just a richer JSON schema) — parked, not built, per Absolute Rule 6. Developer then actually ran the network checklist (one build + one Editor instance) and reported 6 findings; one was a real bug — `DragHandler.TryDrop`'s networked guard only checked the drag source, not the destination, so a local item dragged into the Networked Bag silently bypassed the server — now fixed to check both sides. The other 5 are expected/cosmetic/unrelated-system, see Next for the full breakdown. Developer then
 spotted two more gaps in the checklist/harness itself: the Networked Bag had no way to be seeded
@@ -244,6 +244,67 @@ already-merged commit messages (history rewrite on `main` needs the developer's 
     berries". Hovering a bag item shows a tooltip: ingredients, what eating it gives (raw food through
     `isle:raw`, as the server applies it), buffs with durations, hours until spoiled, armor/warmth/bag size,
     weight. **Verified:** EditMode **482/482**, PlayMode **2/2** (batchmode, Editor closed).
+  - **2026-10-05 — T-063: XP table + skill progression, on `feature/T-063-xp-skills` (off `main` after PR #22
+    merged; not committed).** Developer delegated the XP table ("XP 표 알아서 만들어서 개발해").
+    `docs/content/xp_table.md` derives every per-action value from SYS-SKILL-01's ~9,000 base XP/hour target
+    with the assumed action rate written next to it. Values live on the content defs as an `xp` block
+    (`{skill, base, per_unit}`) on gather nodes, crops, recipes, cook methods and fish, plus `xp_per_damage` on
+    combat skill defs — no XP numbers in C#. Eight skill defs added (the SYS-SKILL-01 roster). `SkillProgress`
+    turns earned XP into levels along `XpCurve`; awards go through the focus multiplier (`FocusCalculator`,
+    active players from `ActivityTracker`). Levels now matter: combat power and bow sway (weapon's combat
+    skill), fishing species weights and tension window, the rod's Fishing 5 gate (SYS-FISH-01), cooking unlocks
+    (boil Lv 4, dry Lv 12), recipe level requirements. **P** opens the skills window: production/combat tabs,
+    level, progress bar, "Focus 88% — earning 1.86× XP". XP toasts and a level-up banner. Skills are saved
+    (save v4; v3 saves still load, skills start at zero). Combat XP counts only damage actually dealt (no
+    overkill). **Verified:** EditMode **492/492**, PlayMode **2/2** (the live run now checks gathering XP and the
+    rod's level gate).
+  - **Same branch, same day — developer correction on fishing and gathering.** "낚시는 맵 중간 큰 호수에
+    낚싯대를 던진 뒤 물고기가 낚이면 클릭하는 미니게임" / "채집도 스킬 비례 1~10초, 나무는 더 오래, 재생성은
+    더 길게". Done: one-tile water nodes (`seawater`/`standing_water`/`stream`) **removed**; water is now
+    terrain — `WaterGenerator` cuts ponds and rivers into the island per seed (SYS-WORLD-01 §Shape already says
+    "scattered ponds and rivers"), the sea is everything off-island (`isle:pond`/`isle:river`/`isle:ocean`).
+    Water blocks walking, nodes and creatures; depth = distance from shore (answers SYS-FISH-01's open question
+    for the prototype). E drinks from the nearest water tile — E now picks the nearest of water / harvest node /
+    structure. Fishing: aim at water with the mouse, F casts a bobber, a bite comes after 4–12 s, click within
+    1 s to hook; a rod (Fishing 5) then goes to the tension minigame, a handline lands it; F again reels in.
+    Gathering takes `gather.time_sec × (1 − 0.7 × (Lv−1)/49)`, min 1 s, with a progress bar; moving or E cancels.
+    Trees are felled in one 10 s chop (4 wood, back in 3 days); rocks 8 s, bushes 3 s, grass 2 s, palms 6 s;
+    respawns 12 h–5 days. XP for gathering/fishing re-derived in `xp_table.md`. **Verified:** EditMode
+    **502/502**, PlayMode **2/2** — run on an APFS clone of the project while the developer's Editor held the
+    original (see Operational notes). The live-scene test now drinks at the coast, waits out timed harvests,
+    lands a handline catch through cast → bite → hook, and starts a rod fight at Fishing 5.
+  - **Same branch — island, fog of war, map (developer request).** Map grown to **1152 × 1152 tiles** (36 × 36
+    chunks, 3× the side) per "섬이 왜 이렇게 작아, 3배는 커야". `IslandGenerator` rewritten: 1–4 noisy rotated
+    ellipse landmasses per seed joined to the centre by land bridges, a 32-tile sea border, smooth-noise
+    forest/marsh with a per-island marsh share, and a final flood fill that drops any islet not walkable
+    from the spawn. Whole-map masks are computed once and cached. Water scaled (30 ponds, 7 rivers). For the
+    9× area: the map texture is written in one array upload and repaints are batched per frame; node sprites
+    are grouped per chunk and only chunks around the camera are drawn; creatures beyond 60 tiles of every
+    player aren't simulated or drawn. **Fog of war (SYS-MAP-01, new spec):** `FogGrid` (4-tile cells) reveals
+    16 tiles around the player 4×/s, permanently; a dark overlay covers unexplored ground in the world, and the
+    map/minimap draw it black. **Minimap/map:** centred on the player, zoom by wheel or `=`/`-` (minimap 64–1152
+    tiles, map 128–1152). **Markers:** left-click on the map adds (four colours, cap 32), right-click removes;
+    shown on the minimap and in the world as a pin with distance or an edge arrow. Fog and markers are saved
+    (save v5; v3–v4 still load, and a saved position that is now water falls back to the spawn).
+    **Verified:** EditMode **518/518**, PlayMode **2/2** (adds island-shape tests — sea border, everything
+    connected to the spawn, landmass count varies by seed — fog/marker tests, and a live fog check).
+  - **2026-10-06 — developer feedback: no respawn, lag, "all images high-resolution, not pixels".**
+    *Lag* — measured, not guessed: game logic was cheap (<0.4 ms/frame), but start-up took ~4.7 s and
+    `ResourcePlacer` allocated a string per tile per def (`Biome.ToString().ToLowerInvariant()` × 1.3 M tiles ×
+    ~10 defs — tens of millions of strings, bloating the heap so later GCs stalled). Fixed (allowed biomes
+    resolved once per def), noise skipped far from coastlines, node sprites now created lazily per visible
+    chunk and hidden from the Editor Hierarchy, creature views hidden too, `FindObjectsByType` (22 call sites,
+    many per frame) replaced by `PlayerInteraction.All` / `WorldObjectRegistry.All`, draw-only OnGUI work done on
+    Repaint only, node queries through a per-chunk spatial index. Start-up **4.7 s → 1.6 s**; generation now
+    logs a per-phase timing line. *Respawn* — the mechanism itself passes the live test; the likely cause was the
+    lag (Unity caps a frame's game time at 0.33 s, so a 15 s timer runs minutes at very low frame rates). The
+    death screen now shows the seconds left. *High resolution* — placeholder silhouettes are anti-aliased SDF
+    shapes at 256 px (were 64 px hard-edged); `PlaceholderVisuals` draws at 4× with soft edges (world size
+    unchanged; its tests updated to the new contract); the world ground is a new `GroundRenderer`: 16 px per
+    tile chunks around the camera, computed on a worker thread, with blurred water/biome fields so shorelines
+    and borders are smooth curves and smooth multi-scale noise instead of texel grain. Beaches now vary in
+    width and marsh/forest patches have ragged edges; ponds are bigger (radius 4–16). Visually checked by
+    dumping shapes, a ground chunk and the map to PNG. **Verified:** EditMode **519/519**, PlayMode **2/2**.
   - **Deer (2026-10-04).** Third creature, with the Alert state from SYS-COMBAT-01. Deer alerts on sight, then flees after `combat.alert_seconds` = 2 s **[invented]**. Density, weight (50 kg, σ 0.2, 30–80) and yield (4 meat) are all **[invented]**. EditMode 374/374, PlayMode 2/2.
   - **HUD.** IMGUI, no prefabs to wire: five gauges, clock, weather, interaction prompt, bag, craft
     window, death text. Day/night dims the global 2D light.
@@ -1075,6 +1136,11 @@ benchmarking" explicitly:
   19. Craft hide armor; does a boar hurt less?
   20. Plant berry seeds; rest through a night and harvest.
   21. Craft a rod (workbench); F at water, hold LMB to keep the needle in the green band.
+  24. (map) Walk around: does the fog lift as you go? M + wheel to zoom, left-click to mark, right-click to
+      remove; does the pin show in the world with distance? How does the bigger island feel to cross? Try
+      F9 (new island) a few times — do the shapes differ enough?
+  23. (T-063) P opens skills: gather a few trees and watch Gathering XP/levels rise; craft, cook, fish, fight
+      and see each skill move. Does Lv 4 (boil) / Lv 5 (rod) arrive at a sensible pace?
   22. K at a lit campfire: grill meat or fish, eat it, see the buff under the gauges. Eat the same dish
       repeatedly and notice it satisfies less.
   Things I expect to be wrong and want to hear about: balance (numbers above), the HUD layout at small
@@ -2685,6 +2751,29 @@ since it's server-side gauge math with no UI yet:
   placed Campfire `NetworkObject` on a second load in the same session, so the smoke check and the gameplay
   flow share one test method.
 
+- **2026-10-05 — island 1152 tiles, multi-blob shape.** Developer's call on size (3×) and shape (any number of
+  landmasses, not pure noise). Blob count 1–4, radii, aspect, bridge width 10–16, noise amplitude/scale, coast
+  band, marsh share 0.30–0.55, sea border 32, node-view radius 2 chunks, creature simulation radius 60 —
+  **[invented]**. This changes SYS-WORLD-01's 384-tile / ellipse description (spec updated).
+
+- **2026-10-05 — fog of war is presentation-side and host-only.** `MapState` lives in the UI assembly (it's what
+  one player has seen). Cell size 4, reveal radius 16, marker cap 32, removal 14 px, colours — **[invented]**.
+
+- **2026-10-05 — water is terrain, generated per seed.** Pond count 9 / radius 3–8, river count 3 / width 2–3,
+  depth per tile 1 (fresh) / 2 (sea), spawn clearance 12 tiles, cast range 8, bite 4–12 s, hook window 1 s,
+  gather leash 0.3 tiles, gather speed-up 70% at Lv 50 with a 1 s floor, all respawn times — **[invented]**.
+  Depth-from-shore is a prototype answer to SYS-FISH-01's open question. Ponds drink as `standing_water`,
+  rivers as `stream`, the sea as `seawater` (SYS-SURV-01 values).
+
+- **2026-10-05 — XP table written by delegation.** All values in `docs/content/xp_table.md` are [invented]
+  from the spec's pacing target; the assumed action rates (e.g. one tree per 10 s) are the part to review.
+  Recipe level gates (bow/armor Crafting 5, rod 3, leather backpack 8, warehouse 10, hunter's backpack 15) are
+  [invented]; boil 4 / dry 12 / rod Fishing 5 are spec values now enforced.
+
+- **2026-10-05 — XP values live on content defs, not a central table file.** An `xp` block on the thing acted
+  on means a mod's new tree, fish or recipe carries its own XP without editing anything else (Absolute
+  Rules 1 and 4). The markdown table stays the human-readable source the defs mirror.
+
 - **2026-10-05 — a dish's main ingredient is its heaviest one.** SYS-COOK-01's naming says
   "{method} {mainIngredient}" without defining "main"; weight is the reading that makes "smoked boar shoulder"
   out of boar + herbs. Side ingredients join the name through `pattern.<method>_with`.
@@ -2757,6 +2846,10 @@ since it's server-side gauge math with no UI yet:
   running `Unity.app/Contents/NetCoreRuntime/dotnet Unity.app/Contents/DotNetSdkRoslyn/csc.dll @rsp` in
   dependency order, compiles the whole project without touching the Editor or `Library/`. Compiles only —
   tests still need batchmode or the Editor's Test Runner.
+- **Running tests while the Editor is open (2026-10-05):** clone the project with APFS copy-on-write —
+  `cp -cR Assets Packages ProjectSettings Library <scratch>/surv_copy/` — and point batchmode's `-projectPath`
+  at the clone. Near-instant, uses almost no disk, and leaves the open Editor and the real `Library/` alone.
+  Copy changed files into the clone before each rerun (or re-clone).
 - **Close the Unity Editor before a headless `-batchmode` run.** Two instances cannot open one
   project; batchmode aborts with exit 1 and *"another Unity instance is running with this project
   open"*. With the Editor open instead, focusing its window triggers the asset refresh, and
@@ -2924,7 +3017,8 @@ Split one-task-per-branch on 2026-09-05, each with its own PR.
 | #19 | feature/T-040-grid-inventory | T-040 + T-041 + T-042 + T-043 + T-044 | [PR #19](https://github.com/yhw1737/surv/pull/19) — **merged to main** |
 | #20 | feature/T-045-inventory-network | T-045 | [PR #20](https://github.com/yhw1737/surv/pull/20) — **merged to main** |
 | #21 | feature/T-050-vitals | T-050 + T-051 (weather, world objects, seasons, snow/cold-snap/heat-wave) | [PR #21](https://github.com/yhw1737/surv/pull/21) — **merged to main** |
-| #22 | feature/prototype-solo-loop | Solo-loop prototype + T-051 hypothermia severity | [PR #22](https://github.com/yhw1737/surv/pull/22) — open, not yet merged |
+| #22 | feature/prototype-solo-loop | Solo-loop prototype + T-051 hypothermia severity | [PR #22](https://github.com/yhw1737/surv/pull/22) — **merged to main** |
+| #23 | feature/T-063-xp-skills | T-063 XP/skills + water/fishing/gathering + island/fog/map + perf/high-res | [PR #23](https://github.com/yhw1737/surv/pull/23) — open, not yet merged |
 
 T-011's branch also carries the `SCHEMA.md` change for developer answers 4 and 5 (a `name` on all
 nine types, `quality_from` namespaced), plus the full skill/profession taxonomy redesign that came

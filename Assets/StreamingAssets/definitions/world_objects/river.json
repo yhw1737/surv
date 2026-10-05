@@ -1,0 +1,25 @@
+{
+  "id": "isle:river",
+  "name": "@world_object.river",
+  "tags": [
+    "water/freshwater"
+  ],
+  "water_body": {
+    "kind": "river",
+    "count": 7,
+    "min_size": 2,
+    "max_size": 3
+  },
+  "drink": {
+    "source": "stream"
+  },
+  "fishing": {
+    "skill": "isle:fishing",
+    "depth_per_tile": 1.0
+  },
+  "visual": {
+    "shape": "water",
+    "color": "#4A9CD8",
+    "size": 1.0
+  }
+}

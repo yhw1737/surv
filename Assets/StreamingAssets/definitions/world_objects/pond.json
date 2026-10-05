@@ -1,0 +1,25 @@
+{
+  "id": "isle:pond",
+  "name": "@world_object.pond",
+  "tags": [
+    "water/freshwater"
+  ],
+  "water_body": {
+    "kind": "pond",
+    "count": 30,
+    "min_size": 4,
+    "max_size": 16
+  },
+  "drink": {
+    "source": "standing_water"
+  },
+  "fishing": {
+    "skill": "isle:fishing",
+    "depth_per_tile": 1.0
+  },
+  "visual": {
+    "shape": "water",
+    "color": "#4F8FB0",
+    "size": 1.0
+  }
+}

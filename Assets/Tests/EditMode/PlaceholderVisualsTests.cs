@@ -4,22 +4,34 @@ using UnityEngine;
 
 namespace Isle.Tests.EditMode
 {
-    /// <summary>ART_PIPELINE §Placeholders, T-017.</summary>
+    /// <summary>ART_PIPELINE §Placeholders, T-017. 2026-10-05: placeholders are drawn at
+    /// <see cref="PlaceholderVisuals.Supersample"/>× resolution with anti-aliased edges (developer: "모든 이미지는 픽셀이
+    /// 아니라 고해상도"), while their world size stays what the caller asked for.</summary>
     public sealed class PlaceholderVisualsTests
     {
         [Test]
-        public void RoundedRect_ReturnsRequestedSize()
+        public void RoundedRect_IsSupersampled()
         {
             var tex = PlaceholderVisuals.RoundedRect(20, 12, Color.red);
-            Assert.AreEqual(20, tex.width);
-            Assert.AreEqual(12, tex.height);
+            Assert.AreEqual(20 * PlaceholderVisuals.Supersample, tex.width);
+            Assert.AreEqual(12 * PlaceholderVisuals.Supersample, tex.height);
+        }
+
+        [Test]
+        public void Circle_EdgeIsAntiAliased()
+        {
+            var tex = PlaceholderVisuals.Circle(16, Color.blue);
+            var partial = 0;
+            foreach (var p in tex.GetPixels())
+                if (p.a > 0.05f && p.a < 0.95f) partial++;
+            Assert.Greater(partial, 0, "no soft edge pixels — the circle is still hard-edged");
         }
 
         [Test]
         public void RoundedRect_CenterIsFillColor()
         {
             var tex = PlaceholderVisuals.RoundedRect(20, 20, Color.red);
-            var center = tex.GetPixel(10, 10);
+            var center = tex.GetPixel(tex.width / 2, tex.height / 2);
             Assert.AreEqual(Color.red.r, center.r, 0.01f);
             Assert.AreEqual(1f, center.a, 0.01f);
         }
@@ -36,8 +48,7 @@ namespace Isle.Tests.EditMode
         public void Circle_IsSquareTexture()
         {
             var tex = PlaceholderVisuals.Circle(16, Color.blue);
-            Assert.AreEqual(16, tex.width);
-            Assert.AreEqual(16, tex.height);
+            Assert.AreEqual(tex.width, tex.height);
         }
 
         [Test]
@@ -65,12 +76,12 @@ namespace Isle.Tests.EditMode
         }
 
         [Test]
-        public void AsSprite_MatchesTextureDimensions()
+        public void AsSprite_KeepsWorldSize()
         {
-            var tex = PlaceholderVisuals.RoundedRect(32, 32, Color.green);
-            var sprite = PlaceholderVisuals.AsSprite(tex);
-            Assert.AreEqual(32, sprite.rect.width);
-            Assert.AreEqual(32, sprite.rect.height);
+            // 32 requested pixels at 32 pixels per unit is still one world unit, at any resolution.
+            var sprite = PlaceholderVisuals.AsSprite(PlaceholderVisuals.RoundedRect(32, 32, Color.green));
+            Assert.AreEqual(1f, sprite.bounds.size.x, 1e-4f);
+            Assert.AreEqual(1f, sprite.bounds.size.y, 1e-4f);
         }
     }
 }

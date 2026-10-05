@@ -38,6 +38,23 @@ namespace Isle.Data
 
         /// <summary>Tiles of light cast while active (a lit campfire). 0 casts none.</summary>
         public float LightRadius { get; init; }
+
+        /// <summary>Generated as terrain water (SYS-WORLD-03 §Water bodies): ponds or rivers. Null otherwise.</summary>
+        public WaterBodySpec WaterBody { get; init; }
+
+        /// <summary>The sea: every tile off the island belongs to this def.</summary>
+        public bool Ocean { get; init; }
+    }
+
+    public sealed class WaterBodySpec
+    {
+        /// <summary><c>pond</c> or <c>river</c>.</summary>
+        public string Kind { get; init; }
+        public int Count { get; init; }
+
+        /// <summary>Pond radius / river width, in tiles.</summary>
+        public int MinSize { get; init; }
+        public int MaxSize { get; init; }
     }
 
     public sealed class RainCatcherSpec
@@ -53,8 +70,14 @@ namespace Isle.Data
     /// <c>water/*</c> tag, and the water temperature from the ambient temperature — neither needs a field here.</summary>
     public sealed class FishingSpec
     {
-        /// <summary>Depth of the spot, same units as the fish's <c>habitat.depth</c> band.</summary>
+        /// <summary>The skill this spot fishes with — its level feeds species weights and the tension window.</summary>
+        public NamespacedId Skill { get; init; }
+
+        /// <summary>Depth of the spot, same units as the fish's <c>habitat.depth</c> band (single-tile spots).</summary>
         public float Depth { get; init; }
+
+        /// <summary>Water bodies: depth per tile of distance from the nearest land (SYS-WORLD-03).</summary>
+        public float DepthPerTile { get; init; }
     }
 
     /// <summary>What a harvestable node gives and how it comes back (SYS-WORLD-03 §Gathering).</summary>
@@ -69,6 +92,9 @@ namespace Isle.Data
         /// <summary>In-game minutes until a depleted node is restored.</summary>
         public float RespawnMinutes { get; init; }
 
+        /// <summary>Seconds a harvest takes at level 1 (SYS-WORLD-03 §Gathering); 0 is instant.</summary>
+        public float TimeSec { get; init; }
+
         /// <summary>Stamina spent per harvest (SYS-SURV-01 §Stamina table, "gather").</summary>
         public float StaminaCost { get; init; }
 
@@ -77,6 +103,9 @@ namespace Isle.Data
 
         /// <summary>Extra units per harvest with the right tool in hand.</summary>
         public int ToolBonus { get; init; }
+
+        /// <summary>XP this grants (docs/content/xp_table.md). Null grants none.</summary>
+        public XpAward Xp { get; init; }
     }
 
     /// <summary>Names the water source; the thirst value itself lives in

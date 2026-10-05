@@ -57,5 +57,10 @@
         "count": 1
       }
     ]
+  },
+  "xp": {
+    "skill": "isle:fishing",
+    "base": 35,
+    "per_unit": 15
   }
 }

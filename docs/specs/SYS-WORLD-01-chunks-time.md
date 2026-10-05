@@ -63,6 +63,13 @@ Procedural plus hand-placed landmarks, seeded and deterministic (same seed → s
 
 Island size ~384 × 384 tiles (12×12 chunks), roughly 3 minutes to cross on foot.
 
+> **2026-10-05 revision (developer):** "섬이 왜 이렇게 작아, 3배는 커야 돼. 원 형태 유지할 필요 없어 — 뭉텅이
+> 하나거나 여러 개면 되고, 완전 랜덤만 아니면 돼. 섬마다 지형이 달라도 돼." The map is now **1152 × 1152
+> tiles (36 × 36 chunks)**, three times the side. The shape below replaces the single ellipse: one to four
+> landmasses ("blobs"), each a noisy rotated ellipse, joined by land bridges so every part is walkable;
+> the forest/marsh mix is smooth noise and its ratio differs per island. Blob count, sizes, bridge width,
+> noise scale and marsh ratio range are **[invented]** — see SYS-WORLD-03 §Island shape for the numbers.
+
 **Shape**: a different random shape every game start — no fixed layout, but never a fully random
 blob either. Main axis is a rough ellipse so the silhouette always reads as an island. Edges are
 always coast. Moving inward from the coast, the interior is a patchwork of marsh and forest in

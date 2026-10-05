@@ -13,10 +13,16 @@
   },
   "gather": {
     "item": "isle:berries",
-    "count": 2,
-    "uses": 2,
-    "respawn_minutes": 45,
-    "stamina_cost": 6
+    "count": 3,
+    "uses": 1,
+    "respawn_minutes": 1440,
+    "stamina_cost": 6,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 20,
+      "per_unit": 0
+    },
+    "time_sec": 3
   },
   "visual": {
     "shape": "bush",

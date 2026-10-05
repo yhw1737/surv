@@ -1,0 +1,20 @@
+{
+  "id": "isle:ocean",
+  "name": "@world_object.ocean",
+  "tags": [
+    "water/saltwater"
+  ],
+  "ocean": true,
+  "drink": {
+    "source": "seawater"
+  },
+  "fishing": {
+    "skill": "isle:fishing",
+    "depth_per_tile": 2.0
+  },
+  "visual": {
+    "shape": "water",
+    "color": "#2E6F9E",
+    "size": 1.0
+  }
+}
