@@ -79,6 +79,11 @@ namespace Isle.UI.Prototype
             if (kb != null && kb.hKey.wasPressedThisFrame) _helpOpen = !_helpOpen;
             if (kb != null && kb.escapeKey.wasPressedThisFrame) _placing = null;
 
+            // Say why a roll didn't happen instead of silently ignoring Space.
+            if (kb != null && kb.spaceKey.wasPressedThisFrame && _vitals != null && _player != null
+                && _player.TryGetComponent<Isle.Networking.PlayerMovement>(out var movement) && !movement.RollAllowed && !movement.IsRolling)
+                GameFeed.RaiseNotice(_vitals.Overloaded ? "@ui.roll_overloaded" : "@ui.roll_tired");
+
             if (_openBox != null && (_player == null || Vector2.Distance(_player.transform.position, _openBox.transform.position) > PlayerInteraction.ReachTiles))
                 _openBox = null;
 
@@ -172,7 +177,10 @@ namespace Isle.UI.Prototype
             DrawGauge(ref y, Lang.Get("@ui.health"), _vitals.Health, Color.red);
             DrawGauge(ref y, Lang.Get("@ui.hunger"), _vitals.Hunger, new Color(0.95f, 0.6f, 0.2f));
             DrawGauge(ref y, Lang.Get("@ui.thirst"), _vitals.Thirst, new Color(0.3f, 0.6f, 1f));
-            DrawGauge(ref y, Lang.Get("@ui.stamina"), _vitals.Stamina, new Color(0.95f, 0.85f, 0.3f));
+            var staminaLabel = Lang.Get("@ui.stamina");
+            if (_vitals.Overloaded) staminaLabel += $"  {Lang.Get("@ui.overloaded")}";
+            else if (_vitals.Exhausted) staminaLabel += $"  {Lang.Get("@ui.exhausted")}";
+            DrawGauge(ref y, staminaLabel, _vitals.Stamina, _vitals.Exhausted || _vitals.Overloaded ? new Color(0.85f, 0.45f, 0.25f) : new Color(0.95f, 0.85f, 0.3f));
 
             var warmth = Mathf.InverseLerp(TemperatureMin, TemperatureMax, _vitals.Temperature) * VitalsCalculator.GaugeMax;
             var temperature = $"{Lang.Get("@ui.temperature")} {_vitals.Temperature:0.0}°";

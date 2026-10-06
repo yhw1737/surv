@@ -130,3 +130,25 @@ Absolute Rule 6).
 | 14 | 32-tile border | always sea |
 | 15 | Flood fill from the centre over land | reaches every land tile (all blobs joined) |
 | 6 | `respawn_minutes = 0` | 0 real seconds |
+
+## Clustering (2026-10-06, developer request)
+
+Nodes gather where they belong — groves, rock fields, meadows — and still turn up elsewhere, rarely.
+
+```
+spawn.cluster = { scale_tiles, coverage, inside, outside }
+patch(x, y)   = 0.65·noise(x/scale, y/scale) + 0.35·noise(x/(0.45·scale), y/(0.45·scale))   // value noise, per def seed
+density(x, y) = density × (inside in a patch, outside between; 0.06-wide smooth edge)
+              × (1 in a listed biome, spawn.elsewhere in any other land biome)
+```
+
+| Node | scale | coverage | inside | outside | elsewhere |
+|---|---|---|---|---|---|
+| tree | 36 | 0.35 | 3.5 | 0.12 | 0.06 |
+| rock | 28 | 0.12 | 7.0 | 0.06 | 0.25 |
+| tall grass | 30 | 0.30 | 3.5 | 0.12 | 0.12 |
+| berry bush | 22 | 0.18 | 4.0 | 0.08 | 0.04 |
+| palm | 26 | 0.35 | 2.5 | 0.25 | 0.03 |
+
+All **[invented]**. Verification: `ResourceClusterTests` (coverage within ±0.12, multiplier bounds, determinism,
+neighbouring tiles agree > 90%).

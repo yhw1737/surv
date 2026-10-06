@@ -9,7 +9,14 @@
     "biomes": [
       "isle:coast"
     ],
-    "density": 0.006
+    "density": 0.006,
+    "cluster": {
+      "scale_tiles": 26,
+      "coverage": 0.35,
+      "inside": 2.5,
+      "outside": 0.25
+    },
+    "elsewhere": 0.03
   },
   "gather": {
     "item": "isle:coconut",

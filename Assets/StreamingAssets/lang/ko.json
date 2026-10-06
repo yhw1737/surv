@@ -272,5 +272,10 @@
   "creature.fox": "여우",
   "creature.wolf": "늑대",
   "creature.frog": "개구리",
-  "creature.snake": "뱀"
+  "creature.snake": "뱀",
+  "ui.roll_tired": "기력이 부족해 구를 수 없습니다 (25 필요)",
+  "ui.roll_overloaded": "짐이 너무 무거워 구를 수 없습니다 (45kg 초과)",
+  "ui.overloaded": "(과적 — 회복 멈춤)",
+  "ui.exhausted": "(지침 — 달리기 불가)",
+  "ui.weight_line": "{0} kg  ({1} 넘으면 느려짐 · {2} 넘으면 과적)"
 }

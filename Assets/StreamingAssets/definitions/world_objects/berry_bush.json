@@ -9,7 +9,14 @@
     "biomes": [
       "isle:forest"
     ],
-    "density": 0.006
+    "density": 0.006,
+    "cluster": {
+      "scale_tiles": 22,
+      "coverage": 0.18,
+      "inside": 4.0,
+      "outside": 0.08
+    },
+    "elsewhere": 0.04
   },
   "gather": {
     "item": "isle:berries",

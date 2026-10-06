@@ -272,5 +272,10 @@
   "creature.fox": "Fox",
   "creature.wolf": "Wolf",
   "creature.frog": "Frog",
-  "creature.snake": "Snake"
+  "creature.snake": "Snake",
+  "ui.roll_tired": "Too tired to roll (needs 25 stamina)",
+  "ui.roll_overloaded": "Carrying too much to roll (over 45 kg)",
+  "ui.overloaded": "(overloaded — no regen)",
+  "ui.exhausted": "(exhausted — no sprint)",
+  "ui.weight_line": "{0} kg  (slower past {1}, overloaded past {2})"
 }

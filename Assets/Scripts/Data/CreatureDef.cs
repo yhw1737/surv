@@ -100,6 +100,23 @@ namespace Isle.Data
         public string[] Time { get; init; }
 
         public float Density { get; init; }
+
+        /// <summary>Optional: gather into patches (groves, rock fields, meadows) instead of spreading evenly.</summary>
+        public ClusterSpec Cluster { get; init; }
+
+        /// <summary>Density multiplier on land biomes not in <see cref="Biomes"/> — "found elsewhere, but rarely". 0: never.</summary>
+        public float Elsewhere { get; init; }
+    }
+
+    /// <summary>SYS-WORLD-03 §Clustering: a smooth noise field of <see cref="ScaleTiles"/>-wide blobs marks patches
+    /// covering about <see cref="Coverage"/> of the land; density is multiplied by <see cref="Inside"/> in them and by
+    /// <see cref="Outside"/> between them.</summary>
+    public sealed class ClusterSpec
+    {
+        public float ScaleTiles { get; init; } = 32f;
+        public float Coverage { get; init; } = 0.3f;
+        public float Inside { get; init; } = 3f;
+        public float Outside { get; init; } = 0.15f;
     }
 
     /// <summary>Carcass handling (SYS-HUNT-01 §Carry).</summary>

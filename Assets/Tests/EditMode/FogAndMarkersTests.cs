@@ -72,5 +72,17 @@ namespace Isle.Tests.EditMode
             markers.Add(Vector2.one);
             Assert.AreNotEqual(markers.All[0].Colour, markers.All[1].Colour);
         }
-    }
+    
+        [Test]
+        public void Fog_OldCoarseSave_LoadsIntoFinerGrid()
+        {
+            var coarse = new FogGrid(1152, 4);
+            coarse.Reveal(new Vec2Int(600, 600), 16f);
+            var fine = new FogGrid(1152, 2);
+            fine.Deserialize(coarse.Serialize());
+            Assert.IsTrue(fine.IsExplored(new Vec2Int(600, 600)));
+            Assert.IsTrue(fine.IsExplored(new Vec2Int(610, 600)));
+            Assert.IsFalse(fine.IsExplored(new Vec2Int(640, 600)));
+        }
+}
 }

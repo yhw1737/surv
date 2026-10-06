@@ -362,7 +362,8 @@ namespace Isle.World.Island
             var size = IslandGenerator.Size;
             _map = new Texture2D(size, size, TextureFormat.RGBA32, mipChain: false)
             {
-                filterMode = FilterMode.Point,
+                // Smoothed when the minimap zooms in, instead of showing square tiles.
+                filterMode = FilterMode.Bilinear,
                 wrapMode = TextureWrapMode.Clamp,
             };
             // One array upload, not 1.3 M SetPixel calls.
