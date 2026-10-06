@@ -341,6 +341,8 @@ stood up now so the solo beta is already a listen-server session with one client
 
 **Stage 2 of the priority banner ends here.** One player, placeholder shapes, whole loop.
 
+- [x] **T-153** Main menu — title screen before the game: New game (seed), Continue / Load, Options (display, frame rate, language, volume placeholder), Quit. Developer priority 2026-10-06
+  > **2026-10-06**: done — `MainMenu` (themed IMGUI over an animated beach scene), `GameSession` (menu ↔ game, back to menu via save + host stop + scene reload), `GameOptions` (PlayerPrefs: language, fullscreen, vSync, frame cap, volume), pause menu "Main menu". **8 save slots** (developer): Continue = last played, New island picks a slot (overwrite confirm), Load lists all 8 with delete; the old single save migrates to slot 1.
 - [ ] **T-150** Save / load round trip — quit mid-game, resume with world, inventory and skills intact
   > **2026-10-04 (prototype)**: JSON save in persistentDataPath — seed, clock, vitals, position, shelter, bag, hand, depleted nodes, campfires, loot piles. Autosave 60 s + on quit, F9 deletes. Skills aren't saved (no XP yet); creatures and weather re-roll. Not yet in SQLite, and the load path isn't covered by a PlayMode test.
 - [ ] **T-151** Solo bug pass — play the full loop repeatedly, fix what blocks it

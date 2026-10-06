@@ -4,20 +4,13 @@ using UnityEngine;
 namespace Isle.UI.Art
 {
     /// <summary>
-    /// SYS-CHAR-02: gives every player a <see cref="StickFigureView"/> and sets the frame-rate target (vSync,
-    /// falling back to 120 where vSync is off). Presentation only.
+    /// SYS-CHAR-02: gives every player a <see cref="StickFigureView"/>. Presentation only.
     /// </summary>
     public sealed class StickFigureDirector : MonoBehaviour
     {
-        const int FallbackFrameRate = 120;
-
         Material _material;
 
-        void Awake()
-        {
-            QualitySettings.vSyncCount = 1;
-            Application.targetFrameRate = FallbackFrameRate;
-        }
+        // Frame pacing (vSync / 120 fallback) moved to the player's options — Isle.UI.Prototype.GameOptions.
 
         void Update()
         {

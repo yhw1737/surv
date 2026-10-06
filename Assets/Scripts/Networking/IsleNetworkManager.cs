@@ -22,10 +22,24 @@ namespace Isle.Networking
             _fishNet.TransportManager.Transport = GetComponent<Tugboat>();
         }
 
-        void Start()
+        /// <summary>Starts the listen server and the local client. Called when a game begins (the main menu's New
+        /// game / Continue), not on scene load — the menu comes first.</summary>
+        public void StartHost()
         {
-            _fishNet.ServerManager.StartConnection();
-            _fishNet.ClientManager.StartConnection();
+            if (_fishNet == null) return;
+            if (!_fishNet.ServerManager.Started) _fishNet.ServerManager.StartConnection();
+            if (!_fishNet.ClientManager.Started) _fishNet.ClientManager.StartConnection();
         }
+
+        /// <summary>Stops both, e.g. before returning to the main menu.</summary>
+        public void StopHost()
+        {
+            if (_fishNet == null) return;
+            if (_fishNet.ClientManager.Started) _fishNet.ClientManager.StopConnection();
+            if (_fishNet.ServerManager.Started) _fishNet.ServerManager.StopConnection(true);
+        }
+
+        /// <summary>The live instance — the scene's, or the one FishNet kept across a scene reload.</summary>
+        public static IsleNetworkManager Find() => FindFirstObjectByType<IsleNetworkManager>();
     }
 }
