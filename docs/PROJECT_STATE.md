@@ -64,7 +64,7 @@
   PlayMode 2/2 (screen installed; bag → backpack move acknowledged by the server). **Not verified visually** — batchmode
   can't render IMGUI or overlay canvases; look in Play mode.
 - **Current work (2026-10-06, later): T-111 melee — combo, block, parry.** Branch `feature/T-111-melee-combo-block-parry`
-  off `main` (after PR #24 merged). The 2026-10-06 rounds below were split into four stacked PRs: melee → inventory/UI → creatures → stamina/fog/clusters. Developer: "다음 기능적인 부분 개발해줘. 내가 인정할만한거" + the
+  off `main` (after PR #24 merged). The 2026-10-06 rounds below were split into four stacked PRs, merge in order: [#25](https://github.com/yhw1737/surv/pull/25) melee → [#26](https://github.com/yhw1737/surv/pull/26) inventory/UI → [#27](https://github.com/yhw1737/surv/pull/27) creatures → [#28](https://github.com/yhw1737/surv/pull/28) stamina/fog/clusters. Developer: "다음 기능적인 부분 개발해줘. 내가 인정할만한거" + the
   top help box clipped its text. Done: `MeleeCombo`/`MeleeDefense` (pure, `Gameplay/Combat/MeleeCombo.cs`), combo +
   finisher + Lv unlocks + 0.3 s input buffer in `PlayerInteraction.PerformAttack`, RMB guard (`CmdBlock`/`CmdBlockAim`,
   `Blocking`/`BlockStartedAt`/`BlockDirection`), `ReceiveCreatureStrike` resolving parry/block/guard-break before
