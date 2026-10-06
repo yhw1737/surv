@@ -16,5 +16,6 @@
   "stamina_cost": 4,
   "grip": "one_hand",
   "quality_enabled": false,
-  "durability": 0
+  "durability": 0,
+  "cone_degrees": 110
 }

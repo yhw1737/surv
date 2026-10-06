@@ -100,4 +100,19 @@ namespace Isle.Gameplay.Combat
             return new Result(BlockOutcome.GuardBroken, damage - spent / StaminaPerDamage, spent);
         }
     }
+
+    /// <summary>SYS-COMBAT-01 §Hit detection: is a target inside the weapon's forward cone? Pure.</summary>
+    public static class MeleeCone
+    {
+        /// <param name="aim">Direction the swing goes (need not be normalised).</param>
+        /// <param name="offset">Target centre minus attacker position.</param>
+        /// <param name="targetRadius">Target body radius — the cone is widened by the angle it subtends.</param>
+        public static bool Contains(UnityEngine.Vector2 aim, UnityEngine.Vector2 offset, float targetRadius, float coneDegrees)
+        {
+            var distance = offset.magnitude;
+            if (distance <= targetRadius) return true;
+            var half = coneDegrees * 0.5f + UnityEngine.Mathf.Asin(UnityEngine.Mathf.Clamp01(targetRadius / distance)) * UnityEngine.Mathf.Rad2Deg;
+            return UnityEngine.Vector2.Angle(aim, offset) <= half;
+        }
+    }
 }

@@ -22,9 +22,11 @@ namespace Isle.UI.Art
         static readonly Color InkBack = Hex("#4A433C");
         static readonly Color HeadFill = Color.white;
         static readonly Color Shadow = new(0f, 0f, 0f, 0.22f);
-        const float Limb = 0.085f;
-        const float HeadRadius = 0.30f;
-        const float HeadOutline = 0.05f;
+        // Fancy Pants look (developer, 2026-10-06): thin limbs, a small white head in a black ring, no face, no hair.
+        const float Limb = 0.068f;
+        const float HeadRadius = 0.15f;
+        const float HeadScale = HeadRadius / 0.30f; // head wear was laid out for the old 0.30 head
+        const float HeadRing = 0.042f;
 
         // [invented] presentation values.
         const float Edge = 0.032f;       // outline around coloured fills
@@ -79,7 +81,7 @@ namespace Isle.UI.Art
 
             // Head and face, then head wear.
             DrawWear(mesh, outfit.Head, WearLayer.Behind, pose, torsoUp, torsoBack);
-            DrawHead(mesh, pose, hair: outfit.Head?.Wear == null);
+            DrawHead(mesh, pose, hair: false, time);
             DrawWear(mesh, outfit.Head, WearLayer.Body, pose, torsoUp, torsoBack);
 
             // Front arm and the main-hand item on top.
@@ -98,11 +100,24 @@ namespace Isle.UI.Art
             var pants = outfit.Legs?.Wear;
             if (pants != null)
             {
+                // Fancy Pants trousers: snug at the hip, flaring wide toward the ankle.
                 var fill = ColourOf(pants.Color, Ink);
-                mesh.Line(hip, knee, 0.15f + Edge * 2f, Ink);
-                mesh.Line(knee, foot, 0.13f + Edge * 2f, Ink);
-                mesh.Line(hip, knee, 0.15f, ink == Ink ? fill : Darken(fill));
-                mesh.Line(knee, foot, 0.13f, ink == Ink ? fill : Darken(fill));
+                if (ink != Ink) fill = Darken(fill);
+                Vector2 Across(Vector2 a, Vector2 b) { var d = (b - a).normalized; return new Vector2(-d.y, d.x); }
+                var n1 = Across(hip, knee);
+                var n2 = Across(knee, foot);
+                Points.Clear();
+                Points.Add(hip + n1 * 0.045f);
+                Points.Add(knee + n1 * 0.055f);
+                Points.Add(knee - n1 * 0.055f);
+                Points.Add(hip - n1 * 0.045f);
+                Outlined(mesh, Points, fill);
+                Points.Clear();
+                Points.Add(knee + n2 * 0.055f);
+                Points.Add(foot + n2 * 0.115f + new Vector2(0f, 0.02f));
+                Points.Add(foot - n2 * 0.115f + new Vector2(0f, 0.02f));
+                Points.Add(knee - n2 * 0.055f);
+                Outlined(mesh, Points, fill);
             }
             else
             {
@@ -115,59 +130,21 @@ namespace Isle.UI.Art
             {
                 var fill = ColourOf(boots.Color, Ink);
                 var c = foot + new Vector2(0.05f, 0.03f);
-                mesh.Ellipse(c, 0.12f + Edge, 0.075f + Edge, Ink);
-                mesh.Ellipse(c, 0.12f, 0.075f, ink == Ink ? fill : Darken(fill));
+                mesh.Ellipse(c, 0.1f + Edge, 0.06f + Edge, Ink);
+                mesh.Ellipse(c, 0.1f, 0.06f, ink == Ink ? fill : Darken(fill));
             }
             else
             {
-                mesh.Line(foot, foot + new Vector2(0.09f, 0f), Limb, ink);
+                mesh.Line(foot, foot + new Vector2(0.08f, 0f), Limb * 1.1f, ink);
             }
         }
 
-        static void DrawHead(VectorMesh mesh, in StickFigurePose pose, bool hair)
+        /// <summary>The head: a plain white disk in a near-black ring — no face, no hair (developer, 2026-10-06). It
+        /// "looks" by where it sits on the neck, which the animator bends toward the aim.</summary>
+        static void DrawHead(VectorMesh mesh, in StickFigurePose pose, bool hair, float time)
         {
-            var h = pose.Head;
-            var tilt = pose.HeadTilt;
-            Vector2 At(float x, float y) => h + Rotate(new Vector2(x, y), tilt);
-
-            if (hair)
-                for (var i = 0; i < 3; i++)
-                {
-                    var a = (95f + i * 28f) * Mathf.Deg2Rad - tilt;
-                    var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-                    mesh.Line(h + dir * (HeadRadius - 0.04f), h + dir * (HeadRadius + 0.11f) + new Vector2(-0.03f, 0f), 0.05f, Ink);
-                }
-
-            mesh.Disk(h, HeadRadius + HeadOutline, Ink);
-            mesh.Disk(h, HeadRadius, HeadFill);
-
-            if (pose.Dead)
-            {
-                foreach (var x in new[] { 0.09f, 0.2f })
-                {
-                    mesh.Line(At(x - 0.035f, 0.02f), At(x + 0.035f, 0.09f), 0.03f, Ink);
-                    mesh.Line(At(x - 0.035f, 0.09f), At(x + 0.035f, 0.02f), 0.03f, Ink);
-                }
-                mesh.Line(At(0.1f, -0.11f), At(0.2f, -0.11f), 0.03f, Ink);
-                return;
-            }
-
-            if (pose.EyesClosed)
-            {
-                mesh.Line(At(0.07f, 0.05f), At(0.12f, 0.05f), 0.025f, Ink);
-                mesh.Line(At(0.17f, 0.05f), At(0.22f, 0.05f), 0.025f, Ink);
-            }
-            else
-            {
-                mesh.Ellipse(At(0.095f, 0.055f), 0.03f, 0.045f, Ink);
-                mesh.Ellipse(At(0.195f, 0.055f), 0.03f, 0.045f, Ink);
-            }
-
-            // Mouth: a small smile, open while straining (reeling, striking).
-            if (pose.Action is FigureAction.Reel or FigureAction.Swing)
-                mesh.Ellipse(At(0.16f, -0.1f), 0.045f, 0.035f, Ink);
-            else
-                mesh.Line(At(0.1f, -0.1f), At(0.21f, -0.085f), 0.026f, Ink);
+            mesh.Disk(pose.Head, HeadRadius + HeadRing, Ink);
+            mesh.Disk(pose.Head, HeadRadius, HeadFill);
         }
 
         static void DrawWear(VectorMesh mesh, ItemDef item, WearLayer layer, in StickFigurePose pose, Vector2 up, Vector2 back)
@@ -236,20 +213,20 @@ namespace Isle.UI.Art
                     for (var i = 0; i <= 8; i++)
                     {
                         var a = Mathf.Lerp(8f, 172f, i / 8f) * Mathf.Deg2Rad - tilt;
-                        Points.Add(h + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (HeadRadius + 0.04f) + Rotate(new Vector2(0f, 0.06f), tilt));
+                        Points.Add(h + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (HeadRadius + 0.03f) + Rotate(new Vector2(0f, 0.06f * HeadScale), tilt));
                     }
                     Outlined(mesh, Points, fill);
-                    mesh.Line(h + Rotate(new Vector2(0.08f, 0.13f), tilt), h + Rotate(new Vector2(0.46f, 0.11f), tilt), 0.055f + Edge * 2f, Ink);
-                    mesh.Line(h + Rotate(new Vector2(0.08f, 0.13f), tilt), h + Rotate(new Vector2(0.46f, 0.11f), tilt), 0.055f, fill);
+                    mesh.Line(h + Rotate(new Vector2(0.08f, 0.13f) * HeadScale, tilt), h + Rotate(new Vector2(0.46f, 0.11f) * HeadScale, tilt), 0.04f + Edge * 2f, Ink);
+                    mesh.Line(h + Rotate(new Vector2(0.08f, 0.13f) * HeadScale, tilt), h + Rotate(new Vector2(0.46f, 0.11f) * HeadScale, tilt), 0.04f, fill);
                     return;
                 }
 
                 case "hood":
                     if (layer == WearLayer.Behind)
                     {
-                        var c = pose.Head + new Vector2(-0.05f, 0.02f);
-                        mesh.Disk(c, HeadRadius + 0.1f + Edge, Ink);
-                        mesh.Disk(c, HeadRadius + 0.1f, fill);
+                        var c = pose.Head + new Vector2(-0.03f, 0.01f);
+                        mesh.Disk(c, HeadRadius + 0.06f + Edge, Ink);
+                        mesh.Disk(c, HeadRadius + 0.06f, fill);
                     }
                     return;
 

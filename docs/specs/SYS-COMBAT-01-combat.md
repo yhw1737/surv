@@ -167,3 +167,11 @@ target situationalMult 1.20, Lv20 4-hit combo, Lv35 execute below 20% HP, Lv45 c
 
 Verification: `MeleeCombatTests` (EditMode, 16 cases) and the live-scene PlayMode test (fresh guard parries, held
 guard blocks for stamina, hit from behind goes through, three timed swings reach combo step 3).
+
+## Forward cone (2026-10-06)
+
+§Hit detection's "forward cone (angle and radius from the weapon def)": weapons gained `cone_degrees` (full angle,
+centred on the mouse direction the client sends with the swing); radius is the existing `reach`. The cone is widened by
+the angle the target's body subtends, and a body overlapping the attacker is always inside (`MeleeCone.Contains`).
+Values **[invented]**: fists 110°, hatchet 110°, pickaxe 100°, spear 70° (a thrust is narrow). A swing with no aim
+(tests, tools) keeps the old rule — nearest creature in reach. Lag compensation (T-113's other half) still not built.

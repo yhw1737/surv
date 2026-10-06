@@ -107,6 +107,9 @@ namespace Isle.UI.Art
             if (_sleep > 0.5f) Zs(r);
             _mesh.Transform = null;
             _mesh.Fill(_unityMesh);
+            // Bounds centred on the feet: the 2D renderer's custom-axis sort uses the bounds centre, so this makes the
+            // figure sort by where it stands — the same rule as the trees' foot pivots. Big enough to never cull early.
+            _unityMesh.bounds = new Bounds(Vector3.zero, new Vector3(6f, 6f, 1f));
         }
 
         // ------------------------------------------------------------------ helpers

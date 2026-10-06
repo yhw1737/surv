@@ -1,3 +1,4 @@
+using UnityEngine;
 using Isle.Networking;
 using NUnit.Framework;
 
@@ -41,6 +42,26 @@ namespace Isle.Tests.EditMode
         public void RollSeconds_Is0_6()
         {
             Assert.AreEqual(0.6f, MovementCalculator.RollSeconds, Tolerance);
+        }
+
+        [Test]
+        public void SteerRoll_NoInput_KeepsDirection()
+        {
+            var (x, y) = MovementCalculator.SteerRoll(1f, 0f, 0f, 0f);
+            Assert.AreEqual(1f, x, 1e-5f);
+            Assert.AreEqual(0f, y, 1e-5f);
+        }
+
+        [Test]
+        public void SteerRoll_HeldInput_TurnsTheRollWithinAFewTicks()
+        {
+            float x = 1f, y = 0f;
+            (x, y) = MovementCalculator.SteerRoll(x, y, 0f, 1f);
+            Assert.Greater(y, 0f, "first tick already bends toward the input");
+            Assert.Greater(x, 0f, "but doesn't snap");
+            for (var i = 0; i < 12; i++) (x, y) = MovementCalculator.SteerRoll(x, y, 0f, 1f);
+            Assert.AreEqual(1f, y, 0.02f);
+            Assert.AreEqual(1f, Mathf.Sqrt(x * x + y * y), 1e-4f, "stays unit length");
         }
     }
 }

@@ -141,5 +141,28 @@ namespace Isle.Tests.EditMode
             Assert.IsTrue(MeleeCombo.Executes(35, 0.19f));
             Assert.IsFalse(MeleeCombo.Executes(35, 0.2f));
         }
+
+        // --- Forward cone (SYS-COMBAT-01 §Hit detection) --------------------------------------------------------
+
+        [Test]
+        public void Cone_TargetAhead_IsHit_BehindIsNot()
+        {
+            var aim = new UnityEngine.Vector2(1f, 0f);
+            Assert.IsTrue(MeleeCone.Contains(aim, new UnityEngine.Vector2(1.5f, 0.2f), 0.3f, 70f));
+            Assert.IsFalse(MeleeCone.Contains(aim, new UnityEngine.Vector2(-1.5f, 0f), 0.3f, 70f));
+        }
+
+        [Test]
+        public void Cone_WidensByTheTargetsSize()
+        {
+            var aim = new UnityEngine.Vector2(1f, 0f);
+            var offset = new UnityEngine.Vector2(1f, 1f); // 45° off the aim, outside a 70° cone's 35° half-angle
+            Assert.IsFalse(MeleeCone.Contains(aim, offset, 0.05f, 70f));
+            Assert.IsTrue(MeleeCone.Contains(aim, offset, 0.4f, 70f)); // a big body pokes into the cone
+        }
+
+        [Test]
+        public void Cone_OverlappingTarget_AlwaysHit() =>
+            Assert.IsTrue(MeleeCone.Contains(new UnityEngine.Vector2(1f, 0f), new UnityEngine.Vector2(-0.1f, 0f), 0.3f, 30f));
     }
 }

@@ -49,7 +49,9 @@ namespace Isle.Gameplay.Building
 
             var renderer = go.AddComponent<SpriteRenderer>();
             renderer.sprite = SpriteFor(def);
-            renderer.sortingOrder = 6;
+            // Stands on its foot and sorts by it, like trees, so the player can walk behind a workbench.
+            renderer.spriteSortPoint = SpriteSortPoint.Pivot;
+            renderer.sortingOrder = 2;
             go.transform.localScale = Vector3.one * (def.Visual?.Size ?? 1f);
 
             // Awake hasn't run yet (the object is inactive), so read the def's tags directly.
@@ -91,6 +93,6 @@ namespace Isle.Gameplay.Building
         }
 
         static Sprite SpriteFor(WorldObjectDef def) =>
-            ShapeLibrary.Sprite(def.Visual?.Shape, ShapeLibrary.ParseColour(def.Visual?.Color, PlaceholderVisuals.ColorForTags(def.Tags)));
+            ShapeLibrary.StandingSprite(def.Visual?.Shape, ShapeLibrary.ParseColour(def.Visual?.Color, PlaceholderVisuals.ColorForTags(def.Tags)));
     }
 }

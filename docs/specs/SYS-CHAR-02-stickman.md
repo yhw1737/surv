@@ -119,3 +119,34 @@ Back limbs are drawn in a lighter ink (#4A433C) for depth.
 
 Visual check (manual, not automated): poses rendered to PNG through the shader — idle, walk cycle, swing, gather,
 cast, reel, bow draw, dead, with every `wear`/`hold` style used by the starter items.
+
+## Revision 2026-10-06 — Fancy Pants look, aim, scale (developer feedback)
+
+"좀보이드/돈스타브처럼 캐릭터는 화면에 작게, 나무 같은 큰 물체는 크게" · "팬시 팬츠를 벤치마킹하라 했는데 일반 졸라맨 같고,
+얼굴이 있고, 얼굴이 너무 크다" · "무기를 마우스 방향으로 — 창끝이 마우스를 향하게".
+
+| What | Now | Was |
+|---|---|---|
+| Head | **white disk r 0.15 in a near-black ring 0.042 — no face, no hair** (second feedback round). It looks at the aim: the neck bends toward the mouse (head direction = 0.6·up + aim, spring-smoothed) and the upper body leans back 0.18 rad per rad of upward aim | white disk r 0.30 with eyes, mouth |
+| Skeleton | hip 0.74, torso 0.44, neck→head 0.19, thigh/shin 0.38, upper/fore arm 0.29 | 0.64 / 0.40 / 0.32 / 0.33 / 0.26 |
+| Limb stroke | 0.068 | 0.085 |
+| Gait | walk: foot down 50% of the cycle, half-span 0.38; run (blends in from 4.6 to 6.6 tiles/s): foot down 32%, half-span 0.47, a flight phase, hips sink 0.09, knees lift to 0.32 — the stride itself lengthens (stride = 2·half-span ÷ stance share) instead of the feet just cycling faster | fixed stride 1.1 |
+| Arms | swing 0.7 → 1.4 rad with running, reach 0.56 → 0.42 (bent, pumping elbows) | 0.6 rad, straight |
+| Lean | 0.075 rad per tile/s, max 0.42 | 0.035, max 0.22 |
+| `pants` wear | flared trousers: 0.045 at the hip, 0.055 at the knee, 0.115 at the ankle (half-widths) | straight thick strokes |
+| Aim | with an item in the main hand and the local player's mouse: hand reaches along the aim, the item points at it (spear tip at the mouse), the body faces the mouse; swings rotate their arc by the aim, the bow and the guard face it | swings/draw/guard always horizontal |
+| Camera | half-height 8.5 tiles (character ≈ 1/11 of the screen height) | 4.95 |
+| Standing objects | sprite pivot at the foot, sort by it; tree 3.6, palm 3.4, rock 1.15, bush 1.1, grass 0.9 tiles | centred pivot; 1.4 / 1.4 / 0.9 / 0.9 / 0.8 |
+| Figures | mesh bounds centred on the feet so the custom-axis sort compares feet with feet | bounds centre ≈ waist |
+
+All **[invented]** presentation values. Aim is presentation only and local-only (remote players have no aim yet);
+melee hits still pick the nearest creature in reach — a forward cone along the aim is SYS-COMBAT-01's T-113 hit
+detection, not built here. New verification: 13 held item points along the aim (±0.05 rad); 14 head ≤ 25% of height.
+
+**Roll (same round).** "구르기는 이것보단 빠르게, 중간에 경로를 바꿀 수 있어야": roll speed 2.6× base (was the sprint
+1.65×), still 0.6 s with SYS-CHAR-01's i-frames; held direction keys steer it 35% of the way per tick
+(`MovementCalculator.SteerRoll` — SYS-CHAR-01 verification 6 "change direction mid-roll"). Both **[invented]**.
+
+**World objects (same round).** `ShapeLibrary` now draws every placeholder in the cartoon ink style: a near-black line
+around each primitive (5/256 of the canvas), highlights un-inked; tree (flared trunk, cloud canopy with a dark
+underside), palm (segmented leaning trunk, drooping fronds), rock (faceted with a lit top), bush, grass redrawn.

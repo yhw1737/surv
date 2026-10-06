@@ -474,6 +474,7 @@ No block means the item isn't drawn on the figure. An unknown style falls back t
 | Type | Field | Meaning |
 |---|---|---|
 | Creature combat | `windup_seconds` | Tell before a strike lands — the player's chance to block or parry. 0 or absent strikes instantly |
+| Weapon | `cone_degrees` | Melee forward cone, full angle around the aim (SYS-COMBAT-01 §Hit detection); 0 = anything in reach |
 | Creature combat | `lunge_tiles`, `lunge_speed` | After the wind-up, dash this far at this speed toward the player before the strike lands |
 | Spawn | `cluster` `{scale_tiles, coverage, inside, outside}` | Gather into noise patches (SYS-WORLD-03 §Clustering) |
 | Spawn | `elsewhere` | Density multiplier in land biomes not listed (rare elsewhere); 0 = never |

@@ -77,5 +77,25 @@ namespace Isle.Tests.EditMode
             animator.Step(new FigureInput { Action = FigureAction.Roll, ActionTime = 0.3f, RollDuration = 0.6f }, 1f / 60f);
             Assert.AreEqual(-Mathf.PI, animator.Pose.Rotation, 1e-3f);
         }
+
+        [Test]
+        public void Animator_HoldingAWeapon_PointsItAtTheAim()
+        {
+            foreach (var aim in new[] { -0.8f, 0f, 0.6f })
+            {
+                var pose = Run(new FigureInput { HasAim = true, AimAngle = aim, HoldsItem = true }, 1.5f).Pose;
+                Assert.AreEqual(aim, pose.ItemAngleFront, 0.05f, $"item angle for aim {aim}");
+                var hand = (pose.HandFront - pose.Shoulder).normalized;
+                Assert.Greater(Vector2.Dot(hand, new Vector2(Mathf.Cos(aim), Mathf.Sin(aim))), 0.9f, "hand not reaching along the aim");
+            }
+        }
+
+        [Test]
+        public void Animator_HeadIsSmall()
+        {
+            // Fancy Pants proportions: the head (neck to crown) is well under a fifth of the figure's height.
+            var pose = Run(new FigureInput(), 1f).Pose;
+            Assert.Less(pose.Head.y - pose.Neck.y, 0.25f * pose.Head.y);
+        }
     }
 }

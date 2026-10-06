@@ -134,6 +134,26 @@ namespace Isle.Gameplay.Hunting
             return target == null ? -1f : Damage(target, damage, loot);
         }
 
+        /// <summary>Nearest live creature within reach and inside a cone of <paramref name="coneDegrees"/> around
+        /// <paramref name="aim"/> (SYS-COMBAT-01 §Hit detection). A zero aim or cone falls back to anything in reach.</summary>
+        public Creature NearestCreatureInCone(Vector2 from, float radiusTiles, Vector2 aim, float coneDegrees)
+        {
+            if (aim.sqrMagnitude < 1e-6f || coneDegrees <= 0f) return NearestCreature(from, radiusTiles);
+            Creature target = null;
+            var best = radiusTiles;
+            foreach (var creature in _creatures)
+            {
+                var offset = creature.Position - from;
+                var distance = BodyReach.SurfaceDistance(offset.magnitude, creature.Radius);
+                if (distance > best) continue;
+                // Measured to the body's edge: a creature overlapping the player is always in the cone.
+                if (!MeleeCone.Contains(aim, offset, creature.Radius, coneDegrees)) continue;
+                best = distance;
+                target = creature;
+            }
+            return target;
+        }
+
         /// <summary>Nearest live creature whose body edge is within <paramref name="radiusTiles"/>, or null.</summary>
         public Creature NearestCreature(Vector2 from, float radiusTiles)
         {
