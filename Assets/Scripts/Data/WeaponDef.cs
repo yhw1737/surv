@@ -22,6 +22,10 @@ namespace Isle.Data
         /// <summary>Reach in tiles.</summary>
         public float Reach { get; init; }
 
+        /// <summary>SYS-COMBAT-01 §Hit detection: "Melee uses a forward cone (angle and radius from the weapon def)" —
+        /// the full cone angle in degrees, centred on the aim. 0 or unset: no cone (anything in reach).</summary>
+        public float ConeDegrees { get; init; }
+
         public float StaminaCost { get; init; }
 
         /// <summary>

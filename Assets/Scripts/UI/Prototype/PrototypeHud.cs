@@ -293,7 +293,7 @@ namespace Isle.UI.Prototype
                     var name = Lang.Get(nearStation.Def?.Name);
                     if (nearStation.TryGetComponent<RainCatcher>(out var catcher)) name += $" ({catcher.Water:0.0}/{catcher.Capacity:0})";
                     if (nearStation.TryGetComponent<CropPlot>(out var plot) && plot.Crop != null) name = $"{Lang.Get(plot.Crop.Name)} {plot.Growth * 100f:0}%";
-                    var top = (Vector2)nearStation.transform.position + Vector2.up * ((nearStation.Def?.Visual?.Size ?? 1f) * 0.6f + 0.3f);
+                    var top = (Vector2)nearStation.transform.position + Vector2.up * ((nearStation.Def?.Visual?.Size ?? 1f) * 0.95f + 0.2f);
                     prompts.Add((top, "E", name));
                     if (IsNight() && nearStation.HasTag("station/campfire")) prompts.Add((top + Vector2.up * 0.7f, "R", Lang.Get("@ui.rest_short")));
                 }
@@ -303,7 +303,8 @@ namespace Isle.UI.Prototype
             return prompts;
         }
 
-        static float NodeHeight(ResourceNode node) => (node.Def?.Visual?.Size ?? 1f) * 0.6f;
+        /// <summary>Height of a standing node's drawing above its foot (sprites stand on their pivot).</summary>
+        static float NodeHeight(ResourceNode node) => (node.Def?.Visual?.Size ?? 1f) * 0.9f;
 
         static bool IsNight() =>
             WorldTime.Instance != null && WorldTime.Instance.Clock.Phase == DayPhase.Night;

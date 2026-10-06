@@ -11,9 +11,9 @@ namespace Isle.UI.Prototype
     /// </summary>
     public sealed class PlayerCamera : MonoBehaviour
     {
-        /// <summary>Orthographic half-height in tiles: 4.5 × 1.1, a 10% wider view (developer, 2026-10-06 — the stick
-        /// figure read too big at 4.5).</summary>
-        const float ViewHalfHeightTiles = 4.95f;
+        /// <summary>Orthographic half-height in tiles. Project Zomboid / Don't Starve framing (developer, 2026-10-06): the
+        /// character is small on screen (~1/11 of its height) and trees tower over it.</summary>
+        const float ViewHalfHeightTiles = 8.5f;
         const float Smoothing = 8f;
 
         Camera _camera;

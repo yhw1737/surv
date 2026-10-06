@@ -137,6 +137,7 @@ namespace Isle.Gameplay.Character
         float _nextAttackAt;
         readonly MeleeCombo _combo = new();
         bool _attackQueued;
+        Vector2 _attackAim, _queuedAim;
 
         /// <summary>A press this close to the weapon being ready again is held and swung the moment it is, so a combo
         /// doesn't need frame-perfect clicks. [invented] — SYS-COMBAT-01 lists the buffer as an open question.</summary>
@@ -189,7 +190,12 @@ namespace Isle.Gameplay.Character
                 UpdateBlockInput(mouse, ranged);
                 if (mouse.leftButton.wasPressedThisFrame && !PointerGate.Captured && !_sentBlocking)
                 {
-                    if (!ranged) RequestAttack();
+                    if (!ranged)
+                    {
+                        // The swing goes where the mouse points (SYS-COMBAT-01 forward cone).
+                        var aim = MouseWorld() is { } at ? (Vector2)at - (Vector2)transform.position : Vector2.zero;
+                        CmdAttack(aim.x, aim.y);
+                    }
                     else
                     {
                         DrawStartedAt = Time.time;
@@ -292,7 +298,11 @@ namespace Isle.Gameplay.Character
         }
 
         public void RequestInteract() => CmdInteract();
-        public void RequestAttack() => CmdAttack();
+        /// <summary>Test and tooling entry point: a swing with no aim (hits the nearest creature in reach).</summary>
+        public void RequestAttack() => CmdAttack(0f, 0f);
+
+        /// <summary>A swing toward <paramref name="aim"/> (a direction from the player).</summary>
+        public void RequestAttack(Vector2 aim) => CmdAttack(aim.x, aim.y);
         public void RequestCraft(string recipeId) => CmdCraft(recipeId);
         public void RequestUse(string itemId) => CmdUse(itemId);
         public void RequestRest() => CmdRest();
@@ -383,15 +393,22 @@ namespace Isle.Gameplay.Character
         }
 
         [ServerRpc]
-        void CmdAttack()
+        void CmdAttack(float aimX, float aimY)
         {
+            var aim = new Vector2(aimX, aimY);
+            if (float.IsNaN(aim.x) || float.IsNaN(aim.y)) aim = Vector2.zero; // never trust client values
             if (IsDead || Blocking) return;
             if (Time.time < _nextAttackAt)
             {
                 // Pressed just before the weapon is ready: swing as soon as it is (combo input buffer).
-                if (_nextAttackAt - Time.time <= AttackBufferSeconds) _attackQueued = true;
+                if (_nextAttackAt - Time.time <= AttackBufferSeconds)
+                {
+                    _attackQueued = true;
+                    _queuedAim = aim;
+                }
                 return;
             }
+            _attackAim = aim;
             PerformAttack();
         }
 
@@ -401,6 +418,7 @@ namespace Isle.Gameplay.Character
             if (_attackQueued && Time.time >= _nextAttackAt)
             {
                 _attackQueued = false;
+                _attackAim = _queuedAim;
                 if (!IsDead && !Blocking) PerformAttack();
             }
         }
@@ -435,7 +453,7 @@ namespace Isle.Gameplay.Character
             GameFeed.RaisePlayerSwing(transform.position, weapon.Reach);
 
             var director = CreatureDirector.Instance;
-            var target = director != null ? director.NearestCreature(transform.position, weapon.Reach) : null;
+            var target = director != null ? director.NearestCreatureInCone(transform.position, weapon.Reach, _attackAim, weapon.ConeDegrees) : null;
             if (target == null) return;
 
             var power = PowerCalculator.FinalPower(weapon.BasePower, level, situationalMult: MeleeCombo.SituationalMult(target.IsStaggered))

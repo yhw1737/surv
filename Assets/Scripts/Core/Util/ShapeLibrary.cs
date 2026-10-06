@@ -16,8 +16,8 @@ namespace Isle.Core.Util
         /// anti-aliased edges — the developer asked for high-resolution images, not pixel art.</summary>
         const int Size = 256;
 
-        // ART_PIPELINE §Style: outline is dark brown, never black.
-        static readonly Color Outline = new Color32(0x3A, 0x2A, 0x1E, 0xFF);
+        // ART_PIPELINE 2026-10-06 direction: the cartoon's near-black ink, the same as the stick figure's (SYS-CHAR-02).
+        static readonly Color Outline = new Color32(0x16, 0x13, 0x0F, 0xFF);
         static readonly Color Bark = new Color32(0x6B, 0x45, 0x2A, 0xFF);
         static readonly Color Wood = new Color32(0xB0, 0x82, 0x4E, 0xFF);
         static readonly Color Water = new Color32(0x4A, 0x9C, 0xD8, 0xFF);
@@ -41,6 +41,20 @@ namespace Isle.Core.Util
             return _cache[(shape, colour)] = UnityEngine.Sprite.Create(texture, new Rect(0, 0, Size, Size), new Vector2(0.5f, 0.5f), Size, 0, SpriteMeshType.FullRect);
         }
 
+        static readonly Dictionary<(string, Color), Sprite> _standing = new();
+
+        /// <summary>The same drawing with its pivot at the foot of the shape (shapes stand on the bottom of their canvas),
+        /// so a tree is placed by its trunk and sorts by where it meets the ground.</summary>
+        public static Sprite StandingSprite(string shape, Color colour)
+        {
+            if (_standing.TryGetValue((shape, colour), out var sprite)) return sprite;
+            var texture = Sprite(shape, colour).texture;
+            return _standing[(shape, colour)] = UnityEngine.Sprite.Create(texture, new Rect(0, 0, Size, Size), new Vector2(0.5f, FootPivot), Size, 0, SpriteMeshType.FullRect);
+        }
+
+        /// <summary>Fraction of the canvas below a standing shape's foot (trunks start at about 4%).</summary>
+        public const float FootPivot = 0.06f;
+
         /// <summary>"#RRGGBB" from a def, or <paramref name="fallback"/> when missing or malformed.</summary>
         public static Color ParseColour(string hex, Color fallback) =>
             !string.IsNullOrEmpty(hex) && ColorUtility.TryParseHtmlString(hex, out var colour) ? colour : fallback;
@@ -53,37 +67,81 @@ namespace Isle.Core.Util
             switch (shape)
             {
                 case "tree":
-                    canvas.Rect(0.43f, 0.04f, 0.57f, 0.42f, Bark);
-                    canvas.Circle(0.5f, 0.62f, 0.35f, c);
-                    canvas.Circle(0.38f, 0.72f, 0.13f, light);
+                {
+                    // A chunky cartoon tree: flared trunk, a cloud of overlapping leaf blobs, a darker underside.
+                    canvas.Tri(0.34f, 0.04f, 0.66f, 0.04f, 0.5f, 0.2f, Bark);
+                    canvas.Rect(0.44f, 0.04f, 0.56f, 0.5f, Bark);
+                    canvas.Line(0.52f, 0.36f, 0.66f, 0.5f, 0.025f, Bark);
+                    canvas.Inked = false;
+                    canvas.Rect(0.465f, 0.08f, 0.49f, 0.42f, Color.Lerp(Bark, Color.white, 0.15f));
+                    canvas.Inked = true;
+                    canvas.Circle(0.3f, 0.56f, 0.17f, dark);
+                    canvas.Circle(0.7f, 0.56f, 0.17f, dark);
+                    canvas.Circle(0.5f, 0.52f, 0.2f, dark);
+                    canvas.Circle(0.28f, 0.68f, 0.18f, c);
+                    canvas.Circle(0.72f, 0.68f, 0.18f, c);
+                    canvas.Circle(0.5f, 0.74f, 0.23f, c);
+                    canvas.Circle(0.4f, 0.86f, 0.12f, c);
+                    canvas.Circle(0.6f, 0.86f, 0.11f, c);
+                    canvas.Inked = false;
+                    canvas.Circle(0.4f, 0.8f, 0.07f, light);
+                    canvas.Circle(0.26f, 0.7f, 0.05f, light);
+                    canvas.Circle(0.64f, 0.76f, 0.04f, light);
+                    canvas.Inked = true;
                     break;
+                }
                 case "palm":
-                    canvas.Line(0.45f, 0.04f, 0.56f, 0.66f, 0.06f, Bark);
-                    for (var i = 0; i < 5; i++)
+                {
+                    // A leaning, segmented trunk under a burst of drooping fronds and two coconuts.
+                    var px = new[] { 0.46f, 0.48f, 0.52f, 0.57f, 0.6f };
+                    var py = new[] { 0.04f, 0.2f, 0.36f, 0.52f, 0.66f };
+                    for (var i = 0; i < 4; i++) canvas.Line(px[i], py[i], px[i + 1], py[i + 1], 0.045f - i * 0.004f, i % 2 == 0 ? Bark : Color.Lerp(Bark, Color.white, 0.12f));
+                    // Fronds fan out from the crown and droop at the tips — the side ones most.
+                    const float crownX = 0.6f, crownY = 0.66f;
+                    for (var i = 0; i < 7; i++)
                     {
-                        var a = Mathf.PI * (0.1f + i * 0.2f);
-                        canvas.Tri(0.56f, 0.7f, 0.56f + Mathf.Cos(a) * 0.44f, 0.7f + Mathf.Sin(a) * 0.28f - 0.06f, 0.56f + Mathf.Cos(a + 0.25f) * 0.3f, 0.7f + Mathf.Sin(a + 0.25f) * 0.2f, c);
+                        var a = Mathf.Lerp(12f, 168f, i / 6f) * Mathf.Deg2Rad;
+                        var side = Mathf.Abs(Mathf.Cos(a));
+                        var tipX = crownX + Mathf.Cos(a) * 0.36f;
+                        var tipY = crownY + Mathf.Sin(a) * 0.2f - 0.2f * side * side;
+                        var midX = crownX + Mathf.Cos(a) * 0.22f;
+                        var midY = crownY + Mathf.Sin(a) * 0.16f;
+                        var colour = i % 2 == 0 ? c : dark;
+                        canvas.Tri(crownX, crownY, midX, midY + 0.06f, tipX, tipY, colour);
+                        canvas.Tri(crownX, crownY, midX, midY - 0.04f, tipX, tipY, colour);
                     }
-                    canvas.Circle(0.5f, 0.64f, 0.05f, Bark);
-                    canvas.Circle(0.61f, 0.63f, 0.05f, Bark);
+                    canvas.Circle(0.56f, 0.62f, 0.045f, Bark);
+                    canvas.Circle(0.65f, 0.61f, 0.045f, Bark);
                     break;
+                }
                 case "rock":
-                    canvas.Ellipse(0.5f, 0.4f, 0.42f, 0.28f, c);
-                    canvas.Ellipse(0.62f, 0.5f, 0.2f, 0.16f, c);
-                    canvas.Ellipse(0.4f, 0.48f, 0.14f, 0.07f, light);
+                    // A faceted boulder with a lit top face and a smaller stone leaning on it.
+                    canvas.Ellipse(0.5f, 0.3f, 0.42f, 0.24f, c);
+                    canvas.Inked = false;
+                    canvas.Tri(0.22f, 0.36f, 0.5f, 0.52f, 0.62f, 0.4f, light);
+                    canvas.Tri(0.62f, 0.4f, 0.5f, 0.52f, 0.78f, 0.42f, Color.Lerp(c, Color.white, 0.18f));
+                    canvas.Line(0.56f, 0.22f, 0.64f, 0.14f, 0.012f, dark);
+                    canvas.Inked = true;
+                    canvas.Ellipse(0.82f, 0.18f, 0.12f, 0.09f, Color.Lerp(c, Color.black, 0.15f));
                     break;
                 case "bush":
-                    canvas.Circle(0.33f, 0.42f, 0.21f, c);
-                    canvas.Circle(0.67f, 0.42f, 0.21f, c);
-                    canvas.Circle(0.5f, 0.58f, 0.24f, c);
-                    foreach (var (x, y) in new[] { (0.38f, 0.55f), (0.6f, 0.5f), (0.5f, 0.38f), (0.56f, 0.7f), (0.3f, 0.4f) })
-                        canvas.Circle(x, y, 0.05f, new Color(0.85f, 0.15f, 0.3f));
+                    canvas.Circle(0.3f, 0.32f, 0.2f, dark);
+                    canvas.Circle(0.7f, 0.32f, 0.2f, dark);
+                    canvas.Circle(0.5f, 0.48f, 0.26f, c);
+                    canvas.Circle(0.28f, 0.42f, 0.18f, c);
+                    canvas.Circle(0.72f, 0.42f, 0.18f, c);
+                    foreach (var (x, y) in new[] { (0.36f, 0.52f), (0.6f, 0.56f), (0.5f, 0.38f), (0.66f, 0.38f), (0.28f, 0.38f), (0.48f, 0.66f) })
+                        canvas.Circle(x, y, 0.045f, new Color(0.86f, 0.16f, 0.3f));
+                    canvas.Inked = false;
+                    canvas.Circle(0.42f, 0.62f, 0.05f, light);
+                    canvas.Inked = true;
                     break;
                 case "grass":
                     for (var i = 0; i < 7; i++)
                     {
-                        var x = 0.18f + i * 0.11f;
-                        canvas.Tri(x - 0.05f, 0.08f, x + 0.05f, 0.08f, x + (i % 2 == 0 ? -0.06f : 0.06f), 0.62f + (i % 3) * 0.1f, i % 2 == 0 ? c : light);
+                        var x = 0.2f + i * 0.1f;
+                        var lean = (i - 3) * 0.035f;
+                        canvas.Tri(x - 0.04f, 0.06f, x + 0.04f, 0.06f, x + lean + (i % 2 == 0 ? -0.04f : 0.04f), 0.5f + (i % 3) * 0.12f, i % 2 == 0 ? c : light);
                     }
                     break;
                 case "water":
@@ -191,7 +249,10 @@ namespace Isle.Core.Util
         sealed class Canvas
         {
             const float AaWidth = 1f / Size;          // one pixel of edge softening
-            const float OutlineWidth = 3.5f / Size;   // outline thickness, in normalised units
+            const float OutlineWidth = 5f / Size;     // ink line around every primitive, in normalised units
+
+            /// <summary>Primitives drawn while this is false get no ink line (highlights, small sheen spots).</summary>
+            public bool Inked = true;
 
             readonly Color[] _pixels = new Color[Size * Size];
             readonly float[] _union = Fill(float.MaxValue);
@@ -216,13 +277,22 @@ namespace Isle.Core.Util
                     var i = y * Size + x;
                     var d = sdf((x + 0.5f) / Size, (y + 0.5f) / Size);
                     if (d < _union[i]) _union[i] = d;
+                    // Cartoon line work: each primitive's own ink ring first, then its fill — overlapping parts keep
+                    // the line where one sits on another (a canopy's blobs, a crate's planks).
+                    if (Inked) Blend(i, Outline, Mathf.Clamp01(0.5f - (d - OutlineWidth) / AaWidth));
                     var coverage = Mathf.Clamp01(0.5f - d / AaWidth);
                     if (coverage <= 0f) continue;
-                    var dst = _pixels[i];
-                    var a = coverage + dst.a * (1f - coverage);
-                    var rgb = (new Vector3(colour.r, colour.g, colour.b) * coverage + new Vector3(dst.r, dst.g, dst.b) * dst.a * (1f - coverage)) / Mathf.Max(a, 1e-5f);
-                    _pixels[i] = new Color(rgb.x, rgb.y, rgb.z, a);
+                    Blend(i, colour, coverage);
                 }
+            }
+
+            void Blend(int i, Color colour, float coverage)
+            {
+                if (coverage <= 0f) return;
+                var dst = _pixels[i];
+                var a = coverage + dst.a * (1f - coverage);
+                var rgb = (new Vector3(colour.r, colour.g, colour.b) * coverage + new Vector3(dst.r, dst.g, dst.b) * dst.a * (1f - coverage)) / Mathf.Max(a, 1e-5f);
+                _pixels[i] = new Color(rgb.x, rgb.y, rgb.z, a);
             }
 
             public void Circle(float cx, float cy, float r, Color c) =>
@@ -276,21 +346,9 @@ namespace Isle.Core.Util
                 return -Mathf.Sqrt(dmin.x) * Mathf.Sign(dmin.y);
             }
 
-            /// <summary>Draws the outline band just inside the silhouette, then uploads (with mipmaps, trilinear).</summary>
+            /// <summary>Uploads (with mipmaps, trilinear). The ink is already drawn per primitive.</summary>
             public Texture2D Finish()
             {
-                for (var i = 0; i < _pixels.Length; i++)
-                {
-                    var d = _union[i];
-                    if (d > AaWidth) continue;
-                    // Coverage of the band [-OutlineWidth, 0], softened at both edges.
-                    var inner = Mathf.Clamp01(0.5f + (d + OutlineWidth) / AaWidth);
-                    if (inner <= 0f) continue;
-                    var p = _pixels[i];
-                    var mixed = Color.Lerp(p, Outline, inner);
-                    mixed.a = Mathf.Max(p.a, Mathf.Clamp01(0.5f - d / AaWidth));
-                    _pixels[i] = mixed;
-                }
                 var texture = new Texture2D(Size, Size, TextureFormat.RGBA32, mipChain: true) { filterMode = FilterMode.Trilinear, wrapMode = TextureWrapMode.Clamp };
                 texture.SetPixels(_pixels);
                 texture.Apply(updateMipmaps: true);

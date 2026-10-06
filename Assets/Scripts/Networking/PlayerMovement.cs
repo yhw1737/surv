@@ -159,6 +159,9 @@ namespace Isle.Networking
             Vector2 step;
             if (IsRolling)
             {
+                // Held direction keys bend the roll's path mid-roll.
+                var steered = MovementCalculator.SteerRoll(_rollDirection.x, _rollDirection.y, input.x, input.y);
+                _rollDirection = new Vector2(steered.X, steered.Y);
                 step = _rollDirection * (BaseSpeed * MovementCalculator.RollMult * delta);
                 _rollElapsed += delta;
                 if (_rollElapsed >= MovementCalculator.RollSeconds) _rollElapsed = -1f;

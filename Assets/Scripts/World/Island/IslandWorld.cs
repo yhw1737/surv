@@ -411,9 +411,13 @@ namespace Isle.World.Island
         void CreateNodeView(ResourceNode node)
         {
             var view = new GameObject(node.Def.Id.Name).AddComponent<SpriteRenderer>();
-            view.sprite = ShapeLibrary.Sprite(node.Def.Visual?.Shape, NodeColour(node.Def));
-            // Water lies flat under everything; trees stand over creatures' feet.
-            view.sortingOrder = node.Def.Gather == null ? 1 : 2;
+            // Water lies flat under everything. Standing things (trees, rocks, bushes) are placed by their foot and sort
+            // by it against the player and creatures (same order, custom-axis sort), so you walk behind a trunk.
+            var standing = node.Def.Gather != null;
+            view.sprite = standing ? ShapeLibrary.StandingSprite(node.Def.Visual?.Shape, NodeColour(node.Def))
+                : ShapeLibrary.Sprite(node.Def.Visual?.Shape, NodeColour(node.Def));
+            view.spriteSortPoint = SpriteSortPoint.Pivot;
+            view.sortingOrder = standing ? 2 : 1;
             view.transform.SetParent(transform, worldPositionStays: false);
             view.transform.position = node.Position;
             view.transform.localScale = Vector3.one * (node.Def.Visual?.Size ?? NodeDiameterTiles);

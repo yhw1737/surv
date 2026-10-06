@@ -6,6 +6,26 @@
 ## Header
 
 - Last updated: **2026-10-06**
+- **2026-10-06 — art feedback round 2 + leftovers.** Same branch. Head is now a **white disk in a black ring, no hair,
+  no face**, and looks at the mouse (neck bends toward the aim, upper body follows; empty-handed the figure faces the
+  mouse while standing). **Run gait** lengthens the stride with speed (shorter ground contact, flight phase, sunk hips,
+  high knees, wide pumping arms). **Roll** 2.6× base and steerable mid-roll. **Leftovers done:** world objects redrawn
+  in the ink cartoon style (`ShapeLibrary`: per-primitive near-black lines; new tree, palm, rock, bush, grass);
+  **melee forward cone** along the mouse (`cone_degrees` on weapons, `MeleeCone`, `NearestCreatureInCone`, aim sent
+  with `CmdAttack`). **Verified:** EditMode 559/559 (+2 roll steering, +3 cone), PlayMode 2/2; sprint cycle, aimed
+  poses, all world shapes and an in-game-scale scene rendered to PNG. Still open: aim isn't synced to other players
+  (stage 3); melee lag compensation (T-113).
+- **2026-10-06 — art feedback round: Fancy Pants look, aim, Zomboid/Don't Starve scale.** Branch
+  `feature/art-scale-fpa-aim` stacked on `fix/stamina-fog-resource-clusters` (PR #28). Head is now a
+  small solid-ink ball with swept spiky hair and no face; longer legs and arms, thinner lines, bigger lean and stride;
+  `pants` draw as flared trousers. Weapons point at the mouse (`FigureInput.HasAim/AimAngle/HoldsItem`, computed for
+  the local player in `StickFigureView`); swing arcs, bow and guard follow the aim; the figure faces the mouse while
+  holding something. Camera half-height 8.5; trees 3.6 / palms 3.4 tiles; standing nodes and structures use foot-pivot
+  sprites (`ShapeLibrary.StandingSprite`, `SpriteSortPoint.Pivot`, order 2) and figures' mesh bounds are centred on
+  the feet, so the custom-axis sort is foot-to-foot. Details in SYS-CHAR-02 §Revision. **Verified:** EditMode 554/554
+  (+2: aim, head proportion), PlayMode 2/2; poses, a run cycle and an in-game-scale composite rendered to PNG.
+  **Not done:** the placeholder tree/rock sprites themselves are still the old flat shapes (restyle next); aim isn't
+  synced to other players; melee still hits the nearest creature regardless of aim (T-113).
 - **Same branch, fourth round (2026-10-06): stamina/roll, finer fog, resource clusters.**
   - **Stamina "never recovers" / roll "doesn't work"** — not reproducible from a clean start (probed live with a
     virtual keyboard: sprint 100 → 40, back to 100 in ~4 s; Space rolls). Likely cause: holding Shift while moving
@@ -1788,6 +1808,17 @@ since it's server-side gauge math with no UI yet:
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-10-06 — roll speed/steer, melee cone angles, new gait numbers
+  [invented]: `RollMult` 2.6 (was the sprint 1.65, also invented), `RollSteer` 0.35/tick; weapon `cone_degrees` fists
+  110, hatchet 110, pickaxe 100, spear 70; gait (walk/run half-span 0.38/0.47, stance 0.5/0.32, run blend 4.6–6.6
+  tiles/s, lift 0.12–0.32, arm swing 0.7–1.4, reach 0.56–0.42), head r 0.15 + ring 0.042, look weights. SYS-CHAR-02
+  §Revision and SYS-COMBAT-01 §Forward cone hold the tables.
+
+- ### 2026-10-06 — SYS-CHAR-02 revision numbers (Fancy Pants look, aim, scale)
+  Every value in SYS-CHAR-02 §Revision is an invented presentation number: head radius 0.165, hair lengths, the new
+  skeleton, stroke 0.068, stride/lean/bob/arm swing, flare widths, aim reach 0.46, camera half-height 8.5, node sizes
+  (tree 3.6, palm 3.4, rock 1.15, bush 1.1, grass 0.9), foot pivot 6% of the canvas.
 
 - ### 2026-10-06 — seven new creatures, lunges: every number [invented]
   Developer asked for "다양성" and biome fauna; SYS-COMBAT-01's Core list has four creatures, so the seven additions

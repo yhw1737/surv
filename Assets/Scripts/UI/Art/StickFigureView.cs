@@ -134,6 +134,18 @@ namespace Isle.UI.Art
             };
             var outfit = Outfit();
             input.OffHandRaised = outfit.OffHand?.Hold?.Style == "torch";
+            input.HoldsItem = outfit.MainHand?.Hold != null;
+            if (_player.IsOwner && AimPoint() is { } aimAt)
+            {
+                // Measured from the shoulder, in the figure's own facing: 0 straight ahead, + up.
+                var fromShoulder = aimAt - (shown + Vector2.up * (StickFigureAnimator.HipHeight + StickFigureAnimator.TorsoLength - 0.05f));
+                input.HasAim = fromShoulder.sqrMagnitude > 0.01f;
+                input.AimAngle = Mathf.Clamp(Mathf.Atan2(fromShoulder.y, Mathf.Abs(fromShoulder.x)), -1.45f, 1.45f);
+                // A held weapon turns the body to face the mouse; empty-handed it does so while standing still.
+                var standing = _velocity.magnitude < 0.3f;
+                if ((input.HoldsItem || standing) && action is FigureAction.None or FigureAction.Swing or FigureAction.Draw or FigureAction.Block && Mathf.Abs(fromShoulder.x) > 0.05f)
+                    input.FacingTarget = Mathf.Sign(fromShoulder.x);
+            }
             _animator.Step(input, dt);
 
             Vector2? lineEnd = null;
@@ -147,6 +159,9 @@ namespace Isle.UI.Art
             _vector.Clear();
             StickFigureDrawer.Draw(_vector, pose, outfit, lineEnd, now);
             _vector.Fill(_mesh);
+            // Bounds centred on the feet: the 2D renderer's custom-axis sort uses the bounds centre, so this makes the
+            // figure sort by where it stands — the same rule as the trees' foot pivots. Big enough to never cull early.
+            _mesh.bounds = new Bounds(Vector3.zero, new Vector3(6f, 6f, 1f));
         }
 
         void TrackTicks(float now)
