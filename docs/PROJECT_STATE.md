@@ -16,7 +16,7 @@
   poses, all world shapes and an in-game-scale scene rendered to PNG. Still open: aim isn't synced to other players
   (stage 3); melee lag compensation (T-113).
 - **2026-10-06 — art feedback round: Fancy Pants look, aim, Zomboid/Don't Starve scale.** Branch
-  `feature/art-scale-fpa-aim` stacked on `fix/stamina-fog-resource-clusters` (PR #28). Head is now a
+  `feature/art-scale-fpa-aim` — [PR #29](https://github.com/yhw1737/surv/pull/29) (PRs #25–#28 merged into `main`). Head is now a
   small solid-ink ball with swept spiky hair and no face; longer legs and arms, thinner lines, bigger lean and stride;
   `pants` draw as flared trousers. Weapons point at the mouse (`FigureInput.HasAim/AimAngle/HoldsItem`, computed for
   the local player in `StickFigureView`); swing arcs, bow and guard follow the aim; the figure faces the mouse while
