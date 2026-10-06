@@ -401,7 +401,24 @@ Stage 4. Nothing here is a prerequisite for anything above it; that is the whole
 > **data** and never rig internals — `ARCHITECTURE.md` §Presentation boundary. Hold that line in
 > every phase.
 
-## Phase 12 · Artifacts 🚩 biggest gate
+## Phase 12 · Endgame — dungeons, artifacts, endings 🚩 biggest gate
+
+> **2026-10-06 developer decision**: multiple endings, generated dungeons, expanded artifacts (weapons + gear per
+> profession, found not quested) and typed damage join Core. Drafts: `SYS-COMBAT-02`, `SYS-ART-02`, `SYS-DUNG-01`,
+> `SYS-END-01` — every number open; fill them before building each piece. The original T-120–T-126 artifact tasks
+> below still apply (Ladle first, G3 gate), now inside this larger phase.
+
+- [ ] **T-200** Fill SYS-COMBAT-02 numbers → damage types, resistances, hit shapes (`attacks[]`) on existing weapons/creatures
+- [ ] **T-201** Fill SYS-DUNG-01 numbers → dungeon generator (room graph, lock-and-key, room templates JSON) + underground layer
+- [ ] **T-202** Tidal Grotto (first dungeon: tides by clock, soft gates, Hermit Colossus)
+- [ ] **T-203** Rootwood Hollow, Drowned Temple, Clockwork Ruin
+- [ ] **T-204** The Abyss (sigils, curses, three floors, Abyss Warden)
+- [ ] **T-205** Fill SYS-ART-02 numbers → artifact acquisition (pools, caches, drops, attunement; duplicates allowed)
+- [ ] **T-206** Artifact catalog build-out after G3 — one weapon per profession, then gear
+- [ ] **T-207** Fill SYS-END-01 numbers → journal pages, Unrest, ending defs, one-ending-per-island lock, shared credit, short sequence + summary text
+- [ ] **T-208** Endings one by one: Home → Adrift → The Signal → Shipwright → Keeper / Crown of the Deep → Leviathan
+
+### Original artifact tasks
 
 Placed after graphics because artifacts are the one thing that genuinely needs real animation —
 ART_PIPELINE gives their VFX triple the normal budget.

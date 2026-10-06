@@ -6,6 +6,18 @@
 ## Header
 
 - Last updated: **2026-10-06**
+- **2026-10-06 — developer decisions on the endgame drafts:** one ending per island; everyone on the island sees the
+  ending and is credited the same ending; artifacts may appear more than once per island; endings play as a short
+  scripted sequence + run summary text. Written into SYS-END-01 / SYS-ART-02.
+- **2026-10-06 — endgame design drafts.** Branch `docs/endgame-design` off `main`. Developer decisions: multiple
+  endings (RimWorld-like), dungeons generated with the island, artifacts found (dungeon pools, rare caches, rare loot),
+  co-op as soft gates, more artifacts per profession incl. gear, damage types and hit shapes. **Design drafts (numbers
+  open, ❓):** `SYS-END-01` (7 endings: Adrift, The Signal, Shipwright, Keeper, Crown of the Deep, Home, hidden
+  Leviathan; journal pages; Unrest), `SYS-DUNG-01` (Tidal Grotto, Rootwood Hollow, Drowned Temple, Clockwork Ruin, the
+  Abyss; room-graph generation with lock-and-key; soft-gate table), `SYS-COMBAT-02` (blunt/slash/pierce/heat/toxic,
+  arc/thrust/smash/sweep/line/projectile/aura, `attacks[]`), `SYS-ART-02` (35-artifact catalog, attunement, duplicates
+  allowed per island). GDD scope table + §World rewritten as a 2026-10-06 developer decision; BACKLOG Phase 12 became
+  "Endgame" with T-200–T-208. No code.
 - **2026-10-06 — art feedback round 2 + leftovers.** Same branch. Head is now a **white disk in a black ring, no hair,
   no face**, and looks at the mouse (neck bends toward the aim, upper body follows; empty-handed the figure faces the
   mouse while standing). **Run gait** lengthens the stride with speed (shorter ground contact, flight phase, sunk hips,
@@ -1808,6 +1820,9 @@ since it's server-side gauge math with no UI yet:
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-10-06 — endgame drafts invent no numbers
+  Every ❓ in SYS-END-01 / SYS-DUNG-01 / SYS-COMBAT-02 / SYS-ART-02 waits for the developer.
 
 - ### 2026-10-06 — roll speed/steer, melee cone angles, new gait numbers
   [invented]: `RollMult` 2.6 (was the sprint 1.65, also invented), `RollSteer` 0.35/tick; weapon `cone_degrees` fists
