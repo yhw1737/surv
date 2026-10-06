@@ -265,5 +265,12 @@
   "ui.inventory_ground": "바닥",
   "ui.inventory_drop_here": "여기로 끌어서 버리기",
   "ui.inventory_ground_empty": "주변 바닥에 아무것도 없습니다",
-  "ui.inventory_ground_pile": "바닥에 있는 것 (E로 줍기)"
+  "ui.inventory_ground_pile": "바닥에 있는 것 (E로 줍기)",
+  "creature.crab": "게",
+  "creature.seagull": "갈매기",
+  "creature.turtle": "바다거북",
+  "creature.fox": "여우",
+  "creature.wolf": "늑대",
+  "creature.frog": "개구리",
+  "creature.snake": "뱀"
 }

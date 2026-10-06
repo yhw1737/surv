@@ -59,11 +59,19 @@
     "attack_range_tiles": 1.2,
     "attack_interval_seconds": 2.0,
     "body_radius_tiles": 0.6,
-    "windup_seconds": 0.6
+    "windup_seconds": 0.6,
+    "lunge_tiles": 1.6,
+    "lunge_speed": 11.0
   },
   "visual": {
     "shape": "crocodile",
     "color": "#4E7A3A",
     "size": 1.0
+  },
+  "look": {
+    "body": "reptile",
+    "color": "#56703E",
+    "accent": "#34472A",
+    "belly": "#C9C79A"
   }
 }

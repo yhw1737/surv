@@ -265,5 +265,12 @@
   "ui.inventory_ground": "Ground",
   "ui.inventory_drop_here": "Drag here to drop",
   "ui.inventory_ground_empty": "Nothing on the ground here",
-  "ui.inventory_ground_pile": "On the ground (E to pick up)"
+  "ui.inventory_ground_pile": "On the ground (E to pick up)",
+  "creature.crab": "Crab",
+  "creature.seagull": "Seagull",
+  "creature.turtle": "Sea turtle",
+  "creature.fox": "Fox",
+  "creature.wolf": "Wolf",
+  "creature.frog": "Frog",
+  "creature.snake": "Snake"
 }

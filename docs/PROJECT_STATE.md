@@ -6,10 +6,13 @@
 ## Header
 
 - Last updated: **2026-10-06**
-- **Same branch, third round (2026-10-06): full-screen inventory, drop, freshness, icons, prompts** (the same round's creatures and lunges are the next PR).
+- **Same branch, third round (2026-10-06): lunges, full-screen inventory, drop, freshness, icons, creatures, prompts.**
   Developer list: croc whiffs because it stands still → hostile strikes need a dash; Tarkov/Palworld full-screen
   inventory; drop items; freshness visible without hovering; draw animals, more variety, biome fauna; draw food,
   dishes and all equipment; interaction prompt over the object, not at the bottom. Done:
+  - **Lunge** — after `windup_seconds` the creature dashes `lunge_tiles` at `lunge_speed` along the line to the player,
+    landing early on contact (boar 1.4 t @ 9, croc 1.6 @ 11, wolf 1.8 @ 10, crab 0.6 @ 6, snake 1.2 @ 12). Backing off no
+    longer dodges; a sidestep or roll still does. `Creature.IsLunging/LungeDirection/Asleep/Heading` added.
   - **Inventory** — `InventoryScreen` rewritten full-screen (Tab, Esc closes before pausing): dim backdrop, equipment
     paper doll + condition (HP/hunger/thirst/stamina bars, temperature, armor, warmth) left, every bag grid middle
     (52 px cells), ground panel right (drop area + what's on the nearest pile). HUD gauges hide while it's open.
@@ -20,9 +23,13 @@
     (new, on 19 items), else `hold`/`wear`; dishes in their method's vessel (`icon_style` on cook methods: bowl,
     skewer, strips, plate) coloured by their ingredients. Used in the grid, equip slots, cooking (method vessel,
     pot, pantry, a live **dish preview**) and crafting.
+  - **Creatures** — `CreatureFigure` (vector, animated: gait, hop, crouch on wind-up, lunge stretch, croc jaws,
+    stagger wobble + stars, sleep + z's, hit flash) for seven body plans from a new `look` block; `CreatureFigureDirector`.
+    **Seven new species** by biome: coast crab / seagull / sea turtle, forest fox / wolf, marsh frog / snake (forest
+    keeps rabbit, deer, boar; marsh keeps crocodile).
   - **Prompts** — `[E] …` bubbles float over the node / station / water / pile; fishing and gathering status over the
     bobber / node.
-  **Verified:** EditMode 547/547, PlayMode 2/2 (adds: drop → pile → pick up). Icons rendered to PNG and
+  **Verified:** EditMode 547/547, PlayMode 2/2 (adds: drop → pile → pick up). Icons and creatures rendered to PNG and
   inspected. **Not verified visually:** the uGUI inventory and IMGUI bubbles (batchmode can't draw overlays).
 - **Same branch, next round (2026-10-06): grid inventory back, view zoom, cooking/crafting window redesign.**
   Developer: "예전에 개발했던 장비 시스템은 어디갔어?" (the T-040–T-045 grid inventory had only ever been wired to the

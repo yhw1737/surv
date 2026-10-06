@@ -1,30 +1,29 @@
 {
-  "id": "isle:deer",
-  "name": "@creature.deer",
+  "id": "isle:wolf",
+  "name": "@creature.wolf",
   "tags": [
     "animal",
     "mammal",
-    "prey"
+    "aggressive"
   ],
   "weight_dist": {
     "type": "lognormal",
-    "mean": 50.0,
+    "mean": 40,
     "sigma": 0.2,
-    "min": 30.0,
-    "max": 80.0
+    "min": 28,
+    "max": 60
   },
-  "health_per_kg": 1.2,
-  "ai": "isle:alert_then_flee",
+  "health_per_kg": 2.2,
+  "ai": "isle:territorial_charger",
   "spawn": {
     "biomes": [
       "isle:forest"
     ],
     "time": [
-      "dawn",
-      "day",
-      "dusk"
+      "dusk",
+      "night"
     ],
-    "density": 0.0005
+    "density": 0.00018
   },
   "butcher": {
     "edible_ratio": 0.5,
@@ -52,31 +51,32 @@
     "coop_carry_penalty": 0.0
   },
   "combat": {
-    "vision_tiles": 8,
-    "move_speed": 1.0,
+    "vision_tiles": 7,
+    "move_speed": 1.2,
     "chase_speed": 4.0,
-    "damage": 0,
-    "attack_range_tiles": 1.0,
-    "attack_interval_seconds": 1.0,
-    "alert_seconds": 2.0,
-    "body_radius_tiles": 0.45
+    "damage": 9,
+    "attack_range_tiles": 1.1,
+    "attack_interval_seconds": 1.3,
+    "body_radius_tiles": 0.38,
+    "windup_seconds": 0.4,
+    "lunge_tiles": 1.8,
+    "lunge_speed": 10.0
   },
   "visual": {
-    "shape": "deer",
-    "color": "#A0703F",
+    "shape": "wolf",
+    "color": "#7C7E84",
     "size": 1.0
   },
   "look": {
     "body": "quadruped",
-    "color": "#B07A48",
-    "accent": "#6E4A2A",
-    "belly": "#EAD9C0",
+    "color": "#7C7E84",
+    "accent": "#3E4046",
+    "belly": "#C9CBCF",
     "ears": "pointed",
-    "tail": "short",
-    "antlers": true,
+    "tail": "bushy",
     "body_length": 1.0,
-    "body_height": 0.42,
-    "leg_length": 0.55,
-    "head_size": 0.2
+    "body_height": 0.4,
+    "leg_length": 0.36,
+    "head_size": 0.22
   }
 }

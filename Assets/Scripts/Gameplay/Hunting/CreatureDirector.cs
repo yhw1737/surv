@@ -40,6 +40,17 @@ namespace Isle.Gameplay.Hunting
 
         public bool IsStaggered => Time.time < StaggeredUntil;
         public bool IsWindingUp => StrikeLandsAt >= 0f;
+
+        /// <summary>The dash after the wind-up: until this time it charges along <see cref="LungeDirection"/>.</summary>
+        public float LungeEndsAt { get; set; } = -1f;
+        public Vector2 LungeDirection { get; set; }
+        public bool IsLunging => LungeEndsAt >= 0f;
+
+        /// <summary>Asleep outside its active hours — presentation reads it (the figure lies down).</summary>
+        public bool Asleep { get; set; }
+
+        /// <summary>Last movement direction, for the figure's facing.</summary>
+        public Vector2 Heading { get; set; } = Vector2.right;
         public float AlertStartedAt { get; set; }
         public GameObject View { get; init; }
         public SpriteRenderer Renderer { get; init; }
@@ -257,7 +268,8 @@ namespace Isle.Gameplay.Hunting
             if (combat == null) return;
 
             // Asleep outside its active hours, unless something just hit it.
-            if (!IsAwakeNow(creature))
+            creature.Asleep = !IsAwakeNow(creature);
+            if (creature.Asleep)
             {
                 creature.State = CreatureState.Idle;
                 if (creature.Renderer != null) creature.Renderer.color = SleepTint;
@@ -267,6 +279,7 @@ namespace Isle.Gameplay.Hunting
             if (creature.IsStaggered)
             {
                 creature.StrikeLandsAt = -1f;
+                creature.LungeEndsAt = -1f;
                 creature.View.transform.position = creature.Position;
                 Flash(creature);
                 return;
@@ -288,10 +301,27 @@ namespace Isle.Gameplay.Hunting
                     Step(creature, (creature.Position - (Vector2)target.transform.position).normalized, combat.ChaseSpeed);
                     break;
                 case CreatureState.Engage:
-                    if (creature.IsWindingUp)
+                    if (creature.IsLunging)
                     {
-                        // Committed: it stands and lands the strike when the tell ends — on whoever is still in reach.
-                        if (Time.time >= creature.StrikeLandsAt) LandStrike(creature, target, distance, combat);
+                        // The dash: straight along the committed line; it lands early if it reaches the player.
+                        if (BodyReach.InReach(distance, creature.Radius, combat.AttackRangeTiles * 0.6f) || Time.time >= creature.LungeEndsAt)
+                            LandStrike(creature, target, distance, combat);
+                        else
+                            Step(creature, creature.LungeDirection, combat.LungeSpeed);
+                    }
+                    else if (creature.IsWindingUp)
+                    {
+                        // Committed: the tell ends in a dash at where the player is now (or the strike, with no dash).
+                        if (Time.time >= creature.StrikeLandsAt)
+                        {
+                            creature.StrikeLandsAt = -1f;
+                            if (combat.LungeTiles > 0f && combat.LungeSpeed > 0f)
+                            {
+                                creature.LungeDirection = ((Vector2)target.transform.position - creature.Position).normalized;
+                                creature.LungeEndsAt = Time.time + combat.LungeTiles / combat.LungeSpeed;
+                            }
+                            else LandStrike(creature, target, distance, combat);
+                        }
                     }
                     else if (!BodyReach.InReach(distance, creature.Radius, combat.AttackRangeTiles))
                         Step(creature, ((Vector2)target.transform.position - creature.Position).normalized, combat.ChaseSpeed);
@@ -317,6 +347,7 @@ namespace Isle.Gameplay.Hunting
         static void LandStrike(Creature creature, PlayerInteraction target, float distance, CreatureCombatSpec combat)
         {
             creature.StrikeLandsAt = -1f;
+            creature.LungeEndsAt = -1f;
             creature.NextStrikeAt = Time.time + combat.AttackIntervalSeconds;
             if (target == null || !BodyReach.InReach(distance, creature.Radius, combat.AttackRangeTiles + StrikeLeewayTiles)) return;
             if (target.ReceiveCreatureStrike(creature.Position, combat.Damage) == BlockOutcome.Parried)
@@ -345,7 +376,7 @@ namespace Isle.Gameplay.Hunting
             // The fill colour is baked into the texture, so the renderer tint is white at rest and red on a hit.
             if (Time.time - creature.LastHitAt < FlashSeconds) creature.Renderer.color = new Color(1f, 0.3f, 0.3f);
             else if (creature.IsStaggered) creature.Renderer.color = StaggerTint;
-            else if (creature.IsWindingUp) creature.Renderer.color = Color.Lerp(Color.white, WindupTint, 0.5f + 0.5f * Mathf.Sin(Time.time * 40f));
+            else if (creature.IsWindingUp || creature.IsLunging) creature.Renderer.color = Color.Lerp(Color.white, WindupTint, 0.5f + 0.5f * Mathf.Sin(Time.time * 40f));
             else creature.Renderer.color = Color.white;
         }
 
@@ -365,6 +396,7 @@ namespace Isle.Gameplay.Hunting
         /// <summary>Moves on land only — a creature never walks into the sea.</summary>
         static void Step(Creature creature, Vector2 direction, float speed)
         {
+            if (direction.sqrMagnitude > 0.01f) creature.Heading = direction;
             var next = creature.Position + direction * speed * Time.deltaTime;
             var world = IslandWorld.Instance;
             if (world == null || !world.IsWalkable(next)) return;

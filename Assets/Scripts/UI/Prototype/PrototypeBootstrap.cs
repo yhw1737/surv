@@ -42,6 +42,7 @@ namespace Isle.UI.Prototype
             root.AddComponent<Isle.UI.Inventory.InventoryScreen>();
             root.AddComponent<PlayerCamera>();
             root.AddComponent<Isle.UI.Art.StickFigureDirector>();
+            root.AddComponent<Isle.UI.Art.CreatureFigureDirector>();
             root.AddComponent<FeedbackOverlay>();
             root.AddComponent<MapState>();
             root.AddComponent<Minimap>();
