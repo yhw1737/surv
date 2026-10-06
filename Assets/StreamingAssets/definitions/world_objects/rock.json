@@ -10,7 +10,14 @@
       "isle:forest",
       "isle:marsh"
     ],
-    "density": 0.004
+    "density": 0.004,
+    "cluster": {
+      "scale_tiles": 28,
+      "coverage": 0.12,
+      "inside": 7.0,
+      "outside": 0.06
+    },
+    "elsewhere": 0.25
   },
   "gather": {
     "item": "isle:stone",

@@ -8,7 +8,7 @@ Status: prototype spec (2026-10-05), from the developer's request ("fog of war �
 Each player remembers what they've seen. The island starts hidden; walking reveals it.
 
 ```
-cell        = 4 × 4 tiles                     // fog resolution, 288 × 288 cells for a 1152-tile map
+cell        = 2 × 2 tiles                     // fog resolution, 576 × 576 cells for a 1152-tile map (was 4 × 4 until 2026-10-06)
 reveal      = every cell whose centre is within 16 tiles of the player, checked 4× a second
 explored    = permanent (no re-fogging), saved with the game
 ```

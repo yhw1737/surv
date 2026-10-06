@@ -82,6 +82,17 @@ namespace Isle.Gameplay.Character
         public const float SprintStaminaPerSecond = 12f;
         public const float RollStaminaCost = 25f;
 
+        /// <summary>Running dry locks sprinting until stamina is back to this much. Without it a held Shift spends every
+        /// point the moment it regenerates, so stamina never climbs and the 25-point roll never comes back.
+        /// [invented] — SYS-SURV-01 only says "actions blocked" at 0.</summary>
+        public const float ExhaustionRecoverStamina = 30f;
+
+        /// <summary>True from the moment stamina hits 0 until it recovers to <see cref="ExhaustionRecoverStamina"/>.</summary>
+        public bool Exhausted { get; private set; }
+
+        /// <summary>Carrying more than <see cref="WeightCalculator.MaxWeightKg"/>: no roll, no stamina regen (SYS-INV-01).</summary>
+        public bool Overloaded { get; private set; }
+
         PlayerMovement _movement;
 
         void Awake()
@@ -121,8 +132,11 @@ namespace Isle.Gameplay.Character
             ClothingBonus = WornWarmth();
             var weight = CarriedWeightKg();
             _movement.WeightMultiplier = WeightCalculator.SpeedMultiplier(weight);
-            _movement.SprintAllowed = Stamina > 0f;
-            _movement.RollAllowed = Stamina >= RollStaminaCost && !WeightCalculator.IsOverloaded(weight);
+            Overloaded = WeightCalculator.IsOverloaded(weight);
+            if (Stamina <= 0f) Exhausted = true;
+            else if (Exhausted && Stamina >= ExhaustionRecoverStamina) Exhausted = false;
+            _movement.SprintAllowed = !Exhausted && Stamina > 0f;
+            _movement.RollAllowed = Stamina >= RollStaminaCost && !Overloaded;
 
             if (_movement.IsSprinting) SpendStamina(SprintStaminaPerSecond * Time.deltaTime);
             CurrentActivity = _movement.IsSprinting ? Activity.Sprinting : _movement.IsMoving ? Activity.Walking : Activity.Idle;

@@ -47,7 +47,7 @@ namespace Isle.World.Island
             return changed;
         }
 
-        /// <summary>Bit-packed, base64 — about 10 KB for a 288×288 grid.</summary>
+        /// <summary>Bit-packed, base64 — about 55 KB for a 576×576 grid.</summary>
         public string Serialize()
         {
             var bytes = new byte[(_explored.Length + 7) / 8];
@@ -63,6 +63,18 @@ namespace Isle.World.Island
             byte[] bytes;
             try { bytes = Convert.FromBase64String(text); }
             catch (FormatException) { return; }
+            // A save from a grid half as fine (4-tile cells before 2026-10-06): each old cell covers 2×2 new ones.
+            var half = Cells / 2;
+            if (Cells % 2 == 0 && bytes.Length == (half * half + 7) / 8 && bytes.Length * 8 < _explored.Length)
+            {
+                for (var y = 0; y < Cells; y++)
+                for (var x = 0; x < Cells; x++)
+                {
+                    var old = (y / 2) * half + x / 2;
+                    _explored[y * Cells + x] = (bytes[old / 8] & (1 << (old % 8))) != 0;
+                }
+                return;
+            }
             for (var i = 0; i < _explored.Length && i / 8 < bytes.Length; i++)
                 _explored[i] = (bytes[i / 8] & (1 << (i % 8))) != 0;
         }

@@ -305,8 +305,9 @@ namespace Isle.UI.Inventory
         string WeightText(List<GridInventory> containers)
         {
             var weight = containers.Sum(c => c.TotalWeightKg()) + EquipSlots.All.Select(s => _network.Slots.Get(s)).Where(i => i != null).Sum(i => i.Weight);
-            var over = weight > WeightCalculator.FreeWeightKg;
-            return UiTheme.Colour($"{weight:0.0} / {WeightCalculator.FreeWeightKg:0} kg", over ? UiTheme.Bad : UiTheme.Muted);
+            // Past the free weight you slow down; past the max you can't roll and stamina stops recovering.
+            var colour = weight > WeightCalculator.MaxWeightKg ? UiTheme.Bad : weight > WeightCalculator.FreeWeightKg ? UiTheme.Accent : UiTheme.Muted;
+            return UiTheme.Colour(string.Format(Lang.Get("@ui.weight_line"), weight.ToString("0.0"), WeightCalculator.FreeWeightKg.ToString("0"), WeightCalculator.MaxWeightKg.ToString("0")), colour);
         }
 
         string StatsText()

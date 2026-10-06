@@ -6,6 +6,21 @@
 ## Header
 
 - Last updated: **2026-10-06**
+- **Same branch, fourth round (2026-10-06): stamina/roll, finer fog, resource clusters.**
+  - **Stamina "never recovers" / roll "doesn't work"** — not reproducible from a clean start (probed live with a
+    virtual keyboard: sprint 100 → 40, back to 100 in ~4 s; Space rolls). Likely cause: holding Shift while moving
+    spent every point the moment it regenerated, so stamina hovered near 0 and the 25-point roll never came back.
+    Fix: `Vitals.Exhausted` — at 0, sprint locks until stamina is back to 30 **[invented]**; HUD stamina label shows
+    "(지침)" / "(과적)"; pressing Space when a roll can't happen says why (tired or over 45 kg); the inventory weight
+    line names both thresholds (slower past 15, overloaded past 45).
+  - **Fog resolution** — fog cells 4×4 → 2×2 tiles (SYS-MAP-01 updated); the fog texture is painted as soft discs
+    (clear inside, fading over the last 5 tiles of the 16-tile reveal) instead of hard cells; old saves' 4-tile
+    grids upsample on load (`FogGrid.Deserialize`); the minimap's map texture is bilinear.
+  - **Resource clusters** — `spawn.cluster {scale_tiles, coverage, inside, outside}` + `spawn.elsewhere` (new,
+    SYS-WORLD-03 §Clustering): a two-octave noise field makes groves, rock fields, meadows and berry patches; nodes
+    still appear outside them and in other biomes, rarely. Values on tree / rock / tall grass / berry bush / palm
+    are **[invented]**. Checked by plotting node types over the map.
+  **Verified:** EditMode 552/552 (+4 cluster, +1 fog upsample), PlayMode 2/2.
 - **Same branch, third round (2026-10-06): lunges, full-screen inventory, drop, freshness, icons, creatures, prompts.**
   Developer list: croc whiffs because it stands still → hostile strikes need a dash; Tarkov/Palworld full-screen
   inventory; drop items; freshness visible without hovering; draw animals, more variety, biome fauna; draw food,
@@ -49,7 +64,7 @@
   PlayMode 2/2 (screen installed; bag → backpack move acknowledged by the server). **Not verified visually** — batchmode
   can't render IMGUI or overlay canvases; look in Play mode.
 - **Current work (2026-10-06, later): T-111 melee — combo, block, parry.** Branch `feature/T-111-melee-combo-block-parry`
-  off `main` (after PR #24 merged). The 2026-10-06 rounds below were split into four stacked PRs: melee → inventory/UI → creatures → stamina/fog/clusters. Developer: "다음 기능적인 부분 개발해줘. 내가 인정할만한거" + the
+  off `main` (after PR #24 merged). The 2026-10-06 rounds below were split into four stacked PRs, merge in order: [#25](https://github.com/yhw1737/surv/pull/25) melee → [#26](https://github.com/yhw1737/surv/pull/26) inventory/UI → [#27](https://github.com/yhw1737/surv/pull/27) creatures → [#28](https://github.com/yhw1737/surv/pull/28) stamina/fog/clusters. Developer: "다음 기능적인 부분 개발해줘. 내가 인정할만한거" + the
   top help box clipped its text. Done: `MeleeCombo`/`MeleeDefense` (pure, `Gameplay/Combat/MeleeCombo.cs`), combo +
   finisher + Lv unlocks + 0.3 s input buffer in `PlayerInteraction.PerformAttack`, RMB guard (`CmdBlock`/`CmdBlockAim`,
   `Blocking`/`BlockStartedAt`/`BlockDirection`), `ReceiveCreatureStrike` resolving parry/block/guard-break before
@@ -1773,6 +1788,13 @@ since it's server-side gauge math with no UI yet:
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-10-06 — seven new creatures, lunges: every number [invented]
+  Developer asked for "다양성" and biome fauna; SYS-COMBAT-01's Core list has four creatures, so the seven additions
+  (crab, seagull, sea turtle, fox, wolf, frog, snake) are a scope addition made on the developer's request (Absolute
+  Rule 6 — flag for the GDD). All their weights, HP/kg, densities, active hours, speeds, damage (crab 3, wolf 9, snake
+  7), vision, wind-ups and yields are invented, as are the lunge distances/speeds for boar and crocodile. Draw-only
+  values: creature `look` proportions/colours, item `icon_style` shapes/colours, inventory layout (52 px cells).
 
 - ### 2026-10-06 — inventory/cook/craft UI presentation choices
   Presentation only: camera half-height 4.95 tiles (developer asked for ~1.1× zoom-out), `UiTheme` colours, window

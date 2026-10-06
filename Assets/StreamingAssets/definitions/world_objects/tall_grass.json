@@ -10,7 +10,14 @@
       "isle:forest",
       "isle:marsh"
     ],
-    "density": 0.01
+    "density": 0.01,
+    "cluster": {
+      "scale_tiles": 30,
+      "coverage": 0.3,
+      "inside": 3.5,
+      "outside": 0.12
+    },
+    "elsewhere": 0.12
   },
   "gather": {
     "item": "isle:fiber",
