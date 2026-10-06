@@ -36,7 +36,10 @@ Every system derives from these. A feature that fits none of them is not built.
 | Production skills | **5** — gathering, fishing, cooking, crafting, enchanting |
 | Combat skills | **3** — melee, ranged, magic |
 | Level cap | 50 |
-| Artifacts | **3** — Great Cauldron Ladle (cooking), Abyss-Caller's Rod (fishing), Unbroken Anvil Hammer (crafting) |
+| Artifacts | **Per profession: 4 weapons + 3 gear** (2026-10-06, was 3) — catalog `SYS-ART-02`; the original three (Ladle, Rod, Hammer) keep `SYS-ART-01` |
+| Endings | **Multiple** (2026-10-06) — escape, rescue, seal or claim the Abyss, settle, hidden — `SYS-END-01` |
+| Dungeons | **One per biome + the Ruin + the Abyss**, generated with the island (2026-10-06) — `SYS-DUNG-01` |
+| Damage | **5 types** (blunt, slash, pierce, heat, toxic) and per-attack hit shapes (2026-10-06) — `SYS-COMBAT-02` |
 | Cook methods | **8** — raw, grill, boil, porridge, dry, stew, smoke, ferment |
 | Biomes | **3** — coast, forest, marsh |
 | Multiplayer | 4 players, listen server |
@@ -45,7 +48,12 @@ Every system derives from these. A feature that fits none of them is not built.
 | Modding | **Tier 1 (JSON)**, architecture ready for Tier 2/3 |
 | Farming | till, sow, harvest (no soil sim) |
 
-**Deferred to post-EA:** guns, shields, 7 more artifacts, overload enchanting and breakage, soil NPK sim, crop breeding, seasons, dedicated servers, 8 players, modding Tier 2/3, sailing, gamepad. Deferred, not deleted — this is what Early Access is for.
+**Deferred to post-EA:** guns, shields, overload enchanting and breakage, soil NPK sim, crop breeding, seasons, dedicated servers, 8 players, modding Tier 2/3, sailing, gamepad. Deferred, not deleted — this is what Early Access is for.
+
+> **2026-10-06 developer decision: endings, dungeons, expanded artifacts and damage types move into Core.** Artifacts
+> are now *found* (dungeon boss pools, rare landmark caches, rare elite loot) instead of quest rewards at Lv 40, with
+> attunement by production skill; gear artifacts join the weapons. Specs: `SYS-END-01`, `SYS-DUNG-01`, `SYS-ART-02`,
+> `SYS-COMBAT-02` (drafts — numbers open). Sailing stays post-EA: the sea escapes end in a scene, not a sailing mode.
 
 > **2026-09-07 developer decision: magic moves from Deferred into Core**, scoped to the Enchanter profession — magic combat (Combat skill `isle:magic`), enchant application, and brewing (Production skill `isle:enchanting`). Enchanter is a profession distinct from Blacksmith, same status as Cook/Farmer-Angler/Hunter. Not reopened: guns, shields, extra artifacts, and overload enchanting stay post-EA. See `SYS-SKILL-01`, `SYS-CRAFT-01` §Enchanting, `SYS-HUNT-01`, and `docs/BACKLOG.md` T-106/T-107/T-117. **Design intent:** magic/enchanting is not a floor requirement — the core loop (gather → hunt → fish → cook → craft → fight → sleep) must stay completable without ever touching it. It exists to raise the **late-game power ceiling**, the same role Artifacts play, for players who go deep after the beta loop already works.
 
@@ -243,7 +251,12 @@ Spec: `SYS-CRAFT-01`
 
 Procedural generation plus hand-placed landmarks (shipwreck, ruins, spring). Fully random worlds are not memorable — landmarks are what make settlement choice and mental mapping work.
 
-**Goals are achievements, not bosses:** self-sufficiency (20 days without outside gathering), artifact acquisition, a master-tier item.
+~~Goals are achievements, not bosses~~ — **superseded 2026-10-06 by the developer: multiple endings** (`SYS-END-01`).
+Like RimWorld, several long projects each finish a run — raft escape, lighthouse rescue, rebuilding the ship, sealing
+or claiming the Abyss under the ruin (boss), settling for good, and a hidden one. The old achievement goals
+(self-sufficiency, an artifact, a master-tier item) are now steps of the **Home** ending and gates elsewhere. Dungeons
+generated with the island (`SYS-DUNG-01`) hold the artifacts, sigils and materials the endings need; their obstacles
+are soft-gated — a specialist makes them easy, nobody is locked out.
 
 ## Multiplayer
 

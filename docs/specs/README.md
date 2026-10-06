@@ -18,6 +18,12 @@
 | [SYS-CRAFT-01](SYS-CRAFT-01-crafting.md) | crafting, quality, enchanting | SKILL, INV |
 | [SYS-COMBAT-01](SYS-COMBAT-01-combat.md) | combat, weapons, hit detection | SKILL, NET |
 | [SYS-ART-01](SYS-ART-01-artifacts.md) | artifacts (3) | COMBAT, SKILL |
+| [SYS-COMBAT-02](SYS-COMBAT-02-damage-types.md) | damage types, hit shapes (draft) | COMBAT |
+| [SYS-ART-02](SYS-ART-02-artifact-catalog.md) | artifact catalog, acquisition (draft) | ART-01, COMBAT-02 |
+| [SYS-DUNG-01](SYS-DUNG-01-dungeons.md) | dungeons (draft) | WORLD, COMBAT-02, ART-02 |
+| [SYS-END-01](SYS-END-01-endings.md) | multiple endings (draft) | DUNG, ART-02 |
+| [SYS-CHAR-02](SYS-CHAR-02-stickman.md) | cartoon figure, animation, equipment drawing | CHAR |
+| [SYS-MAP-01](SYS-MAP-01-fog-map-markers.md) | fog of war, map markers | WORLD |
 
 ## Spec format
 
