@@ -40,6 +40,11 @@ namespace Isle.Gameplay.Feedback
         public static void RaiseItemDropped(NamespacedId item, int count, Vector2 at) => ItemDropped?.Invoke(item, count, at);
         public static void RaiseCreatureHit(Vector2 at, float damage) => CreatureHit?.Invoke(at, damage);
         public static void RaisePlayerSwing(Vector2 at, float reach) => PlayerSwing?.Invoke(at, reach);
+
+        /// <summary>A player's guard met a strike: blocked, parried or broken (SYS-COMBAT-01 §Melee).</summary>
+        public static event Action<Vector2, Combat.BlockOutcome> Defended;
+
+        public static void RaiseDefended(Vector2 at, Combat.BlockOutcome outcome) => Defended?.Invoke(at, outcome);
         public static void RaisePlayerHit(float damage) => PlayerHit?.Invoke(damage);
         public static void RaiseStorageOpened(object box) => StorageOpened?.Invoke(box);
         public static void RaiseXpGained(NamespacedId skill, float amount, int newLevel) => XpGained?.Invoke(skill, amount, newLevel);

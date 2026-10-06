@@ -625,10 +625,14 @@ namespace Isle.UI.Prototype
 
         void DrawHelp()
         {
-            const float width = 760f;
-            var rect = new Rect((Screen.width - width) * 0.5f, Margin, width, 46f);
+            // Sized to its text: the box grows with wrapped lines instead of clipping them, and narrows on small screens.
+            const float maxWidth = 900f;
+            var width = Mathf.Min(maxWidth, Screen.width - 2f * Margin);
+            var content = new GUIContent(Lang.Get("@ui.help").Replace("\\n", "\n"));
+            var height = _helpStyle.CalcHeight(content, width - 16f);
+            var rect = new Rect((Screen.width - width) * 0.5f, Margin, width, height + 8f);
             GUI.Box(rect, GUIContent.none);
-            GUI.Label(new Rect(rect.x + 8f, rect.y + 3f, width - 16f, 42f), Lang.Get("@ui.help").Replace("\\n", "\n"), _helpStyle);
+            GUI.Label(new Rect(rect.x + 8f, rect.y + 4f, width - 16f, height), content, _helpStyle);
         }
 
         void DrawDeath()

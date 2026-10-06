@@ -468,3 +468,10 @@ Presentation only — gameplay never reads these (Absolute Rule 7). Rules and st
 | Item | `hold` `{style, length, color, tip}` | How the item looks held. `style`: `spear hatchet pickaxe rod torch bow sword`; `length` in tiles; `tip` colours the head (blade, stone, flame) |
 
 No block means the item isn't drawn on the figure. An unknown style falls back to a generic shape in the item's colour, so a mod item with a new style still shows.
+
+### Melee (2026-10-06)
+
+| Type | Field | Meaning |
+|---|---|---|
+| Creature combat | `windup_seconds` | Tell before a strike lands — the player's chance to block or parry. 0 or absent strikes instantly |
+

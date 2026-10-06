@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Isle.UI.Art
 {
     /// <summary>What the figure is doing, read from gameplay data by the view (SYS-CHAR-02 §Animation).</summary>
-    public enum FigureAction { None, Swing, Gather, Cast, Bite, Reel, Draw, Roll, Dead }
+    public enum FigureAction { None, Swing, Gather, Cast, Bite, Reel, Draw, Block, Roll, Dead }
 
     /// <summary>One frame of input to <see cref="StickFigureAnimator"/>. Presentation data only.</summary>
     public struct FigureInput
@@ -30,6 +30,10 @@ namespace Isle.UI.Art
 
         /// <summary>The off hand holds something carried raised (a torch).</summary>
         public bool OffHandRaised;
+
+        /// <summary>Melee combo step of the current swing (1-based) and the combo's length; the last step is the
+        /// finisher. 0 = a plain swing.</summary>
+        public int ComboStep, ComboLength;
     }
 
     /// <summary>Joint positions for one frame, in the figure's local space: origin at the feet, +x the way it faces
@@ -87,6 +91,7 @@ namespace Isle.UI.Art
         float _tuck, _tuckV;
         float _fall, _fallV;
         float _cloak, _cloakV;
+        float _crouch, _crouchV;
         float _itemFront = 75f * Deg, _itemFrontV, _itemBack = 75f * Deg, _itemBackV;
         Vector2 _handFront, _handFrontV, _handBack, _handBackV;
         bool _handsPlaced;
@@ -109,7 +114,9 @@ namespace Isle.UI.Art
             Spring.Damp(ref _facing, ref _facingV, _facingGoal, 22f, dt);
 
             var leanGoal = Mathf.Clamp(input.Speed * 0.035f, 0f, 0.22f);
-            if (action is FigureAction.Swing or FigureAction.Gather) leanGoal += 0.12f;
+            var finisher = action == FigureAction.Swing && input.ComboStep > 1 && input.ComboStep >= input.ComboLength;
+            if (action is FigureAction.Swing or FigureAction.Gather) leanGoal += finisher ? 0.28f : 0.12f;
+            if (action == FigureAction.Block) leanGoal = -0.06f;
             if (action == FigureAction.Reel) leanGoal -= 0.15f;
             Spring.Damp(ref _lean, ref _leanV, leanGoal, 10f, dt);
             Spring.Damp(ref _tuck, ref _tuckV, action == FigureAction.Roll ? 1f : 0f, 25f, dt);
@@ -122,7 +129,8 @@ namespace Isle.UI.Art
 
             // Body: bob twice per cycle while walking, breathe while still, crouch into a ball while rolling.
             var bob = -m * 0.03f * (0.5f + 0.5f * Mathf.Cos(2f * tau * _phase)) + 0.012f * Mathf.Sin(_time * 2.2f) * (1f - m);
-            var hipY = Mathf.Lerp(HipHeight + bob, 0.38f, _tuck);
+            Spring.Damp(ref _crouch, ref _crouchV, action == FigureAction.Block ? 0.06f : finisher ? 0.05f : 0f, 14f, dt);
+            var hipY = Mathf.Lerp(HipHeight + bob - _crouch, 0.38f, _tuck);
             var lean = Mathf.Lerp(_lean, 0.9f, _tuck);
             p.Hip = new Vector2(0f, hipY);
             var up = new Vector2(Mathf.Sin(lean), Mathf.Cos(lean));
@@ -158,7 +166,8 @@ namespace Isle.UI.Art
                 case FigureAction.Gather:
                 {
                     var st = action == FigureAction.Swing ? t : Mathf.Repeat(t, GatherLoopSeconds) * (SwingSeconds / GatherLoopSeconds);
-                    var a = SwingAngle(st, out var striking);
+                    var style = action != FigureAction.Swing ? 0 : finisher ? 2 : input.ComboStep == 2 ? 1 : 0;
+                    var a = SwingAngle(st, style, out var striking);
                     handF = p.Shoulder + 0.48f * new Vector2(Mathf.Cos(a), Mathf.Sin(a));
                     itemFrontRel = striking ? 10f * Deg : 40f * Deg;
                     handB = action == FigureAction.Gather ? handF + new Vector2(-0.07f, -0.06f) : p.Shoulder + new Vector2(0.16f, -0.3f);
@@ -191,6 +200,13 @@ namespace Isle.UI.Art
                     itemFrontAbs = 0f;
                     handB = p.Shoulder + new Vector2(Mathf.Lerp(0.42f, 0.02f, Mathf.Clamp01(input.DrawProgress)), 0.03f);
                     handFreq = 30f;
+                    break;
+                case FigureAction.Block:
+                    // Guard up: weapon held upright in front of the face, off hand braced behind it.
+                    handF = p.Shoulder + new Vector2(0.3f, 0.1f);
+                    handB = p.Shoulder + new Vector2(0.24f, -0.02f);
+                    itemFrontAbs = 100f * Deg;
+                    handFreq = 35f;
                     break;
                 case FigureAction.Roll:
                     handF = p.Hip + new Vector2(0.2f, -0.05f);
@@ -228,7 +244,7 @@ namespace Isle.UI.Art
             // Held items: relative to the forearm unless the action fixes an absolute angle.
             var forearmF = AngleOf(p.HandFront - p.ElbowFront);
             var forearmB = AngleOf(p.HandBack - p.ElbowBack);
-            ChaseAngle(ref _itemFront, ref _itemFrontV, itemFrontAbs ?? forearmF + itemFrontRel.Value, 30f, dt);
+            ChaseAngle(ref _itemFront, ref _itemFrontV, itemFrontAbs ?? forearmF + itemFrontRel.Value, handFreq >= 40f ? 50f : 30f, dt);
             ChaseAngle(ref _itemBack, ref _itemBackV, itemBackAbs ?? forearmB + 75f * Deg, 30f, dt);
             p.ItemAngleFront = _itemFront;
             p.ItemAngleBack = _itemBack;
@@ -261,14 +277,24 @@ namespace Isle.UI.Art
             return new Vector2(Mathf.Lerp(-halfSpan, halfSpan, Smooth(s)), Mathf.Sin(s * Mathf.PI) * lift);
         }
 
-        /// <summary>Wind-up behind the head, fast strike forward and down, brief follow-through. Radians from +x.</summary>
-        static float SwingAngle(float t, out bool striking)
+        // Swing arcs, degrees from +x: start → wind-up → strike end. Style 0 overhead chop, 1 rising backhand (combo
+        // step 2), 2 finisher — a bigger wind-up and a longer, lower follow-through.
+        static readonly (float Start, float Wind, float End, float WindTime, float StrikeTime)[] Swings =
         {
+            (-60f, 140f, -35f, 0.12f, 0.14f),
+            (-60f, -150f, 70f, 0.10f, 0.13f),
+            (-60f, 175f, -70f, 0.15f, 0.15f),
+        };
+
+        /// <summary>Wind-up, fast strike, brief follow-through. Radians from +x.</summary>
+        static float SwingAngle(float t, int style, out bool striking)
+        {
+            var s = Swings[Mathf.Clamp(style, 0, Swings.Length - 1)];
             striking = false;
-            if (t < 0.12f) return Mathf.Lerp(-60f, 140f, Smooth(t / 0.12f)) * Deg;
-            striking = t < 0.26f;
-            if (striking) return Mathf.Lerp(140f, -35f, Smooth((t - 0.12f) / 0.14f)) * Deg;
-            return -35f * Deg;
+            if (t < s.WindTime) return Mathf.Lerp(s.Start, s.Wind, Smooth(t / s.WindTime)) * Deg;
+            striking = t < s.WindTime + s.StrikeTime;
+            if (striking) return Mathf.Lerp(s.Wind, s.End, Smooth((t - s.WindTime) / s.StrikeTime)) * Deg;
+            return s.End * Deg;
         }
 
         static float Smooth(float x)

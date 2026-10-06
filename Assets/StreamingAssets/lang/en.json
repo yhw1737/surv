@@ -57,7 +57,7 @@
   "ui.pick_up": "Pick up",
   "ui.hand": "Hand",
   "ui.unwield": "Stow",
-  "ui.help": "WASD move · Shift sprint · Space roll · E interact (gather, drink, light fire, open crate, harvest crop, pick up) · F cast at water under the mouse (click on a bite) · R rest at night by a fire\nLMB attack — hold to draw a bow / reel a hooked fish · C craft · K cook · P skills · bag buttons: eat / wear / wield / place / plant · Tab bag · M map (wheel zoom, click to mark) · Esc menu · H hide",
+  "ui.help": "WASD move · Shift sprint · Space roll · E interact (gather, drink, light fire, open crate, harvest crop, pick up) · F cast at water under the mouse (click on a bite) · R rest at night by a fire\nLMB attack (click in rhythm for a 3-hit combo) — hold to draw a bow / reel a hooked fish · RMB block (raise it just before a hit to parry) · C craft · K cook · P skills · bag buttons: eat / wear / wield / place / plant · Tab bag · M map (wheel zoom, click to mark) · Esc menu · H hide",
   "ui.save_loaded": "Save loaded — welcome back",
   "ui.save_deleted": "Save deleted — a new island next launch",
   "creature.crocodile": "Crocodile",
@@ -231,5 +231,8 @@
   "ui.waiting_bite": "Waiting for a bite…  [F] reel in",
   "ui.gathering": "Gathering…  (move or E to stop)",
   "ui.map_hint": "Wheel / = - zoom · Left-click: add marker · Right-click: remove marker · M close",
-  "ui.respawn_in": "Respawning in {0} s"
+  "ui.respawn_in": "Respawning in {0} s",
+  "ui.parry": "Parry!",
+  "ui.blocked": "Blocked",
+  "ui.guard_broken": "Guard broken"
 }

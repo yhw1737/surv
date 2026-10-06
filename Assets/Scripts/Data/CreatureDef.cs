@@ -56,6 +56,10 @@ namespace Isle.Data
 
         /// <summary>For the alert-then-flee preset: how long the creature alerts before running. [invented] per def.</summary>
         public float AlertSeconds { get; init; }
+
+        /// <summary>Seconds between starting a strike and it landing — the tell a player reads to block or parry
+        /// (SYS-COMBAT-01 §Melee). 0 strikes instantly. [invented] per def.</summary>
+        public float WindupSeconds { get; init; }
     }
 
     /// <summary>Where and when this creature appears.</summary>

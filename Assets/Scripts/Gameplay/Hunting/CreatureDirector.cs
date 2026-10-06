@@ -31,6 +31,15 @@ namespace Isle.Gameplay.Hunting
         public Vector2 WanderTarget { get; set; }
         public float NextWanderAt { get; set; }
         public float NextStrikeAt { get; set; }
+
+        /// <summary>When the strike being wound up lands; negative when not winding up (SYS-COMBAT-01 §Melee tell).</summary>
+        public float StrikeLandsAt { get; set; } = -1f;
+
+        /// <summary>A parried creature reels until this time: no moving, no striking.</summary>
+        public float StaggeredUntil { get; set; } = float.NegativeInfinity;
+
+        public bool IsStaggered => Time.time < StaggeredUntil;
+        public bool IsWindingUp => StrikeLandsAt >= 0f;
         public float AlertStartedAt { get; set; }
         public GameObject View { get; init; }
         public SpriteRenderer Renderer { get; init; }
@@ -255,6 +264,14 @@ namespace Isle.Gameplay.Hunting
                 return;
             }
 
+            if (creature.IsStaggered)
+            {
+                creature.StrikeLandsAt = -1f;
+                creature.View.transform.position = creature.Position;
+                Flash(creature);
+                return;
+            }
+
             var target = NearestPlayer(creature.Position, players, out var distance);
             var preset = creature.Def.Ai.IsValid ? creature.Def.Ai.Value : null;
             var previous = creature.State;
@@ -271,12 +288,17 @@ namespace Isle.Gameplay.Hunting
                     Step(creature, (creature.Position - (Vector2)target.transform.position).normalized, combat.ChaseSpeed);
                     break;
                 case CreatureState.Engage:
-                    if (!BodyReach.InReach(distance, creature.Radius, combat.AttackRangeTiles))
+                    if (creature.IsWindingUp)
+                    {
+                        // Committed: it stands and lands the strike when the tell ends — on whoever is still in reach.
+                        if (Time.time >= creature.StrikeLandsAt) LandStrike(creature, target, distance, combat);
+                    }
+                    else if (!BodyReach.InReach(distance, creature.Radius, combat.AttackRangeTiles))
                         Step(creature, ((Vector2)target.transform.position - creature.Position).normalized, combat.ChaseSpeed);
                     else if (Time.time >= creature.NextStrikeAt)
                     {
-                        creature.NextStrikeAt = Time.time + combat.AttackIntervalSeconds;
-                        if (target.TryGetComponent<Vitals>(out var vitals)) vitals.TakeDamage(combat.Damage);
+                        creature.StrikeLandsAt = Time.time + combat.WindupSeconds;
+                        if (combat.WindupSeconds <= 0f) LandStrike(creature, target, distance, combat);
                     }
                     break;
                 default:
@@ -286,6 +308,19 @@ namespace Isle.Gameplay.Hunting
             }
             creature.View.transform.position = creature.Position;
             Flash(creature);
+        }
+
+        /// <summary>Extra tiles past attack range a wound-up strike still connects — stepping back at the last instant
+        /// dodges, a shuffle doesn't. [invented]</summary>
+        const float StrikeLeewayTiles = 0.3f;
+
+        static void LandStrike(Creature creature, PlayerInteraction target, float distance, CreatureCombatSpec combat)
+        {
+            creature.StrikeLandsAt = -1f;
+            creature.NextStrikeAt = Time.time + combat.AttackIntervalSeconds;
+            if (target == null || !BodyReach.InReach(distance, creature.Radius, combat.AttackRangeTiles + StrikeLeewayTiles)) return;
+            if (target.ReceiveCreatureStrike(creature.Position, combat.Damage) == BlockOutcome.Parried)
+                creature.StaggeredUntil = Time.time + MeleeDefense.ParryStaggerSeconds;
         }
 
         /// <summary>Seconds a hit keeps a sleeping creature awake.</summary>
@@ -301,12 +336,17 @@ namespace Isle.Gameplay.Hunting
 
         /// <summary>Presentation: flashes red for a moment after a hit.</summary>
         const float FlashSeconds = 0.12f;
+        static readonly Color WindupTint = new(1f, 0.75f, 0.2f);
+        static readonly Color StaggerTint = new(0.65f, 0.75f, 1f);
 
         static void Flash(Creature creature)
         {
             if (creature.Renderer == null) return;
             // The fill colour is baked into the texture, so the renderer tint is white at rest and red on a hit.
-            creature.Renderer.color = Time.time - creature.LastHitAt < FlashSeconds ? new Color(1f, 0.3f, 0.3f) : Color.white;
+            if (Time.time - creature.LastHitAt < FlashSeconds) creature.Renderer.color = new Color(1f, 0.3f, 0.3f);
+            else if (creature.IsStaggered) creature.Renderer.color = StaggerTint;
+            else if (creature.IsWindingUp) creature.Renderer.color = Color.Lerp(Color.white, WindupTint, 0.5f + 0.5f * Mathf.Sin(Time.time * 40f));
+            else creature.Renderer.color = Color.white;
         }
 
         void Wander(Creature creature, float speed)

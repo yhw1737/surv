@@ -58,7 +58,8 @@
     "damage": 18,
     "attack_range_tiles": 1.2,
     "attack_interval_seconds": 2.0,
-    "body_radius_tiles": 0.6
+    "body_radius_tiles": 0.6,
+    "windup_seconds": 0.6
   },
   "visual": {
     "shape": "crocodile",

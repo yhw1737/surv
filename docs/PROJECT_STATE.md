@@ -6,6 +6,18 @@
 ## Header
 
 - Last updated: **2026-10-06**
+- **Current work (2026-10-06, later): T-111 melee — combo, block, parry.** Branch `feature/T-111-melee-combo-block-parry`
+  off `main` (after PR #24 merged). The 2026-10-06 rounds below were split into four stacked PRs: melee → inventory/UI → creatures → stamina/fog/clusters. Developer: "다음 기능적인 부분 개발해줘. 내가 인정할만한거" + the
+  top help box clipped its text. Done: `MeleeCombo`/`MeleeDefense` (pure, `Gameplay/Combat/MeleeCombo.cs`), combo +
+  finisher + Lv unlocks + 0.3 s input buffer in `PlayerInteraction.PerformAttack`, RMB guard (`CmdBlock`/`CmdBlockAim`,
+  `Blocking`/`BlockStartedAt`/`BlockDirection`), `ReceiveCreatureStrike` resolving parry/block/guard-break before
+  `Vitals.TakeDamage`; creatures wind up (`combat.windup_seconds`, boar 0.45, croc 0.6) with an orange flicker tell,
+  parried ones stagger 1 s (blue tint, no moving/striking) and take ×1.2; `GameFeed.Defended` → "패링!/막음/가드 붕괴"
+  floaters; stick figure guard pose, rising backhand on combo step 2, big finisher with lunge; help text mentions
+  combo/block/parry. **Help box fix:** height now measured from the wrapped text (`CalcHeight`), width clamps to the
+  screen — no more clipped lines. **Verified:** EditMode **547/547** (+16 `MeleeCombatTests`), PlayMode **2/2** (live
+  scene: parry, block-for-stamina, back hit, 3-step combo); poses rendered to PNG. **Not verified:** fighting a real
+  boar by hand (timing feel of the 0.45 s tell).
 - **Current work (2026-10-06): art overhaul, step 1 — cartoon stick figure.** Branch
   `feature/art-cartoon-stickman` off `main` (after PR #23), committed and opened as
   [PR #24](https://github.com/yhw1737/surv/pull/24), not yet merged. Developer moved the art stage
@@ -1719,6 +1731,13 @@ since it's server-side gauge math with no UI yet:
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-10-06 — T-111 melee: buffer, block cost, creature tell, and four readings of the spec
+  [invented]: combo input buffer 0.3 s (the spec's own open question), block stamina 1 per damage point with guard
+  break when short, creature `windup_seconds` boar 0.45 / crocodile 0.6, strike leeway 0.3 tiles. Interpretations:
+  finisher = last hit of the combo (so Lv20's 4th hit is the ×1.4 one), 8/8/14 = shares of the weapon's
+  `stamina_cost`, the 1.2 s window counts from weapon-ready, execute = kill below 20% HP. Table in SYS-COMBAT-01
+  §Melee implementation.
 
 - ### 2026-10-06 — SYS-CHAR-02 stick figure: every look/animation number is [invented]
   Developer gave the direction (stick-figure cartoon, Fancy Pants feel, smooth, high-res, high-fps, all equipment
