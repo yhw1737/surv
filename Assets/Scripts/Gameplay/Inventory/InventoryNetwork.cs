@@ -109,6 +109,188 @@ namespace Isle.Gameplay.Inventory
             CmdUnequip(slot, bagPos.X, bagPos.Y, bagRotated);
         }
 
+        /// <summary>Moves (or, with <paramref name="count"/> below the stack, splits) an item between any two of this
+        /// player's own containers — indices into <see cref="Containers"/> (0 = base carry, then opened bags).</summary>
+        public void RequestMove(int fromContainer, Vec2Int from, int toContainer, Vec2Int to, bool toRotated, int count, Action<bool> onResult)
+        {
+            _pendingCallback = ok =>
+            {
+                if (ok && !IsServer) ApplyMove(fromContainer, from, toContainer, to, toRotated, count);
+                onResult(ok);
+            };
+            CmdMove(fromContainer, from.X, from.Y, toContainer, to.X, to.Y, toRotated, count);
+        }
+
+        /// <summary>Ctrl+click: the whole stack into the first spot that fits in another container.</summary>
+        public void RequestQuickMove(int fromContainer, Vec2Int from, int toContainer, Action<bool> onResult)
+        {
+            _pendingCallback = ok =>
+            {
+                if (ok && !IsServer) ApplyQuickMove(fromContainer, from, toContainer);
+                onResult(ok);
+            };
+            CmdQuickMove(fromContainer, from.X, from.Y, toContainer);
+        }
+
+        public void RequestEquipFrom(int container, Vec2Int pos, string slot, Action<bool> onResult)
+        {
+            _pendingCallback = ok =>
+            {
+                if (ok && !IsServer) ApplyEquipFrom(container, pos, slot);
+                onResult(ok);
+            };
+            CmdEquipFrom(container, pos.X, pos.Y, slot);
+        }
+
+        public void RequestUnequipInto(string slot, int container, Vec2Int pos, bool rotated, Action<bool> onResult)
+        {
+            _pendingCallback = ok =>
+            {
+                if (ok && !IsServer) ApplyUnequipInto(slot, container, pos, rotated);
+                onResult(ok);
+            };
+            CmdUnequipInto(slot, container, pos.X, pos.Y, rotated);
+        }
+
+        /// <summary>Drops <paramref name="count"/> of a stack (all of it by default) on the ground at the player's feet.</summary>
+        public void RequestDrop(int container, Vec2Int pos, int count, Action<bool> onResult)
+        {
+            _pendingCallback = ok =>
+            {
+                if (ok && !IsServer) ApplyDrop(container, pos, count);
+                onResult(ok);
+            };
+            CmdDrop(container, pos.X, pos.Y, count);
+        }
+
+        /// <summary>Takes off what a slot holds and drops it (a bag only when it's empty).</summary>
+        public void RequestDropEquipped(string slot, Action<bool> onResult)
+        {
+            _pendingCallback = ok =>
+            {
+                if (ok && !IsServer) ApplyDropEquipped(slot);
+                onResult(ok);
+            };
+            CmdDropEquipped(slot);
+        }
+
+        [ServerRpc]
+        void CmdDrop(int c, int x, int y, int count) => TargetResult(Owner, ApplyDrop(c, new Vec2Int(x, y), count));
+
+        [ServerRpc]
+        void CmdDropEquipped(string slot) => TargetResult(Owner, ApplyDropEquipped(slot));
+
+        bool ApplyDrop(int container, Vec2Int pos, int count)
+        {
+            var source = ContainerAt(container);
+            var placement = source?.PlacementAt(pos);
+            if (!placement.HasValue || count <= 0) return false;
+            var p = placement.Value;
+            var dropped = Math.Min(count, p.Count);
+            source.Remove(p);
+            if (dropped < p.Count) source.TryPlace(p.Item, p.Position, p.Rotated, p.Count - dropped);
+            // Only the server places the pile; a remote client's mirror just removes it from its own copy.
+            if (IsServer)
+            {
+                LootPiles.Drop(transform.position, new[] { (p.Item, dropped) });
+                Feedback.GameFeed.RaiseItemDropped(p.Item.Id, dropped, transform.position);
+            }
+            return true;
+        }
+
+        bool ApplyDropEquipped(string slot)
+        {
+            var item = Slots.Get(slot);
+            if (item == null || !Slots.Unequip(slot)) return false;
+            if (IsServer)
+            {
+                LootPiles.Drop(transform.position, new[] { (item, 1) });
+                Feedback.GameFeed.RaiseItemDropped(item.Id, 1, transform.position);
+            }
+            return true;
+        }
+
+        [ServerRpc]
+        void CmdMove(int fc, int fx, int fy, int tc, int tx, int ty, bool toRotated, int count) =>
+            TargetResult(Owner, ApplyMove(fc, new Vec2Int(fx, fy), tc, new Vec2Int(tx, ty), toRotated, count));
+
+        [ServerRpc]
+        void CmdQuickMove(int fc, int fx, int fy, int tc) => TargetResult(Owner, ApplyQuickMove(fc, new Vec2Int(fx, fy), tc));
+
+        [ServerRpc]
+        void CmdEquipFrom(int c, int x, int y, string slot) => TargetResult(Owner, ApplyEquipFrom(c, new Vec2Int(x, y), slot));
+
+        [ServerRpc]
+        void CmdUnequipInto(string slot, int c, int x, int y, bool rotated) =>
+            TargetResult(Owner, ApplyUnequipInto(slot, c, new Vec2Int(x, y), rotated));
+
+        /// <summary>A container by index, or null for a bad index — never trust client values.</summary>
+        GridInventory ContainerAt(int index)
+        {
+            var containers = Containers();
+            return index >= 0 && index < containers.Count ? containers[index] : null;
+        }
+
+        bool ApplyMove(int fromContainer, Vec2Int from, int toContainer, Vec2Int to, bool toRotated, int count)
+        {
+            var source = ContainerAt(fromContainer);
+            var target = ContainerAt(toContainer);
+            var placement = source?.PlacementAt(from);
+            if (target == null || placement == null || count <= 0) return false;
+            var p = placement.Value;
+
+            if (count < p.Count) return source.TrySplit(p, count, target, to, toRotated);
+
+            source.Remove(p);
+            if (target.TryPlace(p.Item, to, toRotated, p.Count)) return true;
+            source.TryPlace(p.Item, p.Position, p.Rotated, p.Count); // put it back exactly where it was
+            return false;
+        }
+
+        bool ApplyQuickMove(int fromContainer, Vec2Int from, int toContainer)
+        {
+            var source = ContainerAt(fromContainer);
+            var target = ContainerAt(toContainer);
+            var placement = source?.PlacementAt(from);
+            return target != null && target != source && placement.HasValue && source.TryMoveTo(target, placement.Value);
+        }
+
+        bool ApplyEquipFrom(int container, Vec2Int pos, string slot)
+        {
+            var source = ContainerAt(container);
+            var placement = source?.PlacementAt(pos);
+            if (!placement.HasValue || placement.Value.Item.EquipSlot != slot) return false;
+            // Whatever the slot held goes back where the new item came from (swap), or the equip doesn't happen.
+            var previous = Slots.Get(slot);
+            if (previous != null)
+            {
+                if (Slots.BagFor(slot) == source || !Slots.Unequip(slot)) return false;
+                source.Remove(placement.Value);
+                if (!Slots.TryEquip(slot, placement.Value.Item) || !InventoryOps.TryGive(new List<GridInventory> { source }, previous, 1))
+                {
+                    Slots.Unequip(slot);
+                    Slots.TryEquip(slot, previous);
+                    source.TryPlace(placement.Value.Item, placement.Value.Position, placement.Value.Rotated, placement.Value.Count);
+                    return false;
+                }
+                return true;
+            }
+            if (!Slots.TryEquip(slot, placement.Value.Item)) return false;
+            source.Remove(placement.Value);
+            return true;
+        }
+
+        bool ApplyUnequipInto(string slot, int container, Vec2Int pos, bool rotated)
+        {
+            var target = ContainerAt(container);
+            var item = Slots.Get(slot);
+            // A bag can't be unequipped into its own grid — the grid goes away with it.
+            if (target == null || item == null || Slots.BagFor(slot) == target || !Slots.Unequip(slot)) return false;
+            if (target.TryPlace(item, pos, rotated)) return true;
+            Slots.TryEquip(slot, item);
+            return false;
+        }
+
         [ServerRpc]
         void CmdMoveWithinBag(int fx, int fy, int tx, int ty, bool toRotated) =>
             TargetResult(Owner, ApplyMoveWithinBag(new Vec2Int(fx, fy), new Vec2Int(tx, ty), toRotated));

@@ -11,5 +11,10 @@
   },
   "weight": 4.0,
   "stack": 1,
-  "places": "isle:cooking_pot"
+  "places": "isle:cooking_pot",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#9A6B42",
+    "accent": "#6F7A86"
+  }
 }

@@ -11,5 +11,10 @@
   },
   "weight": 15.0,
   "stack": 1,
-  "places": "isle:warehouse"
+  "places": "isle:warehouse",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#9A6B42",
+    "accent": "#7F5B3A"
+  }
 }

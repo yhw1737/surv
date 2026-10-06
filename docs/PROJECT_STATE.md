@@ -6,6 +6,41 @@
 ## Header
 
 - Last updated: **2026-10-06**
+- **Same branch, third round (2026-10-06): full-screen inventory, drop, freshness, icons, prompts** (the same round's creatures and lunges are the next PR).
+  Developer list: croc whiffs because it stands still → hostile strikes need a dash; Tarkov/Palworld full-screen
+  inventory; drop items; freshness visible without hovering; draw animals, more variety, biome fauna; draw food,
+  dishes and all equipment; interaction prompt over the object, not at the bottom. Done:
+  - **Inventory** — `InventoryScreen` rewritten full-screen (Tab, Esc closes before pausing): dim backdrop, equipment
+    paper doll + condition (HP/hunger/thirst/stamina bars, temperature, armor, warmth) left, every bag grid middle
+    (52 px cells), ground panel right (drop area + what's on the nearest pile). HUD gauges hide while it's open.
+  - **Drop** — drag onto the backdrop or the ground panel: `InventoryNetwork.RequestDrop` / `RequestDropEquipped` →
+    `LootPiles.Drop` at the player's feet (server-side). `DropZone` marker.
+  - **Freshness** — food tiles carry a bar + percentage (green → amber → red), refreshed every 0.5 s.
+  - **Icons** — `IconPainter` (CPU SDF vector painter, outlined, 128 px) + `ItemIcons`: drawn from `icon_style`
+    (new, on 19 items), else `hold`/`wear`; dishes in their method's vessel (`icon_style` on cook methods: bowl,
+    skewer, strips, plate) coloured by their ingredients. Used in the grid, equip slots, cooking (method vessel,
+    pot, pantry, a live **dish preview**) and crafting.
+  - **Prompts** — `[E] …` bubbles float over the node / station / water / pile; fishing and gathering status over the
+    bobber / node.
+  **Verified:** EditMode 547/547, PlayMode 2/2 (adds: drop → pile → pick up). Icons rendered to PNG and
+  inspected. **Not verified visually:** the uGUI inventory and IMGUI bubbles (batchmode can't draw overlays).
+- **Same branch, next round (2026-10-06): grid inventory back, view zoom, cooking/crafting window redesign.**
+  Developer: "예전에 개발했던 장비 시스템은 어디갔어?" (the T-040–T-045 grid inventory had only ever been wired to the
+  `InventoryDemo` test harness; the 2026-10-03 prototype HUD replaced it with a text list), "캐릭터가 너무 커 → 1.1배
+  줌아웃", "건조대는 어떻게 쓰는데", "요리 UI 너무 기본 버튼만". Done: new `UI/Inventory/InventoryScreen` (uGUI, Tab) —
+  paper-doll equip slots + base carry + every opened bag as `GridView`s bound to the player's `InventoryNetwork`;
+  drag/rotate/split/Ctrl+click as in T-042–T-044, right-click uses (eat/wear/wield/place/plant via
+  `PrototypeHud.Use`) or unequips; redraws when contents change (signature poll). `InventoryNetwork` gained
+  container-indexed `RequestMove` (move/split between any of the player's own containers), `RequestQuickMove`,
+  `RequestEquipFrom` (with swap) and `RequestUnequipInto` (a bag can't go into its own grid); `GridView.ContainerIndex`,
+  `DragHandler`/`EquipDragHandler` use them. Labels now localized; equipped icons fit their frame. The IMGUI bag list
+  is gone; the HUD draws its rich tooltip for grid items (`ItemTooltip.Hovered`). New `UiTheme` (procedural rounded
+  panels, warm dark wood + amber accent, IMGUI styles and sliced uGUI sprites); all HUD panels use it. Cooking (K)
+  and crafting (C) rebuilt in `PrototypeHud.Windows.cs`: method/recipe list with availability reasons, pot slots +
+  pantry tiles + result preview (hunger/thirst/buffs/keep/burn chance via `CookingResolver`), recipe detail with
+  have/need per ingredient, station and skill lines. Camera half-height 4.5 → 4.95. **Verified:** EditMode 547/547,
+  PlayMode 2/2 (screen installed; bag → backpack move acknowledged by the server). **Not verified visually** — batchmode
+  can't render IMGUI or overlay canvases; look in Play mode.
 - **Current work (2026-10-06, later): T-111 melee — combo, block, parry.** Branch `feature/T-111-melee-combo-block-parry`
   off `main` (after PR #24 merged). The 2026-10-06 rounds below were split into four stacked PRs: melee → inventory/UI → creatures → stamina/fog/clusters. Developer: "다음 기능적인 부분 개발해줘. 내가 인정할만한거" + the
   top help box clipped its text. Done: `MeleeCombo`/`MeleeDefense` (pure, `Gameplay/Combat/MeleeCombo.cs`), combo +
@@ -1731,6 +1766,11 @@ since it's server-side gauge math with no UI yet:
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-10-06 — inventory/cook/craft UI presentation choices
+  Presentation only: camera half-height 4.95 tiles (developer asked for ~1.1× zoom-out), `UiTheme` colours, window
+  sizes, paper-doll slot layout (head / back-chest-belt / hand-legs-off hand / feet), Ctrl+click target = next container
+  round the ring, `RequestEquipFrom` swaps the previously worn item back into the source grid (SYS-INV-01 doesn't say).
 
 - ### 2026-10-06 — T-111 melee: buffer, block cost, creature tell, and four readings of the spec
   [invented]: combo input buffer 0.3 s (the spec's own open question), block stamina 1 per damage point with guard

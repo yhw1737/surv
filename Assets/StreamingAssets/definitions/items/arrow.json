@@ -11,5 +11,10 @@
     "h": 1
   },
   "weight": 0.05,
-  "stack": 30
+  "stack": 30,
+  "icon_style": {
+    "shape": "arrow",
+    "color": "#9A6B42",
+    "accent": "#9FA4AA"
+  }
 }

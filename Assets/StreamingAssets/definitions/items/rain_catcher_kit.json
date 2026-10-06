@@ -12,5 +12,10 @@
   },
   "weight": 3.0,
   "stack": 1,
-  "places": "isle:rain_catcher"
+  "places": "isle:rain_catcher",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#9A6B42",
+    "accent": "#5AA0D6"
+  }
 }

@@ -29,5 +29,10 @@
     }
   ],
   "naming": "@pattern.raw",
-  "eat_raw": true
+  "eat_raw": true,
+  "icon_style": {
+    "shape": "plate",
+    "color": "#8A6A48",
+    "accent": "#E9DDC8"
+  }
 }

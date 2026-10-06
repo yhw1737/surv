@@ -80,6 +80,9 @@ namespace Isle.Data
 
         /// <summary>How this item looks held in the figure's hand (SYS-CHAR-02). Null: not drawn while held.</summary>
         public HoldSpec Hold { get; init; }
+
+        /// <summary>The inventory icon drawing (SYS-CHAR-02 §Icons). Null: drawn from <see cref="Hold"/>/<see cref="Wear"/>, else a tag fallback.</summary>
+        public IconSpec IconStyle { get; init; }
     }
 
     /// <summary>Spoilage inputs. Progress is computed in one elapsed-time pass (ARCHITECTURE §Deferred simulation).</summary>

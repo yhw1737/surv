@@ -10,5 +10,10 @@
     "h": 1
   },
   "weight": 1.0,
-  "stack": 20
+  "stack": 20,
+  "icon_style": {
+    "shape": "log",
+    "color": "#9A6B42",
+    "accent": "#D9B07A"
+  }
 }

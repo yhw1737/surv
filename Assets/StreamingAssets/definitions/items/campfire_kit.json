@@ -12,5 +12,10 @@
   },
   "weight": 3.0,
   "stack": 1,
-  "places": "isle:campfire"
+  "places": "isle:campfire",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#9A6B42",
+    "accent": "#F08A3A"
+  }
 }

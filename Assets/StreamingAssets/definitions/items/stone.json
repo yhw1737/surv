@@ -10,5 +10,10 @@
     "h": 1
   },
   "weight": 1.2,
-  "stack": 20
+  "stack": 20,
+  "icon_style": {
+    "shape": "rock",
+    "color": "#8E9296",
+    "accent": "#B9BDC1"
+  }
 }

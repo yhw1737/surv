@@ -45,6 +45,9 @@ namespace Isle.Data
 
         /// <summary>XP this grants (docs/content/xp_table.md). Null grants none.</summary>
         public XpAward Xp { get; init; }
+
+        /// <summary>The vessel a dish of this method is drawn in (bowl, plate, skewer, strips). Presentation only.</summary>
+        public IconSpec IconStyle { get; init; }
     }
 
     /// <summary>What the method accepts (SYS-COOK-01 step 1).</summary>

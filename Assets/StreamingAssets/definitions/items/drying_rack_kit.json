@@ -11,5 +11,10 @@
   },
   "weight": 3.0,
   "stack": 1,
-  "places": "isle:drying_rack"
+  "places": "isle:drying_rack",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#9A6B42",
+    "accent": "#C9A35A"
+  }
 }

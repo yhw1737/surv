@@ -39,6 +39,7 @@ namespace Isle.UI.Prototype
             root.AddComponent<CampfireSpawner>();
             root.AddComponent<DayNightLight>();
             root.AddComponent<PrototypeHud>();
+            root.AddComponent<Isle.UI.Inventory.InventoryScreen>();
             root.AddComponent<PlayerCamera>();
             root.AddComponent<Isle.UI.Art.StickFigureDirector>();
             root.AddComponent<FeedbackOverlay>();
