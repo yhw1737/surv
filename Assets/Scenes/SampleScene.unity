@@ -416,9 +416,9 @@ MonoBehaviour:
   _enableStateForwarding: 1
   _networkTransform: {fileID: 0}
   _ownerInterpolation: 1
-  _ownerSmoothedProperties: 255
+  _ownerSmoothedProperties: 4294967295
   _adaptiveInterpolation: 3
-  _spectatorSmoothedProperties: 255
+  _spectatorSmoothedProperties: 4294967295
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
@@ -563,71 +563,6 @@ MonoBehaviour:
   _playerPrefab: {fileID: 9100000000000001, guid: a242571746a834c8a973e3caeba7a4b7, type: 3}
   _addToDefaultScene: 1
   Spawns: []
---- !u!1001 &4457122387134750456
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 2783534480716738478, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 1.65227
-      objectReference: {fileID: 0}
-    - target: {fileID: 2783534480716738478, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 1.02087
-      objectReference: {fileID: 0}
-    - target: {fileID: 2783534480716738478, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2783534480716738478, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2783534480716738478, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2783534480716738478, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2783534480716738478, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2783534480716738478, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2783534480716738478, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2783534480716738478, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3383241471797228429, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
-      propertyPath: SceneId
-      value: 2079061821
-      objectReference: {fileID: 0}
-    - target: {fileID: 3383241471797228429, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
-      propertyPath: WasActiveDuringEdit
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8950725089680728588, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
-      propertyPath: m_Name
-      value: Campfire
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: e6d13caf28d2347469e7e1bf6b1b6f38, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -636,4 +571,3 @@ SceneRoots:
   - {fileID: 619394802}
   - {fileID: 1179008780}
   - {fileID: 1032707447}
-  - {fileID: 4457122387134750456}
