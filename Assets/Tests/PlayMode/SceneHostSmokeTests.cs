@@ -32,6 +32,8 @@ namespace Isle.Tests.PlayMode
         public void SetUp()
         {
             // Never touch the real save: a leftover one would also change what the test starts with.
+            // The scene opens on the main menu now (T-153); this test drives the game itself, so skip it.
+            Isle.UI.Prototype.GameSession.SkipMenu = true;
             Isle.UI.Prototype.SaveGame.FilePathOverride = ScratchSave;
             if (System.IO.File.Exists(ScratchSave)) System.IO.File.Delete(ScratchSave);
 
@@ -51,6 +53,7 @@ namespace Isle.Tests.PlayMode
                 Object.DestroyImmediate(save);
             if (System.IO.File.Exists(ScratchSave)) System.IO.File.Delete(ScratchSave);
             Isle.UI.Prototype.SaveGame.FilePathOverride = null;
+            Isle.UI.Prototype.GameSession.SkipMenu = false;
             LootPiles.Clear();
             StructureFactory.Clear();
             DefRegistry.Clear();

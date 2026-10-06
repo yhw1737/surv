@@ -22,7 +22,7 @@ namespace Isle.UI.Prototype
             {
                 if (_table != null) return _table;
                 _table = new Dictionary<string, string>();
-                var code = Application.systemLanguage == SystemLanguage.Korean ? "ko" : "en";
+                var code = Code;
                 var path = Path.Combine(Application.streamingAssetsPath, "lang", code + ".json");
                 if (!File.Exists(path)) return _table;
                 foreach (Match match in Entry.Matches(File.ReadAllText(path)))
@@ -30,6 +30,20 @@ namespace Isle.UI.Prototype
                 return _table;
             }
         }
+
+        /// <summary>The language in use: the options' choice, or the system language when it's "auto".</summary>
+        public static string Code
+        {
+            get
+            {
+                var chosen = GameOptions.Language;
+                if (chosen != "auto" && File.Exists(Path.Combine(Application.streamingAssetsPath, "lang", chosen + ".json"))) return chosen;
+                return Application.systemLanguage == SystemLanguage.Korean ? "ko" : "en";
+            }
+        }
+
+        /// <summary>Drops the loaded table so the next lookup reads the newly chosen language.</summary>
+        public static void Reload() => _table = null;
 
         /// <summary>Accepts a def's <c>@key</c> reference or a bare key.</summary>
         public static string Get(string key)

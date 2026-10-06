@@ -58,6 +58,13 @@ namespace Isle.UI.Prototype
             y += ButtonHeight + 8f;
             if (GUI.Button(new Rect(x, y, Width, ButtonHeight), Lang.Get("@ui.new_island"))) FindFirstObjectByType<SaveGame>()?.DeleteSave();
             y += ButtonHeight + 8f;
+            if (GUI.Button(new Rect(x, y, Width, ButtonHeight), Lang.Get("@ui.menu_to_title")))
+            {
+                SetOpen(false);
+                GameSession.BackToMenu();
+                return;
+            }
+            y += ButtonHeight + 8f;
             if (GUI.Button(new Rect(x, y, Width, ButtonHeight), Lang.Get("@ui.quit")))
             {
                 FindFirstObjectByType<SaveGame>()?.SaveNow();

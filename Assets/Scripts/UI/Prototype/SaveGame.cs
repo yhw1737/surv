@@ -36,7 +36,51 @@ namespace Isle.UI.Prototype
         /// <summary>Tests point this at a scratch file so they never read or overwrite the player's real save.</summary>
         public static string FilePathOverride { get; set; }
 
-        static string FilePath => FilePathOverride ?? Path.Combine(Application.persistentDataPath, "isle_save.json");
+        /// <summary>Save slots (developer, 2026-10-06: up to 8 islands kept side by side).</summary>
+        public const int MaxSlots = 8;
+
+        /// <summary>The slot the current game reads and writes, 1-based.</summary>
+        public static int Slot { get; set; } = 1;
+
+        static string FilePath => SlotPath(Slot);
+
+        /// <summary>One file per slot. With a test override, slot 1 is the override itself and the others sit beside it.</summary>
+        public static string SlotPath(int slot)
+        {
+            if (FilePathOverride != null) return slot == 1 ? FilePathOverride : FilePathOverride + "." + slot;
+            return Path.Combine(Application.persistentDataPath, $"isle_save_{slot}.json");
+        }
+
+        /// <summary>The single save from before slots existed becomes slot 1 (once; never overwrites a slot).</summary>
+        public static void MigrateLegacy()
+        {
+            if (FilePathOverride != null) return;
+            var legacy = Path.Combine(Application.persistentDataPath, "isle_save.json");
+            if (File.Exists(legacy) && !File.Exists(SlotPath(1))) File.Move(legacy, SlotPath(1));
+        }
+
+        /// <summary>A slot's save and when it was last written, or null when the slot is empty.</summary>
+        public static (SaveData Save, System.DateTime Written)? Inspect(int slot)
+        {
+            var path = SlotPath(slot);
+            if (!File.Exists(path)) return null;
+            var save = SaveData.FromJson(File.ReadAllText(path));
+            return save == null ? null : (save, File.GetLastWriteTime(path));
+        }
+
+        /// <summary>The most recently written slot, or 0 when every slot is empty — what Continue resumes.</summary>
+        public static int LatestSlot()
+        {
+            var latest = 0;
+            var when = System.DateTime.MinValue;
+            for (var slot = 1; slot <= MaxSlots; slot++)
+                if (Inspect(slot) is { } info && info.Written > when)
+                {
+                    when = info.Written;
+                    latest = slot;
+                }
+            return latest;
+        }
 
         SaveData _pending;
         bool _applied;
@@ -52,6 +96,16 @@ namespace Isle.UI.Prototype
         }
 
         public void Begin(SaveData pending) => _pending = pending;
+
+        /// <summary>The save on disk without touching the next island's seed — for the main menu's Continue button.</summary>
+        public static SaveData Peek() => Inspect(Slot)?.Save;
+
+        /// <summary>Removes a slot's save (New game over an existing island, or Delete on the load screen).</summary>
+        public static void DeleteFile(int slot)
+        {
+            var path = SlotPath(slot);
+            if (File.Exists(path)) File.Delete(path);
+        }
 
         void Update()
         {

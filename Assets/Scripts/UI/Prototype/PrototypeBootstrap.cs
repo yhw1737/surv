@@ -1,6 +1,7 @@
 using Isle.Gameplay.Hunting;
 using Isle.World.Island;
 using UnityEngine;
+using Isle.Networking;
 using UnityEngine.SceneManagement;
 
 namespace Isle.UI.Prototype
@@ -26,11 +27,25 @@ namespace Isle.UI.Prototype
 
         static void EnsureInstalled()
         {
+            GameOptions.Apply();
             if (Object.FindFirstObjectByType<IslandWorld>() != null) return;
 
-            // Read the save first: it decides the island seed, which IslandWorld consumes in Awake.
-            var pending = SaveGame.ReadPending();
+            // T-153: the main menu comes first; the island is built when the player picks New game or Continue.
+            if (!GameSession.InGame && !GameSession.SkipMenu)
+            {
+                if (Object.FindFirstObjectByType<MainMenu>() == null) new GameObject("MainMenu").AddComponent<MainMenu>();
+                return;
+            }
 
+            // Tests skip the menu: build the island from whatever save exists and start the host straight away.
+            InstallWorld(SaveGame.ReadPending());
+            IsleNetworkManager.Find()?.StartHost();
+        }
+
+        /// <summary>Builds the island and every runtime system. <paramref name="pending"/> resumes a save (its seed is
+        /// already in <c>IslandWorld.NextSeed</c>); null starts fresh.</summary>
+        public static void InstallWorld(SaveData pending)
+        {
             var root = new GameObject("Prototype");
             root.AddComponent<IslandWorld>();
             root.AddComponent<SaveGame>().Begin(pending);

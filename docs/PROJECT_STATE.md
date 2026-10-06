@@ -9,6 +9,15 @@
 - **2026-10-06 — developer decisions on the endgame drafts:** one ending per island; everyone on the island sees the
   ending and is credited the same ending; artifacts may appear more than once per island; endings play as a short
   scripted sequence + run summary text. Written into SYS-END-01 / SYS-ART-02.
+- **2026-10-06 — main menu + 8 save slots (T-153).** Branch `feature/T-153-main-menu` — [PR #32](https://github.com/yhw1737/surv/pull/32), stacked on [PR #31](https://github.com/yhw1737/surv/pull/31) (`docs/endgame-design`).
+  **Main menu built (T-153):** scene opens on `MainMenu` (no island, no host) — Continue (day/seed
+  from the save), New island (seed field + random, overwrite confirm), Options (language auto/ko/en, fullscreen, vSync,
+  frame cap, volume), Load (8 slots, delete), Quit; **8 save slots** (`SaveGame.Slot`, `isle_save_{n}.json`, old
+  `isle_save.json` migrates to slot 1; Continue = most recently written slot); `GameSession` starts/continues (island build + `IsleNetworkManager.StartHost`, no longer
+  auto-start) and goes back to the menu (save, stop host, reload scene); pause menu gained "Main menu"; frame pacing
+  moved from `StickFigureDirector` into `GameOptions`; `Lang` honours the language option. **Verified:** EditMode
+  559/559, PlayMode **3/3** (new `MainMenuFlowTests`: menu → new → back (saved) → continue, same seed; slot 2 leaves slot 1
+  untouched and becomes Continue's pick; no errors across the FishNet restarts); menu backdrop rendered to PNG. Not verified visually: the IMGUI menu itself.
 - **2026-10-06 — endgame design drafts.** Branch `docs/endgame-design` off `main`. Developer decisions: multiple
   endings (RimWorld-like), dungeons generated with the island, artifacts found (dungeon pools, rare caches, rare loot),
   co-op as soft gates, more artifacts per profession incl. gear, damage types and hit shapes. **Design drafts (numbers
@@ -1820,6 +1829,11 @@ since it's server-side gauge math with no UI yet:
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-10-06 — main menu presentation and option defaults
+  Menu layout/colours/backdrop, option defaults (vSync on, frame cap 120 when off, volume 100%, language follows the
+  system), seed text that isn't a number is hashed into a seed. 8 slots (developer's number). The endgame drafts deliberately
+  invent no numbers — every ❓ in SYS-END-01 / SYS-DUNG-01 / SYS-COMBAT-02 / SYS-ART-02 waits for the developer.
 
 - ### 2026-10-06 — endgame drafts invent no numbers
   Every ❓ in SYS-END-01 / SYS-DUNG-01 / SYS-COMBAT-02 / SYS-ART-02 waits for the developer.
