@@ -9,7 +9,7 @@
 - **2026-10-06 — developer decisions on the endgame drafts:** one ending per island; everyone on the island sees the
   ending and is credited the same ending; artifacts may appear more than once per island; endings play as a short
   scripted sequence + run summary text. Written into SYS-END-01 / SYS-ART-02.
-- **2026-10-06 — main menu + 8 save slots (T-153).** Branch `feature/T-153-main-menu`, stacked on `docs/endgame-design`.
+- **2026-10-06 — main menu + 8 save slots (T-153).** Branch `feature/T-153-main-menu` — [PR #32](https://github.com/yhw1737/surv/pull/32), stacked on [PR #31](https://github.com/yhw1737/surv/pull/31) (`docs/endgame-design`).
   **Main menu built (T-153):** scene opens on `MainMenu` (no island, no host) — Continue (day/seed
   from the save), New island (seed field + random, overwrite confirm), Options (language auto/ko/en, fullscreen, vSync,
   frame cap, volume), Load (8 slots, delete), Quit; **8 save slots** (`SaveGame.Slot`, `isle_save_{n}.json`, old
