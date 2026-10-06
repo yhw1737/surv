@@ -58,11 +58,26 @@
     "attack_range_tiles": 1.2,
     "attack_interval_seconds": 1.5,
     "body_radius_tiles": 0.45,
-    "windup_seconds": 0.45
+    "windup_seconds": 0.45,
+    "lunge_tiles": 1.4,
+    "lunge_speed": 9.0
   },
   "visual": {
     "shape": "boar",
     "color": "#5A4236",
     "size": 1.0
+  },
+  "look": {
+    "body": "quadruped",
+    "color": "#5A4236",
+    "accent": "#3A2A22",
+    "belly": "#7A604E",
+    "ears": "round",
+    "tail": "short",
+    "tusks": true,
+    "body_length": 1.05,
+    "body_height": 0.56,
+    "leg_length": 0.26,
+    "head_size": 0.26
   }
 }

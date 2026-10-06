@@ -29,6 +29,28 @@ namespace Isle.Data
         /// <summary>How it fights and how far it senses you (SYS-COMBAT-01 §Creature AI: "all parameters
         /// load from definitions"). Null means it never fights back and never reacts.</summary>
         public CreatureCombatSpec Combat { get; init; }
+
+        /// <summary>How the creature is drawn (SYS-CHAR-02 §Creatures). Presentation only — gameplay never reads it.</summary>
+        public CreatureLook Look { get; init; }
+    }
+
+    /// <summary>A creature's cartoon look: a body plan the figure painter knows (<c>quadruped reptile snake crab bird
+    /// frog turtle</c>), colours, and for quadrupeds its proportions (tiles at the mean weight) and features.</summary>
+    public sealed class CreatureLook
+    {
+        public string Body { get; init; }
+        public string Color { get; init; }
+        public string Accent { get; init; }
+        public string Belly { get; init; }
+        public string Ears { get; init; }
+        public string Tail { get; init; }
+        public string Gait { get; init; }
+        public bool Tusks { get; init; }
+        public bool Antlers { get; init; }
+        public float BodyLength { get; init; } = 0.8f;
+        public float BodyHeight { get; init; } = 0.36f;
+        public float LegLength { get; init; } = 0.3f;
+        public float HeadSize { get; init; } = 0.2f;
     }
 
     /// <summary>Numbers the creature AI reads. Values are per-def data, never C# constants.</summary>
@@ -60,6 +82,13 @@ namespace Isle.Data
         /// <summary>Seconds between starting a strike and it landing — the tell a player reads to block or parry
         /// (SYS-COMBAT-01 §Melee). 0 strikes instantly. [invented] per def.</summary>
         public float WindupSeconds { get; init; }
+
+        /// <summary>After the wind-up the creature dashes this many tiles at the player before the strike lands, so
+        /// stepping back doesn't make it whiff — a sidestep or a roll still does. 0: strikes where it stands. [invented]</summary>
+        public float LungeTiles { get; init; }
+
+        /// <summary>Speed of that dash, tiles per second. [invented]</summary>
+        public float LungeSpeed { get; init; }
     }
 
     /// <summary>Where and when this creature appears.</summary>
