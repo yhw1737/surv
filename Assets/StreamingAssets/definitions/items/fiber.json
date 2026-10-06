@@ -10,5 +10,10 @@
     "h": 1
   },
   "weight": 0.1,
-  "stack": 40
+  "stack": 40,
+  "icon_style": {
+    "shape": "fiber",
+    "color": "#9DB062",
+    "accent": "#6E5A3A"
+  }
 }

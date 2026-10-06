@@ -11,5 +11,10 @@
   },
   "weight": 6.0,
   "stack": 1,
-  "places": "isle:crate"
+  "places": "isle:crate",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#9A6B42",
+    "accent": "#B98A55"
+  }
 }

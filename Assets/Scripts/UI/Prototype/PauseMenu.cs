@@ -21,6 +21,11 @@ namespace Isle.UI.Prototype
         {
             var kb = Keyboard.current;
             if (kb == null || !kb.escapeKey.wasPressedThisFrame || PrototypeHud.IsPlacing) return;
+            if (!_open && Isle.UI.Inventory.InventoryScreen.Instance is { Open: true } inventory)
+            {
+                inventory.Close(); // Esc backs out of the inventory before it pauses
+                return;
+            }
             SetOpen(!_open);
         }
 

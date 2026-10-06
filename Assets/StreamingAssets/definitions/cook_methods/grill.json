@@ -55,5 +55,10 @@
     "skill": "isle:cooking",
     "base": 40,
     "per_unit": 15
+  },
+  "icon_style": {
+    "shape": "skewer",
+    "color": "#8A6A48",
+    "accent": "#E9DDC8"
   }
 }

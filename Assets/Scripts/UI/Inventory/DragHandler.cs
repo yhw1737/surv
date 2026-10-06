@@ -49,9 +49,28 @@ namespace Isle.UI.Inventory
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (eventData.button == PointerEventData.InputButton.Right)
+            {
+                GridView.RaiseItemActivated(_owner, _placement);
+                return;
+            }
+
             var kb = Keyboard.current;
             if (kb == null || !kb.ctrlKey.isPressed) return;
             if (_owner.PairedView == null) return;
+
+            if (_owner.Network != null)
+            {
+                var owner = _owner;
+                var paired = _owner.PairedView;
+                if (paired.Network != owner.Network) return;
+                owner.Network.RequestQuickMove(owner.ContainerIndex, _placement.Position, paired.ContainerIndex, _ =>
+                {
+                    owner.Redraw();
+                    paired.Redraw();
+                });
+                return;
+            }
 
             if (!_owner.Inventory.TryMoveTo(_owner.PairedView.Inventory, _placement)) return;
             _owner.Redraw();
@@ -130,6 +149,14 @@ namespace Isle.UI.Inventory
             var slotTarget = FindInHovered<EquipSlotView>(eventData);
             if (slotTarget != null && TryEquip(slotTarget)) return;
 
+            // Let go over the backdrop or the ground panel: drop it on the ground (server-side).
+            if (slotTarget == null && gridTarget == null && _owner.Network != null && FindInHovered<DropZone>(eventData) != null)
+            {
+                var owner = _owner;
+                owner.Network.RequestDrop(owner.ContainerIndex, _placement.Position, _dragCount, _ => owner.Redraw());
+                return;
+            }
+
             // Snap back on any failure — an item must never disappear on a bad drop. On success the
             // icon gets destroyed by Redraw() regardless of its (reparented) current parent, so only
             // the failure path needs to undo the OnBeginDrag reparent. Reset alpha/raycasts here too,
@@ -168,7 +195,7 @@ namespace Isle.UI.Inventory
         bool TryEquipNetworked(EquipSlotView slotTarget)
         {
             var owner = _owner;
-            owner.Network.RequestEquip(_placement.Position, slotTarget.SlotName, ok =>
+            owner.Network.RequestEquipFrom(owner.ContainerIndex, _placement.Position, slotTarget.SlotName, ok =>
             {
                 owner.Redraw();
                 slotTarget.Redraw();
@@ -193,7 +220,7 @@ namespace Isle.UI.Inventory
             // fell through to the plain local branch below and placed the item straight into
             // target.Inventory (the server's Bag object) without ever asking the server, leaving
             // the client's copy holding an item the server never agreed to. Guard on either side.
-            if (_owner.Network != null || target.Network != null) return target == _owner && TryDropNetworked(cell);
+            if (_owner.Network != null || target.Network != null) return target.Network == _owner.Network && TryDropNetworked(target, cell);
 
             if (_dragCount < _placement.Count)
                 return _owner.Inventory.TrySplit(_placement, _dragCount, target.Inventory, cell, _dragRotated)
@@ -207,14 +234,15 @@ namespace Isle.UI.Inventory
             return FinishDrop(target);
         }
 
-        bool TryDropNetworked(Vec2Int cell)
+        /// <summary>Any two of the same player's own containers (base carry, opened bags) — the server moves it.</summary>
+        bool TryDropNetworked(GridView target, Vec2Int cell)
         {
             var owner = _owner;
-            var from = _placement.Position;
-            if (_dragCount < _placement.Count)
-                owner.Network.RequestSplitWithinBag(from, _dragCount, cell, _dragRotated, _ => owner.Redraw());
-            else
-                owner.Network.RequestMoveWithinBag(from, cell, _dragRotated, _ => owner.Redraw());
+            owner.Network.RequestMove(owner.ContainerIndex, _placement.Position, target.ContainerIndex, cell, _dragRotated, _dragCount, _ =>
+            {
+                owner.Redraw();
+                if (target != owner) target.Redraw();
+            });
             return true;
         }
 

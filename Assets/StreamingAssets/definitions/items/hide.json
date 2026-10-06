@@ -10,5 +10,10 @@
     "h": 1
   },
   "weight": 0.6,
-  "stack": 10
+  "stack": 10,
+  "icon_style": {
+    "shape": "pelt",
+    "color": "#B88A5C",
+    "accent": "#8A6440"
+  }
 }

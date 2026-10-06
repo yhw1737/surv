@@ -21,5 +21,10 @@
     "base_hours": 24,
     "temp_factor": 0,
     "result": "isle:rotten_food"
+  },
+  "icon_style": {
+    "shape": "steak",
+    "color": "#C94A45",
+    "accent": "#F4E3D0"
   }
 }

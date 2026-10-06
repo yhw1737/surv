@@ -1,3 +1,4 @@
+using Isle.Data;
 using Isle.Gameplay.Inventory;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -28,11 +29,31 @@ namespace Isle.UI.Inventory
         static Text _label;
 
         Placement _placement;
+        GridInventory _container;
 
-        public void Bind(Placement placement) => _placement = placement;
+        /// <summary>When set, the HUD draws its own richer tooltip from <see cref="Hovered"/> and this panel stays off.</summary>
+        public static bool UseExternal { get; set; }
+
+        /// <summary>The item under the pointer and the grid it sits in (null for an equipped item), or null.</summary>
+        public static (ItemDef Item, GridInventory Container)? Hovered { get; private set; }
+
+        public void Bind(Placement placement, GridInventory container)
+        {
+            _placement = placement;
+            _container = container;
+        }
+
+        void OnDisable()
+        {
+            if (Hovered.HasValue && Hovered.Value.Item == _placement.Item) Hovered = null;
+        }
+
+        void OnDestroy() => OnDisable();
 
         public void OnPointerEnter(PointerEventData eventData)
         {
+            Hovered = (_placement.Item, _container);
+            if (UseExternal) return;
             EnsurePanel();
             var size = _placement.EffectiveSize();
             _label.text = $"{_placement.Item.Name}\n{size.W}x{size.H}  {_placement.Item.Weight:0.0}kg  x{_placement.Count}";
@@ -44,7 +65,11 @@ namespace Isle.UI.Inventory
             _panel.SetActive(true);
         }
 
-        public void OnPointerExit(PointerEventData eventData) => _panel.SetActive(false);
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            Hovered = null;
+            if (_panel != null) _panel.SetActive(false);
+        }
 
         // ponytail: every icon's ItemTooltip runs this, but only the one shared panel exists and
         // setting its position to the same value from more than one instance in the same frame is

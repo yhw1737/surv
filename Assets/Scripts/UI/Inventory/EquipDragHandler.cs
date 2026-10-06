@@ -88,6 +88,21 @@ namespace Isle.UI.Inventory
                 if (target != null && TryDrop(target)) return;
             }
 
+            // Over the backdrop or the ground panel (and not over a grid): take it off and drop it on the ground.
+            if (_owner.Network != null)
+                foreach (var result in eventData.hovered)
+                {
+                    if (result.GetComponentInParent<GridView>() != null) break;
+                    if (result.GetComponentInParent<DropZone>() == null) continue;
+                    var owner = _owner;
+                    owner.Network.RequestDropEquipped(owner.SlotName, ok =>
+                    {
+                        owner.Redraw();
+                        if (ok) owner.Changed?.Invoke();
+                    });
+                    return;
+                }
+
             // See DragHandler.OnEndDrag — reset here, not up front, so a pending networked request
             // (T-045) stays dimmed until its ack's Redraw() replaces this icon.
             _canvasGroup.alpha = 1f;
@@ -100,6 +115,12 @@ namespace Isle.UI.Inventory
         /// free spot), no drag needed. Mirrors <c>DragHandler.OnPointerClick</c>'s bulk-move.</summary>
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (eventData.button == PointerEventData.InputButton.Right)
+            {
+                EquipSlotView.RaiseSlotActivated(_owner);
+                return;
+            }
+
             var kb = Keyboard.current;
             if (kb == null || !kb.ctrlKey.isPressed) return;
             if (_owner.PairedView == null) return;
@@ -150,7 +171,7 @@ namespace Isle.UI.Inventory
             if (target.Network != _owner.Network) return false;
 
             var owner = _owner;
-            owner.Network.RequestUnequip(owner.SlotName, position, rotated, ok =>
+            owner.Network.RequestUnequipInto(owner.SlotName, target.ContainerIndex, position, rotated, ok =>
             {
                 owner.Redraw();
                 target.Redraw();

@@ -11,5 +11,10 @@
   "weight": 0.05,
   "stack": 20,
   "places": "isle:crop_plot",
-  "plants": "isle:flax"
+  "plants": "isle:flax",
+  "icon_style": {
+    "shape": "seeds",
+    "color": "#C4A55A",
+    "accent": "#C9A879"
+  }
 }

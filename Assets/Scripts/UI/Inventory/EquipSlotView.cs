@@ -22,7 +22,7 @@ namespace Isle.UI.Inventory
     {
         // ponytail: every slot drawn at a fixed 2x2-cell frame regardless of what actually fits in
         // it — a placeholder dimension (Absolute Rule 7), not a spec value.
-        const int FrameSizePx = GridView.CellSizePx * 2;
+        static int FrameSizePx => GridView.CellSizePx * 2;
 
         public string SlotName { get; private set; }
         public EquipSlots Slots { get; private set; }
@@ -41,6 +41,11 @@ namespace Isle.UI.Inventory
 
         /// <summary>Fires after any successful equip/unequip through this slot.</summary>
         public UnityEvent Changed = new();
+
+        /// <summary>Right-click on an equipped item (the screen unequips it).</summary>
+        public static event System.Action<EquipSlotView> SlotActivated;
+
+        internal static void RaiseSlotActivated(EquipSlotView view) => SlotActivated?.Invoke(view);
 
         GameObject _icon;
 
@@ -89,17 +94,16 @@ namespace Isle.UI.Inventory
             rect.SetParent(_itemLayer, false);
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
             rect.anchoredPosition = Vector2.zero;
-            rect.sizeDelta = new Vector2(item.Grid.W * GridView.CellSizePx, item.Grid.H * GridView.CellSizePx);
+            // Fit inside the frame whatever the item's grid size (a 1×3 spear in a 2×2 slot).
+            // An equipped item fills its slot frame whatever its grid size (a 1×3 spear in a 2×2 slot).
+            rect.sizeDelta = new Vector2(FrameSizePx, FrameSizePx);
 
-            var color = PlaceholderVisuals.ColorForTags(item.Tags);
-            _icon.GetComponent<Image>().sprite = PlaceholderVisuals.AsSprite(
-                PlaceholderVisuals.RoundedRect((int)rect.sizeDelta.x, (int)rect.sizeDelta.y, color), GridView.CellSizePx);
+            GridView.DecorateIcon(_icon, rect, item, 1, false);
 
             _icon.GetComponent<EquipDragHandler>().Bind(this, item);
             // No Placement exists for an equipped item (no grid position/rotation) — build a bare one
             // just to feed ItemTooltip's existing name/weight/size display.
-            _icon.GetComponent<ItemTooltip>().Bind(new Placement(item, default, false));
-            GridView.BuildLabel(rect, item.Name, 1);
+            _icon.GetComponent<ItemTooltip>().Bind(new Placement(item, default, false), null);
         }
     }
 }

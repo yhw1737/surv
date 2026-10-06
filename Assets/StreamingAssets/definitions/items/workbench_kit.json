@@ -11,5 +11,10 @@
   },
   "weight": 8.0,
   "stack": 1,
-  "places": "isle:workbench"
+  "places": "isle:workbench",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#9A6B42",
+    "accent": "#A88763"
+  }
 }

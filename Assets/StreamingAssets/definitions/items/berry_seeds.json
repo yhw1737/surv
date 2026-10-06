@@ -11,5 +11,10 @@
   "weight": 0.05,
   "stack": 20,
   "places": "isle:crop_plot",
-  "plants": "isle:berry_crop"
+  "plants": "isle:berry_crop",
+  "icon_style": {
+    "shape": "seeds",
+    "color": "#7A3448",
+    "accent": "#C9A879"
+  }
 }

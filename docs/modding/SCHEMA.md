@@ -475,3 +475,9 @@ No block means the item isn't drawn on the figure. An unknown style falls back t
 |---|---|---|
 | Creature combat | `windup_seconds` | Tell before a strike lands — the player's chance to block or parry. 0 or absent strikes instantly |
 
+### Presentation blocks (2026-10-06)
+
+| Type | Field | Meaning |
+|---|---|---|
+| Item | `icon_style` `{shape, color, accent}` | Inventory icon drawing: `log rock fiber pelt steak fish berries seeds coconut rotten arrow kit`. Not needed with `hold`/`wear` |
+| Cook method | `icon_style` `{shape}` | Vessel dishes are drawn in: `bowl skewer strips plate` |

@@ -153,6 +153,32 @@ namespace Isle.Tests.PlayMode
             }
             Assert.AreEqual(3, player.ComboLength);
 
+            // SYS-INV-01 grid inventory: the Tab screen is bound to this player, and a stack moves from the base carry
+            // into a worn backpack through the server (InventoryNetwork.RequestMove).
+            Assert.IsNotNull(Isle.UI.Inventory.InventoryScreen.Instance, "inventory screen not installed");
+            Give(inventory, "isle:straw_backpack", 1);
+            player.RequestEquipItem("isle:straw_backpack");
+            yield return WaitUntil(() => inventory.Slots.BagFor("back") != null, 3f, "backpack never worn");
+            Give(inventory, "isle:fiber", 3);
+            var fiber = inventory.Bag.Placements.First(p => p.Item.Id.Value == "isle:fiber");
+            bool? moved = null;
+            inventory.RequestMove(0, fiber.Position, 1, new Isle.Core.Vec2Int(0, 0), false, fiber.Count, ok => moved = ok);
+            yield return WaitUntil(() => moved.HasValue, 3f, "move never acknowledged");
+            Assert.IsTrue(moved.Value, "server refused the bag → backpack move");
+            Assert.IsTrue(inventory.Slots.BagFor("back").Placements.Any(p => p.Item.Id.Value == "isle:fiber"), "fiber not in the backpack");
+
+            // Dropping: the stack leaves the backpack and lands in a pile at the player's feet.
+            var inPack = inventory.Slots.BagFor("back").Placements.First(p => p.Item.Id.Value == "isle:fiber");
+            var pilesBefore = LootPiles.All.Count;
+            bool? dropped = null;
+            inventory.RequestDrop(1, inPack.Position, inPack.Count, ok => dropped = ok);
+            yield return WaitUntil(() => dropped.HasValue, 3f, "drop never acknowledged");
+            Assert.IsTrue(dropped.Value, "server refused the drop");
+            Assert.IsFalse(inventory.Slots.BagFor("back").Placements.Any(p => p.Item.Id.Value == "isle:fiber"), "dropped fiber still in the backpack");
+            Assert.AreEqual(pilesBefore + 1, LootPiles.All.Count, "no pile for the dropped fiber");
+            player.RequestInteract(); // pick it back up so the later loot-pile checks start clean
+            yield return WaitUntil(() => LootPiles.All.Count == pilesBefore, 3f, "dropped pile never picked up");
+
             // Lit directly: walking up and pressing E could hit a tree first if one stands within reach.
             var fire = Object.FindObjectsByType<WorldObjectInstance>(FindObjectsSortMode.None).First(f => f.HasTag("station/campfire"));
             fire.IsActive = true;

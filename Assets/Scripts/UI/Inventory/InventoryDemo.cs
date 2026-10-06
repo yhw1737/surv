@@ -186,7 +186,7 @@ namespace Isle.UI.Inventory
 
         static EquipSlotView BuildEquipSlotView(Canvas canvas, string title, EquipSlots slots, string slotName, ref float x, float y)
         {
-            const float frameSizePx = GridView.CellSizePx * 2; // matches EquipSlotView.FrameSizePx
+            var frameSizePx = GridView.CellSizePx * 2f; // matches EquipSlotView.FrameSizePx
             BuildTitle(canvas, title, x, y, frameSizePx);
 
             var go = new GameObject($"Slot_{slotName}", typeof(RectTransform), typeof(Image), typeof(EquipSlotView));

@@ -15,5 +15,10 @@
     "hunger": 2,
     "thirst": 0,
     "sanitation_risk": 0.8
+  },
+  "icon_style": {
+    "shape": "rotten",
+    "color": "#7D8A4A",
+    "accent": "#4F5A2E"
   }
 }

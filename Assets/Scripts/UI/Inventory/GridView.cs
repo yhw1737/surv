@@ -27,7 +27,7 @@ namespace Isle.UI.Inventory
     {
         // ART_PIPELINE §Style: one tile = 32px, same constant PlaceholderIcons uses for icons.
         // ponytail: placeholder dimension (Absolute Rule 7), not a spec value.
-        public const int CellSizePx = 32;
+        public static int CellSizePx { get; set; } = 32;
 
         public GridInventory Inventory { get; private set; }
 
@@ -40,6 +40,14 @@ namespace Isle.UI.Inventory
         /// <see cref="Inventory"/> directly. Null for local-only views (warehouse, demo crates).</summary>
         public InventoryNetwork Network { get; set; }
 
+        /// <summary>With <see cref="Network"/>: this grid's index in <see cref="InventoryNetwork.Containers"/>.</summary>
+        public int ContainerIndex { get; set; }
+
+        /// <summary>Right-click on an item: the screen decides what "use" means (eat, wear, place…).</summary>
+        public static event System.Action<GridView, Placement> ItemActivated;
+
+        internal static void RaiseItemActivated(GridView view, Placement placement) => ItemActivated?.Invoke(view, placement);
+
         /// <summary>SYS-INV-01 §Required UX: auto-sort is warehouse-only, bags stay manual.</summary>
         public bool IsWarehouse { get; set; }
 
@@ -48,6 +56,7 @@ namespace Isle.UI.Inventory
         [SerializeField] Button _autoSortButton;
 
         readonly List<GameObject> _spawnedIcons = new();
+        readonly List<(Placement Placement, RectTransform Fill, Image FillImage, Text Label)> _freshness = new();
 
         public void Bind(GridInventory inventory)
         {
@@ -120,8 +129,7 @@ namespace Isle.UI.Inventory
         {
             foreach (Transform child in _cellLayer) Destroy(child.gameObject);
 
-            var cellSprite = PlaceholderVisuals.AsSprite(
-                PlaceholderVisuals.RoundedRect(CellSizePx, CellSizePx, new Color(0.2f, 0.2f, 0.2f)), CellSizePx);
+            var cellSprite = Isle.UI.Prototype.UiTheme.Sprite(new Color(0.15f, 0.13f, 0.11f), new Color(0.27f, 0.23f, 0.19f), 4, 1);
 
             for (var y = 0; y < Inventory.Height; y++)
             for (var x = 0; x < Inventory.Width; x++)
@@ -133,6 +141,7 @@ namespace Isle.UI.Inventory
                 rect.sizeDelta = new Vector2(CellSizePx, CellSizePx);
                 rect.anchoredPosition = new Vector2(x * CellSizePx, -y * CellSizePx);
                 cell.GetComponent<Image>().sprite = cellSprite;
+                cell.GetComponent<Image>().type = Image.Type.Sliced;
             }
         }
 
@@ -141,6 +150,7 @@ namespace Isle.UI.Inventory
         {
             foreach (var icon in _spawnedIcons) Destroy(icon);
             _spawnedIcons.Clear();
+            _freshness.Clear();
 
             foreach (var placement in Inventory.Placements)
             {
@@ -153,15 +163,108 @@ namespace Isle.UI.Inventory
                 rect.sizeDelta = new Vector2(size.W * CellSizePx, size.H * CellSizePx);
                 rect.anchoredPosition = new Vector2(placement.Position.X * CellSizePx, -placement.Position.Y * CellSizePx);
 
-                var color = PlaceholderVisuals.ColorForTags(placement.Item.Tags);
-                icon.GetComponent<Image>().sprite = PlaceholderVisuals.AsSprite(
-                    PlaceholderVisuals.RoundedRect((int)rect.sizeDelta.x, (int)rect.sizeDelta.y, color), CellSizePx);
-
+                DecorateIcon(icon, rect, placement.Item, placement.Count, placement.Rotated);
                 icon.GetComponent<DragHandler>().Bind(this, placement);
-                icon.GetComponent<ItemTooltip>().Bind(placement);
-                BuildLabel(rect, placement.Item.Name, placement.Count);
+                icon.GetComponent<ItemTooltip>().Bind(placement, Inventory);
+                AddFreshness(rect, placement);
 
                 _spawnedIcons.Add(icon);
+            }
+            RefreshFreshness();
+        }
+
+        /// <summary>Item tile look shared by the grid, the drag ghost and equip slots: a tinted backing, the cartoon icon
+        /// (turned with the item when it's rotated), the stack count, and a short name.</summary>
+        internal static void DecorateIcon(GameObject icon, RectTransform rect, Isle.Data.ItemDef item, int count, bool rotated)
+        {
+            var backing = icon.GetComponent<Image>();
+            var tint = Color.Lerp(Isle.UI.Art.ItemIcons.MainColour(item), new Color(0.16f, 0.13f, 0.11f), 0.78f);
+            backing.sprite = Isle.UI.Prototype.UiTheme.Sprite(tint, Color.Lerp(tint, Color.white, 0.18f), 6, 1);
+            backing.type = Image.Type.Sliced;
+
+            var art = new GameObject("Art", typeof(RectTransform), typeof(Image));
+            var artRect = (RectTransform)art.transform;
+            artRect.SetParent(rect, false);
+            artRect.anchorMin = artRect.anchorMax = new Vector2(0.5f, 0.5f);
+            var side = Mathf.Min(rect.sizeDelta.x, rect.sizeDelta.y) * 0.9f;
+            artRect.sizeDelta = new Vector2(side, side);
+            if (rotated) artRect.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            var image = art.GetComponent<Image>();
+            image.sprite = Isle.UI.Art.ItemIcons.Sprite(item);
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+
+            if (count > 1) Corner(rect, $"×{count}", TextAnchor.LowerRight, 11, Color.white);
+            if (rect.sizeDelta.x >= 64f || rect.sizeDelta.y >= 64f)
+                Corner(rect, Isle.UI.Prototype.Lang.Get(item.Name), TextAnchor.UpperLeft, 9, new Color(0.95f, 0.9f, 0.8f, 0.85f));
+        }
+
+        static Text Corner(RectTransform parent, string text, TextAnchor anchor, int size, Color colour)
+        {
+            var go = new GameObject("Label", typeof(RectTransform), typeof(Text), typeof(Outline));
+            var rect = (RectTransform)go.transform;
+            rect.SetParent(parent, false);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = new Vector2(3f, 5f);
+            rect.offsetMax = new Vector2(-3f, -2f);
+            var label = go.GetComponent<Text>();
+            label.text = text;
+            label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            label.fontSize = size;
+            label.fontStyle = FontStyle.Bold;
+            label.alignment = anchor;
+            label.color = colour;
+            label.raycastTarget = false;
+            label.horizontalOverflow = HorizontalWrapMode.Wrap;
+            label.verticalOverflow = VerticalWrapMode.Truncate;
+            go.GetComponent<Outline>().effectColor = new Color(0f, 0f, 0f, 0.8f);
+            return label;
+        }
+
+        /// <summary>Food shows how fresh it is without hovering: a bar along the bottom and a percentage.</summary>
+        void AddFreshness(RectTransform rect, Placement placement)
+        {
+            var spoilage = placement.Item.Spoilage;
+            if (spoilage == null || spoilage.BaseHours <= 0f) return;
+
+            var track = new GameObject("Freshness", typeof(RectTransform), typeof(Image));
+            var trackRect = (RectTransform)track.transform;
+            trackRect.SetParent(rect, false);
+            trackRect.anchorMin = new Vector2(0f, 0f);
+            trackRect.anchorMax = new Vector2(1f, 0f);
+            trackRect.pivot = new Vector2(0f, 0f);
+            trackRect.offsetMin = new Vector2(3f, 2f);
+            trackRect.offsetMax = new Vector2(-3f, 6f);
+            var trackImage = track.GetComponent<Image>();
+            trackImage.color = new Color(0f, 0f, 0f, 0.6f);
+            trackImage.raycastTarget = false;
+
+            var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            var fillRect = (RectTransform)fill.transform;
+            fillRect.SetParent(trackRect, false);
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = new Vector2(1f, 1f);
+            fillRect.offsetMin = fillRect.offsetMax = Vector2.zero;
+            var fillImage = fill.GetComponent<Image>();
+            fillImage.raycastTarget = false;
+
+            var label = Corner(rect, "", TextAnchor.UpperRight, 9, Color.white);
+            _freshness.Add((placement, fillRect, fillImage, label));
+        }
+
+        /// <summary>Updates the freshness bars — spoilage moves on its own, so the screen calls this every so often.</summary>
+        public void RefreshFreshness()
+        {
+            foreach (var (placement, fill, image, label) in _freshness)
+            {
+                if (fill == null) continue;
+                var fresh = 1f - SpoilageTracker.Live.SpoilageOf(Inventory, placement.Item);
+                fill.anchorMax = new Vector2(Mathf.Clamp01(fresh), 1f);
+                image.color = fresh > 0.5f ? Color.Lerp(new Color(0.95f, 0.8f, 0.3f), new Color(0.55f, 0.85f, 0.4f), (fresh - 0.5f) * 2f)
+                    : Color.Lerp(new Color(0.9f, 0.35f, 0.25f), new Color(0.95f, 0.8f, 0.3f), fresh * 2f);
+                label.text = $"{fresh * 100f:0}%";
+                label.color = image.color;
             }
         }
 
@@ -180,11 +283,7 @@ namespace Isle.UI.Inventory
             rect.sizeDelta = new Vector2(size.W * CellSizePx, size.H * CellSizePx);
             rect.anchoredPosition = new Vector2(placement.Position.X * CellSizePx, -placement.Position.Y * CellSizePx);
 
-            var color = PlaceholderVisuals.ColorForTags(placement.Item.Tags);
-            icon.GetComponent<Image>().sprite = PlaceholderVisuals.AsSprite(
-                PlaceholderVisuals.RoundedRect((int)rect.sizeDelta.x, (int)rect.sizeDelta.y, color), CellSizePx);
-
-            BuildLabel(rect, placement.Item.Name, count);
+            DecorateIcon(icon, rect, placement.Item, count, placement.Rotated);
             return icon;
         }
 
@@ -202,11 +301,14 @@ namespace Isle.UI.Inventory
             rect.offsetMin = rect.offsetMax = Vector2.zero;
 
             var label = go.GetComponent<Text>();
-            label.text = count > 1 ? $"{name}\nx{count}" : name;
+            var shown = Isle.UI.Prototype.Lang.Get(name);
+            label.text = count > 1 ? $"{shown}\n×{count}" : shown;
             label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); // ponytail: built-in font, real UI style comes at T-160
             label.fontSize = 10;
             label.alignment = TextAnchor.MiddleCenter;
-            label.color = Color.black;
+            label.color = new Color(0.08f, 0.07f, 0.06f);
+            label.horizontalOverflow = HorizontalWrapMode.Wrap;
+            label.verticalOverflow = VerticalWrapMode.Truncate;
             label.raycastTarget = false;
         }
 

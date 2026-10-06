@@ -11,8 +11,9 @@ namespace Isle.UI.Prototype
     /// </summary>
     public sealed class PlayerCamera : MonoBehaviour
     {
-        /// <summary>Orthographic half-height in tiles. Shows roughly a 16×9 tile window.</summary>
-        const float ViewHalfHeightTiles = 4.5f;
+        /// <summary>Orthographic half-height in tiles: 4.5 × 1.1, a 10% wider view (developer, 2026-10-06 — the stick
+        /// figure read too big at 4.5).</summary>
+        const float ViewHalfHeightTiles = 4.95f;
         const float Smoothing = 8f;
 
         Camera _camera;

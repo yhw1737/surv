@@ -128,4 +128,15 @@ namespace Isle.Data
         public string Color { get; init; }
         public string Tip { get; init; }
     }
+
+    /// <summary>How an item's inventory icon is drawn (presentation only, Absolute Rule 7): a named drawing from the
+    /// icon painter with a main and an accent colour. Items with a <c>hold</c> or <c>wear</c> block don't need one —
+    /// their icon is drawn from that. On a cook method it is the dish's vessel (bowl, plate, skewer…), coloured by
+    /// the ingredients.</summary>
+    public sealed class IconSpec
+    {
+        public string Shape { get; init; }
+        public string Color { get; init; }
+        public string Accent { get; init; }
+    }
 }

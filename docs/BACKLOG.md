@@ -380,6 +380,7 @@ Stage 4. Nothing here is a prerequisite for anything above it; that is the whole
 - [ ] **T-162** Creature sprites and clips — 5 × 6, buy or commission
 - [ ] **T-163** Tilesets (3 biomes) + world objects
 - [ ] **T-164** UI art pass
+  > **2026-10-06**: groundwork — `UiTheme` (shared procedural look) on every HUD window; cooking/crafting windows redesigned; the grid inventory is the live Tab screen again.
 
 > **2026-10-06 — art stage brought forward by the developer.** SYS-CHAR-02 (cartoon stick figure, vector
 > rendering, procedural animation, data-driven equipment drawing) replaces SYS-CHAR-01's rig. Step 1, the player

@@ -21,5 +21,10 @@
     "base_hours": 48,
     "temp_factor": 0,
     "result": "isle:rotten_food"
+  },
+  "icon_style": {
+    "shape": "berries",
+    "color": "#B33A5C",
+    "accent": "#5E9A48"
   }
 }
