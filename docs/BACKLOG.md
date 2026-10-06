@@ -319,7 +319,8 @@ stood up now so the solo beta is already a listen-server session with one client
 ## Phase 8 · Combat ★
 
 - [x] **T-110** `PowerCalculator` + `DamageResolver` + 7 verification cases
-- [ ] **T-111** Melee — 3-hit combo, block, parry
+- [x] **T-111** Melee — 3-hit combo, block, parry
+  > **2026-10-06**: done — combo/finisher/stamina/window, RMB block (frontal 90°), parry (0.25 s, Lv10 0.35 s) with 1 s stagger and ×1.2 on staggered targets, Lv20/35/45 unlocks, creature strike tells (`windup_seconds`), figure guard pose and per-step swings. Invented values in SYS-COMBAT-01 §Melee implementation. Lag compensation stays with T-113.
 - [ ] **T-112** Ranged — charge, `SwayCalculator`, projectiles
   > **2026-10-04 (prototype)**: short bow + arrows done — charge, uncharged ×0.4, range falloff, stance sway (`RangedCalculator`), host-simulated projectiles. Weak points and pierce not built.
 - [ ] **T-113** Hit detection + lag compensation (melee only) + i-frames

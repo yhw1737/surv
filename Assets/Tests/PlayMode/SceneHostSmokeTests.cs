@@ -5,6 +5,7 @@ using Isle.Core.Ids;
 using Isle.Data;
 using Isle.Gameplay.Building;
 using Isle.Gameplay.Character;
+using Isle.Gameplay.Combat;
 using Isle.Gameplay.Hunting;
 using Isle.Gameplay.Inventory;
 using Isle.World.Objects;
@@ -122,6 +123,35 @@ namespace Isle.Tests.PlayMode
             player.RequestEquipItem("isle:stone_spear");
             yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:stone_spear", 3f, "spear never wielded");
             Assert.AreEqual(0, CountOf(inventory, "isle:stone_spear"), "wielded spear still in bag");
+
+            // SYS-COMBAT-01 §Melee: raise the guard toward a strike from the right — a fresh guard parries, a held one
+            // blocks for stamina, and a hit from behind gets through. Then three swings in rhythm make a full combo.
+            var guardHealth = vitals.Health;
+            var guardAt = (Vector2)player.transform.position;
+            player.RequestBlock(true, Vector2.right);
+            yield return WaitUntil(() => player.Blocking, 2f, "guard never went up");
+            Assert.AreEqual(BlockOutcome.Parried, player.ReceiveCreatureStrike(guardAt + Vector2.right, 10f), "fresh guard didn't parry");
+            Assert.AreEqual(guardHealth, vitals.Health, 1e-3f, "parry let damage through");
+            yield return new WaitForSeconds(0.5f);
+            var guardStamina = vitals.Stamina;
+            Assert.AreEqual(BlockOutcome.Blocked, player.ReceiveCreatureStrike(guardAt + Vector2.right, 10f), "held guard didn't block");
+            Assert.Less(vitals.Stamina, guardStamina, "block cost no stamina");
+            Assert.AreEqual(guardHealth, vitals.Health, 1e-3f, "block let damage through");
+            Assert.AreEqual(BlockOutcome.None, player.ReceiveCreatureStrike(guardAt + Vector2.left, 10f), "guard covered the back");
+            Assert.Less(vitals.Health, guardHealth, "hit from behind did no damage");
+            player.RequestBlock(false, Vector2.right);
+            yield return WaitUntil(() => !player.Blocking, 2f, "guard never came down");
+
+            Teleport(player, CoastSpot(world).Shore); // open ground, nothing to hit
+            vitals.ResetOnRespawn();
+            for (var swing = 1; swing <= 3; swing++)
+            {
+                player.RequestAttack();
+                var expected = swing;
+                yield return WaitUntil(() => player.ComboStep == expected, 3f, $"combo step {expected} never landed");
+                yield return new WaitForSeconds(1.3f); // spear: 0.8 swings/s
+            }
+            Assert.AreEqual(3, player.ComboLength);
 
             // Lit directly: walking up and pressing E could hit a tree first if one stands within reach.
             var fire = Object.FindObjectsByType<WorldObjectInstance>(FindObjectsSortMode.None).First(f => f.HasTag("station/campfire"));

@@ -134,7 +134,7 @@ four-state machine with Alert (Deer, 2 s alert then flee — the noise trigger i
 | Skill-scaled power | No combat skill tracked on the player yet — every swing uses level 0 (skill floor 0.5) |
 | Armor | No armor items exist; `totalArmor` is 0 |
 | Quality tiers, enchants, situational multipliers | Items carry no quality yet; all multipliers are 1.0 |
-| Melee combo, block, parry, dodge | T-111 / T-114 |
+| Dodge (beyond the prototype roll) | T-114 |
 | Hit detection, lag compensation | T-113. The prototype uses a reach check from the attacker's server-side position |
 
 Code location: the sheet's `Scripts/Combat/` folder is `Scripts/Gameplay/Combat/` for now. `Isle.Combat` can't
@@ -146,3 +146,24 @@ hold these, because `Isle.Gameplay` needs them and `Isle.Combat` depends on `Isl
 `RangedCalculator`: full charge 0.8 s else ×0.4; ×0.6 past 12 tiles, gone at 20; sway radius
 `1.8 × (1 − Lv/50) × stanceMult` applied as a random offset to the aim point; sprinting can't aim. The server
 measures the draw itself. Hit = first creature within 0.45 tiles of the arrow's path **[invented]**.
+
+## Melee implementation (T-111, 2026-10-06)
+
+`Scripts/Gameplay/Combat/MeleeCombo.cs` (`MeleeCombo`, `MeleeDefense`, both pure), server flow in `PlayerInteraction`,
+creature side in `CreatureDirector`. Spec values used verbatim: 3-hit combo, finisher ×1.4, stamina 8/8/14, window
+1.2 s, frontal 90° block, parry window 0.25 s (Lv10 0.35 s), parry → 0 damage, no stamina, 1.0 s stagger, staggered
+target situationalMult 1.20, Lv20 4-hit combo, Lv35 execute below 20% HP, Lv45 combo stamina −30%.
+
+| Rule | How it's read | Status |
+|---|---|---|
+| Finisher | the combo's **last** hit (3rd, or 4th at Lv20) is ×1.4 and costs 14/8 of a normal hit | interpretation |
+| Stamina 8/8/14 | shares of the weapon's own `stamina_cost` (8 → 8/8/14; fists 4 → 4/4/7) | interpretation |
+| Combo window | 1.2 s from when the weapon is ready to swing again (so a 0.8/s spear can combo) | interpretation |
+| Combo input buffer | a press up to **0.3 s** before the weapon is ready is held and swung when it is | **[invented]** (was an open question) |
+| Block stamina | **1 stamina per point** of incoming damage (before armor); not enough stamina → guard breaks, the rest goes through | **[invented]** |
+| Execute | a hit on a target under 20% HP kills it | interpretation |
+| Creature tell | a strike lands `combat.windup_seconds` after it starts (boar 0.45 s, crocodile 0.6 s); it connects within attack range + **0.3 tiles** | **[invented]** |
+| Block input | hold right mouse button; the guard faces the mouse; can't attack while blocking; not with a bow | — |
+
+Verification: `MeleeCombatTests` (EditMode, 16 cases) and the live-scene PlayMode test (fresh guard parries, held
+guard blocks for stamina, hit from behind goes through, three timed swings reach combo step 3).

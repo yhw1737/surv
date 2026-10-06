@@ -135,11 +135,33 @@ namespace Isle.Gameplay.Character
         }
 
         float _nextAttackAt;
+        readonly MeleeCombo _combo = new();
+        bool _attackQueued;
+
+        /// <summary>A press this close to the weapon being ready again is held and swung the moment it is, so a combo
+        /// doesn't need frame-perfect clicks. [invented] — SYS-COMBAT-01 lists the buffer as an open question.</summary>
+        const float AttackBufferSeconds = 0.3f;
+
+        /// <summary>Step of the latest melee swing (1-based) and how long that combo is; the figure picks its swing
+        /// from these. Server state the host reads.</summary>
+        public int ComboStep { get; private set; }
+        public int ComboLength { get; private set; } = 3;
+
+        /// <summary>SYS-COMBAT-01 §Melee block: held right button. Server state — direction is where the guard faces.</summary>
+        public bool Blocking { get; private set; }
+        public float BlockStartedAt { get; private set; } = float.NegativeInfinity;
+        public Vector2 BlockDirection { get; private set; } = Vector2.right;
+        bool _sentBlocking;
+        Vector2 _sentBlockDirection;
+
+        /// <summary>Re-send the guard direction when the mouse swings it more than this. Network thrift, not balance.</summary>
+        const float BlockAimResendDeg = 10f;
 
         bool IsDead => TryGetComponent<DeathHandler>(out var death) && death.IsDead;
 
         void Update()
         {
+            if (IsServer) ServerUpdate();
             if (!IsOwner) return;
 
             var kb = Keyboard.current;
@@ -164,7 +186,8 @@ namespace Isle.Gameplay.Character
             else if (mouse != null)
             {
                 var ranged = HoldsRangedWeapon();
-                if (mouse.leftButton.wasPressedThisFrame && !PointerGate.Captured)
+                UpdateBlockInput(mouse, ranged);
+                if (mouse.leftButton.wasPressedThisFrame && !PointerGate.Captured && !_sentBlocking)
                 {
                     if (!ranged) RequestAttack();
                     else
@@ -188,6 +211,65 @@ namespace Isle.Gameplay.Character
             }
             if (kb != null && kb.rKey.wasPressedThisFrame) RequestRest();
         }
+
+        /// <summary>Right button held = block, facing the mouse. Not with a bow (its right button stays free).</summary>
+        void UpdateBlockInput(Mouse mouse, bool ranged)
+        {
+            var want = !ranged && mouse.rightButton.isPressed && (_sentBlocking || !PointerGate.Captured);
+            var aim = MouseWorld() is { } world ? ((Vector2)world - (Vector2)transform.position) : _sentBlockDirection;
+            if (aim.sqrMagnitude < 1e-6f) aim = _sentBlockDirection.sqrMagnitude > 0f ? _sentBlockDirection : Vector2.right;
+            if (want != _sentBlocking)
+            {
+                _sentBlocking = want;
+                _sentBlockDirection = aim.normalized;
+                CmdBlock(want, _sentBlockDirection.x, _sentBlockDirection.y);
+            }
+            else if (want && Vector2.Angle(aim, _sentBlockDirection) > BlockAimResendDeg)
+            {
+                _sentBlockDirection = aim.normalized;
+                CmdBlockAim(_sentBlockDirection.x, _sentBlockDirection.y);
+            }
+        }
+
+        [ServerRpc]
+        void CmdBlock(bool blocking, float x, float y)
+        {
+            if (blocking && IsDead) return;
+            if (blocking && !Blocking) BlockStartedAt = Time.time;
+            Blocking = blocking;
+            SetBlockDirection(x, y);
+        }
+
+        [ServerRpc]
+        void CmdBlockAim(float x, float y) => SetBlockDirection(x, y);
+
+        void SetBlockDirection(float x, float y)
+        {
+            var d = new Vector2(x, y);
+            if (float.IsNaN(d.x) || float.IsNaN(d.y) || d.sqrMagnitude < 1e-6f) return; // never trust client values
+            BlockDirection = d.normalized;
+        }
+
+        /// <summary>Test and tooling entry point: raise or lower the guard facing <paramref name="direction"/>.</summary>
+        public void RequestBlock(bool blocking, Vector2 direction) => CmdBlock(blocking, direction.x, direction.y);
+
+        /// <summary>Server-side: a creature's strike reaches this player. Block and parry are resolved here (SYS-COMBAT-01
+        /// §Melee); whatever gets through goes to <see cref="Vitals.TakeDamage"/> (armor, i-frames).</summary>
+        public BlockOutcome ReceiveCreatureStrike(Vector2 from, float damage)
+        {
+            if (!IsServer || !TryGetComponent<Vitals>(out var vitals)) return BlockOutcome.None;
+            var level = LevelOf(MeleeSkill());
+            var angle = Vector2.Angle(BlockDirection, from - (Vector2)transform.position);
+            var result = MeleeDefense.Resolve(Blocking && !IsDead, Time.time - BlockStartedAt, MeleeDefense.ParryWindow(level), angle, damage, vitals.Stamina);
+            if (result.StaminaCost > 0f) vitals.SpendStamina(result.StaminaCost);
+            if (result.DamageThrough > 0f) vitals.TakeDamage(result.DamageThrough);
+            if (result.Outcome != BlockOutcome.None) GameFeed.RaiseDefended(transform.position, result.Outcome);
+            return result.Outcome;
+        }
+
+        /// <summary>The skill the guard scales with: the held melee weapon's, else the fists'.</summary>
+        NamespacedId MeleeSkill() =>
+            TryGetComponent<InventoryNetwork>(out var inventory) && EquippedWeapon(inventory) is { } weapon ? weapon.CombatSkill : default;
 
         /// <summary>Owner-local: when the bow started drawing, for the HUD's charge bar. -1 when not drawing.
         /// The server keeps its own clock for the actual charge.</summary>
@@ -303,32 +385,67 @@ namespace Isle.Gameplay.Character
         [ServerRpc]
         void CmdAttack()
         {
-            if (IsDead) return;
-            if (Time.time < _nextAttackAt) return;
+            if (IsDead || Blocking) return;
+            if (Time.time < _nextAttackAt)
+            {
+                // Pressed just before the weapon is ready: swing as soon as it is (combo input buffer).
+                if (_nextAttackAt - Time.time <= AttackBufferSeconds) _attackQueued = true;
+                return;
+            }
+            PerformAttack();
+        }
+
+        /// <summary>Server tick for the buffered attack.</summary>
+        void ServerUpdate()
+        {
+            if (_attackQueued && Time.time >= _nextAttackAt)
+            {
+                _attackQueued = false;
+                if (!IsDead && !Blocking) PerformAttack();
+            }
+        }
+
+        /// <summary>SYS-COMBAT-01 §Melee: one swing of the combo — step, stamina, power with the finisher and staggered
+        /// multipliers, execute at Lv35.</summary>
+        void PerformAttack()
+        {
             if (!TryGetComponent<Vitals>(out var vitals) || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
 
             var weapon = EquippedWeapon(inventory);
             if (weapon == null || weapon.AttackSpeed <= 0f) return;
-            if (vitals.Stamina < weapon.StaminaCost)
+            var level = LevelOf(weapon.CombatSkill);
+            var length = MeleeCombo.Length(level);
+
+            // Peek at the step without committing, so a tired swing doesn't advance the combo.
+            var continues = _combo.Step > 0 && _combo.Step < length && Time.time - _nextAttackAt <= MeleeCombo.WindowSeconds;
+            var step = continues ? _combo.Step + 1 : 1;
+            var cost = MeleeCombo.StaminaCost(weapon.StaminaCost, step, length, level);
+            if (vitals.Stamina < cost)
             {
                 GameFeed.RaiseNotice("@ui.too_tired");
+                _combo.Reset();
                 return;
             }
 
+            _combo.Advance(_nextAttackAt, Time.time, length);
+            ComboStep = step;
+            ComboLength = length;
             _nextAttackAt = Time.time + 1f / weapon.AttackSpeed;
-            vitals.SpendStamina(weapon.StaminaCost);
+            vitals.SpendStamina(cost);
             GameFeed.RaisePlayerSwing(transform.position, weapon.Reach);
 
             var director = CreatureDirector.Instance;
-            if (director == null) return;
+            var target = director != null ? director.NearestCreature(transform.position, weapon.Reach) : null;
+            if (target == null) return;
 
-            var power = PowerCalculator.FinalPower(weapon.BasePower, LevelOf(weapon.CombatSkill));
+            var power = PowerCalculator.FinalPower(weapon.BasePower, level, situationalMult: MeleeCombo.SituationalMult(target.IsStaggered))
+                        * MeleeCombo.PowerMult(step, length);
             var damage = DamageResolver.Damage(power, totalArmor: 0f);
-            var loot = new List<(NamespacedId Item, int Count)>();
-            var dealt = director.TryStrike(transform.position, weapon.Reach, damage, loot);
-            if (dealt < 0f) return;
-            AwardCombatXp(weapon, dealt);
+            if (target.MaxHealth > 0f && MeleeCombo.Executes(level, target.Health / target.MaxHealth)) damage = Mathf.Max(damage, target.Health);
 
+            var loot = new List<(NamespacedId Item, int Count)>();
+            var dealt = director.Damage(target, damage, loot);
+            AwardCombatXp(weapon, dealt);
             foreach (var (item, count) in loot) GiveItem(inventory, item, count);
         }
 

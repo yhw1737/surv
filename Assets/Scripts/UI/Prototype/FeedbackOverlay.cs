@@ -46,6 +46,7 @@ namespace Isle.UI.Prototype
             GameFeed.PlayerSwing += OnPlayerSwing;
             GameFeed.Notice += OnNotice;
             GameFeed.XpGained += OnXpGained;
+            GameFeed.Defended += OnDefended;
         }
 
         void OnDisable()
@@ -57,6 +58,7 @@ namespace Isle.UI.Prototype
             GameFeed.PlayerSwing -= OnPlayerSwing;
             GameFeed.Notice -= OnNotice;
             GameFeed.XpGained -= OnXpGained;
+            GameFeed.Defended -= OnDefended;
         }
 
         void OnItemGained(NamespacedId item, int count) => Toast($"+{count} {ItemName(item)}");
@@ -75,6 +77,18 @@ namespace Isle.UI.Prototype
         }
         void OnCreatureHit(Vector2 at, float damage) => _floaters.Add((at, Mathf.RoundToInt(damage).ToString(), Time.time, Color.yellow));
         void OnPlayerHit(float damage) => _hurtAt = Time.time;
+
+        // Guard results float over the player: a parry is the moment to punish, so it's the loudest.
+        void OnDefended(Vector2 at, BlockOutcome outcome)
+        {
+            var (key, colour) = outcome switch
+            {
+                BlockOutcome.Parried => ("@ui.parry", new Color(0.55f, 0.9f, 1f)),
+                BlockOutcome.GuardBroken => ("@ui.guard_broken", new Color(1f, 0.5f, 0.3f)),
+                _ => ("@ui.blocked", new Color(0.85f, 0.85f, 0.85f)),
+            };
+            _floaters.Add((at + Vector2.up * 1.9f, Lang.Get(key), Time.time, colour));
+        }
         void OnPlayerSwing(Vector2 at, float reach) => _swing = (at, reach, Time.time);
 
         static string ItemName(NamespacedId item) =>

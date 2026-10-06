@@ -129,6 +129,8 @@ namespace Isle.UI.Art
                 ActionTime = actionTime,
                 DrawProgress = drawProgress,
                 RollDuration = MovementCalculator.RollSeconds,
+                ComboStep = action == FigureAction.Swing ? _player.ComboStep : 0,
+                ComboLength = _player.ComboLength,
             };
             var outfit = Outfit();
             input.OffHandRaised = outfit.OffHand?.Hold?.Style == "torch";
@@ -194,6 +196,7 @@ namespace Isle.UI.Art
                 return FigureAction.Roll;
             }
 
+            if (_player.Blocking) return FigureAction.Block;
             if (_player.Fight != null) return FigureAction.Reel;
             if (_player.Cast != null) return _player.Cast.State == CastState.Bite ? FigureAction.Bite : FigureAction.Cast;
             if (_player.DrawStartedAt >= 0f)
@@ -219,6 +222,8 @@ namespace Isle.UI.Art
                     return Mathf.Sign(_player.Gathering.Position.x - shown.x);
                 case FigureAction.Cast or FigureAction.Bite or FigureAction.Reel:
                     return Mathf.Sign(_player.CastPoint.x - shown.x);
+                case FigureAction.Block:
+                    return Mathf.Abs(_player.BlockDirection.x) > 0.05f ? Mathf.Sign(_player.BlockDirection.x) : 0f;
                 case FigureAction.Swing or FigureAction.Draw when _player.IsOwner && AimPoint() is { } aim:
                     return Mathf.Sign(aim.x - shown.x);
             }

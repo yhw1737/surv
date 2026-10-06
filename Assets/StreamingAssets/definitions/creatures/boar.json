@@ -57,7 +57,8 @@
     "damage": 6,
     "attack_range_tiles": 1.2,
     "attack_interval_seconds": 1.5,
-    "body_radius_tiles": 0.45
+    "body_radius_tiles": 0.45,
+    "windup_seconds": 0.45
   },
   "visual": {
     "shape": "boar",
