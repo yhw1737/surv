@@ -12,14 +12,26 @@
   "floor_color": "#7E95A0",
   "wall_color": "#24343E",
   "creatures": [
-    "isle:crab",
-    "isle:crab",
-    "isle:snake"
+    "isle:cave_crab",
+    "isle:moray_eel",
+    "isle:crab"
   ],
   "gate": {
     "name": "@gate.flooded_channel",
     "skill": "isle:fishing",
     "shape": "gate_water",
     "color": "#3F86C2"
+  },
+  "boss": "isle:hermit_colossus",
+  "tides": {
+    "cycle_hours": 12,
+    "high_at_hour": 6,
+    "flooded_share": 0.5,
+    "swim_speed": 0.6,
+    "cache": {
+      "item": "isle:tide_pearl",
+      "min": 1,
+      "max": 2
+    }
   }
 }

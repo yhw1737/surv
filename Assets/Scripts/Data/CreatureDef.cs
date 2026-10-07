@@ -35,6 +35,16 @@ namespace Isle.Data
 
         /// <summary>How the creature is drawn (SYS-CHAR-02 §Creatures). Presentation only — gameplay never reads it.</summary>
         public CreatureLook Look { get; init; }
+
+        /// <summary><c>water</c>: lives only in flooded dungeon water — moves only there and hides when it drains
+        /// (moray eel). Null = land.</summary>
+        public string Habitat { get; init; }
+
+        /// <summary>How many spawn together on one dungeon spawn mark (a swarm). 0/1 = alone.</summary>
+        public int GroupSize { get; init; }
+
+        /// <summary>Boss behaviour (SYS-DUNG-01); null for ordinary creatures.</summary>
+        public BossSpec Boss { get; init; }
     }
 
     /// <summary>A creature's cartoon look: a body plan the figure painter knows (<c>quadruped reptile snake crab bird
@@ -133,5 +143,27 @@ namespace Isle.Data
 
         public float DragSpeedPenalty { get; init; }
         public float CoopCarryPenalty { get; init; }
+    }
+
+    /// <summary>SYS-DUNG-01 boss: a sweep that hits everyone around it, an optional shell phase, and guaranteed drops.</summary>
+    public sealed class BossSpec
+    {
+        /// <summary>Its strike hits every player within this many tiles instead of one target. 0 = a normal strike.</summary>
+        public float SweepRadiusTiles { get; init; }
+
+        public BossShellSpec Shell { get; init; }
+
+        /// <summary>Dropped where it dies, on top of its butcher yields.</summary>
+        public IngredientRef[] Drops { get; init; }
+    }
+
+    /// <summary>Below <see cref="BelowHealth"/> it hides every <see cref="EverySeconds"/> for <see cref="Seconds"/>,
+    /// taking <see cref="DamageMult"/> damage; a stun breaks it.</summary>
+    public sealed class BossShellSpec
+    {
+        public float BelowHealth { get; init; }
+        public float Seconds { get; init; }
+        public float EverySeconds { get; init; }
+        public float DamageMult { get; init; } = 1f;
     }
 }

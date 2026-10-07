@@ -69,6 +69,10 @@ namespace Isle.Networking
         /// both build the same island (same seed — true for a listen-server host).</summary>
         public static Func<Vector2, bool> IsWalkable { get; set; }
 
+        /// <summary>Set by the world layer: a speed multiplier for the ground here (swimming in a flooded dungeon
+        /// room is ×0.6, SYS-DUNG-01). Null means 1 everywhere.</summary>
+        public static Func<Vector2, float> TerrainSpeed { get; set; }
+
         // ponytail: the four flags below are pushed by gameplay on the server and not synced — on a
         // listen-server host the owning client shares this instance. Phase 10 needs SyncVars.
 
@@ -178,7 +182,8 @@ namespace Isle.Networking
             {
                 IsMoving = input.sqrMagnitude > 0f;
                 IsSprinting = md.Sprint && SprintAllowed && IsMoving;
-                step = input * (MovementCalculator.Speed(WeightMultiplier, IsSprinting) * delta);
+                var terrain = TerrainSpeed?.Invoke(transform.position) ?? 1f;
+                step = input * (MovementCalculator.Speed(WeightMultiplier, IsSprinting) * terrain * delta);
             }
 
             // Each axis is checked on its own, so walking diagonally into the shore slides along it.

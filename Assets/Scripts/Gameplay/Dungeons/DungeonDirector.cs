@@ -8,10 +8,13 @@ using Isle.Gameplay.Character;
 using Isle.Gameplay.Combat;
 using Isle.Gameplay.Feedback;
 using Isle.Gameplay.Hunting;
+using Isle.Gameplay.Inventory;
+using Isle.Networking;
 using Isle.Modding.Defs;
 using Isle.World.Chunks;
 using Isle.World.Generation;
 using Isle.World.Island;
+using Isle.World.Time;
 using UnityEngine;
 
 namespace Isle.Gameplay.Dungeons
@@ -47,6 +50,21 @@ namespace Isle.Gameplay.Dungeons
             public DungeonDef Def;
             public int Index;
             public Vector2 Entrance;
+            public GameObject View;
+
+            /// <summary>The boss, once its floor exists; <see cref="BossDefeated"/> after it dies (it never returns).</summary>
+            public Creature Boss;
+            public bool BossDefeated;
+
+            /// <summary>Tidal dungeons: is the water up right now?</summary>
+            public bool TideHigh;
+        }
+
+        /// <summary>SYS-DUNG-01 §Tidal Grotto: the floor's low-tide cache — under water (hidden) at high tide.</summary>
+        public sealed class Cache
+        {
+            public Vector2 Position;
+            public bool Taken;
             public GameObject View;
         }
 
@@ -88,6 +106,15 @@ namespace Isle.Gameplay.Dungeons
             public readonly List<Key> Keys = new();
             public readonly List<Barrier> Barriers = new();
             public GameObject Root;
+            public int Seed;
+
+            // Tides (T-202): the rooms and tiles that flood at high tide, their water overlay, the low-tide cache.
+            public HashSet<int> Flooded = new();
+            public readonly HashSet<Vec2Int> WaterTiles = new();
+            public GameObject WaterView;
+            public Cache Cache;
+
+            public Vec2Int WorldToTile(Vector2 p) => new(Mathf.FloorToInt(p.x - Origin.x), Mathf.FloorToInt(p.y - Origin.y));
 
             public Vector2 TileToWorld(Vec2Int t) => Origin + new Vector2(t.X + 0.5f, t.Y + 0.5f);
             public bool Contains(Vector2 p) => p.x >= Origin.x && p.y >= Origin.y && p.x < Origin.x + Tiles.Size && p.y < Origin.y + Tiles.Size;
@@ -105,12 +132,18 @@ namespace Isle.Gameplay.Dungeons
         {
             Instance = this;
             IslandWorld.ExtraWalkable = Walkable;
+            CreatureDirector.IsWater = IsWater;
+            PlayerInteraction.IsSwimmingAt = IsWater;
+            PlayerMovement.TerrainSpeed = TerrainSpeed;
         }
 
         void OnDestroy()
         {
             if (Instance == this) Instance = null;
             if (IslandWorld.ExtraWalkable == (System.Func<Vector2, bool?>)Walkable) IslandWorld.ExtraWalkable = null;
+            if (CreatureDirector.IsWater == (System.Func<Vector2, bool>)IsWater) CreatureDirector.IsWater = null;
+            if (PlayerInteraction.IsSwimmingAt == (System.Func<Vector2, bool>)IsWater) PlayerInteraction.IsSwimmingAt = null;
+            if (PlayerMovement.TerrainSpeed == (System.Func<Vector2, float>)TerrainSpeed) PlayerMovement.TerrainSpeed = null;
         }
 
         void Update()
@@ -122,6 +155,8 @@ namespace Isle.Gameplay.Dungeons
                 _placed = true;
             }
             TickClearing();
+            TickTides();
+            TickBosses();
         }
 
         // ------------------------------------------------------------------ entrances
@@ -184,11 +219,13 @@ namespace Isle.Gameplay.Dungeons
                 Layout = layout,
                 Tiles = tiles,
                 Origin = new Vector2(RegionOrigin + site.Index * FloorSpacing, RegionOrigin + index * FloorSpacing),
+                Seed = seed + index,
             };
             floor.Root = new GameObject($"{site.Def.Id.Name}_floor{index}");
             floor.Root.transform.SetParent(transform, false);
             _floors[(site.Index, index)] = floor;
             BuildView(floor);
+            SetUpTides(floor);
             PlaceDoors(floor);
             SpawnCreatures(floor);
             return floor;
@@ -233,7 +270,7 @@ namespace Isle.Gameplay.Dungeons
             go.transform.position = floor.Origin;
             var renderer = go.AddComponent<SpriteRenderer>();
             renderer.sprite = Sprite.Create(texture, new Rect(0, 0, px, px), Vector2.zero, PixelsPerTile);
-            renderer.sortingOrder = -9;
+            renderer.sortingOrder = -8; // above the island's sea (-10) and ground chunks (-9)
 
             // Solid rock past the floor's edge, so the camera never shows the sea's clear colour underground.
             var rock = new Texture2D(1, 1) { filterMode = FilterMode.Point };
@@ -245,7 +282,7 @@ namespace Isle.Gameplay.Dungeons
             backdrop.transform.localScale = Vector3.one * FloorSpacing;
             var backdropRenderer = backdrop.AddComponent<SpriteRenderer>();
             backdropRenderer.sprite = Sprite.Create(rock, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
-            backdropRenderer.sortingOrder = -10;
+            backdropRenderer.sortingOrder = -9;
         }
 
         void PlaceDoors(Floor floor)
@@ -257,8 +294,8 @@ namespace Isle.Gameplay.Dungeons
 
             var exitRoom = layout.Rooms[layout.Exit];
             var exitAt = floor.TileToWorld(floor.Tiles.Features[layout.Exit]);
-            // The boss floor's way out until the boss exists (T-202): a passage back to the surface.
-            AddPortal(floor, exitAt, exitRoom.Kind == RoomKind.Stairs ? DoorKind.Down : DoorKind.Exit);
+            if (exitRoom.Kind == RoomKind.Stairs) AddPortal(floor, exitAt, DoorKind.Down);
+            else if (!SpawnBoss(floor, exitAt)) AddPortal(floor, exitAt, DoorKind.Exit); // the way out opens when the boss falls
 
             foreach (var lk in layout.Locks)
             {
@@ -301,15 +338,180 @@ namespace Isle.Gameplay.Dungeons
             var director = CreatureDirector.Instance;
             var ids = floor.Site.Def.Creatures;
             if (director == null || ids == null || ids.Length == 0) return;
-            var i = 0;
+            var defs = ids.Select(id => DefRegistry.TryGet<CreatureDef>(id, out var d) ? d : null).Where(d => d != null).ToList();
+            var land = defs.Where(d => d.Habitat != "water").ToList();
+            var water = defs.Where(d => d.Habitat == "water").ToList();
+            int nextLand = floor.Index, nextWater = floor.Index;
             foreach (var (tile, room) in floor.Tiles.Spawns)
             {
                 var kind = floor.Layout.Rooms[room].Kind;
-                if (kind is RoomKind.Entrance or RoomKind.Rest or RoomKind.Vault or RoomKind.Boss) continue; // safe rooms; the boss is T-202
-                var id = ids[(i++ + floor.Index) % ids.Length];
-                if (!DefRegistry.TryGet<CreatureDef>(id, out var def)) continue;
-                director.SpawnAt(def, floor.TileToWorld(tile), inDungeon: true);
+                if (kind is RoomKind.Entrance or RoomKind.Rest or RoomKind.Vault or RoomKind.Boss) continue; // safe rooms; the boss has its own
+                // Water creatures only where the tide comes in; they take turns with land creatures there.
+                var pool = floor.Flooded.Contains(room) && water.Count > 0 && (nextLand + nextWater) % 2 == 0 ? water : land;
+                if (pool.Count == 0) continue;
+                var def = pool == water ? water[nextWater++ % water.Count] : land[nextLand++ % land.Count];
+                var at = floor.TileToWorld(tile);
+                var group = Mathf.Max(1, def.GroupSize);
+                for (var g = 0; g < group; g++)
+                {
+                    // A swarm fans out around the mark on whatever floor is free.
+                    var offset = g == 0 ? Vector2.zero : new Vector2(Mathf.Cos(g * 2.4f), Mathf.Sin(g * 2.4f)) * SwarmSpreadTiles;
+                    var position = Walkable(at + offset) == true ? at + offset : at;
+                    director.SpawnAt(def, position, inDungeon: true);
+                }
             }
+        }
+
+        /// <summary>How far a swarm's members stand from their spawn mark. [invented]</summary>
+        const float SwarmSpreadTiles = 0.8f;
+
+        // ------------------------------------------------------------------ boss
+
+        /// <summary>Puts the dungeon's boss in the boss room. False when there is none (or it is already dead).</summary>
+        bool SpawnBoss(Floor floor, Vector2 at)
+        {
+            var site = floor.Site;
+            if (site.BossDefeated || !site.Def.Boss.IsValid || !DefRegistry.TryGet<CreatureDef>(site.Def.Boss, out var def)) return false;
+            if (CreatureDirector.Instance == null) return false;
+            site.Boss = CreatureDirector.Instance.SpawnAt(def, at, inDungeon: true);
+            return true;
+        }
+
+        void TickBosses()
+        {
+            var director = CreatureDirector.Instance;
+            if (director == null) return;
+            foreach (var site in _sites)
+            {
+                if (site.Boss == null || site.BossDefeated || director.Creatures.Contains(site.Boss)) continue;
+                site.BossDefeated = true;
+                var last = site.Def.Floors - 1;
+                if (_floors.TryGetValue((site.Index, last), out var floor))
+                    AddPortal(floor, floor.TileToWorld(floor.Tiles.Features[floor.Layout.Exit]), DoorKind.Exit);
+                GameFeed.RaiseNotice("@ui.boss_defeated");
+            }
+        }
+
+        // ------------------------------------------------------------------ tides
+
+        void SetUpTides(Floor floor)
+        {
+            var tides = floor.Site.Def.Tides;
+            if (tides == null) return;
+            floor.Flooded = Tides.FloodedRooms(floor.Layout, tides.FloodedShare, floor.Seed);
+            foreach (var room in floor.Flooded)
+            {
+                var cell = floor.Layout.Rooms[room].Cell;
+                for (var x = 0; x < DungeonTiles.RoomTiles; x++)
+                for (var y = 0; y < DungeonTiles.RoomTiles; y++)
+                {
+                    var tile = new Vec2Int(cell.X * DungeonTiles.RoomTiles + x, cell.Y * DungeonTiles.RoomTiles + y);
+                    if (floor.Tiles.IsFloor(tile.X, tile.Y)) floor.WaterTiles.Add(tile);
+                }
+            }
+
+            // Water overlay: one pixel per tile, shown while the tide is in.
+            var size = floor.Tiles.Size;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+            var clear = new Color32(0, 0, 0, 0);
+            var waterColour = (Color32)WaterColour;
+            var pixels = new Color32[size * size];
+            for (var i = 0; i < pixels.Length; i++) pixels[i] = clear;
+            foreach (var t in floor.WaterTiles) pixels[t.Y * size + t.X] = waterColour;
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            floor.WaterView = new GameObject("Water");
+            floor.WaterView.transform.SetParent(floor.Root.transform, false);
+            floor.WaterView.transform.position = floor.Origin;
+            var renderer = floor.WaterView.AddComponent<SpriteRenderer>();
+            renderer.sprite = Sprite.Create(texture, new Rect(0, 0, size, size), Vector2.zero, 1f);
+            renderer.sortingOrder = -7;
+            floor.WaterView.SetActive(floor.Site.TideHigh = TideHighNow(floor.Site.Def));
+
+            var cacheRoom = Tides.CacheRoom(floor.Flooded, floor.Seed);
+            if (cacheRoom < 0 || tides.Cache == null) return;
+            var spot = OpenTileNear(floor, floor.Layout.Rooms[cacheRoom].Cell, CacheOffset);
+            floor.Cache = new Cache { Position = floor.TileToWorld(spot) };
+            floor.Cache.View = Prop("tide_cache", "chest", "#6E8B8F", floor.Cache.Position, 0.9f, floor.Root.transform);
+            floor.Cache.View.SetActive(!floor.Site.TideHigh);
+        }
+
+        static readonly Color WaterColour = new(0.25f, 0.53f, 0.76f, 0.55f);
+
+        /// <summary>Where in its room the cache sits, from the room centre (off the centre so it doesn't sit on the room's
+        /// feature or a key). [invented]</summary>
+        static readonly Vec2Int CacheOffset = new(4, -4);
+
+        /// <summary>The floor tile nearest the room centre + <paramref name="offset"/>, inside the room.</summary>
+        static Vec2Int OpenTileNear(Floor floor, Vec2Int cell, Vec2Int offset)
+        {
+            var centre = DungeonTiles.RoomCentre(cell);
+            var target = new Vec2Int(centre.X + offset.X, centre.Y + offset.Y);
+            var best = centre;
+            var bestDistance = int.MaxValue;
+            for (var x = cell.X * DungeonTiles.RoomTiles + 1; x < (cell.X + 1) * DungeonTiles.RoomTiles - 1; x++)
+            for (var y = cell.Y * DungeonTiles.RoomTiles + 1; y < (cell.Y + 1) * DungeonTiles.RoomTiles - 1; y++)
+            {
+                if (!floor.Tiles.IsFloor(x, y)) continue;
+                var d = (x - target.X) * (x - target.X) + (y - target.Y) * (y - target.Y);
+                if (d >= bestDistance) continue;
+                bestDistance = d;
+                best = new Vec2Int(x, y);
+            }
+            return best;
+        }
+
+        static bool TideHighNow(DungeonDef def)
+        {
+            var clock = WorldTime.Instance != null ? WorldTime.Instance.Clock : null;
+            if (def.Tides == null || clock == null) return false;
+            return Tides.IsHigh(clock.MinuteOfDay / 60f, def.Tides.CycleHours, def.Tides.HighAtHour);
+        }
+
+        void TickTides()
+        {
+            foreach (var site in _sites)
+            {
+                if (site.Def.Tides == null) continue;
+                var high = TideHighNow(site.Def);
+                if (high == site.TideHigh) continue;
+                site.TideHigh = high;
+                var someoneInside = false;
+                foreach (var floor in _floors.Values.Where(f => f.Site == site))
+                {
+                    if (floor.WaterView != null) floor.WaterView.SetActive(high);
+                    if (floor.Cache != null && floor.Cache.View != null) floor.Cache.View.SetActive(!high && !floor.Cache.Taken);
+                    someoneInside |= PlayerInteraction.All.Any(p => floor.Contains(p.transform.position));
+                }
+                if (someoneInside) GameFeed.RaiseNotice(high ? "@ui.tide_rising" : "@ui.tide_falling");
+            }
+
+            // Swimming soaks you (SYS-SURV-01 wet penalty −6, held while in the water).
+            foreach (var player in PlayerInteraction.All)
+                if (IsWater(player.transform.position) && player.TryGetComponent<Vitals>(out var vitals)) vitals.SetWet();
+        }
+
+        /// <summary>Flooded water you'd swim in right now.</summary>
+        public bool IsWater(Vector2 p)
+        {
+            if (p.x < RegionOrigin - 1f || p.y < RegionOrigin - 1f) return false;
+            var floor = FloorAt(p);
+            return floor != null && floor.Site.TideHigh && floor.WaterTiles.Contains(floor.WorldToTile(p));
+        }
+
+        float TerrainSpeed(Vector2 p) => IsWater(p) ? FloorAt(p).Site.Def.Tides.SwimSpeed : 1f;
+
+        void TakeCache(PlayerInteraction player, Floor floor)
+        {
+            var spec = floor.Site.Def.Tides.Cache;
+            floor.Cache.Taken = true;
+            if (floor.Cache.View != null) floor.Cache.View.SetActive(false);
+            if (!DefRegistry.TryGet<ItemDef>(spec.Item, out var item)) return;
+            var count = Random.Range(spec.Min, spec.Max + 1);
+            if (player.TryGetComponent<InventoryNetwork>(out var inventory) && InventoryOps.TryGive(inventory.Containers(), item, count))
+                GameFeed.RaiseItemGained(item.Id, count);
+            else
+                LootPiles.Drop(floor.Cache.Position, new List<(ItemDef, int)> { (item, count) });
         }
 
         static uint Hash(int seed, int x, int y)
@@ -373,6 +575,7 @@ namespace Isle.Gameplay.Dungeons
                 Site site => (site.Entrance + Vector2.up * 2.4f, string.Format(Lang("@ui.dungeon_enter"), Lang(site.Def.Name))),
                 (Floor f, Portal portal) => (portal.Position + Vector2.up * 1.4f, Lang(portal.Kind switch { DoorKind.Down => "@ui.dungeon_down", DoorKind.Up => "@ui.dungeon_up", _ => "@ui.dungeon_exit" })),
                 (Floor f, Key key) => (key.Position + Vector2.up * 0.8f, Lang("@ui.dungeon_key")),
+                (Floor f, Cache cache) => (cache.Position + Vector2.up * 1f, Lang("@ui.tide_cache")),
                 (Floor f, Barrier barrier) when barrier.LockId >= 0 => (barrier.Position + Vector2.up * 2.2f, Lang("@ui.dungeon_locked")),
                 (Floor f, Barrier barrier) => (barrier.Position + Vector2.up * 2.2f, string.Format(Lang("@ui.dungeon_clear"), GateName(f))),
                 _ => null,
@@ -401,6 +604,9 @@ namespace Isle.Gameplay.Dungeons
                         if (barrier.View != null) barrier.View.SetActive(false);
                     }
                     GameFeed.RaiseNotice("@ui.dungeon_unlocked");
+                    return true;
+                case (Floor floor, Cache _):
+                    TakeCache(player, floor);
                     return true;
                 case (Floor floor, Barrier barrier) when barrier.LockId >= 0:
                     GameFeed.RaiseNotice("@ui.dungeon_need_key");
@@ -432,6 +638,7 @@ namespace Isle.Gameplay.Dungeons
             foreach (var portal in floor.Portals) Consider((floor, portal), portal.Position);
             foreach (var key in floor.Keys) if (!key.Taken) Consider((floor, key), key.Position);
             foreach (var barrier in floor.Barriers) if (!barrier.Open) Consider((floor, barrier), barrier.Position, 1.2f);
+            if (floor.Cache != null && !floor.Cache.Taken && !floor.Site.TideHigh) Consider((floor, floor.Cache), floor.Cache.Position);
             return best;
         }
 

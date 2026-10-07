@@ -399,6 +399,7 @@ namespace Isle.Gameplay.Character
             var aim = new Vector2(aimX, aimY);
             if (float.IsNaN(aim.x) || float.IsNaN(aim.y)) aim = Vector2.zero; // never trust client values
             if (IsDead || Blocking) return;
+            if (TwoHandsUnusable()) return;
             if (Time.time < _nextAttackAt)
             {
                 // Pressed just before the weapon is ready: swing as soon as it is (combo input buffer).
@@ -661,6 +662,11 @@ namespace Isle.Gameplay.Character
         void CmdCast(float x, float y)
         {
             if (IsDead || Cast != null || Fight != null) return;
+            if (Swimming)
+            {
+                GameFeed.RaiseNotice("@ui.swimming_two_hands");
+                return;
+            }
             var world = IslandWorld.Instance;
             if (world == null || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
 
@@ -1014,6 +1020,20 @@ namespace Isle.Gameplay.Character
         {
             if (TryGetComponent<InventoryNetwork>(out var inventory)) GiveItem(inventory, item, count);
             AwardXp(xp, count);
+        }
+
+        /// <summary>Set by the dungeon runtime: is the player swimming here (a flooded room at high tide)?</summary>
+        public static Func<Vector2, bool> IsSwimmingAt { get; set; }
+
+        public bool Swimming => IsSwimmingAt != null && IsSwimmingAt(transform.position);
+
+        /// <summary>SYS-DUNG-01: two-handed items can't be used while swimming (a rod casts from dry ground only).</summary>
+        bool TwoHandsUnusable()
+        {
+            if (!Swimming || !TryGetComponent<InventoryNetwork>(out var inventory)) return false;
+            if (EquippedWeapon(inventory)?.Grip != "two_hand") return false;
+            GameFeed.RaiseNotice("@ui.swimming_two_hands");
+            return true;
         }
 
         WeaponDef EquippedWeapon(InventoryNetwork inventory)

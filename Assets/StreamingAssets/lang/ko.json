@@ -339,5 +339,15 @@
   "ui.dungeon_clear_fast": "다뤄 본 적 있는 장애물입니다",
   "ui.dungeon_clear_slow": "느리고 시끄러운 작업 — 무언가 들었습니다",
   "ui.dungeon_cleared": "길이 열렸습니다",
-  "ui.dungeon_clear_cancelled": "치우기를 멈췄습니다"
+  "ui.dungeon_clear_cancelled": "치우기를 멈췄습니다",
+  "item.tide_pearl": "조수 진주",
+  "item.tide_sigil": "조수 봉인석",
+  "creature.cave_crab": "동굴 게",
+  "creature.moray_eel": "곰치",
+  "creature.hermit_colossus": "헤르밋 콜로서스",
+  "ui.tide_rising": "물이 차오릅니다",
+  "ui.tide_falling": "물이 빠집니다",
+  "ui.tide_cache": "조수웅덩이 뒤지기",
+  "ui.boss_defeated": "수호자가 쓰러졌습니다 — 나가는 길이 열렸습니다",
+  "ui.swimming_two_hands": "헤엄치는 중에는 양손 도구를 쓸 수 없습니다"
 }
