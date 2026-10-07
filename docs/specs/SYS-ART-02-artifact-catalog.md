@@ -1,8 +1,17 @@
 # SYS-ART-02 · Artifact catalog and acquisition
 
-Status: **design draft, 2026-10-06** — developer direction: "유물은 던전 보상 및 희귀 확률 맵 스폰 또는 전리품. 유물 개수
+Status: **design, numbers decided 2026-10-06** (Q&A with the developer) — developer direction: "유물은 던전 보상 및 희귀 확률 맵 스폰 또는 전리품. 유물 개수
 늘리자 — 요리사는 국자, 뒤집개, 식칼 등 다양한 데미지·피격 판정. 다른 직업도 늘려. 무기뿐 아니라 다른 장비도 유물."
-Extends SYS-ART-01; numbers **open** (❓) unless inherited from it.
+Extends SYS-ART-01; numbers inherited from it unless decided below. The **Decided values** table below supersedes any ❓ left in the text.
+
+## Decided values (developer Q&A, 2026-10-06)
+| Constant | Value |
+|---|---|
+| Attunement (scaling skill) | tier 1 **Lv 15**, tier 2 **Lv 25**, tier 3 **Lv 40** |
+| Attuned at once | **one weapon artifact** (the hand) + **any number of gear artifacts** the slots allow |
+| Landmark caches | **2–3 per island** |
+| Elite drop | **2%** per elite kill |
+| Duplicates | allowed — the same artifact can appear more than once on an island |
 
 ## What stays (SYS-ART-01 hard rules)
 - Artifacts scale off a **production** skill, use **no combat skill** and grant **no combat XP** (Absolute Rule 5).
@@ -88,9 +97,8 @@ Type/shape per SYS-COMBAT-02. ★ = already specified in SYS-ART-01. Pools: wher
 - The ★ three keep their SYS-ART-01 abilities and verification cases unchanged.
 
 ## Open questions (developer)
-- ❓ Attunement levels per tier; how many artifact weapons/gear one character may have attuned at once.
-- ❓ Landmark cache chance per island; which elites can drop artifacts and at what rate.
-- ❓ Every ability number (cooldowns, fuel, radii, buff percentages) — to be written per artifact before building it.
+- Every ability number (cooldowns, fuel, radii, buff percentages) — asked per artifact right before it is built.
+- Which creatures count as elites (decided with the dungeon creature defs).
 
 ## Build order
 Same gate as SYS-ART-01: **build the Ladle first and playtest it** (G3). Then one weapon per profession, then gear.

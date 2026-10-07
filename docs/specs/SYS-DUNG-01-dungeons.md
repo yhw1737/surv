@@ -1,7 +1,20 @@
 # SYS-DUNG-01 · Dungeons
 
-Status: **design draft, 2026-10-06** — developer direction: "던전 형태는 맵 생성 때 정해지고, 재밌게. 협동 요소는 넣되,
-없으면 아예 못 하는 게 아니라 있으면 쉽게 통과." Numbers are **open** (❓).
+Status: **design, numbers decided 2026-10-06** (Q&A with the developer) — developer direction: "던전 형태는 맵 생성 때 정해지고, 재밌게. 협동 요소는 넣되,
+없으면 아예 못 하는 게 아니라 있으면 쉽게 통과." The **Decided values** table below supersedes any ❓ left in the text.
+
+## Decided values (developer Q&A, 2026-10-06)
+| Constant | Value |
+|---|---|
+| Floors | Tidal Grotto **1**, Rootwood Hollow **2**, Drowned Temple **3**, Clockwork Ruin **3**, the Abyss **3** |
+| Floor size | **6×6 grid, 8–12 rooms** (≈ 10 minutes a floor) |
+| Repopulation | floors **3 in-game days** after clearing; bosses and vaults never |
+| Re-rolling | **never** — an island's dungeons are fixed |
+| Soft-gate fast path | skill **Lv 10** in ★ dungeons, **Lv 20** in ★★, **Lv 30** in ★★★ and the Abyss |
+| Soft-gate times | specialist **3 s**; anyone **30 s** plus the obstacle's risk (noise, wet/cold, damage…) |
+| Abyss curse | per missing sigil: **+25% enemies, −15% light radius** (all four missing: ×2 enemies, 40% light) |
+| Abyss pressure | stamina regen **−15% per floor** (55% on floor 3) |
+| Root walls / clockwork rooms / antidote | regrow **5 min** · rotate **every 30 s** · immunity **5 min** (real time) |
 
 ## Purpose
 Hand-feel adventure spaces generated with the island: the place where artifacts, ending sigils and master
@@ -72,10 +85,8 @@ loot tables, artifact pool, sigil, materials, signature mechanic params). `defin
 templates. Save: per-world dungeon state.
 
 ## Open questions (developer)
-- ❓ All numbers: floors per dungeon, grid size, room counts, repopulation days, gate timings, curse effects.
-- ❓ Underground layer as a separate scene vs a far-away region of the same world (implementation choice; region is
-  simpler for FishNet).
-- ❓ Can dungeons be re-rolled (new depths) after clearing, or is the island's set fixed forever?
+- Underground layer as a separate scene vs a far-away region of the same world — an implementation choice, decided
+  when T-201 starts (a region is simpler for FishNet).
 
 ## Verification (to write as tests when built)
 | # | Case | Expected |
