@@ -330,6 +330,9 @@ namespace Isle.Gameplay.Character
         /// players yet (it needs an input-lock rule; see PROJECT_STATE).</summary>
         public Combat.CombatStatus Status { get; } = new();
 
+        /// <summary>When a hit last landed (not damage over time) — for the red hit flash.</summary>
+        public float LastHitAt { get; private set; } = float.NegativeInfinity;
+
         public void TakeDamage(float amount) => TakeDamage(amount, Combat.DamageTypes.Blunt);
 
         /// <summary>A typed hit: armor against that type (SYS-COMBAT-02), then any food resistance for it
@@ -342,6 +345,7 @@ namespace Isle.Gameplay.Character
             var taken = Combat.DamageTypes.Damage(amount, damageType, FoodResistMult(damageType), armor);
             Status.OnHit(damageType, taken, Time.time, out _);
             Health = Mathf.Clamp(Health - taken, 0f, VitalsCalculator.GaugeMax);
+            LastHitAt = Time.time;
             Feedback.GameFeed.RaisePlayerHit(taken);
         }
 

@@ -29,6 +29,7 @@ namespace Isle.UI.Art
         PlayerMovement _movement;
         DeathHandler _death;
         InventoryNetwork _inventory;
+        Vitals _vitals;
 
         readonly StickFigureAnimator _animator = new();
         readonly VectorMesh _vector = new();
@@ -61,6 +62,7 @@ namespace Isle.UI.Art
             _movement = player.GetComponent<PlayerMovement>();
             _death = player.GetComponent<DeathHandler>();
             _inventory = player.GetComponent<InventoryNetwork>();
+            _vitals = player.GetComponent<Vitals>();
             ByPlayer[player] = this;
 
             _mesh = new Mesh { name = "StickFigure" };
@@ -158,10 +160,43 @@ namespace Isle.UI.Art
 
             _vector.Clear();
             StickFigureDrawer.Draw(_vector, pose, outfit, lineEnd, now);
+            DrawStatus(pose, now);
             _vector.Fill(_mesh);
             // Bounds centred on the feet: the 2D renderer's custom-axis sort uses the bounds centre, so this makes the
             // figure sort by where it stands — the same rule as the trees' foot pivots. Big enough to never cull early.
             _mesh.bounds = new Bounds(Vector3.zero, new Vector3(6f, 6f, 1f));
+        }
+
+        /// <summary>T-165: debuffs on the body — tint, shiver/pant/hunch, then particles over the top. The shadow (the
+        /// first shape drawn) keeps its colour.</summary>
+        void DrawStatus(in StickFigurePose pose, float now)
+        {
+            if (_vitals == null || (_death != null && _death.IsDead)) return;
+            var s = new StatusState
+            {
+                SinceHit = now - _vitals.LastHitAt,
+                Poisoned = _vitals.Status.Stacks(Isle.Gameplay.Combat.DamageTypes.Toxic) > 0,
+                Bleeding = _vitals.Status.Stacks(Isle.Gameplay.Combat.DamageTypes.Slash) > 0,
+                Burning = _vitals.Status.Stacks(Isle.Gameplay.Combat.DamageTypes.Heat) > 0,
+                // SYS-SURV-01's hypothermia warning (33°) is where the shiver starts.
+                Cold = _vitals.Temperature <= VitalsCalculator.HypothermiaWarningTemp,
+                Exhausted = _vitals.Exhausted,
+                Overloaded = _vitals.Overloaded,
+                Wet = Mathf.Clamp01(_vitals.WetPenalty / VitalsCalculator.WetPenaltyMagnitude),
+            };
+            const int afterShadow = 8; // the foot shadow is two ellipses, one quad each
+            var tint = StatusLook.Tint(s, now);
+            _vector.TintFrom(afterShadow, tint.Colour, tint.Amount);
+            var facing = Mathf.Abs(pose.FacingScale) > 0.01f ? Mathf.Sign(pose.FacingScale) : 1f;
+            StatusLook.Move(_vector, afterShadow, s, now, facing, StickFigureAnimator.HipHeight, StickFigureAnimator.HipHeight + StickFigureAnimator.TorsoLength);
+            _vector.Transform = null;
+            StatusLook.Particles(_vector, s, now, new StatusBody
+            {
+                Centre = new Vector2(0f, StickFigureAnimator.HipHeight + StickFigureAnimator.TorsoLength * 0.5f),
+                HalfWidth = 0.18f,
+                Top = pose.Head.y + 0.15f,
+                Head = new Vector2(pose.Head.x * facing, pose.Head.y),
+            });
         }
 
         void TrackTicks(float now)
