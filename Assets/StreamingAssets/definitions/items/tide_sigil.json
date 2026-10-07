@@ -1,0 +1,19 @@
+{
+  "id": "isle:tide_sigil",
+  "name": "@item.tide_sigil",
+  "tags": [
+    "sigil",
+    "quest"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.5,
+  "stack": 1,
+  "icon_style": {
+    "shape": "sigil",
+    "color": "#3F86C2",
+    "accent": "#E8F1F2"
+  }
+}

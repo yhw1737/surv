@@ -6,6 +6,18 @@
 ## Header
 
 - Last updated: **2026-10-07**
+- **2026-10-07 — T-202 Tidal Grotto.** Branch `feature/T-202-tidal-grotto` off `main` (after PR #35), **uncommitted**.
+  Developer decisions: 2 tides a day, swim ×0.6, about half the rooms flood, 1 low-tide cache per floor (1–2 tide
+  pearls), Hermit Colossus HP 600 / strike 15 with sweep + shell phase broken by a blunt stun, reward sigil + 3 pearls,
+  new cave crab and moray eel. Built: `Tides` (pure), `BossShell` (pure), tide runtime in `DungeonDirector` (water
+  overlay, swimming speed/wet/two-hand block via `PlayerMovement.TerrainSpeed` and `PlayerInteraction.IsSwimmingAt`,
+  cache, boss spawn, exit after the kill), `CreatureDirector` boss sweep/shell/drops + `habitat: water` + swarms,
+  `DungeonTides`/`DungeonCache`/`BossSpec` data, 3 creatures, 2 items, `pearl`/`sigil` icons, en/ko keys, SCHEMA.
+  **Verified:** EditMode 593/593 (+8 `TidalGrottoTests`), PlayMode 3/3 (SceneHost: high tide floods + slows, low tide
+  cache gives 1–2 pearls, killing the boss opens the exit and drops sigil + 3 pearls); high-tide room, floor and boss
+  rendered to PNG. Not yet: angler's line, boss health bar, sigil use, dungeon save. **Also fixed:** SceneHost's
+  parry/block checks read health right before each strike (a vitals tick could shave ~0.02 HP while the guard went up —
+  a flaky failure seen once).
 - **2026-10-07 — T-201 dungeon generator + underground layer.** Branch `feature/T-201-dungeon-generator` off `main`
   (after PR #34) — [PR #35](https://github.com/yhw1737/surv/pull/35). Developer decisions: rest room 1 per floor; locks 1/1/2 by danger; rooms 20×20 tiles;
   new giant-tree / sinkhole entrance landmarks. Built: `DungeonGenerator` (6×6 grid, 8–12 rooms, lock-and-key, rest,
@@ -1858,6 +1870,13 @@ since it's server-side gauge math with no UI yet:
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-10-07 — T-202 Tidal Grotto fill-ins
+  [invented]: high-tide peak 06:00; shell every 15 s for 6 s at ×0.2; sweep radius 1.8; boss body/vision/speeds/
+  timings, slash strike, 4 meat; cave crab and moray eel stats; swarm spread 0.8; cache offset; water/land spawn
+  alternation; two-handed = weapon `grip: two_hand`, and casting is refused while swimming. All listed in SYS-DUNG-01
+  §Implementation (T-202). Multiplayer debt: `TerrainSpeed`/`IsSwimmingAt` read server-built floors, so a remote
+  client would predict at full speed (same as `ExtraWalkable`, Phase 10).
 
 - ### 2026-10-07 — T-201 implementation choices
   Developer-decided: rooms 20×20, rest 1/floor, locks 1/1/2. [invented]: on the boss floor the rest room hangs off the

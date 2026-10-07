@@ -186,6 +186,16 @@ namespace Isle.UI.Art
                     p.Polygon(new[] { V(0.86f, 0.86f), V(0.64f, 0.8f), V(0.8f, 0.64f) }, a, true, 0.01f);
                     p.Polygon(new[] { V(0.14f, 0.3f), V(0.26f, 0.26f), V(0.3f, 0.14f), V(0.2f, 0.12f), V(0.12f, 0.2f) }, Light(Color.red, 0.4f), true, 0.01f);
                     break;
+                case "pearl":
+                    p.Polygon(new[] { V(0.18f, 0.3f), V(0.3f, 0.62f), V(0.5f, 0.7f), V(0.7f, 0.62f), V(0.82f, 0.3f), V(0.5f, 0.2f) }, a, true, 0.04f);
+                    p.Disk(V(0.5f, 0.46f), 0.17f, c);
+                    p.Disk(V(0.44f, 0.52f), 0.05f, Light(c, 0.7f), false);
+                    break;
+                case "sigil":
+                    p.Polygon(new[] { V(0.5f, 0.86f), V(0.82f, 0.5f), V(0.5f, 0.14f), V(0.18f, 0.5f) }, c, true, 0.05f);
+                    p.Disk(V(0.5f, 0.5f), 0.12f, a);
+                    p.Line(V(0.5f, 0.72f), V(0.5f, 0.28f), 0.03f, Light(a, 0.4f), false);
+                    break;
                 case "kit":
                     p.Box(V(0.5f, 0.42f), V(0.32f, 0.24f), 0.04f, 0f, c);
                     p.Line(V(0.2f, 0.42f), V(0.8f, 0.42f), 0.02f, Dark(c), false);

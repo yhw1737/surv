@@ -19,6 +19,20 @@ Status: **design, numbers decided 2026-10-06** (Q&A with the developer) — deve
 | Locked doors per floor | **1 / 1 / 2** for ★ / ★★ / ★★★ and up (decided 2026-10-07) |
 | Root walls / clockwork rooms / antidote | regrow **5 min** · rotate **every 30 s** · immunity **5 min** (real time) |
 
+## Tidal Grotto values (developer Q&A, 2026-10-07, T-202)
+| Constant | Value |
+|---|---|
+| Tide cycle | **2 high tides per in-game day** (12 h cycle) |
+| Swim speed | **×0.6**; wet penalty −6 (SYS-SURV-01); two-handed items unusable while swimming |
+| Flooded rooms at high tide | **about half** of the rooms; entrance, rest and boss rooms always dry; fixed per seed |
+| Low-tide cache | **1 per floor**, holds **1–2 tide pearls**; reachable only at low tide |
+| Hermit Colossus | **HP 600, strike 15**; resist slash ×0.5 / blunt ×1.5 (the decided resist values) |
+| Boss pattern | claw sweep (hits everyone around it) + charge; below 50% HP it hides in its shell (damage greatly reduced); a blunt stun (3 hits) breaks the shell |
+| Boss reward | **tide sigil ×1 + tide pearl ×3** + meat; the boss never returns |
+| Grotto creatures | **cave crab** (swarm) and **moray eel** (flooded water only) — new defs |
+
+Values in §Implementation (T-202) marked [invented] are the agent's fill-ins for what the table leaves open.
+
 ## Purpose
 Hand-feel adventure spaces generated with the island: the place where artifacts, ending sigils and master
 materials come from, and where each profession gets a moment to shine.
@@ -116,4 +130,26 @@ otherwise 30 s and every dungeon creature within 25 tiles is woken (prey flees).
 loot in chests (T-205), save of dungeon state (floors regenerate identically from the seed; opened doors and taken
 keys are lost on reload), repopulation, own fog/minimap page, dying-underground rules. Dungeon creatures are existing
 creatures as placeholders (`creatures` list per def) until the new defs are written.
+
+## Implementation (T-202, 2026-10-07) — Tidal Grotto
+
+| Piece | Where | Notes |
+|---|---|---|
+| Tides | `World/Generation/Tides.cs` | `Level = cos(2π(hour − high_at_hour) / cycle_hours)`; high while ≥ 0. `FloodedRooms` shuffles the eligible rooms per seed and floods ⌊eligible × share⌋; `CacheRoom` picks one of them |
+| Tide runtime | `DungeonDirector` | Water overlay per floor shown at high tide; `IsWater` drives swimming (`PlayerMovement.TerrainSpeed` ×0.6, `Vitals.SetWet` each frame in water, two-handed weapons and casting refused) and water creatures; a notice when the tide turns while someone is inside |
+| Low-tide cache | `DungeonDirector` | One per floor in a flooded room; hidden and unusable at high tide; gives 1–2 tide pearls (to the bag, or a loot pile if full) |
+| Boss | `BossShell.cs`, `CreatureDirector` | `boss.sweep_radius_tiles`: the strike hits every player in range. `boss.shell`: hide below the threshold, every N s for M s, damage ×mult, broken by a stun. `boss.drops` land as a loot pile. The boss room's exit portal appears only after the boss dies |
+| Creatures | `creatures/cave_crab.json`, `moray_eel.json`, `hermit_colossus.json` | `group_size` spawns a swarm per mark; `habitat: water` moves only on flooded tiles and hides (untouchable) when they drain |
+| Items | `items/tide_pearl.json`, `tide_sigil.json` | New icon shapes `pearl`, `sigil` |
+
+**[invented] values** (the table above fixes the rest): high-tide peak at **06:00** (so high 03–09 and 15–21);
+cache sits nearest the room centre + (4, −4); swarm members 0.8 tiles off their mark; water creatures alternate
+with land creatures on flooded rooms' spawn marks.
+Shell **every 15 s for 6 s, damage ×0.2**; sweep radius **1.8**; boss body radius 1.1, vision 10, chase 2.8, strike
+interval 2.2 s, wind-up 0.7 s, charge 4 tiles at 9 tiles/s, strike type slash; 4 meat. Cave crab 1.0 kg × 6 HP/kg,
+strike 3 slash, swarm of 3, resists like the crab. Moray eel 8 kg × 4 HP/kg, strike 8 pierce, chase 4.5,
+resist pierce ×1.5.
+
+**Not yet:** the angler's line across the flooded channel (the generic soft gate stands in), boss health bar, eels
+attacking from water onto land, sigil use (T-204), dungeon save state.
 

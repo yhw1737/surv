@@ -414,7 +414,8 @@ Stage 4. Nothing here is a prerequisite for anything above it; that is the whole
   > **2026-10-07**: done — typed damage, per-type armor, shapes per combo step, bleed/burn/poison, blunt stun on creatures, food resistance; player stun deferred. See SYS-COMBAT-02 §Implementation.
 - [x] **T-201** Fill SYS-DUNG-01 numbers → dungeon generator (room graph, lock-and-key, room templates JSON) + underground layer
   > **2026-10-07**: done — generator, 10 room templates, 4 dungeon defs with island entrances, underground region, stairs, keys/locks, soft gates, placeholder creatures. No bosses, loot or dungeon save yet. See SYS-DUNG-01 §Implementation.
-- [ ] **T-202** Tidal Grotto (first dungeon: tides by clock, soft gates, Hermit Colossus)
+- [x] **T-202** Tidal Grotto (first dungeon: tides by clock, soft gates, Hermit Colossus)
+  > **2026-10-07**: done — tides twice a day flood half the rooms (swim ×0.6, wet, no two-handed), low-tide pearl cache, cave crab swarms, moray eels, Hermit Colossus (sweep, shell phase, sigil + pearls). Angler's line across the channel not built (generic soft gate). See SYS-DUNG-01 §Implementation (T-202).
 - [ ] **T-203** Rootwood Hollow, Drowned Temple, Clockwork Ruin
 - [ ] **T-204** The Abyss (sigils, curses, three floors, Abyss Warden)
 - [ ] **T-205** Fill SYS-ART-02 numbers → artifact acquisition (pools, caches, drops, attunement; duplicates allowed)

@@ -56,6 +56,12 @@ namespace Isle.Gameplay.Hunting
         /// <summary>Lives in a dungeon (SYS-DUNG-01): always awake, never counted toward the island's population.</summary>
         public bool InDungeon { get; init; }
 
+        /// <summary>SYS-DUNG-01 boss shell phase; idle for creatures without <c>boss.shell</c>.</summary>
+        public BossShell Shell { get; } = new();
+
+        /// <summary>A water creature whose water has drained: hidden and inactive until the tide returns.</summary>
+        public bool Submerged { get; set; }
+
         /// <summary>SYS-COMBAT-02 side effects running on it (bleed, burn, poison, stagger count).</summary>
         public CombatStatus Status { get; } = new();
         public float AlertStartedAt { get; set; }
@@ -99,6 +105,12 @@ namespace Isle.Gameplay.Hunting
 
         public IReadOnlyList<Creature> Creatures => _creatures;
 
+        /// <summary>Is there water to swim in here? Set by the dungeon runtime (flooded tiles at high tide); water
+        /// creatures (<c>habitat: water</c>) move only where this is true and hide where it isn't.</summary>
+        public static System.Func<Vector2, bool> IsWater { get; set; }
+
+        static bool LivesInWater(Creature creature) => creature.Def.Habitat == "water";
+
         void Awake() => Instance = this;
 
         void OnDestroy()
@@ -121,6 +133,11 @@ namespace Isle.Gameplay.Hunting
                 // Only creatures near a player think and show; the rest wait, frozen, until someone comes by.
                 NearestPlayer(creature.Position, players, out var distance);
                 var awake = distance <= SimulationRadiusTiles;
+                if (LivesInWater(creature))
+                {
+                    creature.Submerged = IsWater == null || !IsWater(creature.Position);
+                    if (creature.Submerged) awake = false;
+                }
                 if (creature.View.activeSelf != awake) creature.View.SetActive(awake);
                 if (awake) Think(creature, players);
             }
@@ -165,7 +182,11 @@ namespace Isle.Gameplay.Hunting
             if (!_creatures.Contains(target)) return 0f;
             var damage = DamageTypes.Damage(finalPower, type, DamageTypes.ResistOf(target.Def.Resist, type), 0f);
             target.Status.OnHit(type, damage, Time.time, out var stunned);
-            if (stunned) target.StaggeredUntil = Mathf.Max(target.StaggeredUntil, Time.time + CombatStatus.StunSeconds);
+            if (stunned)
+            {
+                target.StaggeredUntil = Mathf.Max(target.StaggeredUntil, Time.time + CombatStatus.StunSeconds);
+                target.Shell.Break(Time.time);
+            }
             return Damage(target, damage, loot);
         }
 
@@ -232,7 +253,8 @@ namespace Isle.Gameplay.Hunting
 
         float Damage(Creature target, float damage, List<(NamespacedId Item, int Count)> loot, bool quiet)
         {
-            if (!_creatures.Contains(target)) return 0f;
+            if (!_creatures.Contains(target) || target.Submerged) return 0f;
+            damage *= target.Shell.DamageMult(Time.time, target.Def.Boss?.Shell);
             var dealt = Mathf.Min(damage, Mathf.Max(0f, target.Health));
             target.Health -= damage;
             if (!quiet) target.LastHitAt = Time.time; // a bleed tick doesn't flash or wake it every frame
@@ -246,10 +268,21 @@ namespace Isle.Gameplay.Hunting
 
             _creatures.Remove(target);
             Destroy(target.View);
+            DropBossLoot(target);
             if (target.Def.Butcher?.Yields != null)
                 foreach (var yield in target.Def.Butcher.Yields)
                     loot.Add((yield.Item, yield.Count > 0 ? yield.Count : 1));
             return dealt;
+        }
+
+        /// <summary>A boss's guaranteed drops land where it fell, for everyone to share.</summary>
+        static void DropBossLoot(Creature target)
+        {
+            if (target.Def.Boss?.Drops == null) return;
+            var drops = new List<(ItemDef, int)>();
+            foreach (var drop in target.Def.Boss.Drops)
+                if (DefRegistry.TryGet<ItemDef>(drop.Item, out var def)) drops.Add((def, Mathf.Max(1, drop.Count)));
+            if (drops.Count > 0) LootPiles.Drop(target.Position, drops);
         }
 
         void Spawn(IslandWorld world)
@@ -373,6 +406,19 @@ namespace Isle.Gameplay.Hunting
                 return;
             }
 
+            if (creature.Def.Boss?.Shell != null)
+            {
+                creature.Shell.Tick(Time.time, creature.Health / Mathf.Max(1f, creature.MaxHealth), creature.Def.Boss.Shell);
+                if (creature.Shell.IsHidden(Time.time))
+                {
+                    creature.StrikeLandsAt = -1f;
+                    creature.LungeEndsAt = -1f;
+                    creature.View.transform.position = creature.Position;
+                    Flash(creature);
+                    return;
+                }
+            }
+
             var target = NearestPlayer(creature.Position, players, out var distance);
             var preset = creature.Def.Ai.IsValid ? creature.Def.Ai.Value : null;
             var previous = creature.State;
@@ -437,6 +483,19 @@ namespace Isle.Gameplay.Hunting
             creature.StrikeLandsAt = -1f;
             creature.LungeEndsAt = -1f;
             creature.NextStrikeAt = Time.time + combat.AttackIntervalSeconds;
+            var sweep = creature.Def.Boss?.SweepRadiusTiles ?? 0f;
+            if (sweep > 0f)
+            {
+                // A sweep hits everyone around it, whoever it was aiming at.
+                foreach (var player in PlayerInteraction.All)
+                {
+                    if (player.TryGetComponent<DeathHandler>(out var death) && death.IsDead) continue;
+                    if (!BodyReach.InReach(Vector2.Distance(creature.Position, player.transform.position), creature.Radius, sweep)) continue;
+                    if (player.ReceiveCreatureStrike(creature.Position, combat.Damage, combat.DamageType ?? DamageTypes.Blunt) == BlockOutcome.Parried)
+                        creature.StaggeredUntil = Time.time + MeleeDefense.ParryStaggerSeconds;
+                }
+                return;
+            }
             if (target == null || !BodyReach.InReach(distance, creature.Radius, combat.AttackRangeTiles + StrikeLeewayTiles)) return;
             if (target.ReceiveCreatureStrike(creature.Position, combat.Damage, combat.DamageType ?? DamageTypes.Blunt) == BlockOutcome.Parried)
                 creature.StaggeredUntil = Time.time + MeleeDefense.ParryStaggerSeconds;
@@ -457,6 +516,7 @@ namespace Isle.Gameplay.Hunting
         const float FlashSeconds = 0.12f;
         static readonly Color WindupTint = new(1f, 0.75f, 0.2f);
         static readonly Color StaggerTint = new(0.65f, 0.75f, 1f);
+        static readonly Color ShellTint = new(0.55f, 0.55f, 0.55f);
 
         static void Flash(Creature creature)
         {
@@ -464,6 +524,7 @@ namespace Isle.Gameplay.Hunting
             // The fill colour is baked into the texture, so the renderer tint is white at rest and red on a hit.
             if (Time.time - creature.LastHitAt < FlashSeconds) creature.Renderer.color = new Color(1f, 0.3f, 0.3f);
             else if (creature.IsStaggered) creature.Renderer.color = StaggerTint;
+            else if (creature.Shell.IsHidden(Time.time)) creature.Renderer.color = ShellTint;
             else if (creature.IsWindingUp || creature.IsLunging) creature.Renderer.color = Color.Lerp(Color.white, WindupTint, 0.5f + 0.5f * Mathf.Sin(Time.time * 40f));
             else creature.Renderer.color = Color.white;
         }
@@ -488,6 +549,7 @@ namespace Isle.Gameplay.Hunting
             var next = creature.Position + direction * speed * Time.deltaTime;
             var world = IslandWorld.Instance;
             if (world == null || !world.IsWalkable(next)) return;
+            if (LivesInWater(creature) && (IsWater == null || !IsWater(next))) return;
             creature.Position = next;
             // Silhouettes face right; flip to face where it's going.
             if (creature.Renderer != null && Mathf.Abs(direction.x) > 0.05f) creature.Renderer.flipX = direction.x < 0f;

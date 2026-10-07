@@ -339,5 +339,15 @@
   "ui.dungeon_clear_fast": "You know how to handle this",
   "ui.dungeon_clear_slow": "Slow, noisy work — something heard you",
   "ui.dungeon_cleared": "The way is clear",
-  "ui.dungeon_clear_cancelled": "Stopped clearing"
+  "ui.dungeon_clear_cancelled": "Stopped clearing",
+  "item.tide_pearl": "Tide pearl",
+  "item.tide_sigil": "Tide sigil",
+  "creature.cave_crab": "Cave crab",
+  "creature.moray_eel": "Moray eel",
+  "creature.hermit_colossus": "Hermit Colossus",
+  "ui.tide_rising": "The tide is coming in",
+  "ui.tide_falling": "The tide is going out",
+  "ui.tide_cache": "Search the tidepool",
+  "ui.boss_defeated": "The guardian has fallen — a way out has opened",
+  "ui.swimming_two_hands": "You can't use two-handed items while swimming"
 }

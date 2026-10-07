@@ -36,7 +36,7 @@ namespace Isle.Data
         public string DamageType { get; init; }
 
         /// <summary>
-        /// <c>one_hand</c> / <c>two_hand</c> / <c>tool</c>. Selects IK targets only — swapping a
+        /// <c>one_hand</c> / <c>two_hand</c> / <c>tool</c>. Selects IK targets — and a <c>two_hand</c> weapon can't be used while swimming (SYS-DUNG-01). Swapping a
         /// weapon must never change gameplay through the rig (ARCHITECTURE §Presentation boundary).
         /// </summary>
         public string Grip { get; init; }

@@ -130,13 +130,15 @@ namespace Isle.Tests.PlayMode
 
             // SYS-COMBAT-01 §Melee: raise the guard toward a strike from the right — a fresh guard parries, a held one
             // blocks for stamina, and a hit from behind gets through. Then three swings in rhythm make a full combo.
-            var guardHealth = vitals.Health;
             var guardAt = (Vector2)player.transform.position;
             player.RequestBlock(true, Vector2.right);
             yield return WaitUntil(() => player.Blocking, 2f, "guard never went up");
+            // Read just before the strike: vitals ticks (cold, hunger) may shave health while the guard goes up.
+            var guardHealth = vitals.Health;
             Assert.AreEqual(BlockOutcome.Parried, player.ReceiveCreatureStrike(guardAt + Vector2.right, 10f), "fresh guard didn't parry");
             Assert.AreEqual(guardHealth, vitals.Health, 1e-3f, "parry let damage through");
             yield return new WaitForSeconds(0.5f);
+            guardHealth = vitals.Health;
             var guardStamina = vitals.Stamina;
             Assert.AreEqual(BlockOutcome.Blocked, player.ReceiveCreatureStrike(guardAt + Vector2.right, 10f), "held guard didn't block");
             Assert.Less(vitals.Stamina, guardStamina, "block cost no stamina");
@@ -352,6 +354,45 @@ namespace Isle.Tests.PlayMode
             Teleport(player, floor.TileToWorld(stand));
             player.RequestInteract();
             yield return WaitUntil(() => gate.Open, 8f, "specialist never cleared the soft gate");
+
+            // T-202 (Tidal Grotto only): high tide floods water tiles and slows swimmers; low tide opens the cache.
+            if (site.Def.Tides != null)
+            {
+                var clock = Isle.World.Time.WorldTime.Instance.Clock;
+                var day = clock.TotalMinutes / Isle.World.Time.WorldClock.MinutesPerDay;
+                clock.SetTotalMinutes(day * Isle.World.Time.WorldClock.MinutesPerDay + 6 * 60);
+                yield return WaitUntil(() => site.TideHigh, 2f, "tide never came in at 06:00");
+                var water = floor.TileToWorld(floor.WaterTiles.First());
+                Assert.IsTrue(dungeons.IsWater(water), "high tide left a flooded room dry");
+                Assert.AreEqual(site.Def.Tides.SwimSpeed, Isle.Networking.PlayerMovement.TerrainSpeed(water), 1e-4f, "swimming isn't slowed");
+                Assert.IsFalse(floor.Cache != null && floor.Cache.View.activeSelf, "cache visible under water");
+
+                clock.SetTotalMinutes(day * Isle.World.Time.WorldClock.MinutesPerDay + 12 * 60);
+                yield return WaitUntil(() => !site.TideHigh, 2f, "tide never went out at 12:00");
+                Assert.IsFalse(dungeons.IsWater(water));
+                Assert.IsNotNull(floor.Cache, "no low-tide cache on the floor");
+                Teleport(player, floor.Cache.Position);
+                player.RequestInteract();
+                yield return WaitUntil(() => floor.Cache.Taken, 3f, "low-tide cache never opened");
+                Assert.That(CountOf(player.GetComponent<InventoryNetwork>(), "isle:tide_pearl") + LootPiles.All.Sum(pile => pile.Items.Where(i => i.Item.Id.Value == "isle:tide_pearl").Sum(i => i.Count)), Is.InRange(1, 2), "cache didn't hold 1–2 tide pearls");
+            }
+
+            // The boss holds the last floor's way out until it falls; its drops land where it died.
+            if (site.Def.Boss.IsValid && site.Def.Floors == 1)
+            {
+                var boss = site.Boss;
+                Assert.IsNotNull(boss, "boss never spawned");
+                Assert.AreEqual(600f, boss.MaxHealth, 0.01f, "Hermit Colossus HP");
+                var exits = floor.Portals.Count(p => p.Kind == Isle.Gameplay.Dungeons.DungeonDirector.DoorKind.Exit);
+                var bossAt = boss.Position;
+                CreatureDirector.Instance.Damage(boss, 100000f, new System.Collections.Generic.List<(NamespacedId, int)>());
+                yield return WaitUntil(() => site.BossDefeated, 2f, "boss death never registered");
+                Assert.AreEqual(exits + 1, floor.Portals.Count(p => p.Kind == Isle.Gameplay.Dungeons.DungeonDirector.DoorKind.Exit), "no way out opened in the boss room");
+                var pile = LootPiles.Nearest(bossAt, 1.5f);
+                Assert.IsNotNull(pile, "boss dropped nothing");
+                Assert.IsTrue(pile.Items.Any(i => i.Item.Id.Value == "isle:tide_sigil"), "no sigil in the boss drop");
+                Assert.AreEqual(3, pile.Items.Where(i => i.Item.Id.Value == "isle:tide_pearl").Sum(i => i.Count), "boss pearls");
+            }
 
             var up = floor.Portals.First(p => p.Kind == Isle.Gameplay.Dungeons.DungeonDirector.DoorKind.Exit);
             Teleport(player, up.Position);

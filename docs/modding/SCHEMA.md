@@ -517,3 +517,14 @@ Two directories, kept apart because the loader reads each one recursively: `defi
 | `dungeons` | Optional dungeon ids; omit = usable in every dungeon |
 | `rows` | 20 strings of 20 chars, top row first. `#` wall, `.` floor, `S` spawn, `C` chest, `K` key spot, `X` feature (stairs/exit/boss), `F` campfire, `,` decor. The centre tile must be floor. Templates are rotated/mirrored per seed; doorways are carved on top |
 
+### Tides, bosses, dungeon creatures (T-202)
+
+| Type | Field | Meaning |
+|---|---|---|
+| Dungeon | `boss` | Creature id placed in the last floor's boss room; the exit opens when it dies |
+| Dungeon | `tides` `{cycle_hours, high_at_hour, flooded_share, swim_speed, cache {item, min, max}}` | Tidal floors: hours between high tides, hour of a peak, share of rooms that flood, swim speed multiplier, the low-tide cache's contents |
+| Creature | `habitat` | `water`: only in flooded dungeon water, hidden when it drains |
+| Creature | `group_size` | Creatures per dungeon spawn mark (a swarm) |
+| Creature | `boss` `{sweep_radius_tiles, shell {below_health, seconds, every_seconds, damage_mult}, drops [{item, count}]}` | Sweep strike hits every player in range; shell phase below a health share; guaranteed drops as a loot pile |
+| Item | `icon_style.shape` | adds `pearl`, `sigil` |
+

@@ -25,6 +25,38 @@ namespace Isle.Data
 
         /// <summary>The obstacle in front of each floor's vault.</summary>
         public DungeonGate Gate { get; init; }
+
+        /// <summary>The creature waiting in the last floor's boss room; it never returns once killed.</summary>
+        public NamespacedId Boss { get; init; }
+
+        /// <summary>Tidal Grotto's signature mechanic (SYS-DUNG-01, T-202); null = no tides.</summary>
+        public DungeonTides Tides { get; init; }
+    }
+
+    /// <summary>SYS-DUNG-01 §Tidal Grotto: the in-game clock floods part of each floor twice a day.</summary>
+    public sealed class DungeonTides
+    {
+        /// <summary>Hours from one high tide to the next (2 a day = 12).</summary>
+        public float CycleHours { get; init; } = 12f;
+
+        /// <summary>Hour of day of a high-tide peak; the water is up for the half cycle around it.</summary>
+        public float HighAtHour { get; init; } = 6f;
+
+        /// <summary>Share of the rooms that can flood (entrance, rest and boss rooms never do).</summary>
+        public float FloodedShare { get; init; } = 0.5f;
+
+        /// <summary>Movement multiplier while swimming.</summary>
+        public float SwimSpeed { get; init; } = 0.6f;
+
+        /// <summary>The low-tide cache, one per floor, in a room that floods.</summary>
+        public DungeonCache Cache { get; init; }
+    }
+
+    public sealed class DungeonCache
+    {
+        public NamespacedId Item { get; init; }
+        public int Min { get; init; } = 1;
+        public int Max { get; init; } = 1;
     }
 
     public sealed class DungeonEntrance
