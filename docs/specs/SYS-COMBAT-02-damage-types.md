@@ -1,8 +1,16 @@
 # SYS-COMBAT-02 · Damage types and hit shapes
 
-Status: **design draft, 2026-10-06** — developer direction: "국자, 뒤집개, 식칼 등 다양한 데미지 및 피격 판정이 있어.
-둔탁함, 날카로움 등 다양한 피해 종류도 있어." Extends SYS-COMBAT-01 (its Power and Damage formulas stay). Numbers
-are **open** (❓) unless they already exist in SYS-COMBAT-01.
+Status: **design, numbers decided 2026-10-06** (Q&A with the developer) — developer direction: "국자, 뒤집개, 식칼 등 다양한 데미지 및 피격 판정이 있어.
+둔탁함, 날카로움 등 다양한 피해 종류도 있어." Extends SYS-COMBAT-01 (its Power and Damage formulas stay). Numbers come from SYS-COMBAT-01 or the **Decided values** table below, which supersedes any ❓ left in the text.
+
+## Decided values (developer Q&A, 2026-10-06)
+| Constant | Value |
+|---|---|
+| Typical resist / weakness | **×0.5 / ×1.5** (a def may still set any multiplier) |
+| `PierceBypass` | **0.40** — pierce ignores 40% of the target's pierce armor |
+| Bleed / burn / poison | **8% of the hit's power per second, 4 s**; poison stacks up to **3** |
+| Stagger → stun | **3 blunt hits within the combo window → 1.0 s stun** |
+| Food resistances | **yes** — buff effect `damage_resist {type, value}`; the value is set **per dish/buff def** (no global number) |
 
 ## Purpose
 Make *which* weapon you bring matter, not just how strong it is: a ladle and a cleaver at the same power play
@@ -69,8 +77,7 @@ Weapon/artifact defs: `attacks[]`. Creature defs: `resist{type: mult}`, `weak_po
 creature attack's `type` and `shape`. Armor items: `armor{type: value}`. Buff defs gain the side-effect statuses.
 
 ## Open questions (developer)
-- ❓ Every multiplier and status number above.
-- ❓ Do players get typed resistances from food buffs (cook synergy, e.g. a stew that halves toxic)?
+- None left for the system. Per-creature resist tables and per-buff resist values are content, set with each def.
 
 ## Verification (to write as tests when built)
 | # | Case | Expected |

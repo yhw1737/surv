@@ -6,6 +6,14 @@
 ## Header
 
 - Last updated: **2026-10-06**
+- **2026-10-07 — endgame numbers decided (Q&A with the developer).** Every system-level ❓ in SYS-COMBAT-02,
+  SYS-DUNG-01, SYS-ART-02 and SYS-END-01 now has a value in each spec's **Decided values** table (damage resist ×0.5/×1.5,
+  pierce bypass 40%, DoT 8%/s for 4 s, 3 blunt hits → 1 s stun; dungeon floors 1/2/3/3/3, 6×6 grid of 8–12 rooms,
+  3-day repopulation, no re-roll, soft gates Lv 10/20/30 at 3 s vs 30 s; Abyss curse +25% enemies / −15% light per
+  missing sigil, pressure −15% per floor; attunement 15/25/40, one weapon artifact + any gear, 2–3 caches per island,
+  2% elite drop; Signal 5 nights, Home 20 days, Crown 3 days, Unrest = top ending's progress %, Adrift 40/+30/+20,
+  sandbox after an ending, absent members credited on next join, 20–30 s sequence). Still open: per-artifact ability
+  numbers, which creatures are elites, Adrift's "enough food and water", ending shot lists.
 - **2026-10-06 — developer decisions on the endgame drafts:** one ending per island; everyone on the island sees the
   ending and is credited the same ending; artifacts may appear more than once per island; endings play as a short
   scripted sequence + run summary text. Written into SYS-END-01 / SYS-ART-02.

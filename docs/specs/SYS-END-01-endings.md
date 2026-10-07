@@ -1,7 +1,7 @@
 # SYS-END-01 · Multiple endings
 
-Status: **design draft, 2026-10-06** — developer direction: "다중 엔딩으로 하자. 섬 탈출, 비밀 풀기(보스 처치) 등 여러
-경우의 수 (림월드처럼)." Structure is decided; every number is **open** (marked ❓) until the developer sets it.
+Status: **design, numbers decided 2026-10-06** (Q&A with the developer) — developer direction: "다중 엔딩으로 하자. 섬 탈출, 비밀 풀기(보스 처치) 등 여러
+경우의 수 (림월드처럼)." The **Decided values** table below supersedes any ❓ left in the text.
 
 **Decided by the developer (2026-10-06, second pass):**
 - **One ending per island.** Once an island reaches an ending, no further ending can be reached on it.
@@ -9,6 +9,18 @@ Status: **design draft, 2026-10-06** — developer direction: "다중 엔딩으�
   the same ending** — whoever triggered it.
 - **Presentation:** a **short scripted sequence**, then the **run summary as text**.
 Supersedes GDD §World "Goals are achievements, not bosses" (see GDD scope note, 2026-10-06).
+
+## Decided values (developer Q&A, 2026-10-06)
+| Constant | Value |
+|---|---|
+| The Signal | keep the beacon lit **5 nights** |
+| Home | self-sufficiency **20 days** (the GDD's original goal) |
+| Crown of the Deep | survive the backlash **3 days** |
+| Unrest | **= progress % of the most advanced ending** (0–100); storm frequency **×(1 + Unrest/100)** → ×2 at the top; creature aggression **+50% × Unrest/100** |
+| Adrift odds | base **40%**, **+30%** with enough food and water aboard, **+20%** in clear weather (max 90%); failure is its own ending ("lost at sea") |
+| After an ending | the island stays playable as a **sandbox** (no further endings); escape endings offer "stay a while longer" |
+| Absent members | see the ending sequence on their **next join** and are credited the same ending |
+| Sequence length | **20–30 s**, skippable, then the run summary text |
 
 ## Purpose
 Give a survival sandbox a reason to push forward without forcing one path. Like RimWorld's ship launch, archonexus
@@ -74,11 +86,8 @@ profession and top skill. Shown on every ending.
 - Save: per-world ending progress + Unrest; per-profile unlocked endings (separate file).
 
 ## Open questions (developer)
-- ❓ Every count/duration above (nights for The Signal, days for Home and Crown, Unrest weights and band effects).
-- ❓ Adrift outcome odds: provisions/weather → rescued vs lost.
-- ❓ After an ending: does the island stay playable as a sandbox (no further endings), or close?
-- ❓ Players who belong to the island but aren't connected when the ending happens — credited on their next join, or not?
-- ❓ Length and shot list of each ending sequence.
+- What "enough food and water" means for Adrift — set with the raft recipe (T-208).
+- Shot list of each ending sequence — written when each ending is built.
 
 ## Verification (to write as tests when built)
 | # | Case | Expected |
