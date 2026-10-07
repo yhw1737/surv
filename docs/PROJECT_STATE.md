@@ -6,7 +6,7 @@
 ## Header
 
 - Last updated: **2026-10-06**
-- **2026-10-07 — T-200 damage types and hit shapes.** Branch `feature/T-200-damage-types` off `main`.
+- **2026-10-07 — T-200 damage types and hit shapes.** Branch `feature/T-200-damage-types` — [PR #34](https://github.com/yhw1737/surv/pull/34).
   SYS-COMBAT-02 built: `DamageTypes` (typed damage, 40% pierce bypass, per-type armor), `HitShapes` (arc/thrust/smash/
   sweep/line), `WeaponAttacks` (combo step → attack; old defs = one arc), `CombatStatus` (bleed/burn/poison 8%/s for
   4 s, poison ×3, three blunt hits in the window → 1 s stun). Creatures take typed damage with their `resist` table,
