@@ -6,7 +6,7 @@
 ## Header
 
 - Last updated: **2026-10-07**
-- **2026-10-07 — T-165 visible status effects.** Branch `feature/T-165-status-visuals` off `main` (after PR #36), **uncommitted**. Developer request: debuffs readable on the body, for players and creatures.
+- **2026-10-07 — T-165 visible status effects.** Branch `feature/T-165-status-visuals` off `main` (after PR #36) — [PR #37](https://github.com/yhw1737/surv/pull/37). Developer request: debuffs readable on the body, for players and creatures.
   Built: `UI/Art/StatusLook.cs` (pure: tint — hit red 0.15 s > burn orange flicker > poison green > cold blue; shiver,
   pant, hunch as vertex moves; looping time-driven particles — water/blood drops, poison bubbles, flames + smoke,
   sweat), `VectorMesh.TintFrom/MoveFrom/VertexCount/ColourAt`, `StickFigureView.DrawStatus` (reads `Vitals`: DoT stacks,
