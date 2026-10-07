@@ -492,3 +492,28 @@ No block means the item isn't drawn on the figure. An unknown style falls back t
 | Item | `icon_style` `{shape, color, accent}` | Inventory icon drawing: `log rock fiber pelt steak fish berries seeds coconut rotten arrow kit`. Not needed with `hold`/`wear` |
 | Cook method | `icon_style` `{shape}` | Vessel dishes are drawn in: `bowl skewer strips plate` |
 | Creature | `look` `{body, color, accent, belly, ears, tail, gait, tusks, antlers, body_length, body_height, leg_length, head_size}` | Cartoon figure: `body` is `quadruped reptile snake crab bird frog turtle`; proportions in tiles at the mean weight |
+
+### Dungeons (T-201, SYS-DUNG-01)
+
+Two directories, kept apart because the loader reads each one recursively: `definitions/dungeons/` and
+`definitions/dungeon_rooms/`.
+
+**Dungeon** (`DungeonDef`) — one entrance is placed per def on every island.
+
+| Field | Meaning |
+|---|---|
+| `danger` | 1–4 (★). Sets locks per floor (1/1/2/2) and the soft-gate skill level (10/20/30) |
+| `floors` | Floors; the last one ends in the boss room |
+| `entrance` `{biome, shape, color, size}` | Island biome id (`isle:coast`/`forest`/`marsh`; omit = any land), placeholder shape, colour, size in tiles |
+| `floor_color`, `wall_color` | Placeholder tile colours |
+| `creatures` | Creature ids cycled over the spawn marks of combat/key/stairs rooms |
+| `gate` `{name, skill, shape, color}` | The vault's soft gate: name key, the production skill that clears it fast, placeholder look |
+
+**Room template** (`RoomTemplateDef`)
+
+| Field | Meaning |
+|---|---|
+| `tags` | Room kinds it can fill: `entrance combat rest key vault stairs boss` |
+| `dungeons` | Optional dungeon ids; omit = usable in every dungeon |
+| `rows` | 20 strings of 20 chars, top row first. `#` wall, `.` floor, `S` spawn, `C` chest, `K` key spot, `X` feature (stairs/exit/boss), `F` campfire, `,` decor. The centre tile must be floor. Templates are rotated/mirrored per seed; doorways are carved on top |
+

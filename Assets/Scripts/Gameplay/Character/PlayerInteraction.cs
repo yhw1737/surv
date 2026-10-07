@@ -334,6 +334,7 @@ namespace Isle.Gameplay.Character
             if (IsDead) return;
             var world = IslandWorld.Instance;
             if (world == null) return;
+            if (Dungeons.DungeonDirector.Instance != null && Dungeons.DungeonDirector.Instance.TryInteract(this)) return;
 
             var pile = LootPiles.Nearest(transform.position, ReachTiles);
             if (pile != null && TryGetComponent<InventoryNetwork>(out var bagOwner))

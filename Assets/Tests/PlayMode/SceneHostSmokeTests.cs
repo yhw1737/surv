@@ -82,6 +82,7 @@ namespace Isle.Tests.PlayMode
             // Same session: FishNet can't re-initialise SampleScene's placed Campfire on a second load, so the
             // gameplay flow runs here rather than in its own test.
             yield return GatherCraftDrinkHunt();
+            yield return EnterClearAndLeaveADungeon();
         }
 
         /// <summary>Drives the real ServerRpc paths on the host: harvest a tree and a rock, craft a spear from
@@ -310,6 +311,53 @@ namespace Isle.Tests.PlayMode
             player.RequestInteract();
             yield return WaitUntil(() => LootPiles.All.Count == 0, 3f, "pile never picked up");
             Assert.AreEqual(1, CountOf(inventory, "isle:stone_spear"), "spear not recovered from the pile");
+        }
+
+        /// <summary>SYS-DUNG-01 (T-201): walk into an entrance, take each lock's key and see the door open, clear the
+        /// vault's soft gate as a specialist, then leave by the entrance stairs.</summary>
+        IEnumerator EnterClearAndLeaveADungeon()
+        {
+            var player = FindLocalPlayer();
+            var world = IslandWorld.Instance;
+            var dungeons = Isle.Gameplay.Dungeons.DungeonDirector.Instance;
+            Assert.IsNotNull(dungeons, "DungeonDirector not installed");
+            yield return WaitUntil(() => dungeons.Sites.Count > 0, 5f, "no dungeon entrance placed");
+            var site = dungeons.Sites.FirstOrDefault(s => s.Def.Id.Value == "isle:tidal_grotto") ?? dungeons.Sites[0];
+            Assert.IsTrue(world.IsWalkable(site.Entrance), "entrance placed off land");
+
+            Teleport(player, site.Entrance + Vector2.down);
+            player.RequestInteract();
+            yield return WaitUntil(() => dungeons.IsUnderground(player.transform.position), 3f, "never went down");
+            var floor = dungeons.FloorAt(player.transform.position);
+            Assert.IsTrue(world.IsWalkable(player.transform.position), "landed on a wall");
+
+            foreach (var barrier in floor.Barriers.Where(b => b.LockId >= 0))
+            {
+                Assert.IsFalse(world.IsWalkable(barrier.Position), "a locked door can be walked through");
+                var key = floor.Keys.First(k => k.LockId == barrier.LockId);
+                Teleport(player, key.Position);
+                player.RequestInteract();
+                yield return WaitUntil(() => barrier.Open, 3f, "taking the key never opened its door");
+                Assert.IsTrue(world.IsWalkable(barrier.Position), "opened door still blocks");
+            }
+
+            var gate = floor.Barriers.Single(b => b.LockId < 0);
+            var skill = site.Def.Gate.Skill;
+            player.Skills.Restore(skill, Isle.Gameplay.Skills.XpCurve.TotalXpTo(50));
+            var edge = floor.Layout.Edges[gate.Edge];
+            var a = floor.Layout.Rooms[edge.A].Cell;
+            var b2 = floor.Layout.Rooms[edge.B].Cell;
+            var door = Isle.World.Generation.DungeonTiles.DoorwayCentre(a, b2);
+            var stand = a.Y == b2.Y ? new Isle.Core.Vec2Int(door.X + 1, door.Y) : new Isle.Core.Vec2Int(door.X, door.Y + 1);
+            Teleport(player, floor.TileToWorld(stand));
+            player.RequestInteract();
+            yield return WaitUntil(() => gate.Open, 8f, "specialist never cleared the soft gate");
+
+            var up = floor.Portals.First(p => p.Kind == Isle.Gameplay.Dungeons.DungeonDirector.DoorKind.Exit);
+            Teleport(player, up.Position);
+            player.RequestInteract();
+            yield return WaitUntil(() => !dungeons.IsUnderground(player.transform.position), 3f, "never came back up");
+            Assert.Less(Vector2.Distance(player.transform.position, site.Entrance), 4f, "didn't surface at the entrance");
         }
 
         IEnumerator HarvestNearest(PlayerInteraction player, IslandWorld world, string defId)

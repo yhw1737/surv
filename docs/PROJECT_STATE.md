@@ -5,7 +5,17 @@
 
 ## Header
 
-- Last updated: **2026-10-06**
+- Last updated: **2026-10-07**
+- **2026-10-07 — T-201 dungeon generator + underground layer.** Branch `feature/T-201-dungeon-generator` off `main`
+  (after PR #34), **uncommitted**. Developer decisions: rest room 1 per floor; locks 1/1/2 by danger; rooms 20×20 tiles;
+  new giant-tree / sinkhole entrance landmarks. Built: `DungeonGenerator` (6×6 grid, 8–12 rooms, lock-and-key, rest,
+  soft-gated vault), `DungeonTiles` (templates stamped/rotated, doorways carved), `DungeonDirector` (entrances on the
+  island, floors built on first entry in a far region at world 2000+, stairs/exit, keys open locked doors, soft gate 3 s
+  specialist vs 30 s + noise, placeholder creatures via `CreatureDirector.SpawnAt`), `DungeonDef`/`RoomTemplateDef`,
+  4 dungeon defs + 10 room templates, 13 new placeholder shapes, en/ko keys, SCHEMA section. **Verified:** EditMode
+  585/585 (+10 `DungeonGeneratorTests`, incl. 1,000-seed connectivity/keys and real-template reachability), PlayMode 3/3
+  (SceneHost now enters a dungeon, takes each key, clears the soft gate, leaves); entrance/room/floor rendered to PNG.
+  Not yet: bosses, chest loot, dungeon save state, fog/minimap underground.
 - **2026-10-07 — T-200 damage types and hit shapes.** Branch `feature/T-200-damage-types` — [PR #34](https://github.com/yhw1737/surv/pull/34).
   SYS-COMBAT-02 built: `DamageTypes` (typed damage, 40% pierce bypass, per-type armor), `HitShapes` (arc/thrust/smash/
   sweep/line), `WeaponAttacks` (combo step → attack; old defs = one arc), `CombatStatus` (bleed/burn/poison 8%/s for
@@ -1848,6 +1858,16 @@ since it's server-side gauge math with no UI yet:
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-10-07 — T-201 implementation choices
+  Developer-decided: rooms 20×20, rest 1/floor, locks 1/1/2. [invented]: on the boss floor the rest room hangs off the
+  room before the boss; locks never on the entrance room's door; each dungeon's placeholder creature list (existing
+  creatures) and gate skill (Grotto fishing, Hollow gathering, Temple crafting, Ruin enchanting); underground region
+  origin 2000 / spacing 200; entrance placement (biome match, farthest-point spread, sampled every 8 tiles); arrival
+  2 tiles off a door; clearing cancels beyond 2 tiles; noise wakes within 25 tiles is the spec's "loud" made concrete
+  (25 is invented); safe rooms (entrance, rest, vault, boss) get no spawns; floor look (8 px/tile flagstones, ink
+  wall edges); room template layouts. Template dir `dungeon_rooms/` instead of the spec's `dungeons/rooms/`
+  (recursive loader). Dungeon state is not saved yet; no fog/minimap underground; Abyss deferred to T-204.
 
 - ### 2026-10-07 — T-200 content choices
   Which creature resists which type and each creature's strike type, and every weapon's per-step shape/size/type

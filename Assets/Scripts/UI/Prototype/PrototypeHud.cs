@@ -272,6 +272,14 @@ namespace Isle.UI.Prototype
                 return prompts;
             }
 
+            var dungeon = Isle.Gameplay.Dungeons.DungeonDirector.Instance?.Prompt(player);
+            if (dungeon != null)
+            {
+                var clearing = Isle.Gameplay.Dungeons.DungeonDirector.Instance.IsClearing(player);
+                prompts.Add((dungeon.Value.At, clearing ? null : "E", dungeon.Value.Text));
+                return prompts;
+            }
+
             var pile = LootPiles.Nearest(position, PlayerInteraction.ReachTiles);
             if (pile != null) prompts.Add((pile.Position + Vector2.up * 0.7f, "E", Lang.Get("@ui.pick_up")));
 

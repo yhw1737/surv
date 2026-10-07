@@ -14,6 +14,9 @@ Status: **design, numbers decided 2026-10-06** (Q&A with the developer) — deve
 | Soft-gate times | specialist **3 s**; anyone **30 s** plus the obstacle's risk (noise, wet/cold, damage…) |
 | Abyss curse | per missing sigil: **+25% enemies, −15% light radius** (all four missing: ×2 enemies, 40% light) |
 | Abyss pressure | stamina regen **−15% per floor** (55% on floor 3) |
+| Room size | **20×20 tiles** per grid cell (decided 2026-10-07) |
+| Rest rooms | **1 per floor** (decided 2026-10-07) |
+| Locked doors per floor | **1 / 1 / 2** for ★ / ★★ / ★★★ and up (decided 2026-10-07) |
 | Root walls / clockwork rooms / antidote | regrow **5 min** · rotate **every 30 s** · immunity **5 min** (real time) |
 
 ## Purpose
@@ -40,7 +43,7 @@ fewer make it a dare.
 - Algorithm: random walk carves the **main path** entrance → stairs/boss; side branches hang off it; a
   **lock-and-key pass** places each key on a branch *before* its door on the main path (always solvable); one
   treasure vault per floor behind a soft gate; one rest room (safe, campfire spot) every ❓ rooms.
-- Rooms are **templates from JSON** (`definitions/dungeons/rooms/*.json`): tile layout, tags (`combat trap puzzle
+- Rooms are **templates from JSON** (`definitions/dungeon_rooms/*.json`): tile layout, tags (`combat trap puzzle
   treasure rest soft_gate boss`), spawn points, allowed dungeons; rotated/mirrored for variety. **Mods add rooms.**
 - Same seed → same dungeons (save stores only cleared state, opened doors, looted chests).
 
@@ -81,12 +84,12 @@ types and resistances, so weapon choice matters (crabs and automatons resist sla
 
 ## I/O
 `definitions/dungeons/*.json` — dungeon defs (biome, entrance landmark, floors, room tags, creature tables, boss,
-loot tables, artifact pool, sigil, materials, signature mechanic params). `definitions/dungeons/rooms/*.json` — room
-templates. Save: per-world dungeon state.
+loot tables, artifact pool, sigil, materials, signature mechanic params). `definitions/dungeon_rooms/*.json` — room
+templates (a sibling directory: the loader reads each directory recursively). Save: per-world dungeon state.
 
 ## Open questions (developer)
-- Underground layer as a separate scene vs a far-away region of the same world — an implementation choice, decided
-  when T-201 starts (a region is simpler for FishNet).
+- ~~Underground layer: separate scene vs far region~~ — **decided at T-201: a far region of the same world** (see
+  §Implementation).
 
 ## Verification (to write as tests when built)
 | # | Case | Expected |
@@ -95,3 +98,22 @@ templates. Save: per-world dungeon state.
 | 2 | Same seed twice | identical floors |
 | 3 | Each soft gate, solo, no specialist | passable via the slow path |
 | 4 | Abyss with 0 sigils | gate opens, 4 curses active |
+
+## Implementation (T-201, 2026-10-07)
+
+| Piece | Where | Notes |
+|---|---|---|
+| Floor graph | `World/Generation/DungeonGenerator.cs` | Self-avoiding walk for the main path; locks on main-path doors (never the first); each key on a branch off a main room at or before its lock; rest room (boss floor: off the room before the boss); one soft-gated vault; combat rooms fill to 8–12. Retries up to 200 layouts per seed |
+| Tiles | `World/Generation/DungeonTiles.cs` | 120×120 tiles per floor (6×6 cells × 20). Templates picked by room-kind tag, rotated/mirrored; 3-tile doorways with a 4-tile corridor each way, plus a carved line to each room centre so no template seals a door. Built-in fallback template when JSON has none |
+| Runtime | `Gameplay/Dungeons/DungeonDirector.cs` | Server-side. Places one entrance per dungeon def (biome match, spread out, seed-deterministic), builds each floor on first entry, runs stairs/exit portals, keys → locked doors, the soft gate, creature spawns |
+| Underground layer | world region | Floor *f* of site *s* sits at world (2000 + 200·s, 2000 + 200·f). `IslandWorld.ExtraWalkable` asks the director first; outside a floor the island rules apply |
+| Content | `definitions/dungeons/`, `definitions/dungeon_rooms/` | 4 dungeon defs (Abyss is T-204), 10 room templates |
+
+**Soft gate:** E at the gate starts clearing — 3 s if the player's `gate.skill` level ≥ 10/20/30 (by danger),
+otherwise 30 s and every dungeon creature within 25 tiles is woken (prey flees). Moving more than 2 tiles cancels.
+
+**Not yet (later tasks):** bosses (boss room ends in an exit portal to the surface until T-202), signature mechanics,
+loot in chests (T-205), save of dungeon state (floors regenerate identically from the seed; opened doors and taken
+keys are lost on reload), repopulation, own fog/minimap page, dying-underground rules. Dungeon creatures are existing
+creatures as placeholders (`creatures` list per def) until the new defs are written.
+

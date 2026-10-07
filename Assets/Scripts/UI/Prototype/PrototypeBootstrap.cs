@@ -50,6 +50,8 @@ namespace Isle.UI.Prototype
             root.AddComponent<IslandWorld>();
             root.AddComponent<SaveGame>().Begin(pending);
             root.AddComponent<CreatureDirector>();
+            root.AddComponent<Isle.Gameplay.Dungeons.DungeonDirector>();
+            Isle.Gameplay.Dungeons.DungeonDirector.Localize = Lang.Get;
             root.AddComponent<Isle.Gameplay.Combat.Projectiles>();
             root.AddComponent<CampfireSpawner>();
             root.AddComponent<DayNightLight>();
