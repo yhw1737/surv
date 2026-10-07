@@ -1,0 +1,25 @@
+{
+  "id": "isle:drowned_temple",
+  "name": "@dungeon.drowned_temple",
+  "danger": 3,
+  "floors": 3,
+  "entrance": {
+    "biome": "isle:marsh",
+    "shape": "sinkhole",
+    "color": "#3F4A34",
+    "size": 2.6
+  },
+  "floor_color": "#5E6A55",
+  "wall_color": "#20261B",
+  "creatures": [
+    "isle:snake",
+    "isle:frog",
+    "isle:crocodile"
+  ],
+  "gate": {
+    "name": "@gate.rusted_portcullis",
+    "skill": "isle:crafting",
+    "shape": "gate_bars",
+    "color": "#8A5A3C"
+  }
+}

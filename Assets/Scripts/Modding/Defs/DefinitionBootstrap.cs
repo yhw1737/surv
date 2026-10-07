@@ -33,6 +33,8 @@ namespace Isle.Modding.Defs
             DefRegistry.Register(defs.Skills);
             DefRegistry.Register(defs.Buffs);
             DefRegistry.Register(defs.WorldObjects);
+            DefRegistry.Register(defs.Dungeons);
+            DefRegistry.Register(defs.Rooms);
             DefRegistry.Freeze();
 
             return errors;
@@ -56,6 +58,8 @@ namespace Isle.Modding.Defs
             DefRegistry.Reload(defs.Skills);
             DefRegistry.Reload(defs.Buffs);
             DefRegistry.Reload(defs.WorldObjects);
+            DefRegistry.Reload(defs.Dungeons);
+            DefRegistry.Reload(defs.Rooms);
 
             return errors;
         }
@@ -76,6 +80,8 @@ namespace Isle.Modding.Defs
                 Skills = DefinitionLoader.LoadAll<SkillDef>(Path.Combine(contentRoot, "skills")),
                 Buffs = DefinitionLoader.LoadAll<BuffDef>(Path.Combine(contentRoot, "buffs")),
                 WorldObjects = DefinitionLoader.LoadAll<WorldObjectDef>(Path.Combine(contentRoot, "world_objects")),
+                Dungeons = DefinitionLoader.LoadAll<DungeonDef>(Path.Combine(contentRoot, "dungeons")),
+                Rooms = DefinitionLoader.LoadAll<RoomTemplateDef>(Path.Combine(contentRoot, "dungeon_rooms")),
             };
 
             ReferenceResolver.ResolveItemRefs(defs.Items, defs.Recipes, defs.Enchants, defs.Creatures, defs.Fish, defs.Crops, defs.CookMethods);
@@ -85,7 +91,7 @@ namespace Isle.Modding.Defs
                      {
                          defs.Items, defs.Creatures, defs.Fish, defs.CookMethods, defs.Recipes,
                          defs.Weapons, defs.Artifacts, defs.Enchants, defs.Crops, defs.Skills, defs.Buffs,
-                         defs.WorldObjects
+                         defs.WorldObjects, defs.Dungeons, defs.Rooms
                      })
                 errors.AddRange(result.Errors);
 
@@ -106,6 +112,8 @@ namespace Isle.Modding.Defs
             public LoadResult<SkillDef> Skills;
             public LoadResult<BuffDef> Buffs;
             public LoadResult<WorldObjectDef> WorldObjects;
+            public LoadResult<DungeonDef> Dungeons;
+            public LoadResult<RoomTemplateDef> Rooms;
         }
     }
 }

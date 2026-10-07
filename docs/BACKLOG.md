@@ -412,7 +412,8 @@ Stage 4. Nothing here is a prerequisite for anything above it; that is the whole
 
 - [x] **T-200** Fill SYS-COMBAT-02 numbers → damage types, resistances, hit shapes (`attacks[]`) on existing weapons/creatures
   > **2026-10-07**: done — typed damage, per-type armor, shapes per combo step, bleed/burn/poison, blunt stun on creatures, food resistance; player stun deferred. See SYS-COMBAT-02 §Implementation.
-- [ ] **T-201** Fill SYS-DUNG-01 numbers → dungeon generator (room graph, lock-and-key, room templates JSON) + underground layer
+- [x] **T-201** Fill SYS-DUNG-01 numbers → dungeon generator (room graph, lock-and-key, room templates JSON) + underground layer
+  > **2026-10-07**: done — generator, 10 room templates, 4 dungeon defs with island entrances, underground region, stairs, keys/locks, soft gates, placeholder creatures. No bosses, loot or dungeon save yet. See SYS-DUNG-01 §Implementation.
 - [ ] **T-202** Tidal Grotto (first dungeon: tides by clock, soft gates, Hermit Colossus)
 - [ ] **T-203** Rootwood Hollow, Drowned Temple, Clockwork Ruin
 - [ ] **T-204** The Abyss (sigils, curses, three floors, Abyss Warden)

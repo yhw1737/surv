@@ -1,0 +1,25 @@
+{
+  "id": "isle:tidal_grotto",
+  "name": "@dungeon.tidal_grotto",
+  "danger": 1,
+  "floors": 1,
+  "entrance": {
+    "biome": "isle:coast",
+    "shape": "sea_cave",
+    "color": "#3E5F72",
+    "size": 2.6
+  },
+  "floor_color": "#7E95A0",
+  "wall_color": "#24343E",
+  "creatures": [
+    "isle:crab",
+    "isle:crab",
+    "isle:snake"
+  ],
+  "gate": {
+    "name": "@gate.flooded_channel",
+    "skill": "isle:fishing",
+    "shape": "gate_water",
+    "color": "#3F86C2"
+  }
+}

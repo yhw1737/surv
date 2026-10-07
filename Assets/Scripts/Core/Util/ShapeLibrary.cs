@@ -31,6 +31,8 @@ namespace Isle.Core.Util
         {
             "tree", "palm", "rock", "bush", "grass", "water", "rabbit", "deer", "boar", "crocodile",
             "campfire", "crate", "warehouse", "workbench", "pot", "rack", "rain_catcher", "plot", "sack",
+            "sea_cave", "giant_tree", "sinkhole", "ruin_gate", "stairs_down", "stairs_up", "key", "locked_door",
+            "gate_water", "gate_roots", "gate_bars", "gate_runes", "chest",
         };
 
         /// <summary>A sprite one world unit across at scale 1, cached per (shape, colour).</summary>
@@ -233,6 +235,91 @@ namespace Isle.Core.Util
                     canvas.Ellipse(0.5f, 0.38f, 0.34f, 0.3f, c);
                     canvas.Tri(0.38f, 0.62f, 0.62f, 0.62f, 0.5f, 0.82f, c);
                     canvas.Rect(0.42f, 0.62f, 0.58f, 0.67f, dark);
+                    break;
+                // --- SYS-DUNG-01: entrances, stairs and obstacles ---------------------------------------------
+                case "sea_cave":
+                    canvas.Ellipse(0.5f, 0.32f, 0.46f, 0.28f, dark);
+                    canvas.Tri(0.08f, 0.1f, 0.5f, 0.86f, 0.92f, 0.1f, c);
+                    canvas.Tri(0.62f, 0.1f, 0.78f, 0.62f, 0.92f, 0.1f, light);
+                    canvas.Ellipse(0.5f, 0.24f, 0.2f, 0.18f, new Color(0.06f, 0.06f, 0.08f));
+                    canvas.Inked = false;
+                    canvas.Ellipse(0.5f, 0.1f, 0.24f, 0.05f, Water);
+                    canvas.Inked = true;
+                    break;
+                case "giant_tree":
+                    canvas.Tri(0.2f, 0.04f, 0.8f, 0.04f, 0.5f, 0.24f, Bark);
+                    canvas.Rect(0.34f, 0.04f, 0.66f, 0.62f, Bark);
+                    canvas.Ellipse(0.5f, 0.2f, 0.11f, 0.15f, new Color(0.06f, 0.05f, 0.04f));
+                    canvas.Circle(0.26f, 0.72f, 0.2f, Color.Lerp(c, Color.black, 0.2f));
+                    canvas.Circle(0.74f, 0.72f, 0.2f, Color.Lerp(c, Color.black, 0.2f));
+                    canvas.Circle(0.5f, 0.8f, 0.24f, c);
+                    canvas.Inked = false;
+                    canvas.Circle(0.42f, 0.86f, 0.07f, light);
+                    canvas.Inked = true;
+                    break;
+                case "sinkhole":
+                    canvas.Ellipse(0.5f, 0.32f, 0.46f, 0.24f, c);
+                    canvas.Ellipse(0.5f, 0.3f, 0.34f, 0.16f, dark);
+                    canvas.Ellipse(0.5f, 0.28f, 0.22f, 0.09f, new Color(0.05f, 0.06f, 0.05f));
+                    canvas.Line(0.12f, 0.42f, 0.2f, 0.6f, 0.02f, light);
+                    canvas.Line(0.84f, 0.4f, 0.8f, 0.58f, 0.02f, light);
+                    break;
+                case "ruin_gate":
+                    canvas.Rect(0.12f, 0.04f, 0.3f, 0.74f, c);
+                    canvas.Rect(0.7f, 0.04f, 0.88f, 0.66f, c);
+                    canvas.Rect(0.08f, 0.66f, 0.92f, 0.78f, light);
+                    canvas.Rect(0.3f, 0.04f, 0.7f, 0.5f, new Color(0.07f, 0.06f, 0.06f));
+                    canvas.Line(0.16f, 0.3f, 0.26f, 0.36f, 0.01f, dark);
+                    break;
+                case "stairs_down":
+                case "stairs_up":
+                    for (var i = 0; i < 4; i++)
+                        canvas.Rect(0.18f + i * 0.04f, 0.1f + i * 0.14f, 0.82f - i * 0.04f, 0.22f + i * 0.14f, Color.Lerp(c, shape == "stairs_down" ? Color.black : Color.white, i * 0.16f));
+                    break;
+                case "key":
+                    canvas.Circle(0.36f, 0.6f, 0.16f, c);
+                    canvas.Inked = false;
+                    canvas.Circle(0.36f, 0.6f, 0.07f, new Color(0, 0, 0, 0.6f));
+                    canvas.Inked = true;
+                    canvas.Rect(0.48f, 0.55f, 0.86f, 0.64f, c);
+                    canvas.Rect(0.72f, 0.42f, 0.78f, 0.56f, c);
+                    canvas.Rect(0.82f, 0.44f, 0.86f, 0.56f, c);
+                    break;
+                case "locked_door":
+                    canvas.Rect(0.08f, 0.04f, 0.92f, 0.86f, Wood);
+                    for (var i = 0; i < 4; i++) canvas.Rect(0.16f + i * 0.2f, 0.04f, 0.24f + i * 0.2f, 0.86f, Color.Lerp(Wood, Color.black, 0.3f));
+                    canvas.Rect(0.08f, 0.46f, 0.92f, 0.56f, new Color(0.45f, 0.45f, 0.5f));
+                    canvas.Circle(0.5f, 0.38f, 0.08f, new Color(0.85f, 0.7f, 0.3f));
+                    break;
+                case "gate_water":
+                    canvas.Ellipse(0.5f, 0.4f, 0.46f, 0.3f, c);
+                    canvas.Inked = false;
+                    for (var i = 0; i < 3; i++) canvas.Line(0.2f + i * 0.2f, 0.4f + (i % 2) * 0.06f, 0.32f + i * 0.2f, 0.4f + (i % 2) * 0.06f, 0.015f, light);
+                    canvas.Inked = true;
+                    break;
+                case "gate_roots":
+                    for (var i = 0; i < 6; i++)
+                        canvas.Line(0.1f + i * 0.16f, 0.04f, 0.2f + ((i * 37) % 5) * 0.12f, 0.9f, 0.05f, i % 2 == 0 ? c : light);
+                    break;
+                case "gate_bars":
+                    canvas.Rect(0.06f, 0.82f, 0.94f, 0.92f, dark);
+                    for (var i = 0; i < 6; i++) canvas.Rect(0.1f + i * 0.15f, 0.04f, 0.15f + i * 0.15f, 0.84f, c);
+                    canvas.Rect(0.06f, 0.4f, 0.94f, 0.46f, c);
+                    break;
+                case "gate_runes":
+                    canvas.Rect(0.1f, 0.04f, 0.9f, 0.88f, new Color(0.45f, 0.42f, 0.4f));
+                    canvas.Inked = false;
+                    canvas.Circle(0.5f, 0.46f, 0.2f, c);
+                    canvas.Circle(0.5f, 0.46f, 0.12f, new Color(0.45f, 0.42f, 0.4f));
+                    canvas.Line(0.3f, 0.72f, 0.7f, 0.72f, 0.02f, c);
+                    canvas.Line(0.3f, 0.2f, 0.7f, 0.2f, 0.02f, c);
+                    canvas.Inked = true;
+                    break;
+                case "chest":
+                    canvas.Rect(0.12f, 0.08f, 0.88f, 0.58f, Wood);
+                    canvas.Ellipse(0.5f, 0.6f, 0.38f, 0.16f, Color.Lerp(Wood, Color.white, 0.1f));
+                    canvas.Rect(0.12f, 0.4f, 0.88f, 0.46f, new Color(0.45f, 0.45f, 0.5f));
+                    canvas.Rect(0.44f, 0.3f, 0.56f, 0.46f, new Color(0.85f, 0.7f, 0.3f));
                     break;
                 default:
                     canvas.Circle(0.5f, 0.5f, 0.45f, c);

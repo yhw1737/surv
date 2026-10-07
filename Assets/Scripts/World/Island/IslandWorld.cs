@@ -89,8 +89,13 @@ namespace Isle.World.Island
         }
 
         /// <summary>Dry land only — the sea, ponds and rivers are walls (SYS-WORLD-03 §Water bodies).</summary>
+        /// <summary>Areas outside the island that have their own ground — the dungeons' underground layer (SYS-DUNG-01).
+        /// Returns null for a point it doesn't own, else whether that point can be stood on.</summary>
+        public static System.Func<Vector2, bool?> ExtraWalkable { get; set; }
+
         public bool IsWalkable(Vector2 world)
         {
+            if (ExtraWalkable?.Invoke(world) is { } underground) return underground;
             var tile = WorldToTile(world);
             return Island.IsLand(tile.X, tile.Y) && !_water.ContainsKey(tile);
         }

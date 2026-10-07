@@ -1,0 +1,24 @@
+{
+  "id": "isle:clockwork_ruin",
+  "name": "@dungeon.clockwork_ruin",
+  "danger": 3,
+  "floors": 3,
+  "entrance": {
+    "shape": "ruin_gate",
+    "color": "#7C7268",
+    "size": 2.6
+  },
+  "floor_color": "#8E8678",
+  "wall_color": "#3A342E",
+  "creatures": [
+    "isle:wolf",
+    "isle:crab",
+    "isle:boar"
+  ],
+  "gate": {
+    "name": "@gate.rune_door",
+    "skill": "isle:enchanting",
+    "shape": "gate_runes",
+    "color": "#7A68B8"
+  }
+}

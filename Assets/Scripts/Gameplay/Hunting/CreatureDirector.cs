@@ -53,6 +53,9 @@ namespace Isle.Gameplay.Hunting
         /// <summary>Last movement direction, for the figure's facing.</summary>
         public Vector2 Heading { get; set; } = Vector2.right;
 
+        /// <summary>Lives in a dungeon (SYS-DUNG-01): always awake, never counted toward the island's population.</summary>
+        public bool InDungeon { get; init; }
+
         /// <summary>SYS-COMBAT-02 side effects running on it (bleed, burn, poison, stagger count).</summary>
         public CombatStatus Status { get; } = new();
         public float AlertStartedAt { get; set; }
@@ -288,11 +291,20 @@ namespace Isle.Gameplay.Hunting
         {
             var count = 0;
             foreach (var creature in _creatures)
-                if (creature.Def == def) count++;
+                if (creature.Def == def && !creature.InDungeon) count++;
             return count;
         }
 
-        Creature Create(CreatureDef def, Vector2 position)
+        /// <summary>Places one creature of <paramref name="def"/> at <paramref name="position"/> — dungeons use this for
+        /// their rooms' spawn marks (SYS-DUNG-01). Server-side.</summary>
+        public Creature SpawnAt(CreatureDef def, Vector2 position, bool inDungeon)
+        {
+            var creature = Create(def, position, inDungeon);
+            _creatures.Add(creature);
+            return creature;
+        }
+
+        Creature Create(CreatureDef def, Vector2 position, bool inDungeon = false)
         {
             var weight = RollWeight(def);
             var radius = BodyReach.RadiusForWeight(def.Combat?.BodyRadiusTiles ?? DefaultBodyRadius, weight, def.WeightDist?.Mean ?? weight);
@@ -301,6 +313,7 @@ namespace Isle.Gameplay.Hunting
             return new Creature
             {
                 Def = def,
+                InDungeon = inDungeon,
                 Weight = weight,
                 Home = position,
                 Position = position,
@@ -435,7 +448,7 @@ namespace Isle.Gameplay.Hunting
 
         static bool IsAwakeNow(Creature creature)
         {
-            if (Time.time - creature.LastHitAt < WokenSeconds) return true;
+            if (creature.InDungeon || Time.time - creature.LastHitAt < WokenSeconds) return true;
             var clock = WorldTime.Instance != null ? WorldTime.Instance.Clock : null;
             return clock == null || CreatureBrain.IsAwake(creature.Def.Spawn?.Time, clock.Phase.ToString().ToLowerInvariant());
         }

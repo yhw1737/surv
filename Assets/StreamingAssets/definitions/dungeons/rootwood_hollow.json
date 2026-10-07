@@ -1,0 +1,25 @@
+{
+  "id": "isle:rootwood_hollow",
+  "name": "@dungeon.rootwood_hollow",
+  "danger": 2,
+  "floors": 2,
+  "entrance": {
+    "biome": "isle:forest",
+    "shape": "giant_tree",
+    "color": "#5C4630",
+    "size": 2.6
+  },
+  "floor_color": "#6E5A3E",
+  "wall_color": "#2C2116",
+  "creatures": [
+    "isle:wolf",
+    "isle:boar",
+    "isle:snake"
+  ],
+  "gate": {
+    "name": "@gate.root_wall",
+    "skill": "isle:gathering",
+    "shape": "gate_roots",
+    "color": "#6B4A2A"
+  }
+}
