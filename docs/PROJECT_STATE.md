@@ -7,7 +7,7 @@
 
 - Last updated: **2026-10-07**
 - **2026-10-07 — T-201 dungeon generator + underground layer.** Branch `feature/T-201-dungeon-generator` off `main`
-  (after PR #34), **uncommitted**. Developer decisions: rest room 1 per floor; locks 1/1/2 by danger; rooms 20×20 tiles;
+  (after PR #34) — [PR #35](https://github.com/yhw1737/surv/pull/35). Developer decisions: rest room 1 per floor; locks 1/1/2 by danger; rooms 20×20 tiles;
   new giant-tree / sinkhole entrance landmarks. Built: `DungeonGenerator` (6×6 grid, 8–12 rooms, lock-and-key, rest,
   soft-gated vault), `DungeonTiles` (templates stamped/rotated, doorways carved), `DungeonDirector` (entrances on the
   island, floors built on first entry in a far region at world 2000+, stairs/exit, keys open locked doors, soft gate 3 s
