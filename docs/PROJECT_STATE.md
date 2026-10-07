@@ -6,7 +6,7 @@
 ## Header
 
 - Last updated: **2026-10-07**
-- **2026-10-07 — T-202 Tidal Grotto.** Branch `feature/T-202-tidal-grotto` off `main` (after PR #35), **uncommitted**.
+- **2026-10-07 — T-202 Tidal Grotto.** Branch `feature/T-202-tidal-grotto` off `main` (after PR #35) — [PR #36](https://github.com/yhw1737/surv/pull/36).
   Developer decisions: 2 tides a day, swim ×0.6, about half the rooms flood, 1 low-tide cache per floor (1–2 tide
   pearls), Hermit Colossus HP 600 / strike 15 with sweep + shell phase broken by a blunt stun, reward sigil + 3 pearls,
   new cave crab and moray eel. Built: `Tides` (pure), `BossShell` (pure), tide runtime in `DungeonDirector` (water
