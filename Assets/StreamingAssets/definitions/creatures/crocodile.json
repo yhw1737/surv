@@ -61,7 +61,12 @@
     "body_radius_tiles": 0.6,
     "windup_seconds": 0.6,
     "lunge_tiles": 1.6,
-    "lunge_speed": 11.0
+    "lunge_speed": 11.0,
+    "damage_type": "pierce"
+  },
+  "resist": {
+    "slash": 0.5,
+    "pierce": 1.5
   },
   "visual": {
     "shape": "crocodile",

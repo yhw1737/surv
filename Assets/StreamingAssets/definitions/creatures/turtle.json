@@ -54,6 +54,11 @@
     "attack_interval_seconds": 1.0,
     "body_radius_tiles": 0.42
   },
+  "resist": {
+    "slash": 0.5,
+    "pierce": 0.5,
+    "blunt": 1.5
+  },
   "visual": {
     "shape": "turtle",
     "color": "#5F8A55",

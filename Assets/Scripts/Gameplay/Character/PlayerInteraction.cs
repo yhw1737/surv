@@ -261,14 +261,14 @@ namespace Isle.Gameplay.Character
 
         /// <summary>Server-side: a creature's strike reaches this player. Block and parry are resolved here (SYS-COMBAT-01
         /// §Melee); whatever gets through goes to <see cref="Vitals.TakeDamage"/> (armor, i-frames).</summary>
-        public BlockOutcome ReceiveCreatureStrike(Vector2 from, float damage)
+        public BlockOutcome ReceiveCreatureStrike(Vector2 from, float damage, string damageType = DamageTypes.Blunt)
         {
             if (!IsServer || !TryGetComponent<Vitals>(out var vitals)) return BlockOutcome.None;
             var level = LevelOf(MeleeSkill());
             var angle = Vector2.Angle(BlockDirection, from - (Vector2)transform.position);
             var result = MeleeDefense.Resolve(Blocking && !IsDead, Time.time - BlockStartedAt, MeleeDefense.ParryWindow(level), angle, damage, vitals.Stamina);
             if (result.StaminaCost > 0f) vitals.SpendStamina(result.StaminaCost);
-            if (result.DamageThrough > 0f) vitals.TakeDamage(result.DamageThrough);
+            if (result.DamageThrough > 0f) vitals.TakeDamage(result.DamageThrough, damageType);
             if (result.Outcome != BlockOutcome.None) GameFeed.RaiseDefended(transform.position, result.Outcome);
             return result.Outcome;
         }
@@ -452,17 +452,20 @@ namespace Isle.Gameplay.Character
             vitals.SpendStamina(cost);
             GameFeed.RaisePlayerSwing(transform.position, weapon.Reach);
 
+            // SYS-COMBAT-02: this combo step's attack decides what it touches and what kind of damage it deals.
+            var attack = WeaponAttacks.For(weapon, step, length);
             var director = CreatureDirector.Instance;
-            var target = director != null ? director.NearestCreatureInCone(transform.position, weapon.Reach, _attackAim, weapon.ConeDegrees) : null;
+            var target = director != null ? director.NearestCreatureInShape(transform.position, _attackAim, attack) : null;
             if (target == null) return;
 
             var power = PowerCalculator.FinalPower(weapon.BasePower, level, situationalMult: MeleeCombo.SituationalMult(target.IsStaggered))
-                        * MeleeCombo.PowerMult(step, length);
-            var damage = DamageResolver.Damage(power, totalArmor: 0f);
-            if (target.MaxHealth > 0f && MeleeCombo.Executes(level, target.Health / target.MaxHealth)) damage = Mathf.Max(damage, target.Health);
-
+                        * attack.PowerMult;
             var loot = new List<(NamespacedId Item, int Count)>();
-            var dealt = director.Damage(target, damage, loot);
+            float dealt;
+            if (target.MaxHealth > 0f && MeleeCombo.Executes(level, target.Health / target.MaxHealth))
+                dealt = director.Damage(target, target.Health, loot); // Lv35 execute ignores type and resist
+            else
+                dealt = director.DamageTyped(target, power, attack.Type, loot);
             AwardCombatXp(weapon, dealt);
             foreach (var (item, count) in loot) GiveItem(inventory, item, count);
         }
@@ -624,7 +627,7 @@ namespace Isle.Gameplay.Character
             var direction = (aim - origin).sqrMagnitude > 0.0001f ? (aim - origin).normalized : Vector2.right;
             var damage = PowerCalculator.FinalPower(weapon.BasePower, LevelOf(weapon.CombatSkill)) * RangedCalculator.ChargeMult(charge);
 
-            Projectiles.Instance.Fire(origin + direction * MuzzleOffsetTiles, direction, weapon.ProjectileSpeed, damage,
+            Projectiles.Instance.Fire(origin + direction * MuzzleOffsetTiles, direction, weapon.ProjectileSpeed, damage, weapon.DamageType ?? DamageTypes.Pierce,
                 loot => { foreach (var (item, count) in loot) GiveItem(inventory, item, count); },
                 dealt => AwardCombatXp(weapon, dealt));
         }

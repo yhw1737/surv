@@ -20,5 +20,6 @@
   "quality_enabled": false,
   "durability": 80,
   "ammo": "isle:arrow",
-  "projectile_speed": 18
+  "projectile_speed": 18,
+  "damage_type": "pierce"
 }

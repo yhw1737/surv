@@ -19,5 +19,28 @@
   "grip": "two_hand",
   "quality_enabled": false,
   "durability": 60,
-  "cone_degrees": 70
+  "cone_degrees": 70,
+  "attacks": [
+    {
+      "shape": "thrust",
+      "length": 2.0,
+      "width": 0.5,
+      "type": "pierce",
+      "power_mult": 1.0
+    },
+    {
+      "shape": "thrust",
+      "length": 2.0,
+      "width": 0.5,
+      "type": "pierce",
+      "power_mult": 1.0
+    },
+    {
+      "shape": "thrust",
+      "length": 2.3,
+      "width": 0.6,
+      "type": "pierce",
+      "power_mult": 1.4
+    }
+  ]
 }

@@ -56,7 +56,12 @@
     "body_radius_tiles": 0.2,
     "windup_seconds": 0.35,
     "lunge_tiles": 0.6,
-    "lunge_speed": 6.0
+    "lunge_speed": 6.0,
+    "damage_type": "slash"
+  },
+  "resist": {
+    "slash": 0.5,
+    "blunt": 1.5
   },
   "visual": {
     "shape": "crab",

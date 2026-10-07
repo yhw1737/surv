@@ -28,6 +28,13 @@ namespace Isle.Data
 
         public float StaminaCost { get; init; }
 
+        /// <summary>SYS-COMBAT-02: one attack per combo step (last = finisher). Null: a single <c>arc</c> of
+        /// <see cref="ConeDegrees"/>/<see cref="Reach"/> dealing <see cref="DamageType"/>.</summary>
+        public AttackSpec[] Attacks { get; init; }
+
+        /// <summary>SYS-COMBAT-02 damage type for a weapon without <see cref="Attacks"/>, and for its projectiles.</summary>
+        public string DamageType { get; init; }
+
         /// <summary>
         /// <c>one_hand</c> / <c>two_hand</c> / <c>tool</c>. Selects IK targets only — swapping a
         /// weapon must never change gameplay through the rig (ARCHITECTURE §Presentation boundary).

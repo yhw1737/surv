@@ -30,6 +30,9 @@ namespace Isle.Data
         /// load from definitions"). Null means it never fights back and never reacts.</summary>
         public CreatureCombatSpec Combat { get; init; }
 
+        /// <summary>SYS-COMBAT-02: damage multiplier per type it takes (e.g. a shell: slash 0.5, blunt 1.5). Missing = 1.</summary>
+        public System.Collections.Generic.Dictionary<string, float> Resist { get; init; }
+
         /// <summary>How the creature is drawn (SYS-CHAR-02 §Creatures). Presentation only — gameplay never reads it.</summary>
         public CreatureLook Look { get; init; }
     }
@@ -82,6 +85,9 @@ namespace Isle.Data
         /// <summary>Seconds between starting a strike and it landing — the tell a player reads to block or parry
         /// (SYS-COMBAT-01 §Melee). 0 strikes instantly. [invented] per def.</summary>
         public float WindupSeconds { get; init; }
+
+        /// <summary>SYS-COMBAT-02 type of its strike (<c>blunt slash pierce heat toxic</c>). Null: blunt.</summary>
+        public string DamageType { get; init; }
 
         /// <summary>After the wind-up the creature dashes this many tiles at the player before the strike lands, so
         /// stepping back doesn't make it whiff — a sidestep or a roll still does. 0: strikes where it stands. [invented]</summary>

@@ -1,4 +1,6 @@
+using System.Collections;
 using System.IO;
+using FishNet;
 using Isle.Gameplay.Building;
 using Isle.Gameplay.Inventory;
 using Isle.Networking;
@@ -63,8 +65,26 @@ namespace Isle.UI.Prototype
             IsleNetworkManager.Find()?.StopHost();
             LootPiles.Clear();
             StructureFactory.Clear();
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            // FishNet stops asynchronously: reload only once both sides are really down, or a quick New game on the
+            // menu can find the server still "started" and skip starting it (then the client can't connect).
+            var runner = new GameObject("BackToMenu").AddComponent<Waiter>();
+            Object.DontDestroyOnLoad(runner.gameObject);
+            runner.StartCoroutine(ReloadWhenStopped(runner.gameObject));
         }
+
+        const float StopTimeoutSeconds = 3f;
+
+        static IEnumerator ReloadWhenStopped(GameObject runner)
+        {
+            var deadline = Time.realtimeSinceStartup + StopTimeoutSeconds;
+            while ((InstanceFinder.IsServerStarted || InstanceFinder.IsClientStarted) && Time.realtimeSinceStartup < deadline) yield return null;
+            yield return null;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            Object.Destroy(runner);
+        }
+
+        /// <summary>Hosts the reload coroutine across the scene change.</summary>
+        sealed class Waiter : MonoBehaviour { }
 
         /// <summary>A random seed in the same range IslandWorld picks from.</summary>
         public static int RandomSeed() => Random.Range(1, int.MaxValue);

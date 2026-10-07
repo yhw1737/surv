@@ -60,7 +60,12 @@
     "body_radius_tiles": 0.38,
     "windup_seconds": 0.4,
     "lunge_tiles": 1.8,
-    "lunge_speed": 10.0
+    "lunge_speed": 10.0,
+    "damage_type": "slash"
+  },
+  "resist": {
+    "blunt": 0.5,
+    "slash": 1.5
   },
   "visual": {
     "shape": "wolf",
