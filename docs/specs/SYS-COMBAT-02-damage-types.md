@@ -86,3 +86,42 @@ creature attack's `type` and `shape`. Armor items: `armor{type: value}`. Buff de
 | 2 | Pierce vs armored target | armor reduced by `PierceBypass` before the SYS-COMBAT-01 curve |
 | 3 | Each shape's hit test | a target just inside/outside each parameter is hit/missed |
 | 4 | Old single-block weapon def | loads as one `arc` attack, same damage as today |
+
+## Implementation (T-200, 2026-10-07)
+
+Code: `Gameplay/Combat/DamageTypes.cs` (`DamageTypes`, `HitShapes`, `WeaponAttacks`, `CombatStatus`, all pure);
+`CreatureDirector.DamageTyped` / `NearestCreatureInShape` / status ticking; `PlayerInteraction.PerformAttack` picks the
+combo step's attack; `Vitals.TakeDamage(amount, type)`; arrows carry the bow's type.
+
+| Point | How it's built | Status |
+|---|---|---|
+| Per-type armor | `armor` stays a number (physical types); new `armor_types {type: value}` overrides per type — avoids a number-or-object JSON field | schema choice |
+| Targeting | the step's shape picks the **nearest** creature it touches (one target per swing; multi-target shapes are an artifact feature) | interpretation |
+| Execute (Lv35) | ignores type and resistance | interpretation |
+| Damage over time | ticks every frame on the server; a creature killed by it drops its yield where it fell, **no XP** for DoT damage | decision |
+| Stun on players | **not applied yet** — players get bleed/burn/poison, but a blunt stun needs an input-lock rule first | deferred |
+| Food resistance | buff effect `{"type": "damage_resist", "damage_type": …, "value": …}`; multiple multiply as (1 − value) | as decided |
+
+**Content set with it [invented]** — which creature resists what and what each attack is (the ×0.5/×1.5 values are
+the decided ones):
+
+| Creature | Resist | Strike |
+|---|---|---|
+| rabbit, deer, fox | slash ×1.5 | — |
+| wolf | blunt ×0.5, slash ×1.5 | slash |
+| boar | blunt ×0.5, pierce ×1.5 | blunt |
+| crab | slash ×0.5, blunt ×1.5 | slash |
+| sea turtle | slash ×0.5, pierce ×0.5, blunt ×1.5 | — |
+| crocodile | slash ×0.5, pierce ×1.5 | pierce |
+| snake | pierce ×1.5, toxic ×0.5 | toxic |
+| frog | toxic ×0.5 | — |
+
+| Weapon | Steps (shape · type · power) |
+|---|---|
+| Fists | arc 110° r1.2 blunt · arc blunt · smash (offset 0.7, r0.6) blunt ×1.4 |
+| Stone hatchet | arc 110° r1.3 slash · arc slash · smash (0.8, 0.65) blunt ×1.4 |
+| Stone pickaxe | smash (0.8, 0.55) pierce · same · smash (0.9, 0.7) pierce ×1.4 |
+| Stone spear | thrust 2.0×0.5 pierce · same · thrust 2.3×0.6 pierce ×1.4 |
+| Short bow | arrows pierce |
+
+Food resistance example: `iron_gut` gained `damage_resist` toxic 0.3.

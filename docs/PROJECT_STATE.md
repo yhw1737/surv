@@ -6,6 +6,17 @@
 ## Header
 
 - Last updated: **2026-10-06**
+- **2026-10-07 — T-200 damage types and hit shapes.** Branch `feature/T-200-damage-types` — [PR #34](https://github.com/yhw1737/surv/pull/34).
+  SYS-COMBAT-02 built: `DamageTypes` (typed damage, 40% pierce bypass, per-type armor), `HitShapes` (arc/thrust/smash/
+  sweep/line), `WeaponAttacks` (combo step → attack; old defs = one arc), `CombatStatus` (bleed/burn/poison 8%/s for
+  4 s, poison ×3, three blunt hits in the window → 1 s stun). Creatures take typed damage with their `resist` table,
+  tick DoT (deaths by DoT drop loot on the spot, no XP), get stunned (counts as staggered: ×1.2 and no acting).
+  Players take typed damage through per-type armor and `damage_resist` food buffs and suffer DoT (no stun yet).
+  Content: `attacks[]` on fists/hatchet/pickaxe/spear, bow `damage_type` pierce, resist/strike types on 11 creatures,
+  `iron_gut` toxic −30%. **Also fixed:** a race in "Main menu" — the scene now reloads only after FishNet has fully
+  stopped (a fast New game could find the server still "started" and the client then failed to connect).
+  **Verified:** EditMode 575/575 (+16 `DamageTypeTests`: SYS-COMBAT-02 verification 1–4 + side effects), PlayMode 3/3
+  (twice, no connection failures).
 - **2026-10-07 — endgame numbers decided (Q&A with the developer).** Every system-level ❓ in SYS-COMBAT-02,
   SYS-DUNG-01, SYS-ART-02 and SYS-END-01 now has a value in each spec's **Decided values** table (damage resist ×0.5/×1.5,
   pierce bypass 40%, DoT 8%/s for 4 s, 3 blunt hits → 1 s stun; dungeon floors 1/2/3/3/3, 6×6 grid of 8–12 rooms,
@@ -1837,6 +1848,11 @@ since it's server-side gauge math with no UI yet:
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-10-07 — T-200 content choices
+  Which creature resists which type and each creature's strike type, and every weapon's per-step shape/size/type
+  (tables in SYS-COMBAT-02 §Implementation) are invented content choices; the multipliers themselves (×0.5/×1.5),
+  pierce bypass, DoT and stun numbers are the developer's decided values. Player stun deferred; DoT gives no XP.
 
 - ### 2026-10-06 — main menu presentation and option defaults
   Menu layout/colours/backdrop, option defaults (vSync on, frame cap 120 when off, volume 100%, language follows the

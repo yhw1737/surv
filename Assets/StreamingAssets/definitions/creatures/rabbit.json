@@ -60,6 +60,9 @@
     "attack_interval_seconds": 1.0,
     "body_radius_tiles": 0.22
   },
+  "resist": {
+    "slash": 1.5
+  },
   "visual": {
     "shape": "rabbit",
     "color": "#C9B49A",

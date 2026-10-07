@@ -69,6 +69,10 @@ namespace Isle.Data
         /// <summary>Armor while worn, summed into SYS-COMBAT-01's <c>totalArmor</c>. 0 for everything else.</summary>
         public float Armor { get; init; }
 
+        /// <summary>SYS-COMBAT-02: armor against specific types, overriding <see cref="Armor"/> for the types it lists.
+        /// <see cref="Armor"/> alone covers the physical types (blunt, slash, pierce); heat and toxic need an entry here.</summary>
+        public System.Collections.Generic.Dictionary<string, float> ArmorTypes { get; init; }
+
         /// <summary>Skill level needed to use this item for its purpose (SYS-FISH-01: the rod needs Fishing 5). Null: none.</summary>
         public SkillRequirement Requires { get; init; }
 

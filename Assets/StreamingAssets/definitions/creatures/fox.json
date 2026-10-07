@@ -61,6 +61,9 @@
     "body_radius_tiles": 0.26,
     "alert_seconds": 1.2
   },
+  "resist": {
+    "slash": 1.5
+  },
   "visual": {
     "shape": "fox",
     "color": "#D9792E",

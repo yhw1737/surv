@@ -18,5 +18,28 @@
   "grip": "one_hand",
   "quality_enabled": false,
   "durability": 80,
-  "cone_degrees": 100
+  "cone_degrees": 100,
+  "attacks": [
+    {
+      "shape": "smash",
+      "offset": 0.8,
+      "radius": 0.55,
+      "type": "pierce",
+      "power_mult": 1.0
+    },
+    {
+      "shape": "smash",
+      "offset": 0.8,
+      "radius": 0.55,
+      "type": "pierce",
+      "power_mult": 1.0
+    },
+    {
+      "shape": "smash",
+      "offset": 0.9,
+      "radius": 0.7,
+      "type": "pierce",
+      "power_mult": 1.4
+    }
+  ]
 }

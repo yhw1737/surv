@@ -410,7 +410,8 @@ Stage 4. Nothing here is a prerequisite for anything above it; that is the whole
 > `SYS-END-01` — every number open; fill them before building each piece. The original T-120–T-126 artifact tasks
 > below still apply (Ladle first, G3 gate), now inside this larger phase.
 
-- [ ] **T-200** Fill SYS-COMBAT-02 numbers → damage types, resistances, hit shapes (`attacks[]`) on existing weapons/creatures
+- [x] **T-200** Fill SYS-COMBAT-02 numbers → damage types, resistances, hit shapes (`attacks[]`) on existing weapons/creatures
+  > **2026-10-07**: done — typed damage, per-type armor, shapes per combo step, bleed/burn/poison, blunt stun on creatures, food resistance; player stun deferred. See SYS-COMBAT-02 §Implementation.
 - [ ] **T-201** Fill SYS-DUNG-01 numbers → dungeon generator (room graph, lock-and-key, room templates JSON) + underground layer
 - [ ] **T-202** Tidal Grotto (first dungeon: tides by clock, soft gates, Hermit Colossus)
 - [ ] **T-203** Rootwood Hollow, Drowned Temple, Clockwork Ruin

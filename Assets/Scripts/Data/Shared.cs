@@ -139,4 +139,23 @@ namespace Isle.Data
         public string Color { get; init; }
         public string Accent { get; init; }
     }
+
+    /// <summary>SYS-COMBAT-02: one attack — what it touches (<see cref="Shape"/> and its parameters, tiles/degrees) and
+    /// what kind of damage it deals. A weapon lists one per combo step; the last is the finisher.</summary>
+    public sealed class AttackSpec
+    {
+        /// <summary><c>arc thrust smash sweep line</c> (projectile/aura belong to ranged weapons and artifacts).</summary>
+        public string Shape { get; init; } = "arc";
+
+        public float Degrees { get; init; }
+        public float Radius { get; init; }
+        public float Length { get; init; }
+        public float Width { get; init; }
+        public float Offset { get; init; }
+
+        /// <summary><c>blunt slash pierce heat toxic</c>.</summary>
+        public string Type { get; init; } = "blunt";
+
+        public float PowerMult { get; init; } = 1f;
+    }
 }

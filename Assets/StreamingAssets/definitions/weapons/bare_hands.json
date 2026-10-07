@@ -17,5 +17,28 @@
   "grip": "one_hand",
   "quality_enabled": false,
   "durability": 0,
-  "cone_degrees": 110
+  "cone_degrees": 110,
+  "attacks": [
+    {
+      "shape": "arc",
+      "degrees": 110,
+      "radius": 1.2,
+      "type": "blunt",
+      "power_mult": 1.0
+    },
+    {
+      "shape": "arc",
+      "degrees": 110,
+      "radius": 1.2,
+      "type": "blunt",
+      "power_mult": 1.0
+    },
+    {
+      "shape": "smash",
+      "offset": 0.7,
+      "radius": 0.6,
+      "type": "blunt",
+      "power_mult": 1.4
+    }
+  ]
 }

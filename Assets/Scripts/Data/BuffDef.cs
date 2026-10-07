@@ -29,5 +29,9 @@ namespace Isle.Data
     {
         public string Type { get; init; }
         public float? Value { get; init; }
+
+        /// <summary>For <c>damage_resist</c>: the SYS-COMBAT-02 type it reduces; <see cref="Value"/> is the share removed
+        /// (0.3 = −30%), set per dish/buff.</summary>
+        public string DamageType { get; init; }
     }
 }

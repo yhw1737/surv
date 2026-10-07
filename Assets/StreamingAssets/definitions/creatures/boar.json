@@ -60,7 +60,12 @@
     "body_radius_tiles": 0.45,
     "windup_seconds": 0.45,
     "lunge_tiles": 1.4,
-    "lunge_speed": 9.0
+    "lunge_speed": 9.0,
+    "damage_type": "blunt"
+  },
+  "resist": {
+    "blunt": 0.5,
+    "pierce": 1.5
   },
   "visual": {
     "shape": "boar",

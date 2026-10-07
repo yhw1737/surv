@@ -475,6 +475,12 @@ No block means the item isn't drawn on the figure. An unknown style falls back t
 |---|---|---|
 | Creature combat | `windup_seconds` | Tell before a strike lands — the player's chance to block or parry. 0 or absent strikes instantly |
 | Weapon | `cone_degrees` | Melee forward cone, full angle around the aim (SYS-COMBAT-01 §Hit detection); 0 = anything in reach |
+| Weapon | `attacks[]` `{shape, degrees, radius, length, width, offset, type, power_mult}` | One per combo step, last = finisher (SYS-COMBAT-02); absent = one arc of `cone_degrees`/`reach` |
+| Weapon | `damage_type` | Type for a weapon without `attacks`, and for its arrows |
+| Creature | `resist {type: mult}` | Damage multiplier per type taken; missing = 1 |
+| Creature combat | `damage_type` | Type of its strike (default blunt) |
+| Item | `armor_types {type: value}` | Armor against specific types; `armor` covers blunt/slash/pierce |
+| Buff effect | `damage_type` (with `type: damage_resist`) | Food resistance: `value` is the share removed |
 | Creature combat | `lunge_tiles`, `lunge_speed` | After the wind-up, dash this far at this speed toward the player before the strike lands |
 | Spawn | `cluster` `{scale_tiles, coverage, inside, outside}` | Gather into noise patches (SYS-WORLD-03 §Clustering) |
 | Spawn | `elsewhere` | Density multiplier in land biomes not listed (rare elsewhere); 0 = never |

@@ -55,6 +55,9 @@
     "attack_interval_seconds": 1.0,
     "body_radius_tiles": 0.14
   },
+  "resist": {
+    "toxic": 0.5
+  },
   "visual": {
     "shape": "frog",
     "color": "#6FAE4A",

@@ -7,6 +7,7 @@ using Isle.Core.Util;
 using Isle.Data;
 using Isle.Gameplay.Character;
 using Isle.Gameplay.Combat;
+using Isle.Gameplay.Inventory;
 using Isle.Modding.Defs;
 using Isle.World.Generation;
 using Isle.World.Island;
@@ -51,6 +52,9 @@ namespace Isle.Gameplay.Hunting
 
         /// <summary>Last movement direction, for the figure's facing.</summary>
         public Vector2 Heading { get; set; } = Vector2.right;
+
+        /// <summary>SYS-COMBAT-02 side effects running on it (bleed, burn, poison, stagger count).</summary>
+        public CombatStatus Status { get; } = new();
         public float AlertStartedAt { get; set; }
         public GameObject View { get; init; }
         public SpriteRenderer Renderer { get; init; }
@@ -117,6 +121,7 @@ namespace Isle.Gameplay.Hunting
                 if (creature.View.activeSelf != awake) creature.View.SetActive(awake);
                 if (awake) Think(creature, players);
             }
+            TickStatuses();
 
             if (Time.time >= _nextRepopulateAt)
             {
@@ -132,6 +137,54 @@ namespace Isle.Gameplay.Hunting
         {
             var target = NearestCreature(from, reachTiles);
             return target == null ? -1f : Damage(target, damage, loot);
+        }
+
+        /// <summary>SYS-COMBAT-02: nearest live creature the attack's shape touches.</summary>
+        public Creature NearestCreatureInShape(Vector2 from, Vector2 aim, AttackSpec attack)
+        {
+            Creature target = null;
+            var best = float.MaxValue;
+            foreach (var creature in _creatures)
+            {
+                if (!HitShapes.Contains(attack, from, aim, creature.Position, creature.Radius)) continue;
+                var distance = Vector2.Distance(from, creature.Position);
+                if (distance >= best) continue;
+                best = distance;
+                target = creature;
+            }
+            return target;
+        }
+
+        /// <summary>SYS-COMBAT-02: a typed hit — the creature's resistance applies, then the type's side effect (bleed,
+        /// burn, poison, or a stun on the third blunt hit). Creatures wear no armor. Returns damage actually taken.</summary>
+        public float DamageTyped(Creature target, float finalPower, string type, List<(NamespacedId Item, int Count)> loot)
+        {
+            if (!_creatures.Contains(target)) return 0f;
+            var damage = DamageTypes.Damage(finalPower, type, DamageTypes.ResistOf(target.Def.Resist, type), 0f);
+            target.Status.OnHit(type, damage, Time.time, out var stunned);
+            if (stunned) target.StaggeredUntil = Mathf.Max(target.StaggeredUntil, Time.time + CombatStatus.StunSeconds);
+            return Damage(target, damage, loot);
+        }
+
+        /// <summary>Ticks bleed/burn/poison on every creature. A creature that dies of it drops its yield where it fell
+        /// (no attacker to hand it to; no XP for damage over time).</summary>
+        void TickStatuses()
+        {
+            for (var i = _creatures.Count - 1; i >= 0; i--)
+            {
+                var creature = _creatures[i];
+                if (!creature.Status.Any) continue;
+                var damage = creature.Status.Tick(Time.time, Time.deltaTime);
+                if (damage <= 0f) continue;
+                var loot = new List<(NamespacedId Item, int Count)>();
+                var at = creature.Position;
+                Damage(creature, damage, loot, quiet: true);
+                if (loot.Count == 0) continue;
+                var drops = new List<(ItemDef, int)>();
+                foreach (var (item, count) in loot)
+                    if (DefRegistry.TryGet<ItemDef>(item, out var def)) drops.Add((def, count));
+                LootPiles.Drop(at, drops);
+            }
         }
 
         /// <summary>Nearest live creature within reach and inside a cone of <paramref name="coneDegrees"/> around
@@ -172,12 +225,14 @@ namespace Isle.Gameplay.Hunting
         /// <summary>Applies damage from any source (melee or a projectile). A survivor reacts — prey flees, the
         /// rest fight back; a kill removes it and adds its <c>butcher.yields</c> to <paramref name="loot"/>.</summary>
         /// <returns>Damage actually taken — capped at the HP it had, so overkill earns no combat XP.</returns>
-        public float Damage(Creature target, float damage, List<(NamespacedId Item, int Count)> loot)
+        public float Damage(Creature target, float damage, List<(NamespacedId Item, int Count)> loot) => Damage(target, damage, loot, quiet: false);
+
+        float Damage(Creature target, float damage, List<(NamespacedId Item, int Count)> loot, bool quiet)
         {
             if (!_creatures.Contains(target)) return 0f;
             var dealt = Mathf.Min(damage, Mathf.Max(0f, target.Health));
             target.Health -= damage;
-            target.LastHitAt = Time.time;
+            if (!quiet) target.LastHitAt = Time.time; // a bleed tick doesn't flash or wake it every frame
             Feedback.GameFeed.RaiseCreatureHit(target.Position, damage);
             if (target.Health > 0f)
             {
@@ -370,7 +425,7 @@ namespace Isle.Gameplay.Hunting
             creature.LungeEndsAt = -1f;
             creature.NextStrikeAt = Time.time + combat.AttackIntervalSeconds;
             if (target == null || !BodyReach.InReach(distance, creature.Radius, combat.AttackRangeTiles + StrikeLeewayTiles)) return;
-            if (target.ReceiveCreatureStrike(creature.Position, combat.Damage) == BlockOutcome.Parried)
+            if (target.ReceiveCreatureStrike(creature.Position, combat.Damage, combat.DamageType ?? DamageTypes.Blunt) == BlockOutcome.Parried)
                 creature.StaggeredUntil = Time.time + MeleeDefense.ParryStaggerSeconds;
         }
 

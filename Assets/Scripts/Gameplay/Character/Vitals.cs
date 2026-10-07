@@ -114,6 +114,15 @@ namespace Isle.Gameplay.Character
         {
             if (!IsServer) return;
             UpdateMovementRules();
+            if (Status.Any)
+            {
+                var dot = Status.Tick(Time.time, Time.deltaTime);
+                if (dot > 0f)
+                {
+                    Health = Mathf.Clamp(Health - dot, 0f, VitalsCalculator.GaugeMax);
+                    if (Health <= 0f && TryGetComponent<DeathHandler>(out var dying)) dying.Die();
+                }
+            }
 
             _accumulatedSeconds += Time.deltaTime;
             while (_accumulatedSeconds >= TickIntervalSeconds)
@@ -152,6 +161,27 @@ namespace Isle.Gameplay.Character
         }
 
         /// <summary>SYS-COMBAT-01 §Damage <c>totalArmor</c>: every worn item's <c>armor</c>.</summary>
+        /// <summary>The worn items' per-type armor for one type (summed), or null when none lists it.</summary>
+        System.Collections.Generic.Dictionary<string, float> WornArmorTypes(string damageType)
+        {
+            if (!TryGetComponent<InventoryNetwork>(out var inventory)) return null;
+            float? total = null;
+            foreach (var slot in EquipSlots.All)
+                if (inventory.Slots.Get(slot)?.ArmorTypes is { } byType && byType.TryGetValue(damageType, out var value))
+                    total = (total ?? 0f) + value;
+            return total.HasValue ? new System.Collections.Generic.Dictionary<string, float> { [damageType] = total.Value } : null;
+        }
+
+        /// <summary>Product of (1 − value) over active <c>damage_resist</c> buffs for this type — values come from each dish.</summary>
+        float FoodResistMult(string damageType)
+        {
+            var mult = 1f;
+            foreach (var buff in ActiveBuffs())
+            foreach (var effect in buff.Effects ?? System.Array.Empty<BuffEffect>())
+                if (effect.Type == "damage_resist" && effect.DamageType == damageType && effect.Value is { } v) mult *= Mathf.Clamp01(1f - v);
+            return mult;
+        }
+
         public float WornArmor()
         {
             if (!TryGetComponent<InventoryNetwork>(out var inventory)) return 0f;
@@ -296,11 +326,21 @@ namespace Isle.Gameplay.Character
 
         /// <summary>Server-side damage from a creature or any other source. Health 0 is handled by
         /// <see cref="Tick"/>, which calls <see cref="DeathHandler.Die"/>.</summary>
-        public void TakeDamage(float amount)
+        /// <summary>SYS-COMBAT-02 side effects on this player (bleed, burn, poison). A blunt stun isn't applied to
+        /// players yet (it needs an input-lock rule; see PROJECT_STATE).</summary>
+        public Combat.CombatStatus Status { get; } = new();
+
+        public void TakeDamage(float amount) => TakeDamage(amount, Combat.DamageTypes.Blunt);
+
+        /// <summary>A typed hit: armor against that type (SYS-COMBAT-02), then any food resistance for it
+        /// (<c>damage_resist</c> buffs), then the type's damage over time.</summary>
+        public void TakeDamage(float amount, string damageType)
         {
             if (!IsServer || amount <= 0f) return;
             if (_movement != null && _movement.IsInvulnerable) return; // dodge roll i-frames
-            var taken = Combat.DamageResolver.Damage(amount, WornArmor());
+            var armor = Combat.DamageTypes.ArmorAgainst(WornArmor(), WornArmorTypes(damageType), damageType);
+            var taken = Combat.DamageTypes.Damage(amount, damageType, FoodResistMult(damageType), armor);
+            Status.OnHit(damageType, taken, Time.time, out _);
             Health = Mathf.Clamp(Health - taken, 0f, VitalsCalculator.GaugeMax);
             Feedback.GameFeed.RaisePlayerHit(taken);
         }
@@ -320,6 +360,7 @@ namespace Isle.Gameplay.Character
         /// specced explicitly — see PROJECT_STATE.md §Decided without a spec.</summary>
         public void ResetOnRespawn()
         {
+            Status.Clear();
             Hunger = VitalsCalculator.GaugeMax;
             Thirst = VitalsCalculator.GaugeMax;
             Temperature = ComfortableTemperature;
