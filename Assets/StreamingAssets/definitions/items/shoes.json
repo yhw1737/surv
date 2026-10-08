@@ -1,0 +1,30 @@
+{
+  "id": "isle:shoes",
+  "name": "@item.shoes",
+  "tags": [
+    "clothing",
+    "armor",
+    "apparel"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.05,
+  "stack": 1,
+  "durability": 60,
+  "equip_slot": "feet",
+  "armor": 1,
+  "stuff": {
+    "categories": [
+      "fabric",
+      "leather"
+    ],
+    "amount": 1
+  },
+  "wear": {
+    "style": "boots",
+    "color": "#9A7550"
+  },
+  "warmth": 0.5
+}

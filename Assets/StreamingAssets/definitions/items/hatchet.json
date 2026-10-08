@@ -1,0 +1,31 @@
+{
+  "id": "isle:hatchet",
+  "name": "@item.hatchet",
+  "tags": [
+    "tool",
+    "tool/axe"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 2
+  },
+  "weight": 0.6,
+  "stack": 1,
+  "durability": 60,
+  "tool_power": 1.0,
+  "equip_slot": "main_hand",
+  "weapon": "isle:hatchet",
+  "stuff": {
+    "categories": [
+      "stone",
+      "metal"
+    ],
+    "amount": 2
+  },
+  "hold": {
+    "style": "hatchet",
+    "length": 0.7,
+    "color": "#8A6A48",
+    "tip": "#9FA4AA"
+  }
+}

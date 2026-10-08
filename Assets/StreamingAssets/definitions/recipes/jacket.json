@@ -1,0 +1,30 @@
+{
+  "id": "isle:craft_jacket",
+  "name": "@recipe.jacket",
+  "ingredients": [],
+  "stuff": {
+    "categories": [
+      "fabric",
+      "leather",
+      "fur"
+    ]
+  },
+  "output": {
+    "item": "isle:jacket",
+    "count": 1
+  },
+  "time_sec": 4,
+  "station": "isle:workbench",
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 10,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 5,
+      "primary": true
+    }
+  ]
+}

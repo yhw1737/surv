@@ -1,0 +1,20 @@
+{
+  "id": "isle:fox_fur",
+  "name": "@material.fox_fur",
+  "item": "isle:fox_fur",
+  "categories": [
+    "fur"
+  ],
+  "tier": 1,
+  "craft_level": 5,
+  "armor_sharp": 0.7,
+  "armor_blunt": 0.6,
+  "armor_heat": 0.6,
+  "warmth": 2.2,
+  "durability": 0.8,
+  "mass": 0.25,
+  "power_sharp": 0,
+  "power_blunt": 0,
+  "tool_speed": 1,
+  "color": "#C66A2E"
+}

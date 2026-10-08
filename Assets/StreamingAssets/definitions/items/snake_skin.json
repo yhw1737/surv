@@ -1,0 +1,19 @@
+{
+  "id": "isle:snake_skin",
+  "name": "@item.snake_skin",
+  "tags": [
+    "material",
+    "leather"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.3,
+  "stack": 10,
+  "icon_style": {
+    "shape": "pelt",
+    "color": "#8B8B4E",
+    "accent": "#5E5E32"
+  }
+}

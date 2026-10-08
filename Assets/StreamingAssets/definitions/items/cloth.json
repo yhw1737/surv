@@ -1,0 +1,19 @@
+{
+  "id": "isle:cloth",
+  "name": "@item.cloth",
+  "tags": [
+    "material",
+    "fabric"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.2,
+  "stack": 20,
+  "icon_style": {
+    "shape": "fiber",
+    "color": "#D9CFB8",
+    "accent": "#B8AC90"
+  }
+}

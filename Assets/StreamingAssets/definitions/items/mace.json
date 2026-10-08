@@ -1,0 +1,28 @@
+{
+  "id": "isle:mace",
+  "name": "@item.mace",
+  "tags": [
+    "weapon"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 2
+  },
+  "weight": 0.4,
+  "stack": 1,
+  "durability": 60,
+  "equip_slot": "main_hand",
+  "weapon": "isle:mace",
+  "stuff": {
+    "categories": [
+      "metal"
+    ],
+    "amount": 3
+  },
+  "hold": {
+    "style": "mace",
+    "length": 0.85,
+    "color": "#8A6A48",
+    "tip": "#9FA4AA"
+  }
+}

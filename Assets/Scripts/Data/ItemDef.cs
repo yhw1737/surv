@@ -34,6 +34,16 @@ namespace Isle.Data
         /// <summary>Ammunition: multiplies the bow's power for a shot with this arrow. 0 means 1.</summary>
         public float AmmoPower { get; init; }
 
+        /// <summary>SYS-CRAFT-02: set on a template — made from a chosen material. Templates themselves never exist in
+        /// the world; their generated variants (<see cref="StuffTemplate"/> + <see cref="Material"/>) do.</summary>
+        public StuffSpec Stuff { get; init; }
+
+        /// <summary>On a generated variant: the template it was made from.</summary>
+        public NamespacedId StuffTemplate { get; init; }
+
+        /// <summary>On a generated variant: what it's made of.</summary>
+        public NamespacedId Material { get; init; }
+
         /// <summary>Null for items that never spoil.</summary>
         public SpoilageSpec Spoilage { get; init; }
 

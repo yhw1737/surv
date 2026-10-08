@@ -13,7 +13,8 @@ namespace Isle.Gameplay.Inventory
         /// <summary>The fixed slot names, exactly as SYS-INV-01 §Containers lists them.</summary>
         public static readonly string[] All =
         {
-            "head", "chest", "legs", "feet", "back", "belt", "main_hand", "off_hand"
+            // SYS-CRAFT-02 layers: "shirt" is worn under "chest" (the outer layer: jackets, parkas, breastplates).
+            "head", "shirt", "chest", "legs", "feet", "back", "belt", "main_hand", "off_hand"
         };
 
         readonly Dictionary<string, ItemDef> _equipped = new();

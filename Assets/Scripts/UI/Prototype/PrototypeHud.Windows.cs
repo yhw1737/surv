@@ -24,6 +24,7 @@ namespace Isle.UI.Prototype
         const float ListRowPx = 50f;
         const float TilePx = 64f;
         string _craftRecipe;
+        string _craftMaterial;
         bool _repairTab;
         Vector2 _repairScroll;
         Vector2 _cookListScroll, _craftListScroll, _pantryScroll;
@@ -223,8 +224,15 @@ namespace Isle.UI.Prototype
             var stock = CraftingCalculator.StockOf(_inventory.Containers());
             var position = _player.transform.position;
 
-            bool StationOk(CraftRecipeDef r) => !r.Station.IsValid || WorldObjectRegistry.IsActiveNear(position, r.Station, PlayerInteraction.ReachTiles);
-            bool Ready(CraftRecipeDef r) => StationOk(r) && _player.MeetsSkills(r.Skills) && CraftingCalculator.HasIngredients(r.Ingredients, stock);
+            bool StationOkAt(NamespacedId station) => !station.IsValid || WorldObjectRegistry.IsActiveNear(position, station, PlayerInteraction.ReachTiles);
+            bool StationOk(CraftRecipeDef r) => StationOkAt(r.Station);
+            int Have(IngredientRef need) => stock.Where(line => CraftingCalculator.Matches(need, line)).Sum(line => line.Count);
+            // SYS-CRAFT-02: a template recipe is ready when some material it accepts is ready.
+            bool ReadyWith(CraftRecipeDef r, MaterialDef m) =>
+                StationOkAt(StuffCrafting.StationFor(r, m)) && _player.MeetsSkills(r.Skills)
+                && _player.LevelOf(StuffCrafting.PrimarySkill(r)) >= StuffCrafting.LevelFor(r, m)
+                && CraftingCalculator.HasIngredients(StuffCrafting.Needs(r, m), stock);
+            bool Ready(CraftRecipeDef r) => r.Stuff == null ? ReadyWith(r, null) : StuffCrafting.MaterialsFor(r).Any(m => ReadyWith(r, m));
 
             // Tabs: make, or mend (SYS-CRAFT-02).
             var tabY = rect.y + WindowHeaderPx + 6f;
@@ -233,7 +241,7 @@ namespace Isle.UI.Prototype
             var body = new Rect(rect.x, rect.y + 34f, rect.width, rect.height - 34f);
             if (_repairTab)
             {
-                DrawRepairList(body, stock, StationOk);
+                DrawRepairList(body, stock, StationOkAt);
                 return;
             }
 
@@ -255,8 +263,8 @@ namespace Isle.UI.Prototype
                 GUI.Label(new Rect(row.x + 48f, row.y + 5f, row.width - 52f, 20f), Lang.Get(recipe.Name), st.Text);
                 var status = ready ? UiTheme.Colour(Lang.Get("@ui.craft_ready"), UiTheme.Good)
                     : !_player.MeetsSkills(recipe.Skills) ? UiTheme.Colour(Lang.Get("@ui.craft_locked"), UiTheme.Bad)
-                    : !StationOk(recipe) ? UiTheme.Colour(string.Format(Lang.Get("@ui.needs_near"), StationName(recipe.Station)), UiTheme.Bad)
-                    : UiTheme.Colour(Lang.Get("@ui.craft_missing"), UiTheme.Muted);
+                    : recipe.Stuff == null && !StationOk(recipe) ? UiTheme.Colour(string.Format(Lang.Get("@ui.needs_near"), StationName(recipe.Station)), UiTheme.Bad)
+                    : UiTheme.Colour(Lang.Get(recipe.Stuff != null ? "@ui.craft_pick_material" : "@ui.craft_missing"), UiTheme.Muted);
                 GUI.Label(new Rect(row.x + 48f, row.y + 25f, row.width - 52f, 20f), status, st.Small);
                 y += ListRowPx + 4f;
             }
@@ -266,21 +274,52 @@ namespace Isle.UI.Prototype
             var chosen = ordered.FirstOrDefault(r => r.Id.Value == _craftRecipe) ?? ordered.FirstOrDefault();
             if (chosen == null) return;
             _craftRecipe = chosen.Id.Value;
-            var result = DefRegistry.TryGet<ItemDef>(chosen.Output.Item, out var r0) ? r0 : null;
+
+            // The material: the one picked, else the first that's ready, else the first one carried, else the first.
+            MaterialDef material = null;
+            var materials = StuffCrafting.MaterialsFor(chosen);
+            if (chosen.Stuff != null && materials.Count > 0)
+            {
+                var count = StuffCrafting.CountFor(chosen);
+                material = materials.FirstOrDefault(m => m.Id.Value == _craftMaterial)
+                           ?? materials.FirstOrDefault(m => ReadyWith(chosen, m))
+                           ?? materials.FirstOrDefault(m => Have(new IngredientRef { Item = m.Item, Count = count }) >= count)
+                           ?? materials[0];
+                _craftMaterial = material.Id.Value;
+            }
+            var result = chosen.Stuff != null ? StuffCrafting.OutputFor(chosen, material) : DefRegistry.TryGet<ItemDef>(chosen.Output.Item, out var r0) ? r0 : null;
 
             GUI.Box(new Rect(right.x, right.y, 56f, 56f), GUIContent.none, st.Slot);
             DrawIcon(new Rect(right.x + 2f, right.y + 2f, 52f, 52f), Isle.UI.Art.ItemIcons.Texture(result));
-            GUI.Label(new Rect(right.x + 62f, right.y + 2f, right.width - 62f, 24f), $"{Lang.Get(chosen.Name)}{(chosen.Output.Count > 1 ? $"  ×{chosen.Output.Count}" : "")}", st.Title);
+            var title = result != null ? Lang.Get(result.Name) : Lang.Get(chosen.Name);
+            GUI.Label(new Rect(right.x + 62f, right.y + 2f, right.width - 62f, 24f), $"{title}{(chosen.Output.Count > 1 ? $"  ×{chosen.Output.Count}" : "")}", st.Title);
             GUI.Label(new Rect(right.x + 62f, right.y + 28f, right.width - 62f, 20f), ItemSummary(result), st.Muted);
             var hoverRect = new Rect(right.x, right.y, right.width, 52f);
             if (result != null && hoverRect.Contains(Event.current.mousePosition)) _hover = result;
 
-            y = right.y + 66f;
+            y = right.y + 62f;
+            if (chosen.Stuff != null)
+            {
+                // Material picker: every material this accepts, with how many are carried.
+                var count = StuffCrafting.CountFor(chosen);
+                float x = right.x;
+                foreach (var m in materials)
+                {
+                    var have = Have(new IngredientRef { Item = m.Item, Count = count });
+                    var label = $"{Lang.Get(m.Name)} {UiTheme.Colour($"{have}/{count}", have >= count ? UiTheme.Good : UiTheme.Muted)}";
+                    var w = Mathf.Max(70f, st.Small.CalcSize(new GUIContent(Lang.Get(m.Name))).x + 52f);
+                    if (x + w > right.xMax) { x = right.x; y += 30f; }
+                    if (GUI.Button(new Rect(x, y, w, 26f), label, m == material ? st.ButtonOn : st.Button)) _craftMaterial = m.Id.Value;
+                    x += w + 4f;
+                }
+                y += 34f;
+            }
+
             GUI.Label(new Rect(right.x, y, 200f, 20f), Lang.Get("@ui.ingredients"), st.Big);
             y += 24f;
-            foreach (var need in chosen.Ingredients)
+            foreach (var need in StuffCrafting.Needs(chosen, material))
             {
-                var have = stock.Where(line => CraftingCalculator.Matches(need, line)).Sum(line => line.Count);
+                var have = Have(need);
                 var item = need.Item.IsValid && DefRegistry.TryGet<ItemDef>(need.Item, out var d) ? d : null;
                 var name = item != null ? Lang.Get(item.Name) : $"#{need.Tag}";
                 var line = new Rect(right.x, y, right.width, 30f);
@@ -293,27 +332,33 @@ namespace Isle.UI.Prototype
             }
 
             y += 6f;
-            if (chosen.Station.IsValid)
+            var station = StuffCrafting.StationFor(chosen, material);
+            if (station.IsValid)
             {
-                GUI.Label(new Rect(right.x, y, right.width, 20f), $"{Lang.Get("@ui.craft_station")}: {UiTheme.Colour(StationName(chosen.Station), StationOk(chosen) ? UiTheme.Good : UiTheme.Bad)}", st.Text);
+                GUI.Label(new Rect(right.x, y, right.width, 20f), $"{Lang.Get("@ui.craft_station")}: {UiTheme.Colour(StationName(station), StationOkAt(station) ? UiTheme.Good : UiTheme.Bad)}", st.Text);
                 y += 22f;
             }
-            if (chosen.Skills != null)
-                foreach (var need in chosen.Skills.Where(s => s.Level > 1))
-                {
-                    var ok = _player.LevelOf(need.Skill) >= need.Level;
-                    GUI.Label(new Rect(right.x, y, right.width, 20f), $"{SkillName(need.Skill)} Lv {UiTheme.Colour(need.Level.ToString(), ok ? UiTheme.Good : UiTheme.Bad)}", st.Text);
-                    y += 22f;
-                }
+            var level = StuffCrafting.LevelFor(chosen, material);
+            var primary = StuffCrafting.PrimarySkill(chosen);
+            if (level > 1)
+            {
+                var ok = _player.LevelOf(primary) >= level;
+                GUI.Label(new Rect(right.x, y, right.width, 20f), $"{SkillName(primary)} Lv {UiTheme.Colour(level.ToString(), ok ? UiTheme.Good : UiTheme.Bad)}", st.Text);
+                y += 22f;
+            }
 
             var buttonRect = new Rect(right.xMax - 160f, right.yMax - 36f, 160f, 34f);
-            GUI.enabled = Ready(chosen);
-            if (GUI.Button(buttonRect, Lang.Get("@ui.craft_now"), st.ButtonOn)) _player.RequestCraft(chosen.Id.Value);
+            GUI.enabled = ReadyWith(chosen, material);
+            if (GUI.Button(buttonRect, Lang.Get("@ui.craft_now"), st.ButtonOn))
+            {
+                if (material != null) _player.RequestCraft(chosen.Id.Value, material.Id.Value);
+                else _player.RequestCraft(chosen.Id.Value);
+            }
             GUI.enabled = true;
         }
 
         /// <summary>SYS-CRAFT-02: every worn item carried or worn, its durability, what mending it costs, and where.</summary>
-        void DrawRepairList(Rect body, IReadOnlyList<Stock> stock, System.Func<CraftRecipeDef, bool> stationOk)
+        void DrawRepairList(Rect body, IReadOnlyList<Stock> stock, System.Func<NamespacedId, bool> stationOk)
         {
             var st = UiTheme.Styles;
             var worn = new List<(ItemDef Item, Isle.Gameplay.Inventory.ItemWear Wear, string Slot, int Container, Isle.Core.Vec2Int At)>();
@@ -352,7 +397,9 @@ namespace Isle.UI.Prototype
                 if (recipe == null) status = UiTheme.Colour(Lang.Get("@ui.repair_none"), UiTheme.Muted);
                 else
                 {
-                    var cost = Isle.Gameplay.Crafting.RepairCalculator.Cost(recipe.Ingredients);
+                    var material = StuffCrafting.MaterialOf(item);
+                    var station = StuffCrafting.StationFor(recipe, material);
+                    var cost = StuffCrafting.RepairCost(item, recipe);
                     var parts = cost.Select(need =>
                     {
                         var have = stock.Where(line => CraftingCalculator.Matches(need, line)).Sum(line => line.Count);
@@ -360,8 +407,9 @@ namespace Isle.UI.Prototype
                         return UiTheme.Colour($"{name} {have}/{need.Count}", have >= need.Count ? UiTheme.Good : UiTheme.Bad);
                     });
                     status = string.Join("  ", parts);
-                    if (!stationOk(recipe)) status += "  " + UiTheme.Colour(string.Format(Lang.Get("@ui.needs_near"), StationName(recipe.Station)), UiTheme.Bad);
-                    ready = stationOk(recipe) && _player.MeetsSkills(recipe.Skills) && CraftingCalculator.HasIngredients(cost, stock);
+                    if (!stationOk(station)) status += "  " + UiTheme.Colour(string.Format(Lang.Get("@ui.needs_near"), StationName(station)), UiTheme.Bad);
+                    ready = stationOk(station) && _player.MeetsSkills(recipe.Skills) && _player.LevelOf(StuffCrafting.PrimarySkill(recipe)) >= StuffCrafting.LevelFor(recipe, material)
+                            && CraftingCalculator.HasIngredients(cost, stock);
                     GUI.Label(new Rect(row.x + 60f, row.y + 42f, row.width - 200f, 20f),
                         $"{Lang.Get("@ui.repair_new_max")} {Isle.Gameplay.Crafting.RepairCalculator.NewMax(wear.Max)}", st.Small);
                 }

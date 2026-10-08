@@ -1,0 +1,20 @@
+{
+  "id": "isle:wolf_fur",
+  "name": "@material.wolf_fur",
+  "item": "isle:wolf_fur",
+  "categories": [
+    "fur"
+  ],
+  "tier": 1,
+  "craft_level": 5,
+  "armor_sharp": 0.9,
+  "armor_blunt": 0.8,
+  "armor_heat": 0.7,
+  "warmth": 2.5,
+  "durability": 1.0,
+  "mass": 0.3,
+  "power_sharp": 0,
+  "power_blunt": 0,
+  "tool_speed": 1,
+  "color": "#8E8A84"
+}

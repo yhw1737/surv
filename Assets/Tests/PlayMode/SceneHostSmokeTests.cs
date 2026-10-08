@@ -104,8 +104,8 @@ namespace Isle.Tests.PlayMode
             Assert.Greater(player.Skills.TotalXp(NamespacedId.Parse("isle:gathering")), 0d, "harvesting earned no gathering XP");
             Assert.AreEqual(2, CountOf(inventory, "isle:stone"), "rock harvest");
 
-            player.RequestCraft("isle:craft_stone_spear");
-            yield return WaitUntil(() => CountOf(inventory, "isle:stone_spear") == 1, 3f, "spear never crafted");
+            player.RequestCraft("isle:craft_spear", "isle:stone");
+            yield return WaitUntil(() => CountOf(inventory, "isle:spear__stone") == 1, 3f, "spear never crafted");
             Assert.AreEqual(2, CountOf(inventory, "isle:wood"), "wood not consumed");
 
             // Drinking is from terrain water now: stand on the shore and E drinks the sea.
@@ -124,9 +124,9 @@ namespace Isle.Tests.PlayMode
             }
             Assert.Greater(CountOf(inventory, "isle:raw_meat"), 0, "rabbit kill dropped no meat");
 
-            player.RequestEquipItem("isle:stone_spear");
-            yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:stone_spear", 3f, "spear never wielded");
-            Assert.AreEqual(0, CountOf(inventory, "isle:stone_spear"), "wielded spear still in bag");
+            player.RequestEquipItem("isle:spear__stone");
+            yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:spear__stone", 3f, "spear never wielded");
+            Assert.AreEqual(0, CountOf(inventory, "isle:spear__stone"), "wielded spear still in bag");
 
             // SYS-COMBAT-01 §Melee: raise the guard toward a strike from the right — a fresh guard parries, a held one
             // blocks for stamina, and a hit from behind gets through. Then three swings in rhythm make a full combo.
@@ -220,16 +220,18 @@ namespace Isle.Tests.PlayMode
             player.RequestTake("isle:wood");
             yield return WaitUntil(() => CountOf(inventory, "isle:wood") == woodHeld, 3f, "wood never taken back");
 
-            // Clothing: a worn cloak feeds Vitals.ClothingBonus.
-            Give(inventory, "isle:fur_cloak", 1);
-            player.RequestEquipItem("isle:fur_cloak");
-            yield return WaitUntil(() => Mathf.Approximately(vitals.ClothingBonus, 6f), 3f, "cloak warmth never applied");
+            // Clothing (SYS-CRAFT-02): a wolf-fur parka — warmth and per-type armor come from the template × the material.
+            var parka = DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:parka__wolf_fur"));
+            Assert.AreEqual(6f * 2.5f, parka.Warmth, 0.01f, "parka warmth = 6 × wolf fur 2.5");
+            Give(inventory, parka.Id.Value, 1);
+            player.RequestEquipItem(parka.Id.Value);
+            yield return WaitUntil(() => Mathf.Approximately(vitals.ClothingBonus, parka.Warmth), 3f, "parka warmth never applied");
 
-            // Armor: the cloak's 10 armor cuts damage to 60 / (60 + 10) of it (SYS-COMBAT-01 §Damage).
-            Assert.AreEqual(10f, vitals.WornArmor(), 0.01f);
+            // Armor: the hit is blunt, so the parka's blunt armor applies (SYS-COMBAT-01 §Damage curve).
             var healthBefore = vitals.Health;
             vitals.TakeDamage(10f);
-            Assert.AreEqual(10f * 60f / 70f, healthBefore - vitals.Health, 0.3f, "armor not applied");
+            var expectedHit = Isle.Gameplay.Combat.DamageTypes.Damage(10f, "blunt", 1f, parka.ArmorTypes["blunt"]);
+            Assert.AreEqual(expectedHit, healthBefore - vitals.Health, 0.3f, "armor not applied");
 
             // Backpack: equipping one adds a second container that items can go into.
             Give(inventory, "isle:straw_backpack", 1);
@@ -237,9 +239,9 @@ namespace Isle.Tests.PlayMode
             yield return WaitUntil(() => inventory.Containers().Count == 2, 3f, "backpack never opened a grid");
 
             // Tool: a hatchet in hand adds the tree's tool_bonus (2 → 4 wood).
-            Give(inventory, "isle:stone_hatchet", 1);
-            player.RequestEquipItem("isle:stone_hatchet");
-            yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:stone_hatchet", 3f, "hatchet never equipped");
+            Give(inventory, "isle:hatchet__stone", 1);
+            player.RequestEquipItem("isle:hatchet__stone");
+            yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:hatchet__stone", 3f, "hatchet never equipped");
             var woodBefore = CountOf(inventory, "isle:wood");
             yield return HarvestNearest(player, world, "isle:tree");
             Assert.AreEqual(woodBefore + 6, CountOf(inventory, "isle:wood"), "hatchet bonus not applied");
@@ -260,18 +262,18 @@ namespace Isle.Tests.PlayMode
             Assert.AreEqual(55, inventory.Slots.WearOf("main_hand").Current);
 
             // Tiered veins: an iron vein refuses a stone pickaxe and yields to a copper one.
-            Give(inventory, "isle:stone_pickaxe", 1);
-            player.RequestEquipItem("isle:stone_pickaxe");
-            yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:stone_pickaxe", 3f, "pickaxe never equipped");
+            Give(inventory, "isle:pickaxe__stone", 1);
+            player.RequestEquipItem("isle:pickaxe__stone");
+            yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:pickaxe__stone", 3f, "pickaxe never equipped");
             var vein = world.Nodes.FirstOrDefault(n => n.Def.Id.Value == "isle:iron_vein" && n.IsHarvestable && world.NearestWater(n.Position, 3f) == null);
             Assert.IsNotNull(vein, "no iron vein on the island");
             Teleport(player, vein.Position);
             player.RequestInteract();
             yield return new WaitForSeconds(0.5f);
             Assert.IsNull(player.Gathering, "stone pickaxe started on an iron vein");
-            Give(inventory, "isle:copper_pickaxe", 1);
-            player.RequestEquipItem("isle:copper_pickaxe");
-            yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:copper_pickaxe", 3f, "copper pickaxe never equipped");
+            Give(inventory, "isle:pickaxe__copper", 1);
+            player.RequestEquipItem("isle:pickaxe__copper");
+            yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:pickaxe__copper", 3f, "copper pickaxe never equipped");
             yield return HarvestNearest(player, world, "isle:iron_vein");
             Assert.AreEqual(3, CountOf(inventory, "isle:iron_ore"), "iron vein: 2 + 1 tool bonus");
 
@@ -290,14 +292,14 @@ namespace Isle.Tests.PlayMode
             // Ranged: equip a bow, draw for a full charge, loose. Sway makes the hit itself random at level 0, so
             // the check is that an arrow was spent and a projectile flew and expired.
             Give(inventory, "isle:short_bow", 1);
-            Give(inventory, "isle:arrow", 3);
-            Assert.AreEqual(3, CountOf(inventory, "isle:arrow"), "test setup: arrows didn't fit");
+            Give(inventory, "isle:arrow__stone", 3);
+            Assert.AreEqual(3, CountOf(inventory, "isle:arrow__stone"), "test setup: arrows didn't fit");
             player.RequestEquipItem("isle:short_bow");
             yield return WaitUntil(() => player.HoldsRangedWeapon(), 3f, "bow never equipped");
             player.RequestBeginDraw();
             yield return new WaitForSeconds(0.9f);
             player.RequestLoose((Vector2)player.transform.position + Vector2.left * 5f);
-            yield return WaitUntil(() => CountOf(inventory, "isle:arrow") == 2, 3f, "no arrow spent");
+            yield return WaitUntil(() => CountOf(inventory, "isle:arrow__stone") == 2, 3f, "no arrow spent");
             Assert.AreEqual(1, Isle.Gameplay.Combat.Projectiles.Instance.InFlight, "no projectile in flight");
             yield return WaitUntil(() => Isle.Gameplay.Combat.Projectiles.Instance.InFlight == 0, 3f, "arrow never landed");
 
@@ -345,7 +347,7 @@ namespace Isle.Tests.PlayMode
             Assert.IsNull(inventory.Slots.Get("main_hand"), "hand not emptied on death");
             var pile = LootPiles.Nearest(deathSpot, 1f);
             Assert.IsNotNull(pile, "no loot pile at the death spot");
-            Assert.IsTrue(pile.Items.Any(i => i.Item.Id.Value == "isle:stone_spear"), "equipped spear not in the pile");
+            Assert.IsTrue(pile.Items.Any(i => i.Item.Id.Value == "isle:spear__stone"), "equipped spear not in the pile");
             Assert.IsTrue(player.GetComponent<PlayerMovement>().Frozen, "dead player can still move");
 
             yield return WaitUntil(() => !death.IsDead, DeathHandler.RespawnDelaySeconds + 3f, "never respawned");
@@ -357,10 +359,12 @@ namespace Isle.Tests.PlayMode
             yield return WaitUntil(() => LootPiles.All.Count == 0, 3f, "pile never picked up");
             // The repaired hatchet came back through unequip → bag → death pile with its wear — into the bag, or straight
             // back into the empty main hand (recovering a body re-equips gear first).
-            var hatchetWear = inventory.Containers().SelectMany(c => c.Placements).Where(pl => pl.Item.Id.Value == "isle:stone_hatchet").Select(pl => pl.Wear)
-                .Append(inventory.Slots.Get("main_hand")?.Id.Value == "isle:stone_hatchet" ? inventory.Slots.WearOf("main_hand") : null);
+            var hatchetWear = inventory.Containers().SelectMany(c => c.Placements).Where(pl => pl.Item.Id.Value == "isle:hatchet__stone").Select(pl => pl.Wear)
+                .Append(inventory.Slots.Get("main_hand")?.Id.Value == "isle:hatchet__stone" ? inventory.Slots.WearOf("main_hand") : null);
             Assert.IsTrue(hatchetWear.Any(w => w != null && w.Max == 55), "hatchet wear lost through the death pile");
-            Assert.AreEqual(1, CountOf(inventory, "isle:stone_spear"), "spear not recovered from the pile");
+            // Recovering a body re-equips gear into empty slots first, so the spear may be back in hand instead of the bag.
+            var spearBack = CountOf(inventory, "isle:spear__stone") + (inventory.Slots.Get("main_hand")?.Id.Value == "isle:spear__stone" ? 1 : 0);
+            Assert.AreEqual(1, spearBack, "spear not recovered from the pile");
         }
 
         /// <summary>SYS-DUNG-01 (T-201): walk into an entrance, take each lock's key and see the door open, clear the

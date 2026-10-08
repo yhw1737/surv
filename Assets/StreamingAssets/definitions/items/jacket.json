@@ -1,0 +1,31 @@
+{
+  "id": "isle:jacket",
+  "name": "@item.jacket",
+  "tags": [
+    "clothing",
+    "armor",
+    "apparel"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 3
+  },
+  "weight": 0.2,
+  "stack": 1,
+  "durability": 60,
+  "equip_slot": "chest",
+  "armor": 4,
+  "stuff": {
+    "categories": [
+      "fabric",
+      "leather",
+      "fur"
+    ],
+    "amount": 4
+  },
+  "wear": {
+    "style": "jacket",
+    "color": "#9A7550"
+  },
+  "warmth": 3
+}

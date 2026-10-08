@@ -18,6 +18,9 @@ namespace Isle.Data
         public bool AllowAdjacentAssist { get; init; }
 
         public IngredientRef[] Ingredients { get; init; }
+
+        /// <summary>The material slot, for recipes that make a template (SYS-CRAFT-02). Null otherwise.</summary>
+        public StuffIngredient Stuff { get; init; }
         public RecipeOutput Output { get; init; }
         public float TimeSec { get; init; }
 
@@ -26,6 +29,14 @@ namespace Isle.Data
 
         /// <summary>Minigame to run, e.g. <c>isle:forging</c>. Invalid means craft instantly.</summary>
         public NamespacedId Minigame { get; init; }
+    }
+
+    /// <summary>SYS-CRAFT-02: a recipe whose output is a template asks the crafter to pick a material from these
+    /// categories; <see cref="Count"/> units of it are used (the template's <c>stuff.amount</c> when 0).</summary>
+    public sealed class StuffIngredient
+    {
+        public string[] Categories { get; init; }
+        public int Count { get; init; }
     }
 
     /// <summary>What the recipe produces.</summary>

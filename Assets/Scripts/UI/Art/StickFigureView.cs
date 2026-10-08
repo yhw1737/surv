@@ -296,6 +296,7 @@ namespace Isle.UI.Art
             return new FigureOutfit
             {
                 Head = slots.Get("head"),
+                Shirt = slots.Get("shirt"),
                 Chest = slots.Get("chest"),
                 Legs = slots.Get("legs"),
                 Feet = slots.Get("feet"),

@@ -56,7 +56,7 @@ namespace Isle.UI.Inventory
         // Paper-doll positions (column, row) for each equip slot.
         static readonly Dictionary<string, Vector2> DollLayout = new()
         {
-            ["head"] = new(1, 0), ["back"] = new(0, 1), ["chest"] = new(1, 1), ["belt"] = new(2, 1),
+            ["head"] = new(1, 0), ["shirt"] = new(2, 0), ["back"] = new(0, 1), ["chest"] = new(1, 1), ["belt"] = new(2, 1),
             ["main_hand"] = new(0, 2), ["legs"] = new(1, 2), ["off_hand"] = new(2, 2), ["feet"] = new(1, 3),
         };
 

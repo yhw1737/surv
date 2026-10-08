@@ -1,0 +1,20 @@
+{
+  "id": "isle:snakeskin",
+  "name": "@material.snakeskin",
+  "item": "isle:snake_skin",
+  "categories": [
+    "leather"
+  ],
+  "tier": 1,
+  "craft_level": 5,
+  "armor_sharp": 0.8,
+  "armor_blunt": 0.6,
+  "armor_heat": 0.7,
+  "warmth": 0.8,
+  "durability": 0.8,
+  "mass": 0.2,
+  "power_sharp": 0,
+  "power_blunt": 0,
+  "tool_speed": 1,
+  "color": "#8B8B4E"
+}

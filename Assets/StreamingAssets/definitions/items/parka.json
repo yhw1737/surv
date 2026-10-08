@@ -1,0 +1,31 @@
+{
+  "id": "isle:parka",
+  "name": "@item.parka",
+  "tags": [
+    "clothing",
+    "armor",
+    "apparel"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 3
+  },
+  "weight": 0.3,
+  "stack": 1,
+  "durability": 60,
+  "equip_slot": "chest",
+  "armor": 4,
+  "stuff": {
+    "categories": [
+      "fabric",
+      "leather",
+      "fur"
+    ],
+    "amount": 6
+  },
+  "wear": {
+    "style": "parka",
+    "color": "#9A7550"
+  },
+  "warmth": 6
+}

@@ -327,6 +327,21 @@ namespace Isle.UI.Art
                 case "shirt":
                     p.Polygon(new[] { V(0.3f, 0.18f), V(0.3f, 0.6f), V(0.16f, 0.52f), V(0.24f, 0.74f), V(0.4f, 0.82f), V(0.6f, 0.82f), V(0.76f, 0.74f), V(0.84f, 0.52f), V(0.7f, 0.6f), V(0.7f, 0.18f) }, c, true, 0.02f);
                     break;
+                case "jacket":
+                case "plate":
+                    p.Polygon(new[] { V(0.28f, 0.14f), V(0.28f, 0.6f), V(0.12f, 0.5f), V(0.2f, 0.76f), V(0.38f, 0.84f), V(0.62f, 0.84f), V(0.8f, 0.76f), V(0.88f, 0.5f), V(0.72f, 0.6f), V(0.72f, 0.14f) }, c, true, 0.02f);
+                    if (style == "plate") p.Line(V(0.4f, 0.7f), V(0.4f, 0.26f), 0.04f, Light(c, 0.45f), false);
+                    else { p.Line(V(0.5f, 0.82f), V(0.5f, 0.16f), 0.025f, Dark(c), false); p.Polygon(new[] { V(0.38f, 0.84f), V(0.5f, 0.66f), V(0.62f, 0.84f) }, Dark(c, 0.2f), true, 0.01f); }
+                    break;
+                case "parka":
+                    p.Polygon(new[] { V(0.24f, 0.1f), V(0.24f, 0.62f), V(0.08f, 0.5f), V(0.16f, 0.78f), V(0.36f, 0.86f), V(0.64f, 0.86f), V(0.84f, 0.78f), V(0.92f, 0.5f), V(0.76f, 0.62f), V(0.76f, 0.1f) }, c, true, 0.02f);
+                    p.Ellipse(V(0.5f, 0.84f), 0.2f, 0.08f, 0f, Light(c, 0.35f));
+                    p.Line(V(0.24f, 0.16f), V(0.76f, 0.16f), 0.05f, Light(c, 0.35f), false);
+                    break;
+                case "shorts":
+                    p.Polygon(new[] { V(0.24f, 0.8f), V(0.76f, 0.8f), V(0.8f, 0.34f), V(0.56f, 0.34f), V(0.5f, 0.56f), V(0.44f, 0.34f), V(0.2f, 0.34f) }, c, true, 0.02f);
+                    p.Line(V(0.24f, 0.72f), V(0.76f, 0.72f), 0.03f, Dark(c), false);
+                    break;
                 case "cloak":
                     p.Polygon(new[] { V(0.4f, 0.82f), V(0.6f, 0.82f), V(0.82f, 0.16f), V(0.5f, 0.1f), V(0.18f, 0.16f) }, c, true, 0.03f);
                     p.Line(V(0.38f, 0.8f), V(0.62f, 0.8f), 0.06f, Dark(c, 0.2f));

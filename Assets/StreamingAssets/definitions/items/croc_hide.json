@@ -1,0 +1,19 @@
+{
+  "id": "isle:croc_hide",
+  "name": "@item.croc_hide",
+  "tags": [
+    "material",
+    "leather"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 1.0,
+  "stack": 10,
+  "icon_style": {
+    "shape": "pelt",
+    "color": "#5E6B3A",
+    "accent": "#3E4826"
+  }
+}

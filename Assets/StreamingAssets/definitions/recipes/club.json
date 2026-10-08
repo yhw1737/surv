@@ -1,0 +1,33 @@
+{
+  "id": "isle:craft_club",
+  "name": "@recipe.club",
+  "ingredients": [
+    {
+      "item": "isle:wood",
+      "count": 1
+    }
+  ],
+  "stuff": {
+    "categories": [
+      "wood",
+      "stone"
+    ]
+  },
+  "output": {
+    "item": "isle:club",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 10,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 1,
+      "primary": true
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "isle:craft_cloth",
+  "name": "@recipe.cloth",
+  "ingredients": [
+    {
+      "item": "isle:fiber",
+      "count": 3
+    }
+  ],
+  "output": {
+    "item": "isle:cloth",
+    "count": 1
+  },
+  "time_sec": 3,
+  "station": "isle:workbench",
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 5,
+    "per_unit": 4
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 1,
+      "primary": true
+    }
+  ]
+}

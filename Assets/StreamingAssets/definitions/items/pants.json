@@ -1,0 +1,31 @@
+{
+  "id": "isle:pants",
+  "name": "@item.pants",
+  "tags": [
+    "clothing",
+    "armor",
+    "apparel"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 0.1,
+  "stack": 1,
+  "durability": 60,
+  "equip_slot": "legs",
+  "armor": 3,
+  "stuff": {
+    "categories": [
+      "fabric",
+      "leather",
+      "fur"
+    ],
+    "amount": 3
+  },
+  "wear": {
+    "style": "pants",
+    "color": "#9A7550"
+  },
+  "warmth": 1.5
+}

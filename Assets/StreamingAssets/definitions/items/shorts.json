@@ -1,0 +1,30 @@
+{
+  "id": "isle:shorts",
+  "name": "@item.shorts",
+  "tags": [
+    "clothing",
+    "armor",
+    "apparel"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 0.1,
+  "stack": 1,
+  "durability": 60,
+  "equip_slot": "legs",
+  "armor": 1,
+  "stuff": {
+    "categories": [
+      "fabric",
+      "leather"
+    ],
+    "amount": 2
+  },
+  "wear": {
+    "style": "shorts",
+    "color": "#9A7550"
+  },
+  "warmth": 0.5
+}

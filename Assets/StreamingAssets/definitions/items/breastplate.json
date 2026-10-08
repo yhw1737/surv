@@ -1,0 +1,28 @@
+{
+  "id": "isle:breastplate",
+  "name": "@item.breastplate",
+  "tags": [
+    "clothing",
+    "armor",
+    "apparel"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 3
+  },
+  "weight": 0.5,
+  "stack": 1,
+  "durability": 60,
+  "equip_slot": "chest",
+  "armor": 8,
+  "stuff": {
+    "categories": [
+      "metal"
+    ],
+    "amount": 6
+  },
+  "wear": {
+    "style": "plate",
+    "color": "#9A7550"
+  }
+}

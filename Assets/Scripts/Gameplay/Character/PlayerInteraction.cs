@@ -303,7 +303,10 @@ namespace Isle.Gameplay.Character
 
         /// <summary>A swing toward <paramref name="aim"/> (a direction from the player).</summary>
         public void RequestAttack(Vector2 aim) => CmdAttack(aim.x, aim.y);
-        public void RequestCraft(string recipeId) => CmdCraft(recipeId);
+        public void RequestCraft(string recipeId) => CmdCraft(recipeId, string.Empty);
+
+        /// <summary>SYS-CRAFT-02: craft a template recipe from <paramref name="materialId"/>.</summary>
+        public void RequestCraft(string recipeId, string materialId) => CmdCraft(recipeId, materialId ?? string.Empty);
         public void RequestUse(string itemId) => CmdUse(itemId);
         public void RequestRest() => CmdRest();
         public void RequestEquipItem(string itemId) => CmdEquipItem(itemId);
@@ -861,35 +864,51 @@ namespace Isle.Gameplay.Character
         }
 
         [ServerRpc]
-        void CmdCraft(string recipeText)
+        void CmdCraft(string recipeText, string materialText)
         {
             if (IsDead) return;
             if (!NamespacedId.TryParse(recipeText, out var recipeId, out _)) return;
             if (!DefRegistry.TryGet<CraftRecipeDef>(recipeId, out var recipe) || recipe.Output == null) return;
             if (!TryGetComponent<InventoryNetwork>(out var inventory)) return;
-            if (recipe.Station.IsValid && !WorldObjectRegistry.IsActiveNear(transform.position, recipe.Station, ReachTiles)) return;
-            if (!MeetsSkills(recipe.Skills))
+
+            // SYS-CRAFT-02: a template recipe needs a material it accepts; the material can move it to another station
+            // and raise the level it needs, and adds its units to the bill.
+            MaterialDef material = null;
+            var needs = recipe.Ingredients ?? System.Array.Empty<IngredientRef>();
+            var output = recipe.Output.Item;
+            if (recipe.Stuff != null)
+            {
+                if (!NamespacedId.TryParse(materialText, out var materialId, out _) || !DefRegistry.TryGet(materialId, out material)) return;
+                var made = StuffCrafting.OutputFor(recipe, material);
+                if (made == null) return;
+                output = made.Id;
+                needs = needs.Append(new IngredientRef { Item = material.Item, Count = StuffCrafting.CountFor(recipe) }).ToArray();
+            }
+            var station = StuffCrafting.StationFor(recipe, material);
+            if (station.IsValid && !WorldObjectRegistry.IsActiveNear(transform.position, station, ReachTiles)) return;
+            if (!MeetsSkills(recipe.Skills) || (material != null && LevelOf(PrimarySkill(recipe)) < material.CraftLevel))
             {
                 GameFeed.RaiseNotice("@ui.skill_too_low");
                 return;
             }
 
             var containers = inventory.Containers();
-            if (!CraftingCalculator.HasIngredients(recipe.Ingredients, CraftingCalculator.StockOf(containers))) return;
-            if (!DefRegistry.TryGet<ItemDef>(recipe.Output.Item, out _)) return;
+            if (!CraftingCalculator.HasIngredients(needs, CraftingCalculator.StockOf(containers))) return;
+            if (!DefRegistry.TryGet<ItemDef>(output, out _)) return;
 
             // No room check up front: paying frees space, and anything that still doesn't fit drops at your feet.
-            ConsumeIngredients(containers, recipe.Ingredients);
-            AwardXp(recipe.Xp, recipe.Ingredients?.Sum(i => i.Count) ?? 0);
-            GiveItem(inventory, recipe.Output.Item, recipe.Output.Count);
+            ConsumeIngredients(containers, needs);
+            AwardXp(recipe.Xp, needs.Sum(i => i.Count));
+            GiveItem(inventory, output, recipe.Output.Count);
         }
+
+        static NamespacedId PrimarySkill(CraftRecipeDef recipe) => StuffCrafting.PrimarySkill(recipe);
 
         // ------------------------------------------------------------------ repair (SYS-CRAFT-02)
 
         /// <summary>The recipe that makes <paramref name="item"/> — it also sets where and for what it's repaired. Null
         /// when nothing makes it (not repairable).</summary>
-        public static CraftRecipeDef RepairRecipe(ItemDef item) =>
-            item == null ? null : DefRegistry.All<CraftRecipeDef>().FirstOrDefault(r => r.Output != null && r.Output.Item == item.Id);
+        public static CraftRecipeDef RepairRecipe(ItemDef item) => StuffCrafting.RecipeFor(item);
 
         /// <summary>Repairs the item in an equip slot.</summary>
         public void RequestRepairEquipped(string slot) => CmdRepairEquipped(slot);
@@ -932,17 +951,19 @@ namespace Isle.Gameplay.Character
                 GameFeed.RaiseNotice("@ui.repair_full");
                 return false;
             }
-            if (recipe.Station.IsValid && !WorldObjectRegistry.IsActiveNear(transform.position, recipe.Station, ReachTiles))
+            var material = StuffCrafting.MaterialOf(item);
+            var station = StuffCrafting.StationFor(recipe, material);
+            if (station.IsValid && !WorldObjectRegistry.IsActiveNear(transform.position, station, ReachTiles))
             {
                 GameFeed.RaiseNotice("@ui.repair_station");
                 return false;
             }
-            if (!MeetsSkills(recipe.Skills))
+            if (!MeetsSkills(recipe.Skills) || LevelOf(PrimarySkill(recipe)) < StuffCrafting.LevelFor(recipe, material))
             {
                 GameFeed.RaiseNotice("@ui.skill_too_low");
                 return false;
             }
-            var cost = RepairCalculator.Cost(recipe.Ingredients);
+            var cost = StuffCrafting.RepairCost(item, recipe);
             var containers = inventory.Containers();
             if (!CraftingCalculator.HasIngredients(cost, CraftingCalculator.StockOf(containers)))
             {

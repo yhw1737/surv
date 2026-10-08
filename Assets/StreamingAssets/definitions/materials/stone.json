@@ -1,0 +1,20 @@
+{
+  "id": "isle:stone",
+  "name": "@material.stone",
+  "item": "isle:stone",
+  "categories": [
+    "stone"
+  ],
+  "tier": 1,
+  "craft_level": 1,
+  "armor_sharp": 0.8,
+  "armor_blunt": 0.7,
+  "armor_heat": 0.9,
+  "warmth": 0.2,
+  "durability": 1.0,
+  "mass": 0.6,
+  "power_sharp": 1.0,
+  "power_blunt": 1.0,
+  "tool_speed": 1.0,
+  "color": "#9FA4AA"
+}

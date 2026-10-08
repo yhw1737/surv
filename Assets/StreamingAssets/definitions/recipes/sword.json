@@ -1,0 +1,36 @@
+{
+  "id": "isle:craft_sword",
+  "name": "@recipe.sword",
+  "ingredients": [
+    {
+      "item": "isle:wood",
+      "count": 1
+    },
+    {
+      "tag": "leather",
+      "count": 1
+    }
+  ],
+  "stuff": {
+    "categories": [
+      "metal"
+    ]
+  },
+  "output": {
+    "item": "isle:sword",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 10,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 1,
+      "primary": true
+    }
+  ]
+}

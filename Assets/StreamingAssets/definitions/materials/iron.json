@@ -1,0 +1,21 @@
+{
+  "id": "isle:iron",
+  "name": "@material.iron",
+  "item": "isle:iron_ingot",
+  "categories": [
+    "metal"
+  ],
+  "tier": 3,
+  "craft_level": 20,
+  "station": "isle:anvil",
+  "armor_sharp": 1.5,
+  "armor_blunt": 1.2,
+  "armor_heat": 1.3,
+  "warmth": 0.0,
+  "durability": 5.0,
+  "mass": 1.0,
+  "power_sharp": 1.5,
+  "power_blunt": 1.4,
+  "tool_speed": 1.5,
+  "color": "#8E979F"
+}

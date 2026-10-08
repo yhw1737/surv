@@ -1,0 +1,28 @@
+{
+  "id": "isle:craft_helmet",
+  "name": "@recipe.helmet",
+  "ingredients": [],
+  "stuff": {
+    "categories": [
+      "metal"
+    ]
+  },
+  "output": {
+    "item": "isle:helmet",
+    "count": 1
+  },
+  "time_sec": 4,
+  "station": "isle:workbench",
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 10,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 1,
+      "primary": true
+    }
+  ]
+}

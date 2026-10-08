@@ -1,0 +1,20 @@
+{
+  "id": "isle:leather",
+  "name": "@material.leather",
+  "item": "isle:hide",
+  "categories": [
+    "leather"
+  ],
+  "tier": 1,
+  "craft_level": 1,
+  "armor_sharp": 1.0,
+  "armor_blunt": 0.8,
+  "armor_heat": 0.8,
+  "warmth": 1.2,
+  "durability": 1.0,
+  "mass": 0.3,
+  "power_sharp": 0,
+  "power_blunt": 0,
+  "tool_speed": 1,
+  "color": "#9A7550"
+}

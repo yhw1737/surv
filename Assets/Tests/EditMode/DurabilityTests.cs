@@ -168,35 +168,35 @@ namespace Isle.Tests.EditMode
             Assert.AreSame(worn, other.Placements.Single().Wear);
         }
     
-        // --- Content (SYS-CRAFT-02 tables) -------------------------------------------------------------------------
+        // --- Content (SYS-CRAFT-02 materials) -----------------------------------------------------------------------
 
-        static readonly int[] Durabilities = { 0, 60, 150, 300, 500 };
-        static readonly float[] Mults = { 0f, 1f, 1.25f, 1.5f, 1.8f };
-        static readonly int[] Levels = { 0, 1, 10, 20, 30 };
+        static readonly Dictionary<string, float> Bases = new() { ["hatchet"] = 22, ["pickaxe"] = 18, ["spear"] = 30, ["knife"] = 16, ["sword"] = 26, ["mace"] = 26, ["club"] = 26 };
 
         [Test]
-        public void Content_TieredGear_FollowsTheTables()
+        public void Content_Variants_FollowTheMaterialFactors()
         {
             DefRegistry.Clear();
             try
             {
                 Assert.IsEmpty(DefinitionBootstrap.Load(System.IO.Path.Combine(UnityEngine.Application.streamingAssetsPath, "definitions")));
-                var tiered = DefRegistry.All<ItemDef>().Where(i => i.Tier > 0 && i.Durability > 0).ToList();
-                // 10 tier-1 pieces + 3 metals × (6 tools/weapons + 4 armor pieces).
-                Assert.AreEqual(40, tiered.Count, "tiered gear count");
-                foreach (var item in tiered)
-                    Assert.AreEqual(Durabilities[item.Tier], item.Durability, $"{item.Id} durability");
-
-                var bases = new Dictionary<string, float> { ["hatchet"] = 22, ["pickaxe"] = 18, ["spear"] = 30, ["knife"] = 16, ["sword"] = 26, ["mace"] = 26 };
-                foreach (var (metal, tier) in new[] { ("copper", 2), ("iron", 3), ("steel", 4) })
-                foreach (var (kind, power) in bases)
+                // The decided durability ladder: stone 60, copper 150, iron 300, steel 500.
+                foreach (var (material, durability) in new[] { ("stone", 60), ("copper", 150), ("iron", 300), ("steel", 500) })
+                    Assert.AreEqual(durability, DefRegistry.Get<ItemDef>(NamespacedId.Parse($"isle:pickaxe__{material}")).Durability, material);
+                foreach (var material in DefRegistry.All<MaterialDef>())
+                foreach (var (kind, power) in Bases)
                 {
-                    var weapon = DefRegistry.Get<WeaponDef>(NamespacedId.Parse($"isle:{metal}_{kind}"));
-                    Assert.AreEqual((int)(power * Mults[tier] + 0.5f), (int)weapon.BasePower, $"{metal} {kind} power");
-                    var recipe = DefRegistry.Get<CraftRecipeDef>(NamespacedId.Parse($"isle:craft_{metal}_{kind}"));
-                    Assert.AreEqual("isle:anvil", recipe.Station.Value);
-                    Assert.AreEqual(Levels[tier], recipe.Skills[0].Level, $"{metal} {kind} level");
+                    if (!DefRegistry.TryGet<WeaponDef>(NamespacedId.Parse($"isle:{kind}__{material.Id.Name}"), out var weapon)) continue;
+                    var factor = kind is "mace" or "club" ? material.PowerBlunt : material.PowerSharp;
+                    Assert.AreEqual((int)(power * factor + 0.5f), (int)weapon.BasePower, $"{weapon.Id} power");
                 }
+                // Copper tools work an iron vein's tier; stone doesn't.
+                Assert.AreEqual(2, DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:pickaxe__copper")).Tier);
+                Assert.AreEqual(1.8f, DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:hatchet__steel")).ToolPower, 1e-4f);
+                // Fur is warm, metal isn't; metal turns a blade, fur barely.
+                var furParka = DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:parka__wolf_fur"));
+                var ironPlate = DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:breastplate__iron"));
+                Assert.Greater(furParka.Warmth, ironPlate.Warmth);
+                Assert.Greater(ironPlate.ArmorTypes["slash"], furParka.ArmorTypes["slash"]);
             }
             finally { DefRegistry.Clear(); }
         }
@@ -215,12 +215,74 @@ namespace Isle.Tests.EditMode
                         Assert.IsTrue(DefRegistry.TryGet<ItemDef>(need.Item, out _), $"{recipe.Id}: input {need.Item}");
                     if (recipe.Station.IsValid)
                         Assert.IsTrue(DefRegistry.TryGet<WorldObjectDef>(recipe.Station, out _), $"{recipe.Id}: station {recipe.Station}");
+                    if (recipe.Stuff != null)
+                        Assert.IsNotEmpty(StuffCrafting.MaterialsFor(recipe), $"{recipe.Id}: no material fits");
                 }
-                // Every durable item can be repaired: something crafts it.
-                foreach (var item in DefRegistry.All<ItemDef>().Where(i => i.Durability > 0))
-                    Assert.IsTrue(DefRegistry.All<CraftRecipeDef>().Any(r => r.Output.Item == item.Id), $"{item.Id} has no recipe to repair from");
+                foreach (var material in DefRegistry.All<MaterialDef>())
+                    Assert.IsTrue(DefRegistry.TryGet<ItemDef>(material.Item, out _), $"{material.Id}: item {material.Item}");
+                // Every durable item that exists in the world can be repaired: something crafts it.
+                foreach (var item in DefRegistry.All<ItemDef>().Where(i => i.Durability > 0 && i.Stuff == null))
+                    Assert.IsNotNull(StuffCrafting.RecipeFor(item), $"{item.Id} has no recipe to repair from");
             }
             finally { DefRegistry.Clear(); }
+        }
+
+        // --- Materials, in isolation ------------------------------------------------------------------------------
+
+        static MaterialDef Mat(string id, string category, float sharp = 1f, float blunt = 1f, float warmth = 1f, float durability = 1f) => new()
+        {
+            Id = NamespacedId.Parse("test:" + id), Name = "@material." + id, Item = NamespacedId.Parse("test:" + id + "_unit"),
+            Categories = new[] { category }, ArmorSharp = sharp, ArmorBlunt = blunt, ArmorHeat = 1f, Warmth = warmth,
+            Durability = durability, Mass = 0.5f, PowerSharp = sharp, PowerBlunt = blunt, ToolSpeed = 1f, Tier = 1,
+        };
+
+        [Test]
+        public void Expand_MakesOneVariantPerAcceptedMaterial_WithItsFactors()
+        {
+            var items = new LoadResult<ItemDef>();
+            var weapons = new LoadResult<WeaponDef>();
+            items.Definitions.Add(new ItemDef
+            {
+                Id = NamespacedId.Parse("test:shirt"), Name = "@item.shirt", Grid = new GridSize { W = 2, H = 2 }, Weight = 0.1f,
+                Durability = 60, Armor = 2f, Warmth = 2f, Stuff = new StuffSpec { Categories = new[] { "fabric" }, Amount = 2 },
+            });
+            items.SourcePaths.Add("x");
+            var materials = new[] { Mat("cloth", "fabric", sharp: 0.5f, blunt: 0.25f, warmth: 1.5f, durability: 0.5f), Mat("iron", "metal") };
+            StuffVariants.Expand(items, weapons, materials);
+
+            Assert.AreEqual(2, items.Definitions.Count, "template + the one fabric variant (iron isn't fabric)");
+            var shirt = items.Definitions.Single(i => i.Id.Value == "test:shirt__cloth");
+            Assert.AreEqual(1f, shirt.ArmorTypes["slash"], 1e-4f);
+            Assert.AreEqual(0.5f, shirt.ArmorTypes["blunt"], 1e-4f);
+            Assert.AreEqual(3f, shirt.Warmth, 1e-4f);
+            Assert.AreEqual(30, shirt.Durability);
+            Assert.AreEqual(1.1f, shirt.Weight, 1e-4f, "0.1 + 2 units × 0.5");
+            Assert.AreEqual("test:shirt", shirt.StuffTemplate.Value);
+            Assert.AreEqual("test:cloth", shirt.Material.Value);
+            Assert.IsNull(shirt.Stuff);
+            Assert.AreEqual("@pattern.made_of|@material.cloth|@item.shirt", shirt.Name);
+        }
+
+        [Test]
+        public void Expand_Weapon_RescalesEachAttackByHowTheMaterialHits()
+        {
+            var items = new LoadResult<ItemDef>();
+            var weapons = new LoadResult<WeaponDef>();
+            weapons.Definitions.Add(new WeaponDef
+            {
+                Id = NamespacedId.Parse("test:axe"), BasePower = 20f, DamageType = "slash", Durability = 60,
+                Attacks = new[] { new AttackSpec { Type = "slash" }, new AttackSpec { Type = "blunt", PowerMult = 1.4f } },
+            });
+            weapons.SourcePaths.Add("x");
+            items.Definitions.Add(new ItemDef { Id = NamespacedId.Parse("test:axe"), Weapon = NamespacedId.Parse("test:axe"), Durability = 60, Stuff = new StuffSpec { Categories = new[] { "wood" } } });
+            items.SourcePaths.Add("x");
+            StuffVariants.Expand(items, weapons, new[] { Mat("wood", "wood", sharp: 0.5f, blunt: 1f) });
+
+            var axe = weapons.Definitions.Single(w => w.Id.Value == "test:axe__wood");
+            Assert.AreEqual(10f, axe.BasePower, 1e-4f, "slash weapon × sharp 0.5");
+            Assert.AreEqual(1f, axe.Attacks[0].PowerMult, 1e-4f);
+            Assert.AreEqual(2.8f, axe.Attacks[1].PowerMult, 1e-4f, "the blunt finisher keeps wood's full blunt power: 1.4 × 1 / 0.5");
+            Assert.AreEqual("test:axe__wood", items.Definitions.Single(i => i.Id.Value == "test:axe__wood").Weapon.Value);
         }
     }
 }

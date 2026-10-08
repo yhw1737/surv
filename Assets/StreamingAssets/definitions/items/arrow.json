@@ -3,8 +3,6 @@
   "name": "@item.arrow",
   "tags": [
     "ammo",
-    "wood",
-    "stone",
     "ammo/arrow"
   ],
   "grid": {
@@ -13,11 +11,17 @@
   },
   "weight": 0.05,
   "stack": 30,
+  "ammo_power": 1.0,
+  "stuff": {
+    "categories": [
+      "stone",
+      "metal"
+    ],
+    "amount": 1
+  },
   "icon_style": {
     "shape": "arrow",
     "color": "#9A6B42",
     "accent": "#9FA4AA"
-  },
-  "tier": 1,
-  "ammo_power": 1.0
+  }
 }
