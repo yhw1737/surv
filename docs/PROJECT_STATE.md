@@ -6,8 +6,8 @@
 ## Header
 
 - Last updated: **2026-10-07**
-- **2026-10-08 — T-072 butchery.** Branch `feature/T-072-butchery` off `feature/T-167-shipwreck-start` (PR #39),
-  **uncommitted**. Developer decisions: 2.5 kg per raw meat (min 1), copper/steel knife 0.85/1.08, kills leave a
+- **2026-10-08 — T-072 butchery.** Branch `feature/T-072-butchery` off `feature/T-167-shipwreck-start` (PR #39)
+  — [PR #40](https://github.com/yhw1737/surv/pull/40). Developer decisions: 2.5 kg per raw meat (min 1), copper/steel knife 0.85/1.08, kills leave a
   carcass that E butchers over time. Built: `ButcheryCalculator` (SYS-HUNT-01 §Yield/§Cuts/§Carrying time, pure);
   carcasses in `CreatureDirector` (`Dead`, `Condition` rolled at spawn, `KillFactor` from kill method + overkill,
   `Cuts`, `Butcher`); kill methods passed from melee (knife = precise, blunt), arrows (precise), DoT; butcher action
