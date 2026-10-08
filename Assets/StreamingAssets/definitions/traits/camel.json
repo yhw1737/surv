@@ -1,0 +1,13 @@
+{
+  "id": "isle:camel",
+  "name": "@trait.camel",
+  "description": "@trait.camel_desc",
+  "cost": 2,
+  "group": "thirst",
+  "effects": [
+    {
+      "type": "thirst_drain_mult",
+      "value": 0.75
+    }
+  ]
+}

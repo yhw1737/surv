@@ -1,0 +1,13 @@
+{
+  "id": "isle:thirsty",
+  "name": "@trait.thirsty",
+  "description": "@trait.thirsty_desc",
+  "cost": -2,
+  "group": "thirst",
+  "effects": [
+    {
+      "type": "thirst_drain_mult",
+      "value": 1.3
+    }
+  ]
+}

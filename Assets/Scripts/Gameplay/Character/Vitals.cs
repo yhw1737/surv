@@ -139,15 +139,17 @@ namespace Isle.Gameplay.Character
             if (_movement == null) return;
 
             ClothingBonus = WornWarmth();
-            var weight = CarriedWeightKg();
-            _movement.WeightMultiplier = WeightCalculator.SpeedMultiplier(weight);
+            // carry_capacity_mult: a strong back carries more before it slows; move_speed_mult: on top of that.
+            var buffs = ActiveBuffs();
+            var weight = CarriedWeightKg() / Mathf.Max(0.1f, BuffEffects.Mult(buffs, "carry_capacity_mult"));
+            _movement.WeightMultiplier = WeightCalculator.SpeedMultiplier(weight) * BuffEffects.Mult(buffs, "move_speed_mult");
             Overloaded = WeightCalculator.IsOverloaded(weight);
             if (Stamina <= 0f) Exhausted = true;
             else if (Exhausted && Stamina >= ExhaustionRecoverStamina) Exhausted = false;
             _movement.SprintAllowed = !Exhausted && Stamina > 0f;
             _movement.RollAllowed = Stamina >= RollStaminaCost && !Overloaded;
 
-            if (_movement.IsSprinting) SpendStamina(SprintStaminaPerSecond * Time.deltaTime);
+            if (_movement.IsSprinting) SpendStamina(SprintStaminaPerSecond * Time.deltaTime * BuffEffects.Mult(buffs, "sprint_cost_mult"));
             CurrentActivity = _movement.IsSprinting ? Activity.Sprinting : _movement.IsMoving ? Activity.Walking : Activity.Idle;
         }
 
@@ -226,16 +228,29 @@ namespace Isle.Gameplay.Character
         /// <summary>Defs of every buff active now — what each formula below reads its multipliers from.</summary>
         public List<BuffDef> ActiveBuffs()
         {
-            var active = new List<BuffDef>();
+            // Traits are permanent effects (SYS-START-01), read through the same list as dishes' buffs.
+            var active = new List<BuffDef>(_traitEffects);
             foreach (var id in Buffs.ActiveBuffIds(NowMinutes))
                 if (DefRegistry.TryGet<BuffDef>(id, out var buff)) active.Add(buff);
             return active;
+        }
+
+        readonly List<BuffDef> _traitEffects = new();
+
+        /// <summary>SYS-START-01: the survivor's traits, as permanent effects. Replaces any earlier set.</summary>
+        public void SetTraits(IEnumerable<TraitDef> traits)
+        {
+            _traitEffects.Clear();
+            foreach (var trait in traits)
+                if (trait?.Effects is { Length: > 0 }) _traitEffects.Add(new BuffDef { Id = trait.Id, Name = trait.Name, Effects = trait.Effects });
         }
 
         /// <summary>Server-side: grants a buff, its duration stretched by a dish's buff_duration / care tag.</summary>
         public void GrantBuff(NamespacedId buffId, float durationMult)
         {
             if (!IsServer || !DefRegistry.TryGet<BuffDef>(buffId, out var buff)) return;
+            // buff_duration_mult (traits): a gourmand savours a meal's effects longer, an ascetic shorter.
+            durationMult *= BuffEffects.Mult(_traitEffects, "buff_duration_mult");
             Buffs.Grant(new BuffDef { Id = buff.Id, Name = buff.Name, Effects = buff.Effects, DurationMin = (long)(buff.DurationMin * durationMult) }, NowMinutes);
         }
 
@@ -243,7 +258,7 @@ namespace Isle.Gameplay.Character
         {
             var buffs = ActiveBuffs();
             var heatstroke = VitalsCalculator.IsHeatstroke(Temperature);
-            var hungerDelta = VitalsCalculator.HungerDrainPerHour(CurrentActivity, Temperature) / 60f;
+            var hungerDelta = VitalsCalculator.HungerDrainPerHour(CurrentActivity, Temperature) / 60f * BuffEffects.Mult(buffs, "hunger_drain_mult");
             var thirstDelta = VitalsCalculator.ThirstDrainPerHour(CurrentActivity, AmbientTemp, MinutesSinceSaltyFood) / 60f
                 * (heatstroke ? 2f : 1f) * BuffEffects.Mult(buffs, "thirst_drain_mult");
             if (TryGetComponent<InventoryNetwork>(out var carried))
@@ -355,7 +370,7 @@ namespace Isle.Gameplay.Character
             if (!IsServer || amount <= 0f) return;
             if (_movement != null && _movement.IsInvulnerable) return; // dodge roll i-frames
             var armor = Combat.DamageTypes.ArmorAgainst(WornArmor(), WornArmorTypes(damageType), damageType);
-            var taken = Combat.DamageTypes.Damage(amount, damageType, FoodResistMult(damageType), armor);
+            var taken = Combat.DamageTypes.Damage(amount, damageType, FoodResistMult(damageType), armor) * BuffEffects.Mult(ActiveBuffs(), "damage_taken_mult");
             Status.OnHit(damageType, taken, Time.time, out _);
             Health = Mathf.Clamp(Health - taken, 0f, VitalsCalculator.GaugeMax);
             LastHitAt = Time.time;

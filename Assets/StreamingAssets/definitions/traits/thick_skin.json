@@ -1,0 +1,22 @@
+{
+  "id": "isle:thick_skin",
+  "name": "@trait.thick_skin",
+  "description": "@trait.thick_skin_desc",
+  "cost": 2,
+  "excludes": [
+    "isle:fragile"
+  ],
+  "group": "skin",
+  "effects": [
+    {
+      "type": "damage_resist",
+      "value": 0.15,
+      "damage_type": "slash"
+    },
+    {
+      "type": "damage_resist",
+      "value": 0.15,
+      "damage_type": "pierce"
+    }
+  ]
+}

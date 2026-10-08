@@ -1,0 +1,13 @@
+{
+  "id": "isle:weak",
+  "name": "@trait.weak",
+  "description": "@trait.weak_desc",
+  "cost": -3,
+  "group": "strength",
+  "effects": [
+    {
+      "type": "carry_capacity_mult",
+      "value": 0.8
+    }
+  ]
+}

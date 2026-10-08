@@ -1,0 +1,16 @@
+{
+  "id": "isle:great_memory",
+  "name": "@trait.great_memory",
+  "description": "@trait.great_memory_desc",
+  "cost": 3,
+  "excludes": [
+    "isle:slow_learner"
+  ],
+  "group": "memory",
+  "effects": [
+    {
+      "type": "xp_mult",
+      "value": 1.15
+    }
+  ]
+}

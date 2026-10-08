@@ -28,6 +28,9 @@ namespace Isle.Gameplay.Inventory
     {
         public Vector2 Position { get; init; }
         public List<LootEntry> Items { get; } = new();
+
+        /// <summary>How it looks (a ShapeLibrary shape); null is a sack.</summary>
+        public string Shape { get; init; }
         public GameObject View { get; set; }
     }
 
@@ -46,9 +49,9 @@ namespace Isle.Gameplay.Inventory
         public static LootPile Drop(Vector2 at, IEnumerable<(ItemDef Item, int Count)> items) =>
             Drop(at, items.Select(i => new LootEntry(i.Item, i.Count)));
 
-        public static LootPile Drop(Vector2 at, IEnumerable<LootEntry> items)
+        public static LootPile Drop(Vector2 at, IEnumerable<LootEntry> items, string shape = null)
         {
-            var pile = new LootPile { Position = at };
+            var pile = new LootPile { Position = at, Shape = shape };
             pile.Items.AddRange(items);
             if (pile.Items.Count == 0) return null;
 
@@ -56,9 +59,9 @@ namespace Isle.Gameplay.Inventory
             var view = new GameObject("LootPile");
             view.transform.position = at;
             var renderer = view.AddComponent<SpriteRenderer>();
-            renderer.sprite = _sprite;
+            renderer.sprite = shape != null ? ShapeLibrary.Sprite(shape, new Color(0.55f, 0.42f, 0.3f)) : _sprite;
             renderer.sortingOrder = 4;
-            view.transform.localScale = Vector3.one * 0.7f;
+            view.transform.localScale = Vector3.one * (shape != null ? 1.4f : 0.7f); // wreckage is bigger than a sack
             pile.View = view;
 
             _piles.Add(pile);

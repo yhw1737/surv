@@ -1,0 +1,13 @@
+{
+  "id": "isle:fast_learner",
+  "name": "@trait.fast_learner",
+  "description": "@trait.fast_learner_desc",
+  "cost": 4,
+  "group": "learning",
+  "effects": [
+    {
+      "type": "xp_mult",
+      "value": 1.2
+    }
+  ]
+}

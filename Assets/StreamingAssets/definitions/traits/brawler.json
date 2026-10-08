@@ -1,0 +1,17 @@
+{
+  "id": "isle:brawler",
+  "name": "@trait.brawler",
+  "description": "@trait.brawler_desc",
+  "cost": 1,
+  "group": "fighting",
+  "effects": [
+    {
+      "type": "melee_power_mult",
+      "value": 1.2
+    },
+    {
+      "type": "aim_sway_mult",
+      "value": 1.5
+    }
+  ]
+}

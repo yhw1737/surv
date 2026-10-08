@@ -1,0 +1,13 @@
+{
+  "id": "isle:light_eater",
+  "name": "@trait.light_eater",
+  "description": "@trait.light_eater_desc",
+  "cost": 2,
+  "group": "appetite",
+  "effects": [
+    {
+      "type": "hunger_drain_mult",
+      "value": 0.75
+    }
+  ]
+}

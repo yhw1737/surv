@@ -1,0 +1,29 @@
+{
+  "id": "isle:bulletproof_vest",
+  "name": "@item.bulletproof_vest",
+  "tags": [
+    "clothing",
+    "armor",
+    "salvage"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 3
+  },
+  "weight": 2.5,
+  "stack": 1,
+  "durability": 200,
+  "equip_slot": "chest",
+  "armor": 10,
+  "armor_types": {
+    "slash": 10,
+    "pierce": 14,
+    "blunt": 5,
+    "heat": 3
+  },
+  "warmth": 1,
+  "wear": {
+    "style": "plate",
+    "color": "#3E4A3A"
+  }
+}

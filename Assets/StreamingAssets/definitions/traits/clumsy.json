@@ -1,0 +1,13 @@
+{
+  "id": "isle:clumsy",
+  "name": "@trait.clumsy",
+  "description": "@trait.clumsy_desc",
+  "cost": -2,
+  "group": "dexterity",
+  "effects": [
+    {
+      "type": "gather_speed_mult",
+      "value": 0.8
+    }
+  ]
+}

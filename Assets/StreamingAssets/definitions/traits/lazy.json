@@ -1,0 +1,13 @@
+{
+  "id": "isle:lazy",
+  "name": "@trait.lazy",
+  "description": "@trait.lazy_desc",
+  "cost": -3,
+  "group": "work",
+  "effects": [
+    {
+      "type": "gather_speed_mult",
+      "value": 0.8
+    }
+  ]
+}

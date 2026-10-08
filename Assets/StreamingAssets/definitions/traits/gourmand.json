@@ -1,0 +1,20 @@
+{
+  "id": "isle:gourmand",
+  "name": "@trait.gourmand",
+  "description": "@trait.gourmand_desc",
+  "cost": -1,
+  "excludes": [
+    "isle:light_eater"
+  ],
+  "group": "diet",
+  "effects": [
+    {
+      "type": "hunger_drain_mult",
+      "value": 1.4
+    },
+    {
+      "type": "buff_duration_mult",
+      "value": 1.3
+    }
+  ]
+}

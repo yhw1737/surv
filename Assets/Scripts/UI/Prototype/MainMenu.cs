@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using Isle.Core.Ids;
 using Isle.Core.Util;
 using Isle.Data;
@@ -16,7 +17,7 @@ namespace Isle.UI.Prototype
     /// </summary>
     public sealed class MainMenu : MonoBehaviour
     {
-        enum Page { Main, NewGame, Load, Options, ConfirmOverwrite, ConfirmDelete, Loading }
+        enum Page { Main, NewGame, Load, Options, ConfirmOverwrite, ConfirmDelete, Survivor, Loading }
 
         // Layout and backdrop values — presentation only.
         const float ButtonWidth = 280f;
@@ -137,7 +138,8 @@ namespace Isle.UI.Prototype
         {
             var kb = Keyboard.current;
             if (kb == null || !kb.escapeKey.wasPressedThisFrame) return;
-            if (_page is Page.NewGame or Page.Options or Page.Load or Page.ConfirmOverwrite or Page.ConfirmDelete) _page = Page.Main;
+            if (_page == Page.Survivor) _page = Page.NewGame;
+            else if (_page is Page.NewGame or Page.Options or Page.Load or Page.ConfirmOverwrite or Page.ConfirmDelete) _page = Page.Main;
         }
 
         // ------------------------------------------------------------------ screen
@@ -168,6 +170,7 @@ namespace Isle.UI.Prototype
                 case Page.Load: LoadPage(st, y); break;
                 case Page.ConfirmDelete: ConfirmDeletePage(st, y); break;
                 case Page.Options: OptionsPage(st, y); break;
+                case Page.Survivor: SurvivorPage(st); break;
                 case Page.Loading: LoadingPage(st); break;
             }
 
@@ -251,7 +254,7 @@ namespace Isle.UI.Prototype
             if (GUI.Button(new Rect(x + width - 200f, y, 200f, ButtonHeight), Lang.Get("@ui.menu_start"), st.ButtonOn))
             {
                 if (_slots[_targetSlot] != null) _page = Page.ConfirmOverwrite;
-                else BeginNew();
+                else PickSurvivor();
             }
         }
 
@@ -292,7 +295,7 @@ namespace Isle.UI.Prototype
             GUI.Label(new Rect(x, y, width, 60f), string.Format(Lang.Get("@ui.menu_overwrite"), _targetSlot), st.Text);
             y += 76f;
             if (GUI.Button(new Rect(x, y, 160f, ButtonHeight), Lang.Get("@ui.menu_back"), st.Button)) _page = Page.NewGame;
-            if (GUI.Button(new Rect(x + width - 200f, y, 200f, ButtonHeight), Lang.Get("@ui.menu_overwrite_yes"), st.ButtonOn)) BeginNew();
+            if (GUI.Button(new Rect(x + width - 200f, y, 200f, ButtonHeight), Lang.Get("@ui.menu_overwrite_yes"), st.ButtonOn)) PickSurvivor();
         }
 
         void ConfirmDeletePage(UiTheme.StyleSet st, float y)
@@ -308,6 +311,82 @@ namespace Isle.UI.Prototype
                 SaveGame.DeleteFile(_targetSlot);
                 RefreshSlots();
                 _page = _latest > 0 ? Page.Load : Page.Main;
+            }
+        }
+
+        // ------------------------------------------------------------------ survivor (SYS-START-01)
+
+        Isle.Gameplay.Character.Survivor _survivor;
+
+        void PickSurvivor()
+        {
+            Reroll();
+            _page = Page.Survivor;
+        }
+
+        void Reroll() => _survivor = Isle.Gameplay.Character.StartDirector.Roll(new System.Random(Random.Range(int.MinValue, int.MaxValue)));
+
+        /// <summary>One random passenger: name, background, traits (good in green, bad in red), skills. Someone else
+        /// rolls a new one; there is no editing — who washed up is who you play.</summary>
+        void SurvivorPage(UiTheme.StyleSet st)
+        {
+            if (_survivor == null) Reroll();
+            const float width = 560f;
+            var x = Mathf.Max(24f, Screen.width * 0.3f - width * 0.5f);
+            var y = Screen.height * 0.26f;
+            var traits = _survivor.Traits.Where(t => !t.Background).OrderByDescending(t => t.Cost).ToList();
+            var skills = _survivor.Skills.OrderBy(k => k.Key.Value).ToList();
+            var height = 300f + traits.Count * 40f + ((skills.Count + 1) / 2) * 24f;
+            GUI.Box(new Rect(x - 20f, y - 20f, width + 40f, height + 40f), GUIContent.none, st.Window);
+            GUI.Label(new Rect(x, y, width, 20f), Lang.Get("@ui.survivor_intro"), st.Muted);
+            y += 28f;
+            GUI.Label(new Rect(x, y, width, 32f), _survivor.Name, st.Title);
+            y += 36f;
+            var background = _survivor.Background;
+            GUI.Label(new Rect(x, y, width, 22f), $"{Lang.Get("@ui.survivor_background")}: " + (background != null
+                ? UiTheme.Colour(Lang.Get(background.Name), UiTheme.Accent) + "  " + UiTheme.Colour(Lang.Get(background.Description), UiTheme.Muted)
+                : Lang.Get("@ui.survivor_none")), st.Text);
+            y += 30f;
+            // What they had on when the ship went down; better clothes came out of the trait points.
+            var outfit = _survivor.Outfit;
+            if (outfit != null)
+            {
+                var items = string.Join(", ", (outfit.Items ?? System.Array.Empty<NamespacedId>())
+                    .Select(id => DefRegistry.TryGet<ItemDef>(id, out var item) ? Lang.Get(item.Name) : id.Name));
+                var cost = outfit.Cost == 0 ? "" : UiTheme.Colour(outfit.Cost > 0 ? $"  −{outfit.Cost}" : $"  +{-outfit.Cost}", outfit.Cost > 0 ? UiTheme.Bad : UiTheme.Good);
+                GUI.Label(new Rect(x, y, width, 22f), $"{Lang.Get("@ui.survivor_outfit")}: {UiTheme.Colour(Lang.Get(outfit.Name), UiTheme.Accent)}{cost}", st.Text);
+                GUI.Label(new Rect(x + 12f, y + 20f, width - 12f, 20f), items, st.Small);
+                y += 46f;
+            }
+            GUI.Label(new Rect(x, y, width, 22f), Lang.Get("@ui.survivor_traits"), st.Big);
+            y += 26f;
+            if (traits.Count == 0) { GUI.Label(new Rect(x, y, width, 22f), Lang.Get("@ui.survivor_none"), st.Muted); y += 26f; }
+            foreach (var trait in traits)
+            {
+                var colour = trait.Cost > 0 ? UiTheme.Good : UiTheme.Bad;
+                GUI.Label(new Rect(x, y, width, 20f), UiTheme.Colour(Lang.Get(trait.Name), colour), st.Text);
+                GUI.Label(new Rect(x + 12f, y + 18f, width - 12f, 20f), Lang.Get(trait.Description), st.Small);
+                y += 40f;
+            }
+            y += 6f;
+            GUI.Label(new Rect(x, y, width, 22f), Lang.Get("@ui.survivor_skills"), st.Big);
+            y += 26f;
+            for (var i = 0; i < skills.Count; i++)
+            {
+                var (skill, level) = (skills[i].Key, skills[i].Value);
+                var name = DefRegistry.TryGet<SkillDef>(skill, out var def) ? Lang.Get(def.Name) : skill.Name;
+                var cx = x + (i % 2) * (width * 0.5f);
+                var cy = y + (i / 2) * 24f;
+                GUI.Label(new Rect(cx, cy, 150f, 22f), name, st.Text);
+                GUI.Label(new Rect(cx + 150f, cy, 100f, 22f), level > 0 ? UiTheme.Colour($"Lv {level}", level >= 5 ? UiTheme.Accent : UiTheme.Text) : UiTheme.Colour("—", UiTheme.Muted), st.Text);
+            }
+            y += ((skills.Count + 1) / 2) * 24f + 14f;
+            if (GUI.Button(new Rect(x, y, 140f, ButtonHeight), Lang.Get("@ui.menu_back"), st.Button)) _page = Page.NewGame;
+            if (GUI.Button(new Rect(x + 150f, y, 170f, ButtonHeight), Lang.Get("@ui.survivor_reroll"), st.Button)) Reroll();
+            if (GUI.Button(new Rect(x + width - 220f, y, 220f, ButtonHeight), Lang.Get("@ui.survivor_start"), st.ButtonOn))
+            {
+                GameSession.SetPendingSurvivor(_survivor);
+                BeginNew();
             }
         }
 

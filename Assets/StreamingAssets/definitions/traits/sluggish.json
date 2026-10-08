@@ -1,0 +1,13 @@
+{
+  "id": "isle:sluggish",
+  "name": "@trait.sluggish",
+  "description": "@trait.sluggish_desc",
+  "cost": -3,
+  "group": "speed",
+  "effects": [
+    {
+      "type": "move_speed_mult",
+      "value": 0.92
+    }
+  ]
+}

@@ -6,6 +6,21 @@
 ## Header
 
 - Last updated: **2026-10-07**
+- **2026-10-08 — T-167 shipwreck start.** Branch `feature/T-167-shipwreck-start` off `main` (after PR #38),
+  **uncommitted**. Developer decisions: cruise-shipwreck premise; always a coast start, wet; one random passenger at a
+  time with unlimited rerolls, no editing; no job pick — random traits (~20, base 0 points, good paid by bad) and random
+  skills (mostly 0–3, a background +5); wreckage + random belongings. Built: SYS-START-01; `TraitDef` (8 backgrounds,
+  11 good, 11 bad), `ScenarioDef` (`shipwreck.json`), `SurvivorGenerator` (pure), `StartDirector` (beach spot via
+  `IslandWorld.ShoreStart`, respawn there, wet, T-shirt + shorts, belongings, 4–6 wreckage piles, notice), traits as
+  permanent effects in `Vitals.ActiveBuffs` + new effect hooks (carry, move speed, XP, hunger, gather speed, damage
+  taken), survivor page on the menu (reroll / start), survivor name + traits saved, wreckage pile shape, chocolate bar
+  and bottled water. GDD premise added. **Verified:** EditMode 624/624 (+5 `StartTests`), PlayMode 3/3 (menu flow: picked
+  passenger wakes on the coast wet in the start clothes with wreckage, name and traits survive save/continue); beach
+  start rendered. Not verified visually: the IMGUI survivor page.
+  **Revised the same day** (developer): clothes are rolled too and cost trait points (baseline T-shirt + shorts free,
+  at most 2 points, swimwear gives 1; a bulletproof vest is salvage); 3–6 traits each; contradictory traits excluded
+  both ways (`excludes`); broad character traits instead of tiny skill bonuses — 41 traits + 8 backgrounds now; four
+  more effect hooks (buff duration, melee power, ranged power, sprint cost). EditMode 625/625, PlayMode 3/3.
 - **2026-10-08 — T-166 materials, durability, repair.** Branch `feature/T-166-material-tiers`, stacked on
   `feature/T-165-status-visuals` (PR #37) — [PR #38](https://github.com/yhw1737/surv/pull/38), reworked the same day.
   Found: the bow already existed (workbench + Crafting 5); no metal, durability, repair or quality existed.
@@ -1895,6 +1910,14 @@ since it's server-side gauge math with no UI yet:
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-10-08 — T-167 start fill-ins
+  [invented] (SYS-START-01): background chance 0.7, up to 2 good traits, skill roll uniform 0–3, every trait and its
+  cost/effect size, the 8 backgrounds, names list, shore search (2 tiles back from the first open sea, 15° steps),
+  belongings pool and weights, wreckage 4–6 piles within 10 tiles and their contents, chocolate (hunger 15) and bottled
+  water (thirst 35). Remote clients don't get a survivor yet (host only, Phase 10).
+  Revision fill-ins: the 8 outfits, their weights and costs, the vest's numbers, the 19 added traits, all exclusion
+  pairs, the last-slot rule (small traits keep the points balanced).
 
 - ### 2026-10-08 — T-166 material and kind fill-ins
   [invented] (SYS-CRAFT-02 §Materials/§Kinds/§Veins): every material factor not fixed by the decided ladder (all of

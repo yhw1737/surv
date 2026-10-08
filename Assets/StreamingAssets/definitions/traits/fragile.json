@@ -1,0 +1,13 @@
+{
+  "id": "isle:fragile",
+  "name": "@trait.fragile",
+  "description": "@trait.fragile_desc",
+  "cost": -4,
+  "group": "toughness",
+  "effects": [
+    {
+      "type": "damage_taken_mult",
+      "value": 1.2
+    }
+  ]
+}

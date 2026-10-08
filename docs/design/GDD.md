@@ -16,6 +16,11 @@ On an island where nobody can master everything, each player becomes a specialis
 - Players: 2–4 recommended, solo playable
 - Platform: PC (Steam) — beta first, then Early Access, ~$14.99
 
+**Premise (2026-10-08 developer decision).** A cruise ship goes down in a storm; the player is one of its passengers,
+washed up on a remote island. Every game starts on the coast, soaked, among the wreckage, as a randomly rolled
+passenger — a name, a few traits (good ones balanced by bad ones), maybe a past job that shows in their skills.
+Spec: `SYS-START-01`.
+
 ## Design axes
 
 Every system derives from these. A feature that fits none of them is not built.

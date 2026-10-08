@@ -221,7 +221,8 @@ namespace Isle.Tests.EditMode
                 foreach (var material in DefRegistry.All<MaterialDef>())
                     Assert.IsTrue(DefRegistry.TryGet<ItemDef>(material.Item, out _), $"{material.Id}: item {material.Item}");
                 // Every durable item that exists in the world can be repaired: something crafts it.
-                foreach (var item in DefRegistry.All<ItemDef>().Where(i => i.Durability > 0 && i.Stuff == null))
+                // (Salvage — like the start's bulletproof vest — can't be made, so it can't be mended either.)
+                foreach (var item in DefRegistry.All<ItemDef>().Where(i => i.Durability > 0 && i.Stuff == null && !(i.Tags?.Contains("salvage") ?? false)))
                     Assert.IsNotNull(StuffCrafting.RecipeFor(item), $"{item.Id} has no recipe to repair from");
             }
             finally { DefRegistry.Clear(); }

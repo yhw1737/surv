@@ -70,6 +70,15 @@ namespace Isle.Tests.PlayMode
 
             for (var i = 0; i < 180; i++) yield return null;
 
+            // SYS-START-01: a fresh island starts on the beach with wreckage around. The random passenger's traits and
+            // skills would skew every number below, so the rest of the run plays a blank survivor.
+            Assert.IsNotNull(FindLocalPlayer().Survivor, "no survivor applied on a fresh island");
+            Assert.GreaterOrEqual(LootPiles.All.Count(p => p.Shape == "wreckage"), 4, "no wreckage on the beach");
+            LootPiles.Clear();
+            StartDirector.Become(FindLocalPlayer(), new Survivor { Name = "Test" }, setSkills: false);
+            foreach (var skill in DefRegistry.All<SkillDef>()) FindLocalPlayer().Skills.Restore(skill.Id, 0);
+            FindLocalPlayer().GetComponent<InventoryNetwork>().Slots.Clear(); // the start clothes would add warmth and armor to every check
+
             Assert.Greater(CreatureDirector.Instance.Creatures.Count, 0, "no creatures spawned in the live scene");
             Assert.IsNotNull(FindLocalPlayer().GetComponent<Vitals>());
 

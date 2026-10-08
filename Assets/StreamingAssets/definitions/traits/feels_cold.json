@@ -1,0 +1,13 @@
+{
+  "id": "isle:feels_cold",
+  "name": "@trait.feels_cold",
+  "description": "@trait.feels_cold_desc",
+  "cost": -2,
+  "group": "cold",
+  "effects": [
+    {
+      "type": "hypothermia_threshold_shift",
+      "value": 2
+    }
+  ]
+}

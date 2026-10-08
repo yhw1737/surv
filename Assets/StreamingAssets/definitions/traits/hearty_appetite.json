@@ -1,0 +1,13 @@
+{
+  "id": "isle:hearty_appetite",
+  "name": "@trait.hearty_appetite",
+  "description": "@trait.hearty_appetite_desc",
+  "cost": -2,
+  "group": "appetite",
+  "effects": [
+    {
+      "type": "hunger_drain_mult",
+      "value": 1.3
+    }
+  ]
+}

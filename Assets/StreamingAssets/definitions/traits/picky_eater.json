@@ -1,0 +1,16 @@
+{
+  "id": "isle:picky_eater",
+  "name": "@trait.picky_eater",
+  "description": "@trait.picky_eater_desc",
+  "cost": -1,
+  "excludes": [
+    "isle:light_eater"
+  ],
+  "group": "picky",
+  "effects": [
+    {
+      "type": "hunger_drain_mult",
+      "value": 1.1
+    }
+  ]
+}

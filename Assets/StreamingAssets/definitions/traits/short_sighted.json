@@ -1,0 +1,13 @@
+{
+  "id": "isle:short_sighted",
+  "name": "@trait.short_sighted",
+  "description": "@trait.short_sighted_desc",
+  "cost": -2,
+  "group": "eyes",
+  "effects": [
+    {
+      "type": "aim_sway_mult",
+      "value": 1.4
+    }
+  ]
+}

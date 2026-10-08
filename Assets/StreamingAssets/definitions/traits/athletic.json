@@ -1,0 +1,22 @@
+{
+  "id": "isle:athletic",
+  "name": "@trait.athletic",
+  "description": "@trait.athletic_desc",
+  "cost": 4,
+  "excludes": [
+    "isle:asthmatic",
+    "isle:sluggish",
+    "isle:delicate"
+  ],
+  "group": "fitness",
+  "effects": [
+    {
+      "type": "stamina_max_mult",
+      "value": 1.2
+    },
+    {
+      "type": "move_speed_mult",
+      "value": 1.05
+    }
+  ]
+}

@@ -32,7 +32,7 @@ namespace Isle.Core.Util
             "tree", "palm", "rock", "bush", "grass", "water", "rabbit", "deer", "boar", "crocodile",
             "campfire", "crate", "warehouse", "workbench", "pot", "rack", "rain_catcher", "plot", "sack",
             "sea_cave", "giant_tree", "sinkhole", "ruin_gate", "stairs_down", "stairs_up", "key", "locked_door",
-            "gate_water", "gate_roots", "gate_bars", "gate_runes", "chest", "ore_vein", "furnace", "anvil",
+            "gate_water", "gate_roots", "gate_bars", "gate_runes", "chest", "ore_vein", "furnace", "anvil", "wreckage",
         };
 
         /// <summary>A sprite one world unit across at scale 1, cached per (shape, colour).</summary>
@@ -202,6 +202,14 @@ namespace Isle.Core.Util
                     canvas.Rect(0.06f, 0.05f, 0.94f, 0.62f, c);
                     canvas.Tri(0.0f, 0.6f, 1.0f, 0.6f, 0.5f, 0.96f, dark);
                     canvas.Rect(0.4f, 0.05f, 0.6f, 0.38f, Bark);
+                    break;
+                case "wreckage":
+                    // Broken planks and a split crate washed up on the sand.
+                    canvas.Rect(0.12f, 0.12f, 0.72f, 0.24f, c);
+                    canvas.Tri(0.62f, 0.3f, 0.95f, 0.38f, 0.9f, 0.48f, Color.Lerp(c, Color.black, 0.15f));
+                    canvas.Rect(0.2f, 0.26f, 0.5f, 0.56f, Color.Lerp(c, Color.white, 0.12f));
+                    canvas.Line(0.2f, 0.41f, 0.5f, 0.41f, 0.02f, Color.Lerp(c, Color.black, 0.35f));
+                    canvas.Line(0.05f, 0.08f, 0.4f, 0.04f, 0.03f, new Color(0.85f, 0.8f, 0.65f));
                     break;
                 case "ore_vein":
                 {

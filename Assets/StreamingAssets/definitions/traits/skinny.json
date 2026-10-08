@@ -1,0 +1,17 @@
+{
+  "id": "isle:skinny",
+  "name": "@trait.skinny",
+  "description": "@trait.skinny_desc",
+  "cost": -1,
+  "group": "build",
+  "effects": [
+    {
+      "type": "carry_capacity_mult",
+      "value": 0.9
+    },
+    {
+      "type": "move_speed_mult",
+      "value": 1.03
+    }
+  ]
+}

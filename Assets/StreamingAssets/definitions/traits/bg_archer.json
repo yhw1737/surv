@@ -1,0 +1,17 @@
+{
+  "id": "isle:bg_archer",
+  "name": "@trait.bg_archer",
+  "description": "@trait.bg_archer_desc",
+  "cost": 2,
+  "excludes": [
+    "isle:short_sighted"
+  ],
+  "group": "background",
+  "background": true,
+  "skills": [
+    {
+      "skill": "isle:ranged",
+      "levels": 5
+    }
+  ]
+}

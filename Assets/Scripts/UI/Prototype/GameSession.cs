@@ -5,6 +5,7 @@ using Isle.Gameplay.Building;
 using Isle.Gameplay.Inventory;
 using Isle.Networking;
 using Isle.World.Island;
+using Isle.Gameplay.Character;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -25,6 +26,18 @@ namespace Isle.UI.Prototype
 
         /// <summary>A slot's save, or null — slot 0 means the current slot.</summary>
         public static SaveData PeekSave(int slot = 0) => SaveGame.Inspect(slot <= 0 ? SaveGame.Slot : slot)?.Save;
+
+        static Survivor _pendingSurvivor;
+
+        /// <summary>SYS-START-01: the passenger picked on the menu, handed to the next fresh island once.</summary>
+        public static void SetPendingSurvivor(Survivor survivor) => _pendingSurvivor = survivor;
+
+        public static Survivor TakePendingSurvivor()
+        {
+            var survivor = _pendingSurvivor;
+            _pendingSurvivor = null;
+            return survivor;
+        }
 
         /// <summary>A fresh island on <paramref name="seed"/> in <paramref name="slot"/>. Replaces that slot's save (the
         /// menu asks first).</summary>

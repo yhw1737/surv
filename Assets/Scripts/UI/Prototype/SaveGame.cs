@@ -123,6 +123,8 @@ namespace Isle.UI.Prototype
             if (!_applied && _nextSaveAt != float.PositiveInfinity)
             {
                 if (_pending != null) Apply(_pending, player);
+                // SYS-START-01: a fresh island — the chosen survivor (or a random one) wakes on the beach.
+                else StartDirector.Begin(player, GameSession.TakePendingSurvivor() ?? StartDirector.Roll(new System.Random(IslandWorld.Instance.Seed)));
                 _pending = null;
                 _applied = true;
                 _nextSaveAt = Time.time + AutosaveSeconds;
@@ -223,6 +225,11 @@ namespace Isle.UI.Prototype
 
             foreach (var skill in player.Skills.Skills)
                 save.Skills.Add(new SavedSkill { Id = skill.Id.Value, Xp = player.Skills.TotalXp(skill.Id) });
+            if (player.Survivor != null)
+            {
+                save.SurvivorName = player.Survivor.Name;
+                save.Traits.AddRange(player.Survivor.Traits.Select(t => t.Id.Value));
+            }
 
             foreach (var node in world.Nodes)
                 if (node.Def.Gather != null && node.UsesLeft < node.Def.Gather.Uses)
@@ -252,7 +259,7 @@ namespace Isle.UI.Prototype
 
             foreach (var pile in LootPiles.All)
             {
-                var saved = new SavedPile { X = pile.Position.x, Y = pile.Position.y };
+                var saved = new SavedPile { X = pile.Position.x, Y = pile.Position.y, Shape = pile.Shape };
                 foreach (var entry in pile.Items)
                     saved.Items.Add(new SavedStack { Item = KeyOf(entry.Item), Count = entry.Count, Wear = entry.Wear?.Current ?? 0, WearMax = entry.Wear?.Max ?? 0 });
                 save.Piles.Add(saved);
@@ -297,6 +304,12 @@ namespace Isle.UI.Prototype
                 foreach (var marker in save.Markers) MapState.Instance.Markers.Add(new Vector2(marker.X, marker.Y), marker.Colour);
             }
 
+            // Who this was: name and traits (skills come back just below).
+            var survivor = new Survivor { Name = string.IsNullOrEmpty(save.SurvivorName) ? "Survivor" : save.SurvivorName };
+            foreach (var id in save.Traits ?? new System.Collections.Generic.List<string>())
+                if (NamespacedId.TryParse(id, out var traitId, out _) && DefRegistry.TryGet<TraitDef>(traitId, out var trait)) survivor.Traits.Add(trait);
+            StartDirector.Become(player, survivor, setSkills: false);
+
             foreach (var saved in save.Skills)
                 if (NamespacedId.TryParse(saved.Id, out var skillId, out _)) player.Skills.Restore(skillId, saved.Xp);
 
@@ -333,7 +346,8 @@ namespace Isle.UI.Prototype
 
             foreach (var saved in save.Piles)
                 LootPiles.Drop(new Vector2(saved.X, saved.Y),
-                    saved.Items.Select(s => new LootEntry(TryItem(s.Item, out var item) ? item : null, s.Count, WearOf(s.Wear, s.WearMax))).Where(x => x.Item != null));
+                    saved.Items.Select(s => new LootEntry(TryItem(s.Item, out var item) ? item : null, s.Count, WearOf(s.Wear, s.WearMax))).Where(x => x.Item != null),
+                    string.IsNullOrEmpty(saved.Shape) ? null : saved.Shape);
 
             GameFeed.RaiseNotice("@ui.save_loaded");
         }

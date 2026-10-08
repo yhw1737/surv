@@ -419,6 +419,7 @@ namespace Isle.Gameplay.Dungeons
             }
             var seconds = GatherCalculator.GatherSeconds(gather.TimeSec, gather.Xp != null ? player.LevelOf(gather.Xp.Skill) : 1);
             if (tool != null) seconds = ToolTiers.HarvestSeconds(seconds, tool.ToolPower);
+            seconds /= player.GatherSpeed();
             _mining[player] = (vein, Time.time, seconds, player.transform.position);
         }
 

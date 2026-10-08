@@ -1,0 +1,17 @@
+{
+  "id": "isle:jogger",
+  "name": "@trait.jogger",
+  "description": "@trait.jogger_desc",
+  "cost": 3,
+  "excludes": [
+    "isle:unfit",
+    "isle:asthmatic"
+  ],
+  "group": "pace",
+  "effects": [
+    {
+      "type": "move_speed_mult",
+      "value": 1.1
+    }
+  ]
+}
