@@ -6,6 +6,14 @@
 ## Header
 
 - Last updated: **2026-10-07**
+- **2026-10-07 — T-165 visible status effects.** Branch `feature/T-165-status-visuals` off `main` (after PR #36) — [PR #37](https://github.com/yhw1737/surv/pull/37). Developer request: debuffs readable on the body, for players and creatures.
+  Built: `UI/Art/StatusLook.cs` (pure: tint — hit red 0.15 s > burn orange flicker > poison green > cold blue; shiver,
+  pant, hunch as vertex moves; looping time-driven particles — water/blood drops, poison bubbles, flames + smoke,
+  sweat), `VectorMesh.TintFrom/MoveFrom/VertexCount/ColourAt`, `StickFigureView.DrawStatus` (reads `Vitals`: DoT stacks,
+  `LastHitAt` (new), wet, temperature ≤ 33° hypothermia warning, exhausted, overloaded), `CreatureFigure.DrawStatus`
+  (hit flash now through the shared tint, DoT stacks). **Verified:** EditMode 603/603 (+10 `StatusLookTests`), PlayMode
+  3/3; every status rendered to PNG on a stick figure and a boar. The boss shell phase (T-202) now shows as a grey
+  tint through `StatusState.Shelled` — its old sprite tint was hidden under the creature figure.
 - **2026-10-07 — T-202 Tidal Grotto.** Branch `feature/T-202-tidal-grotto` off `main` (after PR #35) — [PR #36](https://github.com/yhw1737/surv/pull/36).
   Developer decisions: 2 tides a day, swim ×0.6, about half the rooms flood, 1 low-tide cache per floor (1–2 tide
   pearls), Hermit Colossus HP 600 / strike 15 with sweep + shell phase broken by a blunt stun, reward sigil + 3 pearls,
@@ -1871,6 +1879,12 @@ since it's server-side gauge math with no UI yet:
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
 
+- ### 2026-10-07 — T-165 status visual values
+  [invented] presentation only: tint colours and strengths (hit 0.75, burn 0.3–0.6 flicker, poison 0.55, cold 0.4),
+  hit flash 0.15 s (as the creature flash already was), shiver ±0.018 tiles at 55 rad/s, pant 0.025, hunch lean 0.14 /
+  sag 0.07, drop radius 0.06, up to 6 water drops, 4 blood drops, 4 bubbles, 3 flames + 3 smoke puffs, 2 sweat drops.
+  "Cold" = temperature ≤ SYS-SURV-01's hypothermia warning (33°). Multiplayer debt: views read server `Vitals`
+  fields that aren't synced (fine on a listen-server host).
 - ### 2026-10-07 — T-202 Tidal Grotto fill-ins
   [invented]: high-tide peak 06:00; shell every 15 s for 6 s at ×0.2; sweep radius 1.8; boss body/vision/speeds/
   timings, slash strike, 4 meat; cave crab and moray eel stats; swarm spread 0.8; cache offset; water/land spawn

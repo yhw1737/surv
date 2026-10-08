@@ -14,7 +14,6 @@ namespace Isle.UI.Art
     public sealed class CreatureFigure : MonoBehaviour
     {
         static readonly Color Ink = StickFigureDrawer.Ink;
-        static readonly Color Hurt = new(1f, 0.35f, 0.3f);
         const float O = 0.035f; // outline width, tiles [invented]
 
         Creature _creature;
@@ -88,9 +87,9 @@ namespace Isle.UI.Art
                 return new Vector2((p.x + shake) * facing, p.y);
             };
 
-            var flash = Time.time - _creature.LastHitAt < 0.15f;
             var look = _creature.Def.Look;
-            var body = flash ? Hurt : _body;
+            var body = _body;
+            var bodyStart = _mesh.VertexCount;
             var moving = Mathf.Clamp01(_speed / 1.2f) * (1f - _sleep);
             switch (look?.Body)
             {
@@ -103,6 +102,7 @@ namespace Isle.UI.Art
                 case "turtle": Turtle(r, body, moving); break;
                 default: Quadruped(look, r, body, moving); break;
             }
+            DrawStatus(bodyStart, r, facing);
             if (_creature.IsStaggered) Stars(r);
             if (_sleep > 0.5f) Zs(r);
             _mesh.Transform = null;
@@ -110,6 +110,33 @@ namespace Isle.UI.Art
             // Bounds centred on the feet: the 2D renderer's custom-axis sort uses the bounds centre, so this makes the
             // figure sort by where it stands — the same rule as the trees' foot pivots. Big enough to never cull early.
             _unityMesh.bounds = new Bounds(Vector3.zero, new Vector3(6f, 6f, 1f));
+        }
+
+        /// <summary>T-165: hit flash and damage-over-time on the body — tint, then particles. Stars and Zs go on top
+        /// untinted.</summary>
+        void DrawStatus(int bodyStart, float r, float facing)
+        {
+            var status = _creature.Status;
+            var s = new StatusState
+            {
+                SinceHit = Time.time - _creature.LastHitAt,
+                Poisoned = status.Stacks(Isle.Gameplay.Combat.DamageTypes.Toxic) > 0,
+                Bleeding = status.Stacks(Isle.Gameplay.Combat.DamageTypes.Slash) > 0,
+                Burning = status.Stacks(Isle.Gameplay.Combat.DamageTypes.Heat) > 0,
+                Shelled = _creature.Shell.IsHidden(Time.time),
+            };
+            var tint = StatusLook.Tint(s, _time);
+            _mesh.TintFrom(bodyStart, tint.Colour, tint.Amount);
+            var transform = _mesh.Transform;
+            _mesh.Transform = null;
+            StatusLook.Particles(_mesh, s, _time + _seed, new StatusBody
+            {
+                Centre = new Vector2(0f, r),
+                HalfWidth = r * 1.1f,
+                Top = r * 2f,
+                Head = new Vector2(Mathf.Sign(facing) * r * 1.2f, r * 1.4f),
+            });
+            _mesh.Transform = transform;
         }
 
         // ------------------------------------------------------------------ helpers

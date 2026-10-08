@@ -112,6 +112,30 @@ namespace Isle.UI.Art
             _triangles.Add(start + 3);
         }
 
+        public int VertexCount => _positions.Count;
+
+        public Color32 ColourAt(int vertex) => _colours[vertex];
+
+        /// <summary>Blends every vertex from <paramref name="start"/> on toward <paramref name="tint"/> by
+        /// <paramref name="amount"/> (0–1), keeping alpha — a body turning green, red or blue.</summary>
+        public void TintFrom(int start, Color tint, float amount)
+        {
+            if (amount <= 0f) return;
+            for (var i = start; i < _colours.Count; i++)
+            {
+                Color c = _colours[i];
+                var blended = Color.Lerp(c, tint, amount);
+                blended.a = c.a;
+                _colours[i] = blended;
+            }
+        }
+
+        /// <summary>Moves every vertex from <paramref name="start"/> on (shiver, hunch, pant).</summary>
+        public void MoveFrom(int start, System.Func<Vector3, Vector3> move)
+        {
+            for (var i = start; i < _positions.Count; i++) _positions[i] = move(_positions[i]);
+        }
+
         /// <summary>Writes the collected primitives into <paramref name="mesh"/>, replacing what was there.</summary>
         public void Fill(Mesh mesh)
         {
