@@ -1,0 +1,32 @@
+{
+  "id": "isle:craft_anvil_kit",
+  "name": "@recipe.anvil_kit",
+  "ingredients": [
+    {
+      "item": "isle:copper_ingot",
+      "count": 5
+    },
+    {
+      "item": "isle:stone",
+      "count": 4
+    }
+  ],
+  "output": {
+    "item": "isle:anvil_kit",
+    "count": 1
+  },
+  "time_sec": 6,
+  "station": "isle:workbench",
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 15,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 10,
+      "primary": true
+    }
+  ]
+}

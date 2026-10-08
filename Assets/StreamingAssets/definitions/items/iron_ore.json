@@ -1,0 +1,20 @@
+{
+  "id": "isle:iron_ore",
+  "name": "@item.iron_ore",
+  "tags": [
+    "material",
+    "ore",
+    "ore/iron"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 1.8,
+  "stack": 20,
+  "icon_style": {
+    "shape": "ore",
+    "color": "#6A5A52",
+    "accent": "#A8664E"
+  }
+}

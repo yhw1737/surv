@@ -1,0 +1,46 @@
+{
+  "id": "isle:copper_knife",
+  "name": "@weapon.copper_knife",
+  "tags": [
+    "weapon",
+    "weapon/blade",
+    "tool/knife"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.46,
+  "combat_skill": "isle:melee",
+  "base_power": 20,
+  "attack_speed": 1.6,
+  "reach": 1.0,
+  "stamina_cost": 4,
+  "grip": "one_hand",
+  "quality_enabled": false,
+  "durability": 150,
+  "cone_degrees": 80,
+  "attacks": [
+    {
+      "shape": "arc",
+      "degrees": 80,
+      "radius": 1.0,
+      "type": "slash",
+      "power_mult": 1.0
+    },
+    {
+      "shape": "arc",
+      "degrees": 80,
+      "radius": 1.0,
+      "type": "slash",
+      "power_mult": 1.0
+    },
+    {
+      "shape": "thrust",
+      "length": 1.1,
+      "width": 0.3,
+      "type": "pierce",
+      "power_mult": 1.4
+    }
+  ]
+}

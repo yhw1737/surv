@@ -18,8 +18,9 @@
   "stamina_cost": 0,
   "grip": "two_hand",
   "quality_enabled": false,
-  "durability": 80,
+  "durability": 60,
   "ammo": "isle:arrow",
   "projectile_speed": 18,
-  "damage_type": "pierce"
+  "damage_type": "pierce",
+  "ammo_tag": "ammo/arrow"
 }

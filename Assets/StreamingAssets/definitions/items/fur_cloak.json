@@ -3,7 +3,8 @@
   "name": "@item.fur_cloak",
   "tags": [
     "clothing",
-    "leather"
+    "leather",
+    "armor"
   ],
   "grid": {
     "w": 2,
@@ -17,5 +18,7 @@
   "wear": {
     "style": "cloak",
     "color": "#8C6A4A"
-  }
+  },
+  "durability": 60,
+  "tier": 1
 }

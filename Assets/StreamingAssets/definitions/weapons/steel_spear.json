@@ -1,0 +1,45 @@
+{
+  "id": "isle:steel_spear",
+  "name": "@weapon.steel_spear",
+  "tags": [
+    "weapon",
+    "weapon/spear"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 3
+  },
+  "weight": 2.32,
+  "combat_skill": "isle:melee",
+  "base_power": 54,
+  "attack_speed": 0.8,
+  "reach": 2.0,
+  "stamina_cost": 8,
+  "grip": "two_hand",
+  "quality_enabled": false,
+  "durability": 500,
+  "cone_degrees": 70,
+  "attacks": [
+    {
+      "shape": "thrust",
+      "length": 2.0,
+      "width": 0.4,
+      "type": "pierce",
+      "power_mult": 1.0
+    },
+    {
+      "shape": "thrust",
+      "length": 2.0,
+      "width": 0.4,
+      "type": "pierce",
+      "power_mult": 1.0
+    },
+    {
+      "shape": "thrust",
+      "length": 2.2,
+      "width": 0.45,
+      "type": "pierce",
+      "power_mult": 1.4
+    }
+  ]
+}

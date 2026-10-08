@@ -1,0 +1,32 @@
+{
+  "id": "isle:craft_iron_knife",
+  "name": "@recipe.iron_knife",
+  "ingredients": [
+    {
+      "item": "isle:iron_ingot",
+      "count": 1
+    },
+    {
+      "item": "isle:wood",
+      "count": 1
+    }
+  ],
+  "output": {
+    "item": "isle:iron_knife",
+    "count": 1
+  },
+  "time_sec": 6,
+  "station": "isle:anvil",
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 20,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 20,
+      "primary": true
+    }
+  ]
+}

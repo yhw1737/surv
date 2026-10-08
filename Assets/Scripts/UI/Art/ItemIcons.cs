@@ -186,6 +186,21 @@ namespace Isle.UI.Art
                     p.Polygon(new[] { V(0.86f, 0.86f), V(0.64f, 0.8f), V(0.8f, 0.64f) }, a, true, 0.01f);
                     p.Polygon(new[] { V(0.14f, 0.3f), V(0.26f, 0.26f), V(0.3f, 0.14f), V(0.2f, 0.12f), V(0.12f, 0.2f) }, Light(Color.red, 0.4f), true, 0.01f);
                     break;
+                case "ore":
+                    p.Polygon(new[] { V(0.18f, 0.3f), V(0.3f, 0.66f), V(0.55f, 0.78f), V(0.8f, 0.62f), V(0.84f, 0.32f), V(0.6f, 0.2f) }, c, true, 0.04f);
+                    foreach (var (x, y, r) in new[] { (0.38f, 0.56f, 0.07f), (0.62f, 0.62f, 0.05f), (0.56f, 0.38f, 0.08f), (0.36f, 0.36f, 0.04f) })
+                        p.Polygon(new[] { V(x - r, y), V(x, y + r), V(x + r, y), V(x, y - r) }, a, true, 0.01f);
+                    break;
+                case "coal":
+                    p.Polygon(new[] { V(0.2f, 0.3f), V(0.26f, 0.6f), V(0.48f, 0.74f), V(0.76f, 0.64f), V(0.82f, 0.36f), V(0.56f, 0.2f) }, c, true, 0.03f);
+                    p.Polygon(new[] { V(0.34f, 0.56f), V(0.5f, 0.66f), V(0.6f, 0.56f), V(0.44f, 0.48f) }, a, false, 0.02f);
+                    p.Disk(V(0.64f, 0.44f), 0.03f, Light(a, 0.4f), false);
+                    break;
+                case "ingot":
+                    p.Polygon(new[] { V(0.14f, 0.32f), V(0.26f, 0.56f), V(0.78f, 0.56f), V(0.88f, 0.32f) }, c, true, 0.02f);
+                    p.Polygon(new[] { V(0.26f, 0.56f), V(0.34f, 0.66f), V(0.7f, 0.66f), V(0.78f, 0.56f) }, a, true, 0.02f);
+                    p.Line(V(0.3f, 0.44f), V(0.5f, 0.44f), 0.02f, Light(c, 0.4f), false);
+                    break;
                 case "pearl":
                     p.Polygon(new[] { V(0.18f, 0.3f), V(0.3f, 0.62f), V(0.5f, 0.7f), V(0.7f, 0.62f), V(0.82f, 0.3f), V(0.5f, 0.2f) }, a, true, 0.04f);
                     p.Disk(V(0.5f, 0.46f), 0.17f, c);
@@ -261,6 +276,24 @@ namespace Isle.UI.Art
                     p.Ellipse(b - d * 0.1f, 0.07f, 0.1f, -45f, tip, false);
                     p.Ellipse(b - d * 0.12f, 0.035f, 0.05f, -45f, new Color(1f, 0.95f, 0.6f), false);
                     break;
+                case "mace":
+                case "club":
+                {
+                    var head = b - d * 0.1f;
+                    p.Line(a, head, 0.07f, c);
+                    if (style == "club") p.Ellipse(head, 0.16f, 0.11f, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg, c);
+                    else
+                    {
+                        for (var i = 0; i < 6; i++)
+                        {
+                            var ang = i * Mathf.PI / 3f;
+                            var dir = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang));
+                            p.Polygon(new[] { head + dir * 0.17f, head + new Vector2(-dir.y, dir.x) * 0.06f, head - new Vector2(-dir.y, dir.x) * 0.06f }, Dark(tip, 0.15f), true, 0.01f);
+                        }
+                        p.Disk(head, 0.13f, tip);
+                    }
+                    break;
+                }
                 case "sword":
                     p.Polygon(new[] { a + d * 0.3f + n * 0.05f, b - d * 0.04f + n * 0.05f, b + d * 0.06f, b - d * 0.04f - n * 0.05f, a + d * 0.3f - n * 0.05f }, tip, true, 0.005f);
                     p.Line(a + d * 0.28f + n * 0.13f, a + d * 0.28f - n * 0.13f, 0.05f, Dark(c));
@@ -280,6 +313,12 @@ namespace Isle.UI.Art
                     p.Polygon(Arc(V(0.46f, 0.42f), 0.3f, 0f, 180f, 10), c, true, 0.01f);
                     p.Box(V(0.6f, 0.42f), V(0.3f, 0.05f), 0.04f, 0f, Dark(c, 0.15f));
                     p.Line(V(0.3f, 0.5f), V(0.6f, 0.5f), 0.02f, Light(c), false);
+                    break;
+                case "helmet":
+                    p.Polygon(Arc(V(0.5f, 0.42f), 0.32f, 0f, 180f, 12), c, true, 0.02f);
+                    p.Box(V(0.5f, 0.42f), V(0.36f, 0.06f), 0.03f, 0f, Dark(c, 0.2f));
+                    p.Line(V(0.5f, 0.42f), V(0.5f, 0.2f), 0.06f, Dark(c, 0.2f));
+                    p.Line(V(0.36f, 0.62f), V(0.5f, 0.7f), 0.03f, Light(c, 0.5f), false);
                     break;
                 case "hood":
                     p.Polygon(Arc(V(0.5f, 0.45f), 0.32f, -30f, 210f, 12), c, true, 0.02f);

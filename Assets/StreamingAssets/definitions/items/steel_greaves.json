@@ -1,0 +1,22 @@
+{
+  "id": "isle:steel_greaves",
+  "name": "@item.steel_greaves",
+  "tags": [
+    "armor",
+    "steel"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 3.9,
+  "stack": 1,
+  "durability": 500,
+  "tier": 4,
+  "equip_slot": "legs",
+  "armor": 18,
+  "wear": {
+    "style": "pants",
+    "color": "#B9C8D4"
+  }
+}

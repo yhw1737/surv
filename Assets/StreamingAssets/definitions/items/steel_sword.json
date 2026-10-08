@@ -1,0 +1,24 @@
+{
+  "id": "isle:steel_sword",
+  "name": "@item.steel_sword",
+  "tags": [
+    "weapon",
+    "steel"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 3
+  },
+  "weight": 2.17,
+  "stack": 1,
+  "durability": 500,
+  "tier": 4,
+  "equip_slot": "main_hand",
+  "weapon": "isle:steel_sword",
+  "hold": {
+    "style": "sword",
+    "length": 0.9,
+    "color": "#8A6A48",
+    "tip": "#B9C8D4"
+  }
+}

@@ -51,6 +51,10 @@ namespace Isle.Data
         /// Invalid (default) for melee weapons.</summary>
         public NamespacedId Ammo { get; init; }
 
+        /// <summary>Ranged weapons: any bag item with this tag can be shot; the one with the highest
+        /// <see cref="ItemDef.AmmoPower"/> goes first (SYS-CRAFT-02 tiered arrows). Takes precedence over <see cref="Ammo"/>.</summary>
+        public string AmmoTag { get; init; }
+
         /// <summary>Ranged weapons only: projectile flight speed in tiles per second.</summary>
         public float ProjectileSpeed { get; init; }
     }

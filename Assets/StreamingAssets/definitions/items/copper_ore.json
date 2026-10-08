@@ -1,0 +1,20 @@
+{
+  "id": "isle:copper_ore",
+  "name": "@item.copper_ore",
+  "tags": [
+    "material",
+    "ore",
+    "ore/copper"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 1.5,
+  "stack": 20,
+  "icon_style": {
+    "shape": "ore",
+    "color": "#7A6A5E",
+    "accent": "#D08A55"
+  }
+}

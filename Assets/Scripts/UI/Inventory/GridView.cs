@@ -164,6 +164,7 @@ namespace Isle.UI.Inventory
                 rect.anchoredPosition = new Vector2(placement.Position.X * CellSizePx, -placement.Position.Y * CellSizePx);
 
                 DecorateIcon(icon, rect, placement.Item, placement.Count, placement.Rotated);
+                WearBar(rect, placement.Wear);
                 icon.GetComponent<DragHandler>().Bind(this, placement);
                 icon.GetComponent<ItemTooltip>().Bind(placement, Inventory);
                 AddFreshness(rect, placement);
@@ -197,6 +198,47 @@ namespace Isle.UI.Inventory
             if (count > 1) Corner(rect, $"×{count}", TextAnchor.LowerRight, 11, Color.white);
             if (rect.sizeDelta.x >= 64f || rect.sizeDelta.y >= 64f)
                 Corner(rect, Isle.UI.Prototype.Lang.Get(item.Name), TextAnchor.UpperLeft, 9, new Color(0.95f, 0.9f, 0.8f, 0.85f));
+        }
+
+        /// <summary>SYS-CRAFT-02: a thin durability bar along the tile's bottom once an item is worn; a broken item's tile
+        /// is washed red.</summary>
+        internal static void WearBar(RectTransform parent, ItemWear wear)
+        {
+            if (wear == null || !wear.NeedsRepair) return;
+            if (wear.Broken)
+            {
+                var wash = new GameObject("Broken", typeof(RectTransform), typeof(Image));
+                var washRect = (RectTransform)wash.transform;
+                washRect.SetParent(parent, false);
+                washRect.anchorMin = Vector2.zero;
+                washRect.anchorMax = Vector2.one;
+                washRect.offsetMin = washRect.offsetMax = Vector2.zero;
+                var image = wash.GetComponent<Image>();
+                image.color = new Color(0.85f, 0.15f, 0.1f, 0.35f);
+                image.raycastTarget = false;
+            }
+            var back = new GameObject("Wear", typeof(RectTransform), typeof(Image));
+            var backRect = (RectTransform)back.transform;
+            backRect.SetParent(parent, false);
+            backRect.anchorMin = new Vector2(0f, 0f);
+            backRect.anchorMax = new Vector2(1f, 0f);
+            backRect.pivot = new Vector2(0.5f, 0f);
+            backRect.offsetMin = new Vector2(4f, 3f);
+            backRect.offsetMax = new Vector2(-4f, 8f);
+            var backImage = back.GetComponent<Image>();
+            backImage.color = new Color(0f, 0f, 0f, 0.65f);
+            backImage.raycastTarget = false;
+
+            var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            var fillRect = (RectTransform)fill.transform;
+            fillRect.SetParent(backRect, false);
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = new Vector2(Mathf.Clamp01(wear.Fraction), 1f);
+            fillRect.offsetMin = new Vector2(1f, 1f);
+            fillRect.offsetMax = new Vector2(-1f, -1f);
+            var fillImage = fill.GetComponent<Image>();
+            fillImage.color = wear.Fraction > 0.5f ? Isle.UI.Prototype.UiTheme.Good : wear.Fraction > 0.2f ? Isle.UI.Prototype.UiTheme.Accent : Isle.UI.Prototype.UiTheme.Bad;
+            fillImage.raycastTarget = false;
         }
 
         static Text Corner(RectTransform parent, string text, TextAnchor anchor, int size, Color colour)

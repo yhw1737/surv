@@ -58,17 +58,18 @@ namespace Isle.Gameplay.Character
 
         /// <summary>Bag, equipped items, and the contents of any equipped bags — "entire inventory including
         /// equipment" (SYS-SURV-01 §Death).</summary>
-        static List<(ItemDef Item, int Count)> Everything(InventoryNetwork inventory)
+        static List<LootEntry> Everything(InventoryNetwork inventory)
         {
-            var items = new List<(ItemDef, int)>();
-            foreach (var placed in inventory.Bag.Placements) items.Add((placed.Item, placed.Count));
+            // Wear travels with each item (SYS-CRAFT-02): a body recovered is the same gear, not new gear.
+            var items = new List<LootEntry>();
+            foreach (var placed in inventory.Bag.Placements) items.Add(new LootEntry(placed.Item, placed.Count, placed.Wear));
             foreach (var slot in EquipSlots.All)
             {
                 var equipped = inventory.Slots.Get(slot);
-                if (equipped != null) items.Add((equipped, 1));
+                if (equipped != null) items.Add(new LootEntry(equipped, 1, inventory.Slots.WearOf(slot)));
                 var bag = inventory.Slots.BagFor(slot);
                 if (bag == null) continue;
-                foreach (var placed in bag.Placements) items.Add((placed.Item, placed.Count));
+                foreach (var placed in bag.Placements) items.Add(new LootEntry(placed.Item, placed.Count, placed.Wear));
             }
             return items;
         }

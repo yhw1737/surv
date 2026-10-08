@@ -3,7 +3,8 @@
   "name": "@item.hide_cap",
   "tags": [
     "clothing",
-    "leather"
+    "leather",
+    "armor"
   ],
   "grid": {
     "w": 1,
@@ -17,5 +18,7 @@
   "wear": {
     "style": "cap",
     "color": "#9A7550"
-  }
+  },
+  "durability": 60,
+  "tier": 1
 }

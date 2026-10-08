@@ -1,0 +1,32 @@
+{
+  "id": "isle:craft_steel_helmet",
+  "name": "@recipe.steel_helmet",
+  "ingredients": [
+    {
+      "item": "isle:steel_ingot",
+      "count": 3
+    },
+    {
+      "item": "isle:hide",
+      "count": 1
+    }
+  ],
+  "output": {
+    "item": "isle:steel_helmet",
+    "count": 1
+  },
+  "time_sec": 8,
+  "station": "isle:anvil",
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 25,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 30,
+      "primary": true
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "isle:anvil",
+  "name": "@world_object.anvil",
+  "tags": [
+    "station/anvil",
+    "metal"
+  ],
+  "visual": {
+    "shape": "anvil",
+    "color": "#5E6670",
+    "size": 1.1
+  }
+}

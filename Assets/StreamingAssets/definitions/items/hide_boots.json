@@ -1,0 +1,24 @@
+{
+  "id": "isle:hide_boots",
+  "name": "@item.hide_boots",
+  "tags": [
+    "clothing",
+    "leather",
+    "armor"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 0.6,
+  "stack": 1,
+  "durability": 60,
+  "tier": 1,
+  "equip_slot": "feet",
+  "armor": 4,
+  "warmth": 1,
+  "wear": {
+    "style": "boots",
+    "color": "#6E4E34"
+  }
+}

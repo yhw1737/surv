@@ -1,0 +1,22 @@
+{
+  "id": "isle:steel_boots",
+  "name": "@item.steel_boots",
+  "tags": [
+    "armor",
+    "steel"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 1.95,
+  "stack": 1,
+  "durability": 500,
+  "tier": 4,
+  "equip_slot": "feet",
+  "armor": 7,
+  "wear": {
+    "style": "boots",
+    "color": "#B9C8D4"
+  }
+}

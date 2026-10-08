@@ -221,6 +221,24 @@ namespace Isle.UI.Art
                     return;
                 }
 
+                case "helmet":
+                {
+                    if (layer != WearLayer.Body) return;
+                    var h = pose.Head;
+                    var tilt = pose.HeadTilt;
+                    Points.Clear();
+                    for (var i = 0; i <= 10; i++)
+                    {
+                        var a = Mathf.Lerp(-10f, 190f, i / 10f) * Mathf.Deg2Rad - tilt;
+                        Points.Add(h + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (HeadRadius + 0.04f) + Rotate(new Vector2(0f, 0.02f), tilt));
+                    }
+                    Outlined(mesh, Points, fill);
+                    // Nose guard down the front of the face.
+                    mesh.Line(h + Rotate(new Vector2(0.1f, 0.05f), tilt), h + Rotate(new Vector2(0.1f, -0.1f), tilt), 0.035f + Edge * 2f, Ink);
+                    mesh.Line(h + Rotate(new Vector2(0.1f, 0.05f), tilt), h + Rotate(new Vector2(0.1f, -0.1f), tilt), 0.035f, fill);
+                    return;
+                }
+
                 case "hood":
                     if (layer == WearLayer.Behind)
                     {
@@ -297,6 +315,40 @@ namespace Isle.UI.Art
                     Points.Add(hand + d * 0.1f + n * 0.05f);
                     Outlined(mesh, Points, tip);
                     mesh.Line(hand + d * 0.1f - n * 0.13f, hand + d * 0.1f + n * 0.13f, 0.06f, Ink);
+                    return;
+                }
+
+                case "mace":
+                case "club":
+                {
+                    var head = end - d * 0.08f;
+                    Shaft(mesh, hand - d * 0.08f, head, shaft);
+                    if (hold.Style == "club")
+                    {
+                        Points.Clear();
+                        for (var i = 0; i < 10; i++)
+                        {
+                            var a = i / 10f * Mathf.PI * 2f;
+                            Points.Add(head + d * (Mathf.Cos(a) * 0.16f) + n * (Mathf.Sin(a) * 0.1f));
+                        }
+                        Outlined(mesh, Points, shaft);
+                    }
+                    else
+                    {
+                        for (var i = 0; i < 6; i++)
+                        {
+                            var a = i * Mathf.PI / 3f;
+                            var dir = d * Mathf.Cos(a) + n * Mathf.Sin(a);
+                            var side = d * -Mathf.Sin(a) + n * Mathf.Cos(a);
+                            Points.Clear();
+                            Points.Add(head + dir * 0.17f);
+                            Points.Add(head + side * 0.05f);
+                            Points.Add(head - side * 0.05f);
+                            Outlined(mesh, Points, Darken(tip));
+                        }
+                        mesh.Disk(head, 0.11f + Edge, Ink);
+                        mesh.Disk(head, 0.11f, tip);
+                    }
                     return;
                 }
 

@@ -32,7 +32,7 @@ namespace Isle.Core.Util
             "tree", "palm", "rock", "bush", "grass", "water", "rabbit", "deer", "boar", "crocodile",
             "campfire", "crate", "warehouse", "workbench", "pot", "rack", "rain_catcher", "plot", "sack",
             "sea_cave", "giant_tree", "sinkhole", "ruin_gate", "stairs_down", "stairs_up", "key", "locked_door",
-            "gate_water", "gate_roots", "gate_bars", "gate_runes", "chest",
+            "gate_water", "gate_roots", "gate_bars", "gate_runes", "chest", "ore_vein", "furnace", "anvil",
         };
 
         /// <summary>A sprite one world unit across at scale 1, cached per (shape, colour).</summary>
@@ -202,6 +202,37 @@ namespace Isle.Core.Util
                     canvas.Rect(0.06f, 0.05f, 0.94f, 0.62f, c);
                     canvas.Tri(0.0f, 0.6f, 1.0f, 0.6f, 0.5f, 0.96f, dark);
                     canvas.Rect(0.4f, 0.05f, 0.6f, 0.38f, Bark);
+                    break;
+                case "ore_vein":
+                {
+                    // A grey boulder shot through with the ore's colour (the def's colour).
+                    var stone = new Color(0.52f, 0.52f, 0.54f);
+                    canvas.Ellipse(0.5f, 0.3f, 0.42f, 0.25f, stone);
+                    canvas.Inked = false;
+                    canvas.Tri(0.22f, 0.36f, 0.5f, 0.52f, 0.62f, 0.4f, Color.Lerp(stone, Color.white, 0.2f));
+                    canvas.Inked = true;
+                    foreach (var (x, y, r) in new[] { (0.34f, 0.3f, 0.06f), (0.52f, 0.4f, 0.07f), (0.68f, 0.26f, 0.05f), (0.46f, 0.18f, 0.045f) })
+                        canvas.Tri(x - r, y, x, y + r * 1.4f, x + r, y, c);
+                    canvas.Ellipse(0.84f, 0.16f, 0.11f, 0.08f, Color.Lerp(stone, Color.black, 0.15f));
+                    break;
+                }
+                case "furnace":
+                    canvas.Rect(0.18f, 0.05f, 0.82f, 0.62f, c);
+                    canvas.Tri(0.12f, 0.6f, 0.88f, 0.6f, 0.5f, 0.8f, dark);
+                    canvas.Rect(0.42f, 0.74f, 0.58f, 0.96f, dark);
+                    canvas.Rect(0.34f, 0.1f, 0.66f, 0.36f, new Color(0.15f, 0.1f, 0.08f));
+                    canvas.Inked = false;
+                    canvas.Ellipse(0.5f, 0.18f, 0.12f, 0.07f, new Color(1f, 0.55f, 0.15f));
+                    canvas.Inked = true;
+                    break;
+                case "anvil":
+                    canvas.Rect(0.36f, 0.05f, 0.64f, 0.12f, Bark);
+                    canvas.Rect(0.42f, 0.12f, 0.58f, 0.36f, c);
+                    canvas.Rect(0.18f, 0.36f, 0.86f, 0.52f, c);
+                    canvas.Tri(0.18f, 0.52f, 0.18f, 0.36f, 0.04f, 0.48f, c);
+                    canvas.Inked = false;
+                    canvas.Rect(0.22f, 0.47f, 0.82f, 0.5f, light);
+                    canvas.Inked = true;
                     break;
                 case "workbench":
                     canvas.Rect(0.12f, 0.08f, 0.2f, 0.52f, Bark);

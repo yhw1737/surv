@@ -31,6 +31,9 @@ namespace Isle.Data
 
         /// <summary>Tidal Grotto's signature mechanic (SYS-DUNG-01, T-202); null = no tides.</summary>
         public DungeonTides Tides { get; init; }
+
+        /// <summary>SYS-CRAFT-02: ore veins (world object ids with a <c>gather</c> block) placed on each floor, in turn.</summary>
+        public NamespacedId[] Veins { get; init; }
     }
 
     /// <summary>SYS-DUNG-01 §Tidal Grotto: the in-game clock floods part of each floor twice a day.</summary>

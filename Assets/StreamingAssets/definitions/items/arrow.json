@@ -4,7 +4,8 @@
   "tags": [
     "ammo",
     "wood",
-    "stone"
+    "stone",
+    "ammo/arrow"
   ],
   "grid": {
     "w": 1,
@@ -16,5 +17,7 @@
     "shape": "arrow",
     "color": "#9A6B42",
     "accent": "#9FA4AA"
-  }
+  },
+  "tier": 1,
+  "ammo_power": 1.0
 }

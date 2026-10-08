@@ -1,0 +1,43 @@
+{
+  "id": "isle:coal_seam",
+  "name": "@world_object.coal_seam",
+  "tags": [
+    "node/rock",
+    "node/vein",
+    "stone"
+  ],
+  "spawn": {
+    "biomes": [
+      "isle:forest"
+    ],
+    "density": 0.0015,
+    "cluster": {
+      "scale_tiles": 28,
+      "coverage": 0.12,
+      "inside": 7.0,
+      "outside": 0.06
+    },
+    "elsewhere": 0.0
+  },
+  "gather": {
+    "item": "isle:coal",
+    "count": 2,
+    "uses": 3,
+    "respawn_minutes": 7200,
+    "stamina_cost": 7,
+    "tool_tag": "tool/pickaxe",
+    "tool_bonus": 1,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 40,
+      "per_unit": 0
+    },
+    "time_sec": 8,
+    "tool_tier": 1
+  },
+  "visual": {
+    "shape": "ore_vein",
+    "color": "#3A3735",
+    "size": 1.15
+  }
+}

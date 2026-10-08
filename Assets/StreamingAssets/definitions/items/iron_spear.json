@@ -1,0 +1,24 @@
+{
+  "id": "isle:iron_spear",
+  "name": "@item.iron_spear",
+  "tags": [
+    "weapon",
+    "iron"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 3
+  },
+  "weight": 2.08,
+  "stack": 1,
+  "durability": 300,
+  "tier": 3,
+  "equip_slot": "main_hand",
+  "weapon": "isle:iron_spear",
+  "hold": {
+    "style": "spear",
+    "length": 1.3,
+    "color": "#8A6A48",
+    "tip": "#8E979F"
+  }
+}

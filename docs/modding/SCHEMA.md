@@ -528,3 +528,18 @@ Two directories, kept apart because the loader reads each one recursively: `defi
 | Creature | `boss` `{sweep_radius_tiles, shell {below_health, seconds, every_seconds, damage_mult}, drops [{item, count}]}` | Sweep strike hits every player in range; shell phase below a health share; guaranteed drops as a loot pile |
 | Item | `icon_style.shape` | adds `pearl`, `sigil` |
 
+### Tiers, durability, veins (T-166, SYS-CRAFT-02)
+
+| Type | Field | Meaning |
+|---|---|---|
+| Item | `durability` | Uses before it breaks (60 / 150 / 300 / 500 by tier). Durable items never stack |
+| Item | `tier` | 1 stone/wood/leather, 2 copper, 3 iron, 4 steel |
+| Item | `tool_power` | A matching tool divides harvest time by this |
+| Item | `ammo_power` | An arrow multiplies the bow's power by this |
+| Weapon | `ammo_tag` | Ranged: shoots any item with this tag, strongest `ammo_power` first (overrides `ammo`) |
+| World object | `gather.tool_tier` | Needs a `tool_tag` tool of at least this tier (iron vein: 2) |
+| Dungeon | `veins` | World object ids of veins placed on each floor (3 per floor) |
+| Item | `hold.style` | adds `mace`, `club` · `wear.style` adds `helmet` · `icon_style.shape` adds `ore`, `coal`, `ingot` |
+
+Repairs use the recipe that outputs the item: its station, its skills, half its inputs (rounded up).
+

@@ -3,7 +3,8 @@
   "name": "@item.hide_leggings",
   "tags": [
     "clothing",
-    "leather"
+    "leather",
+    "armor"
   ],
   "grid": {
     "w": 2,
@@ -17,5 +18,7 @@
   "wear": {
     "style": "pants",
     "color": "#7A5A3E"
-  }
+  },
+  "durability": 60,
+  "tier": 1
 }

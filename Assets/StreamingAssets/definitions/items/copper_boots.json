@@ -1,0 +1,22 @@
+{
+  "id": "isle:copper_boots",
+  "name": "@item.copper_boots",
+  "tags": [
+    "armor",
+    "copper"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 1.5,
+  "stack": 1,
+  "durability": 150,
+  "tier": 2,
+  "equip_slot": "feet",
+  "armor": 5,
+  "wear": {
+    "style": "boots",
+    "color": "#C27A4A"
+  }
+}

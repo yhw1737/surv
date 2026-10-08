@@ -81,6 +81,9 @@ namespace Isle.UI.Prototype
     {
         public string Slot;
         public string Item;
+
+        /// <summary>SYS-CRAFT-02 wear; <see cref="WearMax"/> 0 = none recorded (brand new).</summary>
+        public int Wear, WearMax;
         public List<SavedStack> Contents = new();
     }
 
@@ -90,6 +93,9 @@ namespace Isle.UI.Prototype
         public string Item;
         public int X, Y, Count;
         public bool Rotated;
+
+        /// <summary>SYS-CRAFT-02 wear; <see cref="WearMax"/> 0 = none recorded (brand new).</summary>
+        public int Wear, WearMax;
     }
 
     /// <summary>Only nodes that differ from fresh are saved: a depleted node and how long until it's back.</summary>

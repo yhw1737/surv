@@ -24,6 +24,8 @@ namespace Isle.UI.Prototype
         const float ListRowPx = 50f;
         const float TilePx = 64f;
         string _craftRecipe;
+        bool _repairTab;
+        Vector2 _repairScroll;
         Vector2 _cookListScroll, _craftListScroll, _pantryScroll;
 
         Rect Window(float width, float height, float xBias, string title, string subtitle, ref bool open)
@@ -217,16 +219,27 @@ namespace Isle.UI.Prototype
             var st = UiTheme.Styles;
             var recipes = DefRegistry.All<CraftRecipeDef>();
             var crafting = NamespacedId.Parse("isle:crafting");
-            var rect = Window(640f, 430f, -160f, Lang.Get("@ui.craft_title"), $"{SkillName(crafting)} Lv {_player.LevelOf(crafting)}", ref _craftOpen);
+            var rect = Window(640f, 470f, -160f, Lang.Get("@ui.craft_title"), $"{SkillName(crafting)} Lv {_player.LevelOf(crafting)}", ref _craftOpen);
             var stock = CraftingCalculator.StockOf(_inventory.Containers());
             var position = _player.transform.position;
 
             bool StationOk(CraftRecipeDef r) => !r.Station.IsValid || WorldObjectRegistry.IsActiveNear(position, r.Station, PlayerInteraction.ReachTiles);
             bool Ready(CraftRecipeDef r) => StationOk(r) && _player.MeetsSkills(r.Skills) && CraftingCalculator.HasIngredients(r.Ingredients, stock);
 
+            // Tabs: make, or mend (SYS-CRAFT-02).
+            var tabY = rect.y + WindowHeaderPx + 6f;
+            if (GUI.Button(new Rect(rect.x + 12f, tabY, 120f, 28f), Lang.Get("@ui.craft_tab"), _repairTab ? st.Button : st.ButtonOn)) _repairTab = false;
+            if (GUI.Button(new Rect(rect.x + 136f, tabY, 120f, 28f), Lang.Get("@ui.repair_tab"), _repairTab ? st.ButtonOn : st.Button)) _repairTab = true;
+            var body = new Rect(rect.x, rect.y + 34f, rect.width, rect.height - 34f);
+            if (_repairTab)
+            {
+                DrawRepairList(body, stock, StationOk);
+                return;
+            }
+
             // Recipe list: craftable ones first.
             var ordered = recipes.OrderByDescending(Ready).ThenBy(r => Lang.Get(r.Name)).ToList();
-            var list = new Rect(rect.x + 12f, rect.y + WindowHeaderPx + 8f, ListWidthPx, rect.height - WindowHeaderPx - 20f);
+            var list = new Rect(body.x + 12f, body.y + WindowHeaderPx + 8f, ListWidthPx, body.height - WindowHeaderPx - 20f);
             GUI.Box(list, GUIContent.none, st.Inset);
             var view = new Rect(0, 0, list.width - 20f, ordered.Count * (ListRowPx + 4f));
             _craftListScroll = GUI.BeginScrollView(new Rect(list.x + 6f, list.y + 6f, list.width - 8f, list.height - 12f), _craftListScroll, view, false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
@@ -249,7 +262,7 @@ namespace Isle.UI.Prototype
             }
             GUI.EndScrollView();
 
-            var right = new Rect(list.xMax + 14f, list.y, rect.xMax - list.xMax - 26f, list.height);
+            var right = new Rect(list.xMax + 14f, list.y, body.xMax - list.xMax - 26f, list.height);
             var chosen = ordered.FirstOrDefault(r => r.Id.Value == _craftRecipe) ?? ordered.FirstOrDefault();
             if (chosen == null) return;
             _craftRecipe = chosen.Id.Value;
@@ -299,6 +312,83 @@ namespace Isle.UI.Prototype
             GUI.enabled = true;
         }
 
+        /// <summary>SYS-CRAFT-02: every worn item carried or worn, its durability, what mending it costs, and where.</summary>
+        void DrawRepairList(Rect body, IReadOnlyList<Stock> stock, System.Func<CraftRecipeDef, bool> stationOk)
+        {
+            var st = UiTheme.Styles;
+            var worn = new List<(ItemDef Item, Isle.Gameplay.Inventory.ItemWear Wear, string Slot, int Container, Isle.Core.Vec2Int At)>();
+            foreach (var slot in Isle.Gameplay.Inventory.EquipSlots.All)
+                if (_inventory.Slots.Get(slot) is { } item && _inventory.Slots.WearOf(slot) is { NeedsRepair: true } wear)
+                    worn.Add((item, wear, slot, -1, default));
+            var containers = _inventory.Containers();
+            for (var c = 0; c < containers.Count; c++)
+                foreach (var placed in containers[c].Placements)
+                    if (placed.Wear is { NeedsRepair: true })
+                        worn.Add((placed.Item, placed.Wear, null, c, placed.Position));
+
+            var area = new Rect(body.x + 12f, body.y + WindowHeaderPx + 8f, body.width - 24f, body.height - WindowHeaderPx - 20f);
+            GUI.Box(area, GUIContent.none, st.Inset);
+            if (worn.Count == 0)
+            {
+                GUI.Label(new Rect(area.x + 14f, area.y + 14f, area.width - 28f, 24f), Lang.Get("@ui.repair_nothing"), st.Muted);
+                return;
+            }
+            const float rowPx = 64f;
+            var view = new Rect(0, 0, area.width - 24f, worn.Count * (rowPx + 4f));
+            _repairScroll = GUI.BeginScrollView(new Rect(area.x + 6f, area.y + 6f, area.width - 8f, area.height - 12f), _repairScroll, view, false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
+            var y = 0f;
+            foreach (var (item, wear, slot, container, at) in worn)
+            {
+                var row = new Rect(0, y, view.width, rowPx);
+                GUI.Box(row, GUIContent.none, st.Slot);
+                DrawIcon(new Rect(row.x + 6f, row.y + 8f, 48f, 48f), Isle.UI.Art.ItemIcons.Texture(item), wear.Broken);
+                GUI.Label(new Rect(row.x + 60f, row.y + 6f, 220f, 20f), Lang.Get(item.Name) + (slot != null ? UiTheme.Colour($"  ({Lang.Get("@ui.repair_equipped")})", UiTheme.Muted) : ""), st.Text);
+                DurabilityBar(new Rect(row.x + 60f, row.y + 30f, 150f, 8f), wear.Fraction);
+                GUI.Label(new Rect(row.x + 216f, row.y + 24f, 120f, 20f), wear.Broken ? UiTheme.Colour(Lang.Get("@ui.broken"), UiTheme.Bad) : $"{wear.Current} / {wear.Max}", st.Small);
+
+                var recipe = PlayerInteraction.RepairRecipe(item);
+                string status;
+                var ready = false;
+                if (recipe == null) status = UiTheme.Colour(Lang.Get("@ui.repair_none"), UiTheme.Muted);
+                else
+                {
+                    var cost = Isle.Gameplay.Crafting.RepairCalculator.Cost(recipe.Ingredients);
+                    var parts = cost.Select(need =>
+                    {
+                        var have = stock.Where(line => CraftingCalculator.Matches(need, line)).Sum(line => line.Count);
+                        var name = need.Item.IsValid && DefRegistry.TryGet<ItemDef>(need.Item, out var d) ? Lang.Get(d.Name) : $"#{need.Tag}";
+                        return UiTheme.Colour($"{name} {have}/{need.Count}", have >= need.Count ? UiTheme.Good : UiTheme.Bad);
+                    });
+                    status = string.Join("  ", parts);
+                    if (!stationOk(recipe)) status += "  " + UiTheme.Colour(string.Format(Lang.Get("@ui.needs_near"), StationName(recipe.Station)), UiTheme.Bad);
+                    ready = stationOk(recipe) && _player.MeetsSkills(recipe.Skills) && CraftingCalculator.HasIngredients(cost, stock);
+                    GUI.Label(new Rect(row.x + 60f, row.y + 42f, row.width - 200f, 20f),
+                        $"{Lang.Get("@ui.repair_new_max")} {Isle.Gameplay.Crafting.RepairCalculator.NewMax(wear.Max)}", st.Small);
+                }
+                GUI.Label(new Rect(row.x + 340f, row.y + 8f, row.width - 470f, 48f), status, st.Small);
+                GUI.enabled = ready;
+                if (GUI.Button(new Rect(row.xMax - 118f, row.y + 14f, 110f, 34f), Lang.Get("@ui.repair_now"), st.ButtonOn))
+                {
+                    if (slot != null) _player.RequestRepairEquipped(slot);
+                    else _player.RequestRepairPlaced(container, at);
+                }
+                GUI.enabled = true;
+                y += rowPx + 4f;
+            }
+            GUI.EndScrollView();
+        }
+
+        /// <summary>A thin bar, green → amber → red as an item wears down.</summary>
+        static void DurabilityBar(Rect rect, float fraction)
+        {
+            var old = GUI.color;
+            GUI.color = new Color(0f, 0f, 0f, 0.6f);
+            GUI.DrawTexture(rect, Texture2D.whiteTexture);
+            GUI.color = fraction > 0.5f ? UiTheme.Good : fraction > 0.2f ? UiTheme.Accent : UiTheme.Bad;
+            GUI.DrawTexture(new Rect(rect.x + 1f, rect.y + 1f, (rect.width - 2f) * Mathf.Clamp01(fraction), rect.height - 2f), Texture2D.whiteTexture);
+            GUI.color = old;
+        }
+
         /// <summary>One line on what an item is for, from its def.</summary>
         static string ItemSummary(ItemDef item)
         {
@@ -306,6 +396,7 @@ namespace Isle.UI.Prototype
             var parts = new List<string>();
             if (item.Weapon.IsValid && DefRegistry.TryGet<WeaponDef>(item.Weapon, out var weapon)) parts.Add($"{Lang.Get("@ui.tt_power")} {weapon.BasePower:0}");
             if (item.Armor > 0f) parts.Add($"{Lang.Get("@ui.armor")} {item.Armor:0}");
+            if (item.Durability is > 0) parts.Add($"{Lang.Get("@ui.durability")} {item.Durability}");
             if (item.Warmth > 0f) parts.Add($"{Lang.Get("@ui.tt_warmth")} +{item.Warmth:0}°");
             if (item.BagGrid is { } bag) parts.Add($"{Lang.Get("@ui.tt_bag")} {bag.W}×{bag.H}");
             if (item.Places.IsValid) parts.Add(Lang.Get("@ui.place"));

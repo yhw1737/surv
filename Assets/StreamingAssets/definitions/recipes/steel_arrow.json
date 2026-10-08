@@ -1,0 +1,36 @@
+{
+  "id": "isle:craft_steel_arrow",
+  "name": "@recipe.steel_arrow",
+  "ingredients": [
+    {
+      "item": "isle:steel_ingot",
+      "count": 1
+    },
+    {
+      "item": "isle:wood",
+      "count": 2
+    },
+    {
+      "item": "isle:fiber",
+      "count": 1
+    }
+  ],
+  "output": {
+    "item": "isle:steel_arrow",
+    "count": 5
+  },
+  "time_sec": 8,
+  "station": "isle:anvil",
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 25,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 30,
+      "primary": true
+    }
+  ]
+}

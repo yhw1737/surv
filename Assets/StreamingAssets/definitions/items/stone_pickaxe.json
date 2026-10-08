@@ -19,5 +19,8 @@
     "length": 0.8,
     "color": "#8A6A48",
     "tip": "#9FA4AA"
-  }
+  },
+  "durability": 60,
+  "tier": 1,
+  "tool_power": 1.0
 }

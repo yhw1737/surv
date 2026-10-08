@@ -1,0 +1,24 @@
+{
+  "id": "isle:wooden_club",
+  "name": "@item.wooden_club",
+  "tags": [
+    "weapon",
+    "wood"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 2
+  },
+  "weight": 2.0,
+  "stack": 1,
+  "durability": 60,
+  "tier": 1,
+  "equip_slot": "main_hand",
+  "weapon": "isle:wooden_club",
+  "hold": {
+    "style": "club",
+    "length": 0.85,
+    "color": "#8A6A48",
+    "tip": "#7A5A3E"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "isle:furnace",
+  "name": "@world_object.furnace",
+  "tags": [
+    "station/furnace",
+    "stone"
+  ],
+  "visual": {
+    "shape": "furnace",
+    "color": "#8C6F5E",
+    "size": 1.1
+  }
+}

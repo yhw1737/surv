@@ -286,7 +286,7 @@ namespace Isle.Gameplay.Character
         public void RequestLoose(Vector2 aim) => CmdLoose(aim.x, aim.y);
 
         public bool HoldsRangedWeapon() =>
-            TryGetComponent<InventoryNetwork>(out var inventory) && EquippedWeapon(inventory) is { } weapon && weapon.Ammo.IsValid;
+            TryGetComponent<InventoryNetwork>(out var inventory) && EquippedWeapon(inventory) is { } weapon && IsRanged(weapon);
 
         static Vector2? MouseWorld()
         {
@@ -375,6 +375,14 @@ namespace Isle.Gameplay.Character
                 if (vitals.Stamina < harvest.Def.Gather.StaminaCost)
                 {
                     GameFeed.RaiseNotice("@ui.too_tired");
+                    return;
+                }
+                // SYS-CRAFT-02: a vein needs a pickaxe of its tier (an iron vein, copper or better).
+                var gather = harvest.Def.Gather;
+                if (gather.ToolTier > 0 && TryGetComponent<InventoryNetwork>(out var held)
+                    && !ToolTiers.CanWork(MatchingTool(held, gather)?.Tier ?? 0, gather.ToolTier))
+                {
+                    GameFeed.RaiseNotice("@ui.needs_better_tool");
                     return;
                 }
                 StartGather(harvest);
@@ -469,8 +477,52 @@ namespace Isle.Gameplay.Character
             else
                 dealt = director.DamageTyped(target, power, attack.Type, loot);
             AwardCombatXp(weapon, dealt);
+            if (dealt > 0f) WearSlot(inventory, MainHandSlot); // a swing that lands wears the weapon; a miss doesn't
             foreach (var (item, count) in loot) GiveItem(inventory, item, count);
         }
+
+        /// <summary>SYS-CRAFT-02: one use off the slot's item; tells the player when it breaks.</summary>
+        static void WearSlot(InventoryNetwork inventory, string slot)
+        {
+            var item = inventory.Slots.Get(slot);
+            if (item != null && inventory.Slots.Wear(slot, 1)) GameFeed.RaiseNotice($"@ui.item_broke|{item.Name}");
+        }
+
+        /// <summary>For other systems (dungeon veins): the held tool that works <paramref name="gather"/>, or null.</summary>
+        public ItemDef HeldToolFor(GatherSpec gather) => TryGetComponent<InventoryNetwork>(out var inventory) ? MatchingTool(inventory, gather) : null;
+
+        /// <summary>For other systems: one use off the held tool.</summary>
+        public void WearHeldTool()
+        {
+            if (TryGetComponent<InventoryNetwork>(out var inventory)) WearSlot(inventory, MainHandSlot);
+        }
+
+        /// <summary>For other systems: into the bags, or at the player's feet when full.</summary>
+        public void Receive(NamespacedId item, int count)
+        {
+            if (TryGetComponent<InventoryNetwork>(out var inventory)) GiveItem(inventory, item, count);
+        }
+
+        /// <summary>The held tool that counts for <paramref name="gather"/> (right tag, not broken), or null.</summary>
+        static ItemDef MatchingTool(InventoryNetwork inventory, GatherSpec gather)
+        {
+            if (string.IsNullOrEmpty(gather.ToolTag)) return null;
+            var held = inventory.Slots.Working(MainHandSlot);
+            return held?.Tags != null && held.Tags.Contains(gather.ToolTag) ? held : null;
+        }
+
+        /// <summary>SYS-CRAFT-02: the ammo a shot uses — by tag, the strongest arrow carried; else the weapon's one
+        /// ammo item. Null when none is carried.</summary>
+        static ItemDef BestAmmo(InventoryNetwork inventory, WeaponDef weapon)
+        {
+            if (!string.IsNullOrEmpty(weapon.AmmoTag))
+                return inventory.Containers().SelectMany(c => c.Placements).Select(p => p.Item)
+                    .Where(i => i.Tags != null && i.Tags.Contains(weapon.AmmoTag))
+                    .OrderByDescending(i => i.AmmoPower > 0f ? i.AmmoPower : 1f).FirstOrDefault();
+            return weapon.Ammo.IsValid && InventoryOps.Count(inventory.Containers(), weapon.Ammo) > 0 && DefRegistry.TryGet<ItemDef>(weapon.Ammo, out var ammo) ? ammo : null;
+        }
+
+        static bool IsRanged(WeaponDef weapon) => weapon.Ammo.IsValid || !string.IsNullOrEmpty(weapon.AmmoTag);
 
         /// <summary>SYS-WORLD-03 §Gathering: the node being harvested, or null. Harvests take time; moving away or
         /// pressing E again cancels. Server state the owning host's HUD reads for the progress bar.</summary>
@@ -493,6 +545,9 @@ namespace Isle.Gameplay.Character
             _gatherStartedAt = Time.time;
             var skill = node.Def.Gather.Xp?.Skill ?? default;
             _gatherSeconds = node.Def.Gather.TimeSec <= 0f ? 0f : GatherCalculator.GatherSeconds(node.Def.Gather.TimeSec, LevelOf(skill));
+            // SYS-CRAFT-02: a better tool is faster.
+            if (TryGetComponent<InventoryNetwork>(out var inventory) && MatchingTool(inventory, node.Def.Gather) is { } tool)
+                _gatherSeconds = ToolTiers.HarvestSeconds(_gatherSeconds, tool.ToolPower);
         }
 
         void CancelGather() => Gathering = null;
@@ -515,7 +570,11 @@ namespace Isle.Gameplay.Character
             if (!world.TryHarvest(node, out var item, out var count)) return;
             vitals.SpendStamina(node.Def.Gather.StaminaCost);
             AwardXp(node.Def.Gather.Xp, count);
-            count += ToolBonus(inventory, node.Def.Gather);
+            if (MatchingTool(inventory, node.Def.Gather) != null)
+            {
+                count += node.Def.Gather.ToolBonus;
+                WearSlot(inventory, MainHandSlot);
+            }
             GiveItem(inventory, item, count);
         }
 
@@ -585,8 +644,8 @@ namespace Isle.Gameplay.Character
         {
             if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
             var weapon = EquippedWeapon(inventory);
-            if (weapon == null || !weapon.Ammo.IsValid) return;
-            if (InventoryOps.Count(inventory.Containers(), weapon.Ammo) == 0)
+            if (weapon == null || !IsRanged(weapon)) return;
+            if (BestAmmo(inventory, weapon) == null)
             {
                 GameFeed.RaiseNotice("@ui.no_ammo");
                 return;
@@ -606,7 +665,7 @@ namespace Isle.Gameplay.Character
             if (!TryGetComponent<Vitals>(out var vitals) || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
 
             var weapon = EquippedWeapon(inventory);
-            if (weapon == null || !weapon.Ammo.IsValid || Projectiles.Instance == null) return;
+            if (weapon == null || !IsRanged(weapon) || Projectiles.Instance == null) return;
 
             var stance = CurrentStance();
             if (!RangedCalculator.CanAim(stance))
@@ -615,11 +674,13 @@ namespace Isle.Gameplay.Character
                 return;
             }
 
-            if (InventoryOps.TakeOne(inventory.Containers(), weapon.Ammo) == null)
+            var ammo = BestAmmo(inventory, weapon);
+            if (ammo == null || InventoryOps.TakeOne(inventory.Containers(), ammo.Id) == null)
             {
                 GameFeed.RaiseNotice("@ui.no_ammo");
                 return;
             }
+            WearSlot(inventory, MainHandSlot); // each arrow loosed wears the bow
             vitals.SpendStamina(BowDrawStaminaPerSecond * charge);
             if (weapon.AttackSpeed > 0f) _nextAttackAt = Time.time + 1f / weapon.AttackSpeed;
 
@@ -627,7 +688,8 @@ namespace Isle.Gameplay.Character
             var sway = RangedCalculator.SwayRadiusTiles(LevelOf(weapon.CombatSkill), stance) * Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "aim_sway_mult");
             var aim = new Vector2(aimX, aimY) + UnityEngine.Random.insideUnitCircle * sway;
             var direction = (aim - origin).sqrMagnitude > 0.0001f ? (aim - origin).normalized : Vector2.right;
-            var damage = PowerCalculator.FinalPower(weapon.BasePower, LevelOf(weapon.CombatSkill)) * RangedCalculator.ChargeMult(charge);
+            var damage = PowerCalculator.FinalPower(weapon.BasePower, LevelOf(weapon.CombatSkill)) * RangedCalculator.ChargeMult(charge)
+                         * (ammo.AmmoPower > 0f ? ammo.AmmoPower : 1f);
 
             Projectiles.Instance.Fire(origin + direction * MuzzleOffsetTiles, direction, weapon.ProjectileSpeed, damage, weapon.DamageType ?? DamageTypes.Pierce,
                 loot => { foreach (var (item, count) in loot) GiveItem(inventory, item, count); },
@@ -822,6 +884,79 @@ namespace Isle.Gameplay.Character
             GiveItem(inventory, recipe.Output.Item, recipe.Output.Count);
         }
 
+        // ------------------------------------------------------------------ repair (SYS-CRAFT-02)
+
+        /// <summary>The recipe that makes <paramref name="item"/> — it also sets where and for what it's repaired. Null
+        /// when nothing makes it (not repairable).</summary>
+        public static CraftRecipeDef RepairRecipe(ItemDef item) =>
+            item == null ? null : DefRegistry.All<CraftRecipeDef>().FirstOrDefault(r => r.Output != null && r.Output.Item == item.Id);
+
+        /// <summary>Repairs the item in an equip slot.</summary>
+        public void RequestRepairEquipped(string slot) => CmdRepairEquipped(slot);
+
+        /// <summary>Repairs the item placed at <paramref name="position"/> in container <paramref name="container"/>
+        /// (index into <see cref="InventoryNetwork.Containers"/>).</summary>
+        public void RequestRepairPlaced(int container, Vec2Int position) => CmdRepairPlaced(container, position.X, position.Y);
+
+        [ServerRpc]
+        void CmdRepairEquipped(string slot)
+        {
+            if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            TryRepair(inventory, inventory.Slots.Get(slot), inventory.Slots.WearOf(slot));
+        }
+
+        [ServerRpc]
+        void CmdRepairPlaced(int container, int x, int y)
+        {
+            if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            var containers = inventory.Containers();
+            if (container < 0 || container >= containers.Count) return; // never trust client values
+            if (containers[container].PlacementAt(new Vec2Int(x, y)) is not { } placed) return;
+            TryRepair(inventory, placed.Item, placed.Wear);
+        }
+
+        /// <summary>SYS-CRAFT-02 §Repair: at the item's own station, meeting its recipe's skills, for half its inputs
+        /// (rounded up); the maximum drops to ×0.92 and the item is restored to it. The wear is shared with wherever the
+        /// item sits, so fixing it in place is enough.</summary>
+        bool TryRepair(InventoryNetwork inventory, ItemDef item, ItemWear wear)
+        {
+            if (item == null) return false;
+            var recipe = RepairRecipe(item);
+            if (recipe == null)
+            {
+                GameFeed.RaiseNotice("@ui.repair_none");
+                return false;
+            }
+            if (wear == null || !wear.NeedsRepair)
+            {
+                GameFeed.RaiseNotice("@ui.repair_full");
+                return false;
+            }
+            if (recipe.Station.IsValid && !WorldObjectRegistry.IsActiveNear(transform.position, recipe.Station, ReachTiles))
+            {
+                GameFeed.RaiseNotice("@ui.repair_station");
+                return false;
+            }
+            if (!MeetsSkills(recipe.Skills))
+            {
+                GameFeed.RaiseNotice("@ui.skill_too_low");
+                return false;
+            }
+            var cost = RepairCalculator.Cost(recipe.Ingredients);
+            var containers = inventory.Containers();
+            if (!CraftingCalculator.HasIngredients(cost, CraftingCalculator.StockOf(containers)))
+            {
+                GameFeed.RaiseNotice("@ui.repair_missing");
+                return false;
+            }
+            ConsumeIngredients(containers, cost);
+            wear.Repair();
+            if (recipe.Xp != null)
+                AwardXp(new XpAward { Skill = recipe.Xp.Skill, Base = recipe.Xp.Base * RepairCalculator.RepairXpShare }, 0f);
+            GameFeed.RaiseNotice($"@ui.repaired|{item.Name}");
+            return true;
+        }
+
         /// <summary>Eats one of an item. A dish brings its cooked nutrition and buffs; anything else is eaten by the
         /// def marked <c>eat_raw</c> (SYS-COOK-01 <c>isle:raw</c>), so raw food gets raw's modifiers and reactions.
         /// Either way satiety fatigue scales the nutrition.</summary>
@@ -930,21 +1065,27 @@ namespace Isle.Gameplay.Character
             if (!NamespacedId.TryParse(itemText, out var itemId, out _)) return;
             if (!TryGetComponent<InventoryNetwork>(out var inventory)) return;
 
-            var containers = inventory.Containers();
-            var item = containers.SelectMany(c => c.Placements).Select(p => p.Item)
-                .FirstOrDefault(i => i.Id == itemId && !string.IsNullOrEmpty(i.EquipSlot));
-            if (item == null) return;
+            // The placement itself, not just its def: a worn tool keeps its wear when it's equipped (SYS-CRAFT-02).
+            GridInventory from = null;
+            Placement placed = default;
+            foreach (var container in inventory.Containers())
+            foreach (var p in container.Placements)
+                if (from == null && p.Item.Id == itemId && !string.IsNullOrEmpty(p.Item.EquipSlot))
+                    (from, placed) = (container, p);
+            if (from == null) return;
+            var item = placed.Item;
             var slot = item.EquipSlot;
 
             var previous = inventory.Slots.Get(slot);
-            if (previous != null && !inventory.Slots.Unequip(slot))
+            ItemWear previousWear = null;
+            if (previous != null && !inventory.Slots.Unequip(slot, out previousWear))
             {
                 GameFeed.RaiseNotice("@ui.empty_bag_first");
                 return;
             }
-            InventoryOps.TakeOne(inventory.Containers(), item.Id);
-            inventory.Slots.TryEquip(slot, item);
-            if (previous != null) GiveItem(inventory, previous.Id, 1);
+            InventoryOps.SetCount(from, placed, placed.Count - 1);
+            inventory.Slots.TryEquip(slot, item, placed.Wear);
+            if (previous != null) GiveItem(inventory, previous, 1, previousWear);
         }
 
         [ServerRpc]
@@ -953,14 +1094,14 @@ namespace Isle.Gameplay.Character
             if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
             var current = inventory.Slots.Get(slot);
             if (current == null) return;
-            if (!inventory.Slots.Unequip(slot))
+            if (!inventory.Slots.Unequip(slot, out var wear))
             {
                 GameFeed.RaiseNotice("@ui.empty_bag_first");
                 return;
             }
-            if (!InventoryOps.TryGive(inventory.Containers(), current, 1))
+            if (!InventoryOps.TryGive(inventory.Containers(), current, 1, wear))
             {
-                inventory.Slots.TryEquip(slot, current); // nowhere to put it: keep wearing it
+                inventory.Slots.TryEquip(slot, current, wear); // nowhere to put it: keep wearing it
                 GameFeed.RaiseNotice("@ui.bag_full");
             }
         }
@@ -1038,7 +1179,8 @@ namespace Isle.Gameplay.Character
 
         WeaponDef EquippedWeapon(InventoryNetwork inventory)
         {
-            var equipped = inventory.Slots.Get(MainHandSlot);
+            // A broken weapon fights as bare hands (SYS-CRAFT-02).
+            var equipped = inventory.Slots.Working(MainHandSlot);
             if (equipped != null && equipped.Weapon.IsValid && DefRegistry.TryGet<WeaponDef>(equipped.Weapon, out var weapon))
                 return weapon;
 
@@ -1047,14 +1189,14 @@ namespace Isle.Gameplay.Character
         }
 
         /// <summary>Same, for an item that isn't a registered def (a dish).</summary>
-        void GiveItem(InventoryNetwork inventory, ItemDef item, int count)
+        void GiveItem(InventoryNetwork inventory, ItemDef item, int count, ItemWear wear = null)
         {
-            if (InventoryOps.TryGive(inventory.Containers(), item, count))
+            if (InventoryOps.TryGive(inventory.Containers(), item, count, wear))
             {
                 GameFeed.RaiseItemGained(item.Id, count);
                 return;
             }
-            LootPiles.Drop(transform.position, new[] { (item, count) });
+            LootPiles.Drop(transform.position, new[] { new LootEntry(item, count, wear) });
             GameFeed.RaiseItemDropped(item.Id, count, transform.position);
         }
 
@@ -1090,15 +1232,6 @@ namespace Isle.Gameplay.Character
                     InventoryOps.SetCount(container, placed, placed.Count - take);
                 }
             }
-        }
-
-        /// <summary>Extra units from holding the right tool (SYS-NET-01 §Gather: "tool requirement"). The tool is
-        /// matched by tag on the main-hand item, the bonus comes from the node's def.</summary>
-        static int ToolBonus(InventoryNetwork inventory, GatherSpec gather)
-        {
-            if (string.IsNullOrEmpty(gather.ToolTag)) return 0;
-            var held = inventory.Slots.Get(MainHandSlot);
-            return held?.Tags != null && held.Tags.Contains(gather.ToolTag) ? gather.ToolBonus : 0;
         }
 
         /// <summary>The <c>water/*</c> tag's suffix, e.g. <c>"saltwater"</c>. Empty when the spot has none.</summary>

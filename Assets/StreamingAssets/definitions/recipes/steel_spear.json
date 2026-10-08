@@ -1,0 +1,32 @@
+{
+  "id": "isle:craft_steel_spear",
+  "name": "@recipe.steel_spear",
+  "ingredients": [
+    {
+      "item": "isle:steel_ingot",
+      "count": 1
+    },
+    {
+      "item": "isle:wood",
+      "count": 3
+    }
+  ],
+  "output": {
+    "item": "isle:steel_spear",
+    "count": 1
+  },
+  "time_sec": 8,
+  "station": "isle:anvil",
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 25,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 30,
+      "primary": true
+    }
+  ]
+}

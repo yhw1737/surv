@@ -244,6 +244,49 @@ namespace Isle.Tests.PlayMode
             yield return HarvestNearest(player, world, "isle:tree");
             Assert.AreEqual(woodBefore + 6, CountOf(inventory, "isle:wood"), "hatchet bonus not applied");
 
+            // SYS-CRAFT-02: the harvest wore the hatchet and the hit wore the cloak; a broken hatchet is no tool; a repair
+            // costs half the recipe and lowers the maximum to ×0.92.
+            Assert.AreEqual(59, inventory.Slots.WearOf("main_hand").Current, "harvest didn't wear the hatchet");
+            Assert.AreEqual(59, inventory.Slots.WearOf("chest").Current, "hit didn't wear the cloak");
+            inventory.Slots.Wear("main_hand", 59);
+            Assert.IsNull(inventory.Slots.Working("main_hand"), "broken hatchet still works");
+            woodBefore = CountOf(inventory, "isle:wood");
+            yield return HarvestNearest(player, world, "isle:tree");
+            Assert.AreEqual(woodBefore + 4, CountOf(inventory, "isle:wood"), "broken hatchet still gave its bonus");
+            Give(inventory, "isle:stone", 1);
+            Give(inventory, "isle:fiber", 1);
+            player.RequestRepairEquipped("main_hand");
+            yield return WaitUntil(() => inventory.Slots.WearOf("main_hand").Max == 55, 3f, "hatchet never repaired");
+            Assert.AreEqual(55, inventory.Slots.WearOf("main_hand").Current);
+
+            // Tiered veins: an iron vein refuses a stone pickaxe and yields to a copper one.
+            Give(inventory, "isle:stone_pickaxe", 1);
+            player.RequestEquipItem("isle:stone_pickaxe");
+            yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:stone_pickaxe", 3f, "pickaxe never equipped");
+            var vein = world.Nodes.FirstOrDefault(n => n.Def.Id.Value == "isle:iron_vein" && n.IsHarvestable && world.NearestWater(n.Position, 3f) == null);
+            Assert.IsNotNull(vein, "no iron vein on the island");
+            Teleport(player, vein.Position);
+            player.RequestInteract();
+            yield return new WaitForSeconds(0.5f);
+            Assert.IsNull(player.Gathering, "stone pickaxe started on an iron vein");
+            Give(inventory, "isle:copper_pickaxe", 1);
+            player.RequestEquipItem("isle:copper_pickaxe");
+            yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:copper_pickaxe", 3f, "copper pickaxe never equipped");
+            yield return HarvestNearest(player, world, "isle:iron_vein");
+            Assert.AreEqual(3, CountOf(inventory, "isle:iron_ore"), "iron vein: 2 + 1 tool bonus");
+
+            // Smelting at a furnace.
+            player.Skills.Restore(NamespacedId.Parse("isle:crafting"), Isle.Gameplay.Skills.XpCurve.TotalXpTo(20));
+            Give(inventory, "isle:furnace_kit", 1);
+            var furnaceAt = (Vector2)player.transform.position + Vector2.right * 1.5f;
+            if (!player.CanPlaceAt(furnaceAt)) furnaceAt = (Vector2)player.transform.position + Vector2.left * 1.5f;
+            player.RequestPlace("isle:furnace_kit", furnaceAt);
+            yield return WaitUntil(() => StructureFactory.Built.Any(b => b != null && b.Def != null && b.Def.Id.Value == "isle:furnace"), 3f, "furnace never placed");
+            Give(inventory, "isle:coal", 1);
+            player.RequestCraft("isle:craft_iron_ingot");
+            yield return WaitUntil(() => CountOf(inventory, "isle:iron_ingot") == 1, 3f, "no iron ingot smelted");
+            Assert.AreEqual(1, CountOf(inventory, "isle:iron_ore"), "smelting took 2 ore");
+
             // Ranged: equip a bow, draw for a full charge, loose. Sway makes the hit itself random at level 0, so
             // the check is that an arrow was spent and a projectile flew and expired.
             Give(inventory, "isle:short_bow", 1);
@@ -312,6 +355,11 @@ namespace Isle.Tests.PlayMode
             Teleport(player, deathSpot);
             player.RequestInteract();
             yield return WaitUntil(() => LootPiles.All.Count == 0, 3f, "pile never picked up");
+            // The repaired hatchet came back through unequip → bag → death pile with its wear — into the bag, or straight
+            // back into the empty main hand (recovering a body re-equips gear first).
+            var hatchetWear = inventory.Containers().SelectMany(c => c.Placements).Where(pl => pl.Item.Id.Value == "isle:stone_hatchet").Select(pl => pl.Wear)
+                .Append(inventory.Slots.Get("main_hand")?.Id.Value == "isle:stone_hatchet" ? inventory.Slots.WearOf("main_hand") : null);
+            Assert.IsTrue(hatchetWear.Any(w => w != null && w.Max == 55), "hatchet wear lost through the death pile");
             Assert.AreEqual(1, CountOf(inventory, "isle:stone_spear"), "spear not recovered from the pile");
         }
 

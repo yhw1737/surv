@@ -1,0 +1,43 @@
+{
+  "id": "isle:copper_vein",
+  "name": "@world_object.copper_vein",
+  "tags": [
+    "node/rock",
+    "node/vein",
+    "stone"
+  ],
+  "spawn": {
+    "biomes": [
+      "isle:coast"
+    ],
+    "density": 0.0015,
+    "cluster": {
+      "scale_tiles": 28,
+      "coverage": 0.12,
+      "inside": 7.0,
+      "outside": 0.06
+    },
+    "elsewhere": 0.0
+  },
+  "gather": {
+    "item": "isle:copper_ore",
+    "count": 2,
+    "uses": 3,
+    "respawn_minutes": 7200,
+    "stamina_cost": 7,
+    "tool_tag": "tool/pickaxe",
+    "tool_bonus": 1,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 40,
+      "per_unit": 0
+    },
+    "time_sec": 10,
+    "tool_tier": 1
+  },
+  "visual": {
+    "shape": "ore_vein",
+    "color": "#B9744A",
+    "size": 1.15
+  }
+}
