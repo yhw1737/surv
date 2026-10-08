@@ -6,8 +6,8 @@
 ## Header
 
 - Last updated: **2026-10-07**
-- **2026-10-08 — T-167 shipwreck start.** Branch `feature/T-167-shipwreck-start` off `main` (after PR #38),
-  **uncommitted**. Developer decisions: cruise-shipwreck premise; always a coast start, wet; one random passenger at a
+- **2026-10-08 — T-167 shipwreck start.** Branch `feature/T-167-shipwreck-start` off `main` (after PR #38)
+  — [PR #39](https://github.com/yhw1737/surv/pull/39). Developer decisions: cruise-shipwreck premise; always a coast start, wet; one random passenger at a
   time with unlimited rerolls, no editing; no job pick — random traits (~20, base 0 points, good paid by bad) and random
   skills (mostly 0–3, a background +5); wreckage + random belongings. Built: SYS-START-01; `TraitDef` (8 backgrounds,
   11 good, 11 bad), `ScenarioDef` (`shipwreck.json`), `SurvivorGenerator` (pure), `StartDirector` (beach spot via
