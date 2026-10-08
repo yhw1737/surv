@@ -62,6 +62,15 @@ namespace Isle.Gameplay.Hunting
         /// <summary>A water creature whose water has drained: hidden and inactive until the tide returns.</summary>
         public bool Submerged { get; set; }
 
+        /// <summary>SYS-HUNT-01 ConditionFactor (age, nutrition), rolled at spawn from <c>butcher.condition_range</c>.</summary>
+        public float Condition { get; init; } = 1f;
+
+        /// <summary>Dead: a carcass now, waiting to be butchered. Its view stays, lying down.</summary>
+        public bool Dead { get; set; }
+
+        /// <summary>SYS-HUNT-01 damageFactor of the killing blow — how much of the body the kill left usable.</summary>
+        public float KillFactor { get; set; } = 1f;
+
         /// <summary>SYS-COMBAT-02 side effects running on it (bleed, burn, poison, stagger count).</summary>
         public CombatStatus Status { get; } = new();
         public float AlertStartedAt { get; set; }
@@ -177,7 +186,11 @@ namespace Isle.Gameplay.Hunting
 
         /// <summary>SYS-COMBAT-02: a typed hit — the creature's resistance applies, then the type's side effect (bleed,
         /// burn, poison, or a stun on the third blunt hit). Creatures wear no armor. Returns damage actually taken.</summary>
-        public float DamageTyped(Creature target, float finalPower, string type, List<(NamespacedId Item, int Count)> loot)
+        public float DamageTyped(Creature target, float finalPower, string type, List<(NamespacedId Item, int Count)> loot) =>
+            DamageTyped(target, finalPower, type, loot, type == DamageTypes.Blunt ? KillMethod.Blunt : KillMethod.Melee);
+
+        /// <summary>As above, naming how the blow was struck (a knife or an arrow is precise) for the carcass's yield.</summary>
+        public float DamageTyped(Creature target, float finalPower, string type, List<(NamespacedId Item, int Count)> loot, KillMethod method)
         {
             if (!_creatures.Contains(target)) return 0f;
             var damage = DamageTypes.Damage(finalPower, type, DamageTypes.ResistOf(target.Def.Resist, type), 0f);
@@ -187,11 +200,11 @@ namespace Isle.Gameplay.Hunting
                 target.StaggeredUntil = Mathf.Max(target.StaggeredUntil, Time.time + CombatStatus.StunSeconds);
                 target.Shell.Break(Time.time);
             }
-            return Damage(target, damage, loot);
+            return Damage(target, damage, loot, quiet: false, method);
         }
 
-        /// <summary>Ticks bleed/burn/poison on every creature. A creature that dies of it drops its yield where it fell
-        /// (no attacker to hand it to; no XP for damage over time).</summary>
+        /// <summary>Ticks bleed/burn/poison on every creature. One that dies of it leaves a carcass like any other kill
+        /// (no XP for damage over time).</summary>
         void TickStatuses()
         {
             for (var i = _creatures.Count - 1; i >= 0; i--)
@@ -200,14 +213,7 @@ namespace Isle.Gameplay.Hunting
                 if (!creature.Status.Any) continue;
                 var damage = creature.Status.Tick(Time.time, Time.deltaTime);
                 if (damage <= 0f) continue;
-                var loot = new List<(NamespacedId Item, int Count)>();
-                var at = creature.Position;
-                Damage(creature, damage, loot, quiet: true);
-                if (loot.Count == 0) continue;
-                var drops = new List<(ItemDef, int)>();
-                foreach (var (item, count) in loot)
-                    if (DefRegistry.TryGet<ItemDef>(item, out var def)) drops.Add((def, count));
-                LootPiles.Drop(at, drops);
+                Damage(creature, damage, new List<(NamespacedId Item, int Count)>(), quiet: true, KillMethod.Melee);
             }
         }
 
@@ -249,11 +255,14 @@ namespace Isle.Gameplay.Hunting
         /// <summary>Applies damage from any source (melee or a projectile). A survivor reacts — prey flees, the
         /// rest fight back; a kill removes it and adds its <c>butcher.yields</c> to <paramref name="loot"/>.</summary>
         /// <returns>Damage actually taken — capped at the HP it had, so overkill earns no combat XP.</returns>
-        public float Damage(Creature target, float damage, List<(NamespacedId Item, int Count)> loot) => Damage(target, damage, loot, quiet: false);
+        public float Damage(Creature target, float damage, List<(NamespacedId Item, int Count)> loot) => Damage(target, damage, loot, quiet: false, KillMethod.Melee);
 
-        float Damage(Creature target, float damage, List<(NamespacedId Item, int Count)> loot, bool quiet)
+        public float Damage(Creature target, float damage, List<(NamespacedId Item, int Count)> loot, KillMethod method) => Damage(target, damage, loot, quiet: false, method);
+
+        float Damage(Creature target, float damage, List<(NamespacedId Item, int Count)> loot, bool quiet, KillMethod method)
         {
             if (!_creatures.Contains(target) || target.Submerged) return 0f;
+            var healthBefore = target.Health;
             damage *= target.Shell.DamageMult(Time.time, target.Def.Boss?.Shell);
             var dealt = Mathf.Min(damage, Mathf.Max(0f, target.Health));
             target.Health -= damage;
@@ -266,13 +275,74 @@ namespace Isle.Gameplay.Hunting
                 return dealt;
             }
 
+            // SYS-HUNT-01: it doesn't come apart into items — it leaves a carcass to butcher. The kill sets how much of the
+            // body survived; overkill wastes more.
             _creatures.Remove(target);
-            Destroy(target.View);
             DropBossLoot(target);
-            if (target.Def.Butcher?.Yields != null)
-                foreach (var yield in target.Def.Butcher.Yields)
-                    loot.Add((yield.Item, yield.Count > 0 ? yield.Count : 1));
+            target.KillFactor = ButcheryCalculator.DamageFactor(method, ButcheryCalculator.IsOverkill(damage, healthBefore, target.MaxHealth));
+            if (target.Def.Butcher?.Yields is { Length: > 0 })
+            {
+                target.Dead = true;
+                target.Asleep = false;
+                target.State = CreatureState.Idle;
+                target.StrikeLandsAt = -1f;
+                target.LungeEndsAt = -1f;
+                _carcasses.Add(target);
+            }
+            else Destroy(target.View);
             return dealt;
+        }
+
+        // ------------------------------------------------------------------ carcasses (SYS-HUNT-01)
+
+        readonly List<Creature> _carcasses = new();
+
+        public IReadOnlyList<Creature> Carcasses => _carcasses;
+
+        public Creature NearestCarcass(Vector2 from, float reachTiles)
+        {
+            Creature best = null;
+            var bestDistance = reachTiles;
+            foreach (var carcass in _carcasses)
+            {
+                var d = BodyReach.SurfaceDistance(Vector2.Distance(from, carcass.Position), carcass.Radius);
+                if (d > bestDistance) continue;
+                bestDistance = d;
+                best = carcass;
+            }
+            return best;
+        }
+
+        /// <summary>Butchers a carcass: what it yields for this Cooking level and knife, and it's gone.</summary>
+        public List<(NamespacedId Item, int Count)> Butcher(Creature carcass, int cookingLevel, float toolFactor)
+        {
+            var cuts = new List<(NamespacedId Item, int Count)>();
+            if (!_carcasses.Remove(carcass)) return cuts;
+            Destroy(carcass.View);
+            cuts.AddRange(Cuts(carcass.Def.Butcher, carcass.Weight, carcass.Condition, cookingLevel, toolFactor, carcass.KillFactor));
+            return cuts;
+        }
+
+        /// <summary>SYS-HUNT-01 §Yield + §Cuts: the edible weight split by share; damage-sensitive cuts (hide) lose what the
+        /// kill and an unskilled hand ruin. Each cut turns into whole items of its unit weight.</summary>
+        public static List<(NamespacedId Item, int Count)> Cuts(ButcherSpec butcher, float weightKg, float condition, int cookingLevel, float toolFactor, float killFactor)
+        {
+            var cuts = new List<(NamespacedId Item, int Count)>();
+            if (butcher?.Yields == null) return cuts;
+            var edible = ButcheryCalculator.EdibleKg(weightKg, butcher.EdibleRatio, condition, cookingLevel, toolFactor, killFactor);
+            foreach (var cut in butcher.Yields)
+            {
+                int count;
+                if (cut.UnitKg > 0f)
+                {
+                    var kg = edible * cut.Share;
+                    if (cut.DamageSensitive) kg *= ButcheryCalculator.SurvivalRate(killFactor, cookingLevel);
+                    count = ButcheryCalculator.Pieces(kg, cut.UnitKg, cut.Min);
+                }
+                else count = cut.Count > 0 ? cut.Count : 1;
+                if (count > 0) cuts.Add((cut.Item, count));
+            }
+            return cuts;
         }
 
         /// <summary>A boss's guaranteed drops land where it fell, for everyone to share.</summary>
@@ -350,6 +420,7 @@ namespace Isle.Gameplay.Hunting
                 Weight = weight,
                 Home = position,
                 Position = position,
+                Condition = RollCondition(def),
                 Health = weight * def.HealthPerKg,
                 MaxHealth = weight * def.HealthPerKg,
                 WanderTarget = position,
@@ -357,6 +428,13 @@ namespace Isle.Gameplay.Hunting
                 Radius = radius,
                 Renderer = view.GetComponent<SpriteRenderer>(),
             };
+        }
+
+        /// <summary>ConditionFactor, uniform across <c>butcher.condition_range</c>. [invented distribution]</summary>
+        static float RollCondition(CreatureDef def)
+        {
+            var range = def.Butcher?.ConditionRange;
+            return range is { Length: 2 } ? Random.Range(range[0], range[1]) : 1f;
         }
 
         static float RollWeight(CreatureDef def)

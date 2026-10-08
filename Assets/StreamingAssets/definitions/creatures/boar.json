@@ -35,13 +35,15 @@
       {
         "item": "isle:raw_meat",
         "share": 0.55,
-        "count": 6
+        "unit_kg": 2.5,
+        "min": 1
       },
       {
         "item": "isle:boar_hide",
         "share": 0.1,
-        "count": 2,
-        "damage_sensitive": true
+        "damage_sensitive": true,
+        "unit_kg": 0.3,
+        "min": 0
       }
     ]
   },

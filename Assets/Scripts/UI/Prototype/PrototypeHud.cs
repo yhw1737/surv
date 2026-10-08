@@ -266,6 +266,11 @@ namespace Isle.UI.Prototype
                 prompts.Add((player.CastPoint + Vector2.up * 0.6f, bite ? Lang.Get("@ui.key_lmb") : null, Lang.Get(bite ? "@ui.hook_now" : "@ui.waiting_bite")));
                 return prompts;
             }
+            if (player.Butchering != null)
+            {
+                prompts.Add((player.Butchering.Position + Vector2.up * (player.Butchering.Radius * 2f + 0.4f), null, $"{Lang.Get("@ui.butchering")} {player.ButcherProgress * 100f:0}%"));
+                return prompts;
+            }
             if (player.Gathering != null)
             {
                 prompts.Add((player.Gathering.Position + Vector2.up * (NodeHeight(player.Gathering) + 0.3f), null, $"{Lang.Get("@ui.gathering")} {player.GatherProgress * 100f:0}%"));
@@ -277,6 +282,14 @@ namespace Isle.UI.Prototype
             {
                 var clearing = Isle.Gameplay.Dungeons.DungeonDirector.Instance.IsClearing(player);
                 prompts.Add((dungeon.Value.At, clearing ? null : "E", dungeon.Value.Text));
+                return prompts;
+            }
+
+            // SYS-HUNT-01: a carcass in reach is what E does first after a loot pile.
+            var carcass = Isle.Gameplay.Hunting.CreatureDirector.Instance?.NearestCarcass(position, PlayerInteraction.ReachTiles);
+            if (carcass != null && LootPiles.Nearest(position, PlayerInteraction.ReachTiles) == null)
+            {
+                prompts.Add((carcass.Position + Vector2.up * (carcass.Radius * 2f + 0.4f), "E", $"{Lang.Get("@ui.butcher")} — {Lang.Get(carcass.Def.Name)}"));
                 return prompts;
             }
 

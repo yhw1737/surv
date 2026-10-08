@@ -51,6 +51,9 @@ namespace Isle.Data
         /// <summary>Tools: harvest time is divided by this.</summary>
         public float ToolSpeed { get; init; } = 1f;
 
+        /// <summary>SYS-HUNT-01 toolFactor for a knife made of it (stone 0.70, iron 1.00). 0 = not a knife material.</summary>
+        public float ButcherFactor { get; init; }
+
         /// <summary>Tint for the result's look (worn colour, blade, icon).</summary>
         public string Color { get; init; }
     }

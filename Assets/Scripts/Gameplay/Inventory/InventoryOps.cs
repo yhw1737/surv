@@ -89,6 +89,23 @@ namespace Isle.Gameplay.Inventory
             return null;
         }
 
+        /// <summary>SYS-CRAFT-02: one use off a tool sitting in a bag (a knife used for butchering). Returns true when this
+        /// broke it.</summary>
+        public static bool WearPlacement(GridInventory container, Placement placement)
+        {
+            var wear = placement.Wear ?? ItemWear.Fresh(placement.Item);
+            if (wear == null) return false;
+            if (placement.Wear == null)
+            {
+                // A brand-new tool gets its wear record now; swap the placement for one that carries it.
+                container.Remove(placement);
+                container.TryPlace(placement.Item, placement.Position, placement.Rotated, placement.Count, wear);
+            }
+            var was = wear.Broken;
+            wear.Use();
+            return !was && wear.Broken;
+        }
+
         /// <summary>Swaps a stack for the same stack at a new count; zero removes it. Removing first frees its
         /// cells, so the re-place at the same spot always fits.</summary>
         public static void SetCount(GridInventory container, Placement placement, int newCount)

@@ -125,13 +125,21 @@ namespace Isle.Tests.PlayMode
 
             // Rabbit weight rolls 1.5–5 kg, so a heavy one survives a single punch: keep after it.
             var rabbit = CreatureDirector.Instance.Creatures.First(c => c.Def.Id.Value == "isle:rabbit");
-            for (var attempt = 0; attempt < 5 && CountOf(inventory, "isle:raw_meat") == 0; attempt++)
+            for (var attempt = 0; attempt < 5 && !rabbit.Dead; attempt++)
             {
                 Teleport(player, rabbit.Position + Vector2.right * 0.5f);
                 player.RequestAttack();
                 yield return new WaitForSeconds(0.8f);
             }
-            Assert.Greater(CountOf(inventory, "isle:raw_meat"), 0, "rabbit kill dropped no meat");
+            // SYS-HUNT-01: the kill leaves a carcass; butchering it (E, takes a moment) gives the meat — at least one piece.
+            Assert.IsTrue(rabbit.Dead, "rabbit never died");
+            Assert.Contains(rabbit, CreatureDirector.Instance.Carcasses.ToList(), "no carcass left");
+            Assert.AreEqual(0, CountOf(inventory, "isle:raw_meat"), "the kill itself handed out meat");
+            Teleport(player, rabbit.Position + Vector2.right * 0.3f);
+            player.RequestInteract();
+            yield return WaitUntil(() => player.Butchering != null, 2f, "butchering never started");
+            yield return WaitUntil(() => CountOf(inventory, "isle:raw_meat") > 0, 5f, "butchering gave no meat");
+            Assert.IsFalse(CreatureDirector.Instance.Carcasses.Contains(rabbit), "carcass still there after butchering");
 
             player.RequestEquipItem("isle:spear__stone");
             yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:spear__stone", 3f, "spear never wielded");
@@ -280,10 +288,11 @@ namespace Isle.Tests.PlayMode
             player.RequestInteract();
             yield return new WaitForSeconds(0.5f);
             Assert.IsNull(player.Gathering, "stone pickaxe started on an iron vein");
+            // The better pickaxe only sits in the bag: working the vein takes it out on its own.
             Give(inventory, "isle:pickaxe__copper", 1);
-            player.RequestEquipItem("isle:pickaxe__copper");
-            yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:pickaxe__copper", 3f, "copper pickaxe never equipped");
             yield return HarvestNearest(player, world, "isle:iron_vein");
+            Assert.AreEqual("isle:pickaxe__copper", inventory.Slots.Get("main_hand")?.Id.Value, "best pickaxe wasn't taken out");
+            Assert.AreEqual(1, CountOf(inventory, "isle:pickaxe__stone"), "the stone pickaxe didn't go back in the bag");
             Assert.AreEqual(3, CountOf(inventory, "isle:iron_ore"), "iron vein: 2 + 1 tool bonus");
 
             // Smelting at a furnace.
@@ -329,16 +338,19 @@ namespace Isle.Tests.PlayMode
 
             // Rod fishing: a fight starts, runs on the server, and ends. No mouse in batchmode, so nobody reels and the
             // hook slips — the point is the session lifecycle, not the catch.
-            Give(inventory, "isle:fishing_rod", 1);
-            player.RequestEquipItem("isle:fishing_rod");
-            yield return WaitUntil(() => inventory.Slots.Get("main_hand")?.Id.Value == "isle:fishing_rod", 3f, "rod never equipped");
-            // Cast → bite → hook (SYS-FISH-01 prototype revision). Below Fishing 5 the rod fishes as a handline:
-            // hooking lands the fish with no fight.
+            // No rod, no fishing; a rod in the bag comes out on its own when casting.
             var (shore, sea) = CoastSpot(world);
             Teleport(player, shore);
+            player.RequestCast(sea);
+            yield return new WaitForSeconds(0.5f);
+            Assert.IsNull(player.Cast, "cast without a rod");
+            Give(inventory, "isle:fishing_rod", 1);
+            // Cast → bite → hook (SYS-FISH-01 prototype revision). Below Fishing 5 the rod fishes as a handline:
+            // hooking lands the fish with no fight.
             var fishBefore = CountOf(inventory, "isle:raw_fish");
             yield return CastAndHook(player, sea);
             Assert.IsNull(player.Fight, "rod worked below Fishing 5");
+            Assert.AreEqual("isle:fishing_rod", inventory.Slots.Get("main_hand")?.Id.Value, "rod wasn't taken out to cast");
             yield return WaitUntil(() => CountOf(inventory, "isle:raw_fish") > fishBefore, 2f, "handline hook landed nothing");
 
             player.Skills.Restore(NamespacedId.Parse("isle:fishing"), Isle.Gameplay.Skills.XpCurve.TotalXpTo(5));

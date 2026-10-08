@@ -558,5 +558,9 @@
   "trait.hardy": "다부짐",
   "trait.hardy_desc": "저체온이 1° 늦게 온다.",
   "trait.steady_hands": "침착한 손",
-  "trait.steady_hands_desc": "조준 흔들림 -15%."
+  "trait.steady_hands_desc": "조준 흔들림 -15%.",
+  "ui.butcher": "도축",
+  "ui.butchering": "도축 중",
+  "ui.butcher_cancelled": "도축을 멈췄습니다",
+  "ui.needs_rod": "낚싯대가 필요합니다"
 }

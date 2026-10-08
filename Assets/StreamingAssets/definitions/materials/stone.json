@@ -16,5 +16,6 @@
   "power_sharp": 1.0,
   "power_blunt": 1.0,
   "tool_speed": 1.0,
-  "color": "#9FA4AA"
+  "color": "#9FA4AA",
+  "butcher_factor": 0.7
 }

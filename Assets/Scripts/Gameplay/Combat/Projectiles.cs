@@ -72,7 +72,7 @@ namespace Isle.Gameplay.Combat
                 if (hit != null)
                 {
                     var loot = new List<(NamespacedId, int)>();
-                    var dealt = director.DamageTyped(hit, arrow.Damage * RangedCalculator.RangeMult(arrow.Travelled), arrow.Type, loot);
+                    var dealt = director.DamageTyped(hit, arrow.Damage * RangedCalculator.RangeMult(arrow.Travelled), arrow.Type, loot, Hunting.KillMethod.Precise);
                     arrow.OnDamage?.Invoke(dealt);
                     if (loot.Count > 0) arrow.OnKill?.Invoke(loot);
                 }

@@ -130,3 +130,8 @@ the sea — SYS-WORLD-03 §Water bodies):
    rod it's a handline: hooking is the catch, and only `handline` fish bite (trash fish, the rig table).
 
 Walking more than 3 tiles **[invented]** from where you cast reels in and ends it.
+
+## Rod required (2026-10-08, developer)
+No fishing bare-handed: casting needs a rod (`tool/rod`); the best rod carried is put in hand automatically. Below the
+rod's level requirement it still fishes as a plain line (a bite lands the fish, no tension fight).
+

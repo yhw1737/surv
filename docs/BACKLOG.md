@@ -289,8 +289,10 @@ stood up now so the solo beta is already a listen-server session with one client
   > **2026-10-03 (prototype)**: gather + respawn implemented (SYS-WORLD-03), no tool durability yet — see PROJECT_STATE.md.
 - [ ] **T-071** Creature spawning + individual weight rolls
   > **2026-10-03 (prototype)**: spawning and weight rolls done (`WeightRoll`, `CreatureDirector`); host-only, not networked.
-- [ ] **T-072** ★ `ButcheryCalculator` + 4 verification cases (SYS-HUNT-01)
-- [ ] **T-073** Cut splitting + damage-sensitive outputs
+- [x] **T-072** ★ `ButcheryCalculator` + 4 verification cases (SYS-HUNT-01)
+  > **2026-10-08**: done — `ButcheryCalculator` with the 4 spec cases + rabbit; kills leave carcasses, E butchers over time (split among up to 3), Cooking + best knife + kill method + overkill + condition set the yield; meat 2.5 kg pieces (min 1); copper/steel knife 0.85/1.08. See SYS-HUNT-01 §Implementation.
+- [x] **T-073** Cut splitting + damage-sensitive outputs
+  > **2026-10-08**: done with T-072 — yields split by share, damage-sensitive cuts (hides) by survival rate; blunt kills ruin hide. Hide quality tiers wait for T-090.
 - [ ] **T-074** ★ Carcass drag (solo path; the two-player carry lands with T-046)
 - [ ] **T-075** Carcass spoilage + predator scent
 - [ ] **T-080** `FishSelector` weighting

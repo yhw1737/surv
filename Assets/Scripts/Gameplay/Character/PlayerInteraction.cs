@@ -357,10 +357,19 @@ namespace Isle.Gameplay.Character
                 return;
             }
 
-            // Pressing E again while gathering stops it.
-            if (Gathering != null)
+            // Pressing E again while gathering or butchering stops it.
+            if (Gathering != null || Butchering != null)
             {
                 CancelGather();
+                Butchering = null;
+                return;
+            }
+
+            // SYS-HUNT-01: a carcass in reach gets butchered.
+            var carcass = CreatureDirector.Instance != null ? CreatureDirector.Instance.NearestCarcass(transform.position, ReachTiles) : null;
+            if (carcass != null)
+            {
+                StartButcher(carcass);
                 return;
             }
 
@@ -389,8 +398,10 @@ namespace Isle.Gameplay.Character
                     GameFeed.RaiseNotice("@ui.too_tired");
                     return;
                 }
-                // SYS-CRAFT-02: a vein needs a pickaxe of its tier (an iron vein, copper or better).
+                // The best tool for the job comes out of the bags on its own (SYS-CRAFT-02: a vein needs a pickaxe of its
+                // tier — an iron vein, copper or better).
                 var gather = harvest.Def.Gather;
+                if (!string.IsNullOrEmpty(gather.ToolTag)) EquipBestTool(gather.ToolTag);
                 if (gather.ToolTier > 0 && TryGetComponent<InventoryNetwork>(out var held)
                     && !ToolTiers.CanWork(MatchingTool(held, gather)?.Tier ?? 0, gather.ToolTier))
                 {
@@ -484,10 +495,14 @@ namespace Isle.Gameplay.Character
                         * attack.PowerMult * Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "melee_power_mult");
             var loot = new List<(NamespacedId Item, int Count)>();
             float dealt;
+            // SYS-HUNT-01: a knife kills cleanly (like a dagger), blunt trauma ruins the most, the rest is ordinary melee.
+            var held = inventory.Slots.Working(MainHandSlot);
+            var method = held?.Tags != null && held.Tags.Contains(KnifeTag) ? KillMethod.Precise
+                : attack.Type == DamageTypes.Blunt ? KillMethod.Blunt : KillMethod.Melee;
             if (target.MaxHealth > 0f && MeleeCombo.Executes(level, target.Health / target.MaxHealth))
-                dealt = director.Damage(target, target.Health, loot); // Lv35 execute ignores type and resist
+                dealt = director.Damage(target, target.Health, loot, method); // Lv35 execute ignores type and resist
             else
-                dealt = director.DamageTyped(target, power, attack.Type, loot);
+                dealt = director.DamageTyped(target, power, attack.Type, loot, method);
             AwardCombatXp(weapon, dealt);
             if (dealt > 0f) WearSlot(inventory, MainHandSlot); // a swing that lands wears the weapon; a miss doesn't
             foreach (var (item, count) in loot) GiveItem(inventory, item, count);
@@ -498,6 +513,39 @@ namespace Isle.Gameplay.Character
         {
             var item = inventory.Slots.Get(slot);
             if (item != null && inventory.Slots.Wear(slot, 1)) GameFeed.RaiseNotice($"@ui.item_broke|{item.Name}");
+        }
+
+        /// <summary>
+        /// Puts the best working item tagged <paramref name="toolTag"/> (highest tier, then speed) carried anywhere into the
+        /// main hand, sending what was there into the bags (or to the ground when they're full). True when such a tool is
+        /// in hand afterwards. Server-side.
+        /// </summary>
+        public bool EquipBestTool(string toolTag)
+        {
+            if (!TryGetComponent<InventoryNetwork>(out var inventory)) return false;
+            static float Score(ItemDef item) => item.Tier * 10f + (item.ToolPower > 0f ? item.ToolPower : 1f);
+            bool Fits(ItemDef item) => item?.Tags != null && item.Tags.Contains(toolTag);
+
+            var held = inventory.Slots.Working(MainHandSlot);
+            GridInventory from = null;
+            Placement best = default;
+            var bestScore = Fits(held) ? Score(held) : float.NegativeInfinity;
+            foreach (var container in inventory.Containers())
+            foreach (var placed in container.Placements)
+            {
+                if (!Fits(placed.Item) || placed.Wear is { Broken: true } || Score(placed.Item) <= bestScore) continue;
+                (from, best, bestScore) = (container, placed, Score(placed.Item));
+            }
+            if (from == null) return Fits(held);
+
+            // Swap: the tool out of its spot, whatever was in hand back into the bags.
+            var previous = inventory.Slots.Get(MainHandSlot);
+            ItemWear previousWear = null;
+            if (previous != null && !inventory.Slots.Unequip(MainHandSlot, out previousWear)) return Fits(held);
+            InventoryOps.SetCount(from, best, best.Count - 1);
+            inventory.Slots.TryEquip(MainHandSlot, best.Item, best.Wear);
+            if (previous != null) GiveItem(inventory, previous, 1, previousWear);
+            return true;
         }
 
         /// <summary>For other systems (dungeon veins): the held tool that works <paramref name="gather"/>, or null.</summary>
@@ -565,6 +613,81 @@ namespace Isle.Gameplay.Character
 
         void CancelGather() => Gathering = null;
 
+        // ------------------------------------------------------------------ butchery (SYS-HUNT-01)
+
+        const string KnifeTag = "tool/knife";
+        static readonly NamespacedId CookingSkill = NamespacedId.Parse("isle:cooking");
+
+        /// <summary>The carcass being butchered, or null. Server state the owning host's HUD reads.</summary>
+        public Creature Butchering { get; private set; }
+
+        public float ButcherProgress => Butchering == null || _butcherSeconds <= 0f ? 0f : Mathf.Clamp01((Time.time - _butcherStartedAt) / _butcherSeconds);
+
+        float _butcherStartedAt, _butcherSeconds;
+        Vector2 _butcherFrom;
+
+        void StartButcher(Creature carcass)
+        {
+            // People butchering the same carcass together split the time (up to 3).
+            var together = 1 + All.Count(p => p != this && p.Butchering == carcass);
+            Butchering = carcass;
+            _butcherFrom = transform.position;
+            _butcherStartedAt = Time.time;
+            _butcherSeconds = ButcheryCalculator.ButcherSeconds(carcass.Weight, LevelOf(CookingSkill), together);
+        }
+
+        void UpdateButcher()
+        {
+            if (Butchering == null) return;
+            var director = CreatureDirector.Instance;
+            if (IsDead || director == null || !director.Carcasses.Contains(Butchering) || Vector2.Distance(transform.position, _butcherFrom) > GatherLeashTiles)
+            {
+                if (!IsDead && director != null && director.Carcasses.Contains(Butchering)) GameFeed.RaiseNotice("@ui.butcher_cancelled");
+                Butchering = null;
+                return;
+            }
+            if (Time.time - _butcherStartedAt < _butcherSeconds) return;
+
+            var carcass = Butchering;
+            Butchering = null;
+            if (!TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            var (toolFactor, wearKnife) = BestKnife(inventory);
+            var cuts = director.Butcher(carcass, LevelOf(CookingSkill), toolFactor);
+            wearKnife?.Invoke();
+            // Cooking XP for the work: a base plus a little per kg of meat. [invented]
+            var kg = cuts.Where(c => DefRegistry.TryGet<ItemDef>(c.Item, out _)).Sum(c => c.Count);
+            AwardXp(new XpAward { Skill = CookingSkill, Base = ButcherXpBase, PerUnit = ButcherXpPerPiece }, kg);
+            foreach (var (item, count) in cuts) GiveItem(inventory, item, count);
+        }
+
+        const float ButcherXpBase = 5f;
+        const float ButcherXpPerPiece = 2f;
+
+        /// <summary>SYS-HUNT-01 toolFactor: the best working knife carried (hand or bags) by its material's butcher factor,
+        /// else bare hands. Also how to wear that knife by one use.</summary>
+        (float Factor, System.Action Wear) BestKnife(InventoryNetwork inventory)
+        {
+            var best = ButcheryCalculator.BareHandsToolFactor;
+            System.Action wear = null;
+            float FactorOf(ItemDef item) =>
+                item?.Tags != null && item.Tags.Contains(KnifeTag) && item.Material.IsValid && DefRegistry.TryGet<MaterialDef>(item.Material, out var m) ? m.ButcherFactor : 0f;
+            var inHand = inventory.Slots.Working(MainHandSlot);
+            if (FactorOf(inHand) > best)
+            {
+                best = FactorOf(inHand);
+                wear = () => WearSlot(inventory, MainHandSlot);
+            }
+            foreach (var container in inventory.Containers())
+            foreach (var placed in container.Placements)
+            {
+                if (placed.Wear is { Broken: true } || FactorOf(placed.Item) <= best) continue;
+                best = FactorOf(placed.Item);
+                var (c, p) = (container, placed);
+                wear = () => InventoryOps.WearPlacement(c, p);
+            }
+            return (best, wear);
+        }
+
         void UpdateGather()
         {
             if (Gathering == null) return;
@@ -608,6 +731,7 @@ namespace Isle.Gameplay.Character
         {
             if (!IsServer) return;
             UpdateGather();
+            UpdateButcher();
             UpdateCast();
             if (Fight == null) return;
             if (IsDead || Vector2.Distance(transform.position, _fightSpot) > FightLeashTiles)
@@ -755,10 +879,17 @@ namespace Isle.Gameplay.Character
                 return;
             }
 
-            var held = inventory.Slots.Get(MainHandSlot);
-            _castRig = held?.Tags != null && held.Tags.Contains(RodTag) ? RodRig : HandlineRig;
-            if (_castRig == RodRig && held.Requires != null && LevelOf(held.Requires.Skill) < held.Requires.Level)
+            // No fishing bare-handed: the best rod carried comes out, or there's no cast.
+            if (!EquipBestTool(RodTag))
             {
+                GameFeed.RaiseNotice("@ui.needs_rod");
+                return;
+            }
+            var held = inventory.Slots.Get(MainHandSlot);
+            _castRig = RodRig;
+            if (held.Requires != null && LevelOf(held.Requires.Skill) < held.Requires.Level)
+            {
+                // Below the rod's level it's just a line on a stick: a bite lands the fish, no fight.
                 GameFeed.RaiseNotice("@ui.rod_locked");
                 _castRig = HandlineRig;
             }

@@ -36,13 +36,15 @@
       {
         "item": "isle:raw_meat",
         "share": 1.0,
-        "count": 8
+        "unit_kg": 2.5,
+        "min": 1
       },
       {
         "item": "isle:croc_hide",
         "share": 0.1,
-        "count": 3,
-        "damage_sensitive": true
+        "damage_sensitive": true,
+        "unit_kg": 0.8,
+        "min": 0
       }
     ]
   },

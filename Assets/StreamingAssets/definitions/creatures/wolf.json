@@ -35,13 +35,15 @@
       {
         "item": "isle:raw_meat",
         "share": 1.0,
-        "count": 4
+        "unit_kg": 2.5,
+        "min": 1
       },
       {
         "item": "isle:wolf_fur",
         "share": 0.1,
-        "count": 2,
-        "damage_sensitive": true
+        "damage_sensitive": true,
+        "unit_kg": 0.2,
+        "min": 0
       }
     ]
   },

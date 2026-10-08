@@ -147,3 +147,31 @@ Scripts/Gameplay/Hunting/
 - Predator spawn table (which creatures are drawn in)
 - Whether cold storage halts spoilage and by how much
 - Visual representation of two-player carry
+
+## Implementation (T-072, 2026-10-08)
+
+Decided with the developer (2026-10-08):
+
+| Constant | Value |
+|---|---|
+| Meat piece | **2.5 kg = 1 raw meat**, at least 1 per carcass |
+| toolFactor of copper / steel knives | **0.85 / 1.08** (spec: bare 0.40, stone 0.70, iron 1.00, master 1.15) |
+| When butchery happens | the kill **leaves a carcass**; **E** butchers it over `butcherSeconds`; people butchering together split the time (max 3) |
+
+How it's wired:
+- `ButcheryCalculator` (static pure) — §Yield, §Cuts survival, damageFactor + overkill, butcher time, pieces.
+- A killed creature stays as a carcass (`Creature.Dead`, drawn on its back, greyed) holding its weight, its
+  ConditionFactor (rolled at spawn, uniform in `butcher.condition_range` [invented distribution]) and the kill's
+  damageFactor. Nothing is handed out at the kill; boss drops still land as a pile.
+- Kill method → damageFactor [invented mapping]: arrow or a knife (`tool/knife`) in hand → bow/dagger 0.95; a blunt
+  hit → 0.70; any other melee → 0.85; death by bleed/burn/poison → 0.85. Overkill (blow excess > 50% max HP) ×0.85.
+- toolFactor: the best working knife carried anywhere (hand or bags), from its material's `butcher_factor`; bare hands
+  0.40. Butchering wears that knife by 1 (SYS-CRAFT-02).
+- Each `butcher.yields` entry with `unit_kg` becomes `floor(kg / unit_kg)` items, at least `min`; damage-sensitive
+  cuts use the survival rate. Meat 2.5 kg / min 1; hides and furs [invented unit_kg]: boar 0.3, deer leather 0.25,
+  wolf 0.2, crocodile 0.8, fox 0.03, rabbit 0.015, snake 0.015 (min 0 — a ruined hide gives nothing).
+- Cooking XP for butchering: 5 + 2 per piece [invented].
+
+Not yet: carrying and dragging (T-074), carcass spoilage and scent (T-075), hide quality from survival rate (needs
+T-090 quality), carcasses never disappear on their own until T-075.
+
