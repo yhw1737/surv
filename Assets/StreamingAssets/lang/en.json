@@ -558,5 +558,9 @@
   "trait.hardy": "Hardy",
   "trait.hardy_desc": "Hypothermia sets in 1° later.",
   "trait.steady_hands": "Steady hands",
-  "trait.steady_hands_desc": "Aim sways 15% less."
+  "trait.steady_hands_desc": "Aim sways 15% less.",
+  "ui.butcher": "Butcher",
+  "ui.butchering": "Butchering",
+  "ui.butcher_cancelled": "Stopped butchering",
+  "ui.needs_rod": "You need a fishing rod"
 }

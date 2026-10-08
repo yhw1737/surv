@@ -411,6 +411,7 @@ namespace Isle.Gameplay.Dungeons
         void StartMining(PlayerInteraction player, Vein vein)
         {
             var gather = vein.Def.Gather;
+            if (!string.IsNullOrEmpty(gather.ToolTag)) player.EquipBestTool(gather.ToolTag);
             var tool = player.HeldToolFor(gather);
             if (!ToolTiers.CanWork(tool?.Tier ?? 0, gather.ToolTier))
             {

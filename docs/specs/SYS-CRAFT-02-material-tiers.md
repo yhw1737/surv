@@ -126,3 +126,9 @@ Dungeon floors carry 3 veins each from the dungeon's `veins` list.
 | 8 | Unequip, re-equip, save, die and recover | durability kept |
 | 9 | A fabric kind × a metal material | no variant |
 | 10 | Pickaxe of stone / copper / iron / steel | durability 60 / 150 / 300 / 500 |
+
+## Tool auto-select (2026-10-08, developer)
+Working a node, a vein or a fishing spot takes the **best matching tool carried** (highest material tier, then tool
+speed; broken tools skipped) out of the bags into the main hand; what was held goes into the bags (or the ground when
+they're full). Butchery already uses the best knife carried without equipping it (SYS-HUNT-01 §Implementation).
+

@@ -78,6 +78,13 @@ namespace Isle.Data
 
         /// <summary>Units dropped when this creature dies. Prototype shortcut for SYS-HUNT-01's
         /// kg-to-units conversion (not specced yet); 0 or unset means 1.</summary>
+        /// <summary>SYS-HUNT-01: kg of this cut per item (meat 2.5). With it, the count comes from the butchered weight;
+        /// without it, <see cref="Count"/> is a fixed amount.</summary>
+        public float UnitKg { get; init; }
+
+        /// <summary>At least this many, however poor the butchering (meat 1: even a rabbit gives a piece).</summary>
+        public int Min { get; init; }
+
         public int Count { get; init; }
 
         /// <summary>Degrades by weapon type and skill — the rule that makes guns cost you the hide.</summary>

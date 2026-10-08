@@ -73,7 +73,9 @@ namespace Isle.UI.Art
 
             _mesh.Clear();
             var facing = Mathf.Abs(_facing) < 0.08f ? 0.08f * Mathf.Sign(_facing == 0f ? 1f : _facing) : _facing;
-            var wobble = _creature.IsStaggered ? Mathf.Sin(_time * 28f) * 0.18f : 0f;
+            // A carcass lies on its back, legs up — cartoon dead.
+            var wobble = _creature.Dead ? Mathf.PI : _creature.IsStaggered ? Mathf.Sin(_time * 28f) * 0.18f : 0f;
+            if (_creature.Dead) _speed = 0f;
             var shake = _crouch > 0.5f ? Mathf.Sin(_time * 60f) * 0.015f * r : 0f;
             var cos = Mathf.Cos(wobble);
             var sin = Mathf.Sin(wobble);
@@ -126,7 +128,9 @@ namespace Isle.UI.Art
                 Shelled = _creature.Shell.IsHidden(Time.time),
             };
             var tint = StatusLook.Tint(s, _time);
+            if (_creature.Dead) tint = (new Color(0.45f, 0.42f, 0.4f), 0.35f); // a carcass is greyed, no status shows
             _mesh.TintFrom(bodyStart, tint.Colour, tint.Amount);
+            if (_creature.Dead) return;
             var transform = _mesh.Transform;
             _mesh.Transform = null;
             StatusLook.Particles(_mesh, s, _time + _seed, new StatusBody

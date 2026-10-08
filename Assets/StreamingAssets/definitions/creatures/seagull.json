@@ -36,7 +36,8 @@
       {
         "item": "isle:raw_meat",
         "share": 1.0,
-        "count": 1
+        "unit_kg": 2.5,
+        "min": 1
       }
     ]
   },

@@ -6,6 +6,22 @@
 ## Header
 
 - Last updated: **2026-10-07**
+- **2026-10-08 — T-072 butchery.** Branch `feature/T-072-butchery` off `feature/T-167-shipwreck-start` (PR #39),
+  **uncommitted**. Developer decisions: 2.5 kg per raw meat (min 1), copper/steel knife 0.85/1.08, kills leave a
+  carcass that E butchers over time. Built: `ButcheryCalculator` (SYS-HUNT-01 §Yield/§Cuts/§Carrying time, pure);
+  carcasses in `CreatureDirector` (`Dead`, `Condition` rolled at spawn, `KillFactor` from kill method + overkill,
+  `Cuts`, `Butcher`); kill methods passed from melee (knife = precise, blunt), arrows (precise), DoT; butcher action
+  in `PlayerInteraction` (time split among up to 3, best knife anywhere, knife wear, Cooking XP); HUD prompt/progress;
+  carcass drawn on its back; yields `unit_kg`/`min` on creatures; material `butcher_factor`. T-073 (cuts, damage-
+  sensitive hides) done with it. **Verified:** EditMode 638/638 (+13 `ButcheryTests`: 4 spec cases, rabbit, clamp,
+  survival, damage factors, time, pieces, real boar/deer/rabbit, knife factors), PlayMode 3/3 (rabbit kill leaves a
+  carcass, no meat until butchered, E gives meat and removes it); carcasses rendered.
+  **Also in this branch (developer request, same day):** the best tool for a job comes out of the bags on its own
+  (`PlayerInteraction.EquipBestTool`: highest tier, then speed; used for harvesting, veins, dungeon veins, casting);
+  **no fishing without a rod** (a rod is auto-equipped; below its level it still lands fish without a fight);
+  **upright idle posture** — the head nods toward the mouse (30% of the aim, at most 18° off the spine) instead of
+  craning out, and aim tilts the torso 0.08 per radian instead of 0.18. EditMode 638/638, PlayMode 3/3 (auto copper
+  pickaxe on an iron vein, rodless cast refused, rod taken out to cast); posture rendered.
 - **2026-10-08 — T-167 shipwreck start.** Branch `feature/T-167-shipwreck-start` off `main` (after PR #38)
   — [PR #39](https://github.com/yhw1737/surv/pull/39). Developer decisions: cruise-shipwreck premise; always a coast start, wet; one random passenger at a
   time with unlimited rerolls, no editing; no job pick — random traits (~20, base 0 points, good paid by bad) and random
@@ -1910,6 +1926,13 @@ since it's server-side gauge math with no UI yet:
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-10-08 — T-072 butchery fill-ins (+ tool auto-select, rod, posture)
+  [invented]: kill method → damageFactor mapping (arrow/knife 0.95, blunt 0.70, other melee and DoT 0.85), condition
+  uniform in its range, hide/fur `unit_kg` per animal (min 0), butcher XP 5 + 2/piece, the carcass look. Carcasses
+  stay until butchered (spoilage is T-075). Old fixed `count` on creature yields removed.
+  Tool pick order (tier × 10 + speed), the swapped-out item goes to the bags (ground if full) and isn't swapped back;
+  head look weight 0.3 / max 18°, aim lean 0.08 — presentation, [invented].
 
 - ### 2026-10-08 — T-167 start fill-ins
   [invented] (SYS-START-01): background chance 0.7, up to 2 good traits, skill roll uniform 0–3, every trait and its

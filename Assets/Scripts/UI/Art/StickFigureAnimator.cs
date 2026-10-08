@@ -102,6 +102,10 @@ namespace Isle.UI.Art
         float _moveBlend, _moveBlendV;
         float _facing = 1f, _facingV, _facingGoal = 1f;
         float _lean, _leanV;
+
+        /// <summary>How much the aim pulls the head, and the most it may tip off the spine. [invented]</summary>
+        const float HeadLookWeight = 0.3f;
+        const float MaxHeadLookDeg = 18f;
         float _tuck, _tuckV;
         float _fall, _fallV;
         float _cloak, _cloakV;
@@ -140,7 +144,7 @@ namespace Isle.UI.Art
             if (action == FigureAction.Block) leanGoal = -0.06f;
             if (action == FigureAction.Reel) leanGoal -= 0.15f;
             // Looking up rocks the upper body back a little, looking down tips it forward — the head leads, the body follows.
-            if (input.HasAim && action is FigureAction.None or FigureAction.Draw or FigureAction.Block) leanGoal -= input.AimAngle * 0.18f;
+            if (input.HasAim && action is FigureAction.None or FigureAction.Draw or FigureAction.Block) leanGoal -= input.AimAngle * 0.08f;
             Spring.Damp(ref _lean, ref _leanV, leanGoal, 10f, dt);
             Spring.Damp(ref _tuck, ref _tuckV, action == FigureAction.Roll ? 1f : 0f, 25f, dt);
             Spring.Damp(ref _fall, ref _fallV, action == FigureAction.Dead ? 1f : 0f, 7f, dt);
@@ -167,7 +171,15 @@ namespace Isle.UI.Art
             var aim = input.HasAim ? input.AimAngle : 0f;
             var aimDir = new Vector2(Mathf.Cos(aim), Mathf.Sin(aim));
             var headDir = new Vector2(Mathf.Sin(p.HeadTilt), Mathf.Cos(p.HeadTilt));
-            if (input.HasAim && action is not (FigureAction.Roll or FigureAction.Dead)) headDir = (headDir * 0.6f + aimDir).normalized;
+            // The head nods toward the mouse rather than craning out to it: a little of the aim, and never more than
+            // MaxHeadLookDeg off the spine, so standing and looking ahead stays upright.
+            if (input.HasAim && action is not (FigureAction.Roll or FigureAction.Dead))
+            {
+                var spine = headDir;
+                headDir = (spine + aimDir * HeadLookWeight).normalized;
+                var off = Vector2.SignedAngle(spine, headDir);
+                if (Mathf.Abs(off) > MaxHeadLookDeg) headDir = Rotate(spine, Mathf.Sign(off) * MaxHeadLookDeg * Deg);
+            }
             Spring.Damp(ref _look, ref _lookV, headDir, 12f, dt);
             p.Head = p.Neck + _look.normalized * Mathf.Lerp(NeckToHead + 0.03f, 0.17f, _tuck);
 
