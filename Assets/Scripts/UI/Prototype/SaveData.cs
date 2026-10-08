@@ -39,6 +39,10 @@ namespace Isle.UI.Prototype
         public string Explored = string.Empty;
         public List<SavedMarker> Markers = new();
 
+        /// <summary>SYS-START-01: who this is — name and trait ids (skills are saved with the rest).</summary>
+        public string SurvivorName;
+        public List<string> Traits = new();
+
         public string ToJson() => JsonUtility.ToJson(this);
 
         /// <summary>Null when the text isn't a save of the current version.</summary>
@@ -51,6 +55,7 @@ namespace Isle.UI.Prototype
                 if (save == null || save.Version < MinReadableVersion || save.Version > CurrentVersion) return null;
                 save.Skills ??= new List<SavedSkill>();
                 save.Markers ??= new List<SavedMarker>();
+                save.Traits ??= new List<string>();
                 save.Explored ??= string.Empty;
                 return save;
             }
@@ -129,6 +134,7 @@ namespace Isle.UI.Prototype
     public sealed class SavedPile
     {
         public float X, Y;
+        public string Shape;
         public List<SavedStack> Items = new();
     }
 }

@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections;
 using FishNet;
 using Isle.Gameplay.Building;
@@ -52,9 +53,28 @@ namespace Isle.Tests.PlayMode
             Assert.IsFalse(InstanceFinder.IsServerStarted, "host started on the menu");
             Assert.IsNull(GameSession.PeekSave(), "test setup: a save exists");
 
+            // SYS-START-01: the passenger picked on the menu is who wakes up — on the beach, soaked, in their clothes.
+            var picked = StartDirector.Roll(new System.Random(5));
+            picked.Name = "Test Passenger";
+            GameSession.SetPendingSurvivor(picked);
             GameSession.StartNew(424242);
             yield return WaitUntil(() => PlayerInteraction.Local != null, 15f, "player never spawned after New game");
             Assert.AreEqual(424242, IslandWorld.Instance.Seed);
+            yield return WaitUntil(() => PlayerInteraction.Local.Survivor != null, 5f, "survivor never applied");
+            var local = PlayerInteraction.Local;
+            Assert.AreEqual("Test Passenger", local.Survivor.Name);
+            var tile = IslandWorld.WorldToTile(local.transform.position);
+            Assert.AreEqual(Isle.World.Chunks.Biome.Coast, IslandWorld.Instance.Island.BiomeAt(tile.X, tile.Y), "didn't wake on the coast");
+            Assert.IsNotNull(IslandWorld.Instance.NearestWater(local.transform.position, 4f), "start isn't at the shore");
+            Assert.Greater(local.GetComponent<Vitals>().WetPenalty, 0f, "didn't wake up wet");
+            var inventory = local.GetComponent<Isle.Gameplay.Inventory.InventoryNetwork>();
+            // Wearing exactly the rolled outfit.
+            foreach (var id in picked.Outfit.Items)
+            {
+                var slot = Isle.Modding.Defs.DefRegistry.Get<Isle.Data.ItemDef>(id).EquipSlot;
+                Assert.AreEqual(id.Value, inventory.Slots.Get(slot)?.Id.Value, $"not wearing {id}");
+            }
+            Assert.GreaterOrEqual(Isle.Gameplay.Inventory.LootPiles.All.Count(p => p.Shape == "wreckage"), 4, "no wreckage on the beach");
             Assert.IsNull(Object.FindFirstObjectByType<MainMenu>(), "menu still up in game");
             for (var i = 0; i < 90; i++) yield return null; // let autosave arm (SaveGame applies on the first frames)
 
@@ -68,6 +88,8 @@ namespace Isle.Tests.PlayMode
             yield return WaitUntil(() => PlayerInteraction.Local != null && IslandWorld.Instance != null, 15f, "player never spawned after Continue");
             Assert.AreEqual(424242, IslandWorld.Instance.Seed, "Continue built a different island");
             for (var i = 0; i < 60; i++) yield return null;
+            Assert.AreEqual("Test Passenger", PlayerInteraction.Local.Survivor?.Name, "survivor name not restored");
+            CollectionAssert.AreEquivalent(picked.Traits.Select(t => t.Id.Value), PlayerInteraction.Local.Survivor.Traits.Select(t => t.Id.Value), "traits not restored");
 
             // Slots are independent: a new island in slot 2 leaves slot 1 alone, and becomes the one Continue picks.
             GameSession.BackToMenu();

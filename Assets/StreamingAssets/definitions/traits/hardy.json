@@ -1,0 +1,16 @@
+{
+  "id": "isle:hardy",
+  "name": "@trait.hardy",
+  "description": "@trait.hardy_desc",
+  "cost": 1,
+  "excludes": [
+    "isle:feels_cold"
+  ],
+  "group": "hardy",
+  "effects": [
+    {
+      "type": "hypothermia_threshold_shift",
+      "value": -1
+    }
+  ]
+}

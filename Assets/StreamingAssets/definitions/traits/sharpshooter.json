@@ -1,0 +1,13 @@
+{
+  "id": "isle:sharpshooter",
+  "name": "@trait.sharpshooter",
+  "description": "@trait.sharpshooter_desc",
+  "cost": 3,
+  "group": "fighting",
+  "effects": [
+    {
+      "type": "ranged_power_mult",
+      "value": 1.2
+    }
+  ]
+}

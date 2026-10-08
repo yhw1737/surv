@@ -1,0 +1,13 @@
+{
+  "id": "isle:asthmatic",
+  "name": "@trait.asthmatic",
+  "description": "@trait.asthmatic_desc",
+  "cost": -2,
+  "group": "sprint",
+  "effects": [
+    {
+      "type": "sprint_cost_mult",
+      "value": 1.4
+    }
+  ]
+}

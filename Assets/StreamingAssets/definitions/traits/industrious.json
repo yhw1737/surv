@@ -1,0 +1,13 @@
+{
+  "id": "isle:industrious",
+  "name": "@trait.industrious",
+  "description": "@trait.industrious_desc",
+  "cost": 3,
+  "group": "work",
+  "effects": [
+    {
+      "type": "gather_speed_mult",
+      "value": 1.25
+    }
+  ]
+}

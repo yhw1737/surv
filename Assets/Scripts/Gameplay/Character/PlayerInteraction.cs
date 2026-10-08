@@ -112,12 +112,21 @@ namespace Isle.Gameplay.Character
             return Mathf.Max(1, Activity.MedianActivePlayers());
         }
 
+        /// <summary>SYS-START-01: who this player is (name, traits, starting skills). Null before a game starts.</summary>
+        public Survivor Survivor { get; set; }
+
         /// <summary>Server-side: grants an action's XP (docs/content/xp_table.md) through the focus multiplier.</summary>
         public void AwardXp(XpAward award, float units)
         {
             if (award == null || !award.Skill.IsValid) return;
             Grant(award.Skill, SkillProgress.Amount(award, units));
         }
+
+        /// <summary>xp_mult from traits and buffs (SYS-START-01: fast / slow learner).</summary>
+        float XpMult() => TryGetComponent<Vitals>(out var vitals) ? Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "xp_mult") : 1f;
+
+        /// <summary>gather_speed_mult: nimble hands harvest faster. Other systems (dungeon veins) divide by it too.</summary>
+        public float GatherSpeed() => TryGetComponent<Vitals>(out var vitals) ? Mathf.Max(0.1f, Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "gather_speed_mult")) : 1f;
 
         void AwardCombatXp(WeaponDef weapon, float damageDealt)
         {
@@ -129,7 +138,7 @@ namespace Isle.Gameplay.Character
         {
             if (baseXp <= 0f) return;
             var before = Skills.Level(skill);
-            var amount = baseXp * FocusMultiplier(skill);
+            var amount = baseXp * FocusMultiplier(skill) * XpMult();
             var after = Skills.AddXp(skill, amount);
             GameFeed.RaiseXpGained(skill, amount, after > before ? after : 0);
         }
@@ -472,7 +481,7 @@ namespace Isle.Gameplay.Character
             if (target == null) return;
 
             var power = PowerCalculator.FinalPower(weapon.BasePower, level, situationalMult: MeleeCombo.SituationalMult(target.IsStaggered))
-                        * attack.PowerMult;
+                        * attack.PowerMult * Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "melee_power_mult");
             var loot = new List<(NamespacedId Item, int Count)>();
             float dealt;
             if (target.MaxHealth > 0f && MeleeCombo.Executes(level, target.Health / target.MaxHealth))
@@ -551,6 +560,7 @@ namespace Isle.Gameplay.Character
             // SYS-CRAFT-02: a better tool is faster.
             if (TryGetComponent<InventoryNetwork>(out var inventory) && MatchingTool(inventory, node.Def.Gather) is { } tool)
                 _gatherSeconds = ToolTiers.HarvestSeconds(_gatherSeconds, tool.ToolPower);
+            _gatherSeconds /= GatherSpeed();
         }
 
         void CancelGather() => Gathering = null;
@@ -692,6 +702,7 @@ namespace Isle.Gameplay.Character
             var aim = new Vector2(aimX, aimY) + UnityEngine.Random.insideUnitCircle * sway;
             var direction = (aim - origin).sqrMagnitude > 0.0001f ? (aim - origin).normalized : Vector2.right;
             var damage = PowerCalculator.FinalPower(weapon.BasePower, LevelOf(weapon.CombatSkill)) * RangedCalculator.ChargeMult(charge)
+                         * Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "ranged_power_mult")
                          * (ammo.AmmoPower > 0f ? ammo.AmmoPower : 1f);
 
             Projectiles.Instance.Fire(origin + direction * MuzzleOffsetTiles, direction, weapon.ProjectileSpeed, damage, weapon.DamageType ?? DamageTypes.Pierce,

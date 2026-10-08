@@ -1,0 +1,13 @@
+{
+  "id": "isle:cold_tolerant",
+  "name": "@trait.cold_tolerant",
+  "description": "@trait.cold_tolerant_desc",
+  "cost": 2,
+  "group": "cold",
+  "effects": [
+    {
+      "type": "hypothermia_threshold_shift",
+      "value": -2
+    }
+  ]
+}

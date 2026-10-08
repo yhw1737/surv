@@ -1,0 +1,13 @@
+{
+  "id": "isle:nimble",
+  "name": "@trait.nimble",
+  "description": "@trait.nimble_desc",
+  "cost": 3,
+  "group": "dexterity",
+  "effects": [
+    {
+      "type": "gather_speed_mult",
+      "value": 1.2
+    }
+  ]
+}

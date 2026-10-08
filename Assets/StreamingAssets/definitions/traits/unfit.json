@@ -1,0 +1,13 @@
+{
+  "id": "isle:unfit",
+  "name": "@trait.unfit",
+  "description": "@trait.unfit_desc",
+  "cost": -3,
+  "group": "fitness",
+  "effects": [
+    {
+      "type": "stamina_max_mult",
+      "value": 0.8
+    }
+  ]
+}

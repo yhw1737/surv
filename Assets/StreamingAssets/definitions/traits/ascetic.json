@@ -1,0 +1,20 @@
+{
+  "id": "isle:ascetic",
+  "name": "@trait.ascetic",
+  "description": "@trait.ascetic_desc",
+  "cost": 1,
+  "excludes": [
+    "isle:hearty_appetite"
+  ],
+  "group": "diet",
+  "effects": [
+    {
+      "type": "hunger_drain_mult",
+      "value": 0.85
+    },
+    {
+      "type": "buff_duration_mult",
+      "value": 0.7
+    }
+  ]
+}

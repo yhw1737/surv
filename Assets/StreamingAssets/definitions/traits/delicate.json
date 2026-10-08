@@ -1,0 +1,13 @@
+{
+  "id": "isle:delicate",
+  "name": "@trait.delicate",
+  "description": "@trait.delicate_desc",
+  "cost": -2,
+  "group": "recovery",
+  "effects": [
+    {
+      "type": "stamina_regen_mult",
+      "value": 0.8
+    }
+  ]
+}

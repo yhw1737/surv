@@ -1,0 +1,16 @@
+{
+  "id": "isle:restless",
+  "name": "@trait.restless",
+  "description": "@trait.restless_desc",
+  "cost": -1,
+  "excludes": [
+    "isle:quick_recovery"
+  ],
+  "group": "rest",
+  "effects": [
+    {
+      "type": "stamina_regen_mult",
+      "value": 0.9
+    }
+  ]
+}

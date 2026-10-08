@@ -1,0 +1,16 @@
+{
+  "id": "isle:sweaty",
+  "name": "@trait.sweaty",
+  "description": "@trait.sweaty_desc",
+  "cost": -1,
+  "excludes": [
+    "isle:camel"
+  ],
+  "group": "sweat",
+  "effects": [
+    {
+      "type": "thirst_drain_mult",
+      "value": 1.15
+    }
+  ]
+}

@@ -36,6 +36,8 @@ namespace Isle.Modding.Defs
             DefRegistry.Register(defs.Dungeons);
             DefRegistry.Register(defs.Rooms);
             DefRegistry.Register(defs.Materials);
+            DefRegistry.Register(defs.Traits);
+            DefRegistry.Register(defs.Scenarios);
             DefRegistry.Freeze();
 
             return errors;
@@ -62,6 +64,8 @@ namespace Isle.Modding.Defs
             DefRegistry.Reload(defs.Dungeons);
             DefRegistry.Reload(defs.Rooms);
             DefRegistry.Reload(defs.Materials);
+            DefRegistry.Reload(defs.Traits);
+            DefRegistry.Reload(defs.Scenarios);
 
             return errors;
         }
@@ -85,6 +89,8 @@ namespace Isle.Modding.Defs
                 Dungeons = DefinitionLoader.LoadAll<DungeonDef>(Path.Combine(contentRoot, "dungeons")),
                 Rooms = DefinitionLoader.LoadAll<RoomTemplateDef>(Path.Combine(contentRoot, "dungeon_rooms")),
                 Materials = DefinitionLoader.LoadAll<MaterialDef>(Path.Combine(contentRoot, "materials")),
+                Traits = DefinitionLoader.LoadAll<TraitDef>(Path.Combine(contentRoot, "traits")),
+                Scenarios = DefinitionLoader.LoadAll<ScenarioDef>(Path.Combine(contentRoot, "scenarios")),
             };
 
             // SYS-CRAFT-02: template × material → real items and weapons, before anything checks references to them.
@@ -97,7 +103,7 @@ namespace Isle.Modding.Defs
                      {
                          defs.Items, defs.Creatures, defs.Fish, defs.CookMethods, defs.Recipes,
                          defs.Weapons, defs.Artifacts, defs.Enchants, defs.Crops, defs.Skills, defs.Buffs,
-                         defs.WorldObjects, defs.Dungeons, defs.Rooms, defs.Materials
+                         defs.WorldObjects, defs.Dungeons, defs.Rooms, defs.Materials, defs.Traits, defs.Scenarios
                      })
                 errors.AddRange(result.Errors);
 
@@ -121,6 +127,8 @@ namespace Isle.Modding.Defs
             public LoadResult<DungeonDef> Dungeons;
             public LoadResult<RoomTemplateDef> Rooms;
             public LoadResult<MaterialDef> Materials;
+            public LoadResult<TraitDef> Traits;
+            public LoadResult<ScenarioDef> Scenarios;
         }
     }
 }

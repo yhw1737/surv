@@ -1,0 +1,13 @@
+{
+  "id": "isle:quick_recovery",
+  "name": "@trait.quick_recovery",
+  "description": "@trait.quick_recovery_desc",
+  "cost": 2,
+  "group": "recovery",
+  "effects": [
+    {
+      "type": "stamina_regen_mult",
+      "value": 1.25
+    }
+  ]
+}

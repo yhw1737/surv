@@ -559,3 +559,16 @@ Two directories, kept apart because the loader reads each one recursively: `defi
 
 Repairs use the recipe that makes the item (the template's for a variant): its station (or the material's), half its
 inputs and half its material, rounded up.
+
+### Traits and scenarios (T-167, SYS-START-01)
+
+**Trait** (`definitions/traits/*.json`): `cost` (good > 0 costs points, bad < 0 gives), `group` (one trait per group),
+`background` + `skills` `[{skill, levels}]` (a past job), `effects` (same types as buff effects, permanent).
+
+**Scenario** (`definitions/scenarios/*.json`): `start_biome`, `start_wet`, `clothes` (worn at start), `belongings`
+`{min, max, pool [{item, count, weight}]}`, `debris` `{piles_min, piles_max, radius_tiles, contents [{item, min, max}]}`,
+`names`, `skill_max`, `background_chance`, `good_traits_max`.
+
+New effect types read by the game: `carry_capacity_mult`, `move_speed_mult`, `xp_mult`, `hunger_drain_mult`,
+`gather_speed_mult`, `damage_taken_mult`. Loot piles may carry a `shape` (wreckage).
+

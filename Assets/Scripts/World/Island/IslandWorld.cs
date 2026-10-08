@@ -280,6 +280,33 @@ namespace Isle.World.Island
 
         /// <summary>Centre of a tile in world space. The map sprite spans ±Size/2 with one pixel per tile, so
         /// tile 0 covers [−Size/2, −Size/2 + 1) and its centre is half a tile in.</summary>
+        /// <summary>
+        /// SYS-START-01: a beach to wake up on — a dry, walkable tile of <paramref name="biome"/> a couple of tiles in
+        /// from the open sea, found by walking out from the island's middle in a seed-chosen direction (other directions
+        /// are tried in turn). Seed-deterministic. The middle of the island if no shore qualifies.
+        /// </summary>
+        public Vector2 ShoreStart(Biome biome, int salt = 0)
+        {
+            const int stepBack = 2;
+            var centre = new Vec2Int(IslandGenerator.Size / 2, IslandGenerator.Size / 2);
+            var start = (int)(IslandGenerator.Hash(Seed, 4242, salt) % 360u);
+            for (var turn = 0; turn < 24; turn++)
+            {
+                var angle = (start + turn * 15) * Mathf.Deg2Rad;
+                var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                for (var r = 1; r < IslandGenerator.Size / 2; r++)
+                {
+                    var tile = new Vec2Int(centre.X + Mathf.RoundToInt(dir.x * r), centre.Y + Mathf.RoundToInt(dir.y * r));
+                    if (WaterAt(tile)?.Ocean != true) continue;
+                    // The first open sea on this line: step back onto the sand.
+                    var shore = new Vec2Int(centre.X + Mathf.RoundToInt(dir.x * (r - stepBack)), centre.Y + Mathf.RoundToInt(dir.y * (r - stepBack)));
+                    if (IsWalkable(TileToWorld(shore)) && WaterAt(shore) == null && Island.BiomeAt(shore.X, shore.Y) == biome) return TileToWorld(shore);
+                    break;
+                }
+            }
+            return TileToWorld(centre);
+        }
+
         public static Vector2 TileToWorld(Vec2Int tile) =>
             new(tile.X - IslandGenerator.Size / 2f + 0.5f, tile.Y - IslandGenerator.Size / 2f + 0.5f);
 

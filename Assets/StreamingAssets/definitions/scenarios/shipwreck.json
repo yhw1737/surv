@@ -1,0 +1,197 @@
+{
+  "id": "isle:shipwreck",
+  "name": "@scenario.shipwreck",
+  "start_biome": "isle:coast",
+  "start_wet": true,
+  "outfits": [
+    {
+      "name": "@outfit.basic",
+      "items": [
+        "isle:t_shirt__cloth",
+        "isle:shorts__cloth"
+      ],
+      "cost": 0,
+      "weight": 4
+    },
+    {
+      "name": "@outfit.swimwear",
+      "items": [
+        "isle:shorts__cloth"
+      ],
+      "cost": -1,
+      "weight": 1
+    },
+    {
+      "name": "@outfit.casual",
+      "items": [
+        "isle:t_shirt__cloth",
+        "isle:pants__cloth",
+        "isle:shoes__cloth"
+      ],
+      "cost": 0,
+      "weight": 3
+    },
+    {
+      "name": "@outfit.evening",
+      "items": [
+        "isle:shirt__cloth",
+        "isle:pants__cloth",
+        "isle:shoes__leather"
+      ],
+      "cost": 0,
+      "weight": 2
+    },
+    {
+      "name": "@outfit.jacket",
+      "items": [
+        "isle:t_shirt__cloth",
+        "isle:jacket__leather",
+        "isle:pants__cloth"
+      ],
+      "cost": 1,
+      "weight": 1.5
+    },
+    {
+      "name": "@outfit.deckhand",
+      "items": [
+        "isle:t_shirt__cloth",
+        "isle:pants__cloth",
+        "isle:boots__leather",
+        "isle:cap__cloth"
+      ],
+      "cost": 1,
+      "weight": 1
+    },
+    {
+      "name": "@outfit.padded",
+      "items": [
+        "isle:t_shirt__cloth",
+        "isle:parka__cloth",
+        "isle:pants__cloth",
+        "isle:shoes__cloth"
+      ],
+      "cost": 2,
+      "weight": 1
+    },
+    {
+      "name": "@outfit.security",
+      "items": [
+        "isle:shirt__cloth",
+        "isle:bulletproof_vest",
+        "isle:pants__cloth",
+        "isle:boots__leather"
+      ],
+      "cost": 2,
+      "weight": 0.5
+    }
+  ],
+  "belongings": {
+    "min": 1,
+    "max": 3,
+    "pool": [
+      {
+        "item": "isle:chocolate_bar",
+        "count": 2,
+        "weight": 3
+      },
+      {
+        "item": "isle:water_bottle",
+        "count": 1,
+        "weight": 3
+      },
+      {
+        "item": "isle:cloth",
+        "count": 2,
+        "weight": 2
+      },
+      {
+        "item": "isle:fiber",
+        "count": 3,
+        "weight": 1
+      },
+      {
+        "item": "isle:torch",
+        "count": 1,
+        "weight": 1
+      },
+      {
+        "item": "isle:cap__cloth",
+        "count": 1,
+        "weight": 1
+      },
+      {
+        "item": "isle:knife__steel",
+        "count": 1,
+        "weight": 0.5
+      }
+    ]
+  },
+  "debris": {
+    "piles_min": 4,
+    "piles_max": 6,
+    "radius_tiles": 10,
+    "contents": [
+      {
+        "item": "isle:wood",
+        "min": 1,
+        "max": 3
+      },
+      {
+        "item": "isle:cloth",
+        "min": 0,
+        "max": 2
+      },
+      {
+        "item": "isle:fiber",
+        "min": 0,
+        "max": 2
+      }
+    ]
+  },
+  "names": [
+    "Ava",
+    "Noah",
+    "Mina",
+    "Leo",
+    "Sofia",
+    "Jun",
+    "Amara",
+    "Mateo",
+    "Yuki",
+    "Elias",
+    "Priya",
+    "Omar",
+    "Hana",
+    "Lucas",
+    "Zara",
+    "Kenji",
+    "Isla",
+    "Diego",
+    "Seo-yeon",
+    "Felix",
+    "Nadia",
+    "Arjun",
+    "Chloe",
+    "Tomas",
+    "Aiko",
+    "Ravi",
+    "Lena",
+    "Hugo",
+    "Mei",
+    "Samir",
+    "Ingrid",
+    "Kofi",
+    "Elena",
+    "Ji-ho",
+    "Marta",
+    "Dmitri",
+    "Lucia",
+    "Tariq",
+    "Freya",
+    "Bao"
+  ],
+  "skill_max": 3,
+  "background_chance": 0.7,
+  "traits_min": 3,
+  "traits_max": 6
+}

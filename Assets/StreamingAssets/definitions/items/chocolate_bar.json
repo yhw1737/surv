@@ -1,0 +1,24 @@
+{
+  "id": "isle:chocolate_bar",
+  "name": "@item.chocolate_bar",
+  "tags": [
+    "food",
+    "snack"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.1,
+  "stack": 5,
+  "nutrition": {
+    "hunger": 15,
+    "thirst": -2,
+    "sanitation_risk": 0.0
+  },
+  "icon_style": {
+    "shape": "kit",
+    "color": "#5A3A28",
+    "accent": "#C9A26A"
+  }
+}

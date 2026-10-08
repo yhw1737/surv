@@ -16,7 +16,8 @@
 | [SYS-FISH-01](SYS-FISH-01-fishing.md) | fishing | SKILL, WORLD |
 | [SYS-COOK-01](SYS-COOK-01-cooking.md) | cooking, tag combination, buffs | SKILL, CORE, BUFF |
 | [SYS-CRAFT-01](SYS-CRAFT-01-crafting.md) | crafting, quality, enchanting | SKILL, INV |
-| [SYS-CRAFT-02](SYS-CRAFT-02-material-tiers.md) | material tiers, durability, repair | CRAFT-01, INV, WORLD-03 |
+| [SYS-CRAFT-02](SYS-CRAFT-02-material-tiers.md) | materials, durability, repair | CRAFT-01, INV, WORLD-03 |
+| [SYS-START-01](SYS-START-01-shipwreck-start.md) | shipwreck start, random survivors, traits | SURV-01, SKILL-01 |
 | [SYS-COMBAT-01](SYS-COMBAT-01-combat.md) | combat, weapons, hit detection | SKILL, NET |
 | [SYS-ART-01](SYS-ART-01-artifacts.md) | artifacts (3) | COMBAT, SKILL |
 | [SYS-COMBAT-02](SYS-COMBAT-02-damage-types.md) | damage types, hit shapes (draft) | COMBAT |

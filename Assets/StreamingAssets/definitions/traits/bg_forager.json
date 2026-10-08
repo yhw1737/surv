@@ -1,0 +1,18 @@
+{
+  "id": "isle:bg_forager",
+  "name": "@trait.bg_forager",
+  "description": "@trait.bg_forager_desc",
+  "cost": 2,
+  "excludes": [
+    "isle:clumsy",
+    "isle:lazy"
+  ],
+  "group": "background",
+  "background": true,
+  "skills": [
+    {
+      "skill": "isle:gathering",
+      "levels": 5
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "isle:sprinter",
+  "name": "@trait.sprinter",
+  "description": "@trait.sprinter_desc",
+  "cost": 2,
+  "excludes": [
+    "isle:unfit"
+  ],
+  "group": "sprint",
+  "effects": [
+    {
+      "type": "sprint_cost_mult",
+      "value": 0.7
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "isle:tough",
+  "name": "@trait.tough",
+  "description": "@trait.tough_desc",
+  "cost": 4,
+  "group": "toughness",
+  "effects": [
+    {
+      "type": "damage_taken_mult",
+      "value": 0.85
+    }
+  ]
+}

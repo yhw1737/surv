@@ -1,0 +1,13 @@
+{
+  "id": "isle:strong",
+  "name": "@trait.strong",
+  "description": "@trait.strong_desc",
+  "cost": 3,
+  "group": "strength",
+  "effects": [
+    {
+      "type": "carry_capacity_mult",
+      "value": 1.25
+    }
+  ]
+}

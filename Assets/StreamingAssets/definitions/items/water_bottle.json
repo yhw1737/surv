@@ -1,0 +1,23 @@
+{
+  "id": "isle:water_bottle",
+  "name": "@item.water_bottle",
+  "tags": [
+    "drink"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.5,
+  "stack": 3,
+  "nutrition": {
+    "hunger": 0,
+    "thirst": 35,
+    "sanitation_risk": 0.0
+  },
+  "icon_style": {
+    "shape": "kit",
+    "color": "#8FC6E8",
+    "accent": "#3F86C2"
+  }
+}

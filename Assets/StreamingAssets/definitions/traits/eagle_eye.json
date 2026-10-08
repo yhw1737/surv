@@ -1,0 +1,13 @@
+{
+  "id": "isle:eagle_eye",
+  "name": "@trait.eagle_eye",
+  "description": "@trait.eagle_eye_desc",
+  "cost": 2,
+  "group": "eyes",
+  "effects": [
+    {
+      "type": "aim_sway_mult",
+      "value": 0.7
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "isle:iron_stomach",
+  "name": "@trait.iron_stomach",
+  "description": "@trait.iron_stomach_desc",
+  "cost": 2,
+  "group": "stomach",
+  "effects": [
+    {
+      "type": "damage_resist",
+      "value": 0.3,
+      "damage_type": "toxic"
+    }
+  ]
+}

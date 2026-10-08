@@ -1,0 +1,16 @@
+{
+  "id": "isle:steady_hands",
+  "name": "@trait.steady_hands",
+  "description": "@trait.steady_hands_desc",
+  "cost": 1,
+  "excludes": [
+    "isle:short_sighted"
+  ],
+  "group": "steady",
+  "effects": [
+    {
+      "type": "aim_sway_mult",
+      "value": 0.85
+    }
+  ]
+}
