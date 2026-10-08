@@ -7,7 +7,7 @@
 
 - Last updated: **2026-10-07**
 - **2026-10-08 — T-166 material tiers, durability, repair.** Branch `feature/T-166-material-tiers`, stacked on
-  `feature/T-165-status-visuals` (PR #37), **uncommitted**. Developer request: "scratch부터 장비를 제작하고 끊임없이 유지보수".
+  `feature/T-165-status-visuals` (PR #37) — [PR #38](https://github.com/yhw1737/surv/pull/38). Developer request: "scratch부터 장비를 제작하고 끊임없이 유지보수".
   Found: the bow already existed (workbench + Crafting 5); no metal, durability, repair or quality existed. Developer
   decisions: stone → copper → iron → steel; veins per biome + dungeons; furnace + anvil; broken-not-destroyed; durability
   60/150/300/500; performance ×1/1.25/1.5/1.8; wear 1 per use / per hit taken; repair at the station for half the
