@@ -1,0 +1,19 @@
+{
+  "id": "isle:anvil_kit",
+  "name": "@item.anvil_kit",
+  "tags": [
+    "placeable"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 16.0,
+  "stack": 1,
+  "places": "isle:anvil",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#5E6670",
+    "accent": "#A88763"
+  }
+}

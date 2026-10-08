@@ -3,7 +3,7 @@
   "name": "@recipe.leather_backpack",
   "ingredients": [
     {
-      "item": "isle:hide",
+      "tag": "leather",
       "count": 6
     },
     {

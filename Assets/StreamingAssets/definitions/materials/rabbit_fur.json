@@ -1,0 +1,20 @@
+{
+  "id": "isle:rabbit_fur",
+  "name": "@material.rabbit_fur",
+  "item": "isle:rabbit_fur",
+  "categories": [
+    "fur"
+  ],
+  "tier": 1,
+  "craft_level": 1,
+  "armor_sharp": 0.6,
+  "armor_blunt": 0.5,
+  "armor_heat": 0.6,
+  "warmth": 2.0,
+  "durability": 0.7,
+  "mass": 0.2,
+  "power_sharp": 0,
+  "power_blunt": 0,
+  "tool_speed": 1,
+  "color": "#CFC6B8"
+}

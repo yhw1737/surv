@@ -1,0 +1,19 @@
+{
+  "id": "isle:rabbit_fur",
+  "name": "@item.rabbit_fur",
+  "tags": [
+    "material",
+    "fur"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.3,
+  "stack": 10,
+  "icon_style": {
+    "shape": "pelt",
+    "color": "#CFC6B8",
+    "accent": "#A89E8E"
+  }
+}

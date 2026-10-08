@@ -1,0 +1,31 @@
+{
+  "id": "isle:boots",
+  "name": "@item.boots",
+  "tags": [
+    "clothing",
+    "armor",
+    "apparel"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 0.1,
+  "stack": 1,
+  "durability": 60,
+  "equip_slot": "feet",
+  "armor": 3,
+  "stuff": {
+    "categories": [
+      "leather",
+      "fur",
+      "metal"
+    ],
+    "amount": 2
+  },
+  "wear": {
+    "style": "boots",
+    "color": "#9A7550"
+  },
+  "warmth": 1
+}

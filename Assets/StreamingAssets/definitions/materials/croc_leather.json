@@ -1,0 +1,20 @@
+{
+  "id": "isle:croc_leather",
+  "name": "@material.croc_leather",
+  "item": "isle:croc_hide",
+  "categories": [
+    "leather"
+  ],
+  "tier": 1,
+  "craft_level": 10,
+  "armor_sharp": 1.5,
+  "armor_blunt": 0.9,
+  "armor_heat": 1.0,
+  "warmth": 1.0,
+  "durability": 1.6,
+  "mass": 0.5,
+  "power_sharp": 0,
+  "power_blunt": 0,
+  "tool_speed": 1,
+  "color": "#5E6B3A"
+}

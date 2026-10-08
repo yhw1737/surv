@@ -3,7 +3,7 @@
   "name": "@recipe.belt_pouch",
   "ingredients": [
     {
-      "item": "isle:hide",
+      "tag": "leather",
       "count": 1
     },
     {

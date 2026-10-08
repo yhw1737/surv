@@ -21,5 +21,9 @@
     "skill": "isle:gathering",
     "shape": "gate_roots",
     "color": "#6B4A2A"
-  }
+  },
+  "veins": [
+    "isle:copper_vein",
+    "isle:coal_seam"
+  ]
 }

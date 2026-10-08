@@ -1,0 +1,19 @@
+{
+  "id": "isle:furnace_kit",
+  "name": "@item.furnace_kit",
+  "tags": [
+    "placeable"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 14.0,
+  "stack": 1,
+  "places": "isle:furnace",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#8C6F5E",
+    "accent": "#A88763"
+  }
+}

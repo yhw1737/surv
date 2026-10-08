@@ -21,5 +21,9 @@
     "skill": "isle:crafting",
     "shape": "gate_bars",
     "color": "#8A5A3C"
-  }
+  },
+  "veins": [
+    "isle:iron_vein",
+    "isle:coal_seam"
+  ]
 }

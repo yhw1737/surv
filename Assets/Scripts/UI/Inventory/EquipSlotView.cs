@@ -99,6 +99,7 @@ namespace Isle.UI.Inventory
             rect.sizeDelta = new Vector2(FrameSizePx, FrameSizePx);
 
             GridView.DecorateIcon(_icon, rect, item, 1, false);
+            GridView.WearBar(rect, Slots.WearOf(SlotName));
 
             _icon.GetComponent<EquipDragHandler>().Bind(this, item);
             // No Placement exists for an equipped item (no grid position/rotation) — build a bare one

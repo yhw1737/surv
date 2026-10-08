@@ -21,8 +21,28 @@ namespace Isle.Data
         /// <summary>Icon path relative to the content root; null falls back to a placeholder shape (T-017).</summary>
         public string Icon { get; init; }
 
-        /// <summary>Null for items that cannot wear out.</summary>
+        /// <summary>Null for items that cannot wear out. SYS-CRAFT-02: 60 / 150 / 300 / 500 by tier.</summary>
         public int? Durability { get; init; }
+
+        /// <summary>SYS-CRAFT-02 material tier: 1 stone/wood/leather, 2 copper, 3 iron, 4 steel. 0 = untiered.</summary>
+        public int Tier { get; init; }
+
+        /// <summary>Tools: harvest time is divided by this with the right tool in hand (SYS-CRAFT-02 tier performance).
+        /// 0 means 1.</summary>
+        public float ToolPower { get; init; }
+
+        /// <summary>Ammunition: multiplies the bow's power for a shot with this arrow. 0 means 1.</summary>
+        public float AmmoPower { get; init; }
+
+        /// <summary>SYS-CRAFT-02: set on a template — made from a chosen material. Templates themselves never exist in
+        /// the world; their generated variants (<see cref="StuffTemplate"/> + <see cref="Material"/>) do.</summary>
+        public StuffSpec Stuff { get; init; }
+
+        /// <summary>On a generated variant: the template it was made from.</summary>
+        public NamespacedId StuffTemplate { get; init; }
+
+        /// <summary>On a generated variant: what it's made of.</summary>
+        public NamespacedId Material { get; init; }
 
         /// <summary>Null for items that never spoil.</summary>
         public SpoilageSpec Spoilage { get; init; }

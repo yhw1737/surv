@@ -22,7 +22,7 @@ namespace Isle.Tests.EditMode
             nameof(ItemDef), nameof(CreatureDef), nameof(FishDef), nameof(CookMethodDef),
             nameof(CraftRecipeDef), nameof(WeaponDef), nameof(ArtifactDef), nameof(EnchantDef),
             nameof(CropDef), nameof(SkillDef), nameof(BuffDef), nameof(WorldObjectDef),
-            nameof(DungeonDef), nameof(RoomTemplateDef)
+            nameof(DungeonDef), nameof(RoomTemplateDef), nameof(MaterialDef)
         };
 
         static Type[] Definitions() =>

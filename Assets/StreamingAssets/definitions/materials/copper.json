@@ -1,0 +1,21 @@
+{
+  "id": "isle:copper",
+  "name": "@material.copper",
+  "item": "isle:copper_ingot",
+  "categories": [
+    "metal"
+  ],
+  "tier": 2,
+  "craft_level": 10,
+  "station": "isle:anvil",
+  "armor_sharp": 1.25,
+  "armor_blunt": 1.0,
+  "armor_heat": 1.2,
+  "warmth": 0.0,
+  "durability": 2.5,
+  "mass": 0.8,
+  "power_sharp": 1.25,
+  "power_blunt": 1.2,
+  "tool_speed": 1.25,
+  "color": "#C27A4A"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "isle:boar_hide",
+  "name": "@item.boar_hide",
+  "tags": [
+    "material",
+    "leather"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.8,
+  "stack": 10,
+  "icon_style": {
+    "shape": "pelt",
+    "color": "#6E5038",
+    "accent": "#4E3826"
+  }
+}

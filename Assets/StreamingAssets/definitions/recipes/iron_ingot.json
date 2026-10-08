@@ -1,0 +1,32 @@
+{
+  "id": "isle:craft_iron_ingot",
+  "name": "@recipe.iron_ingot",
+  "ingredients": [
+    {
+      "item": "isle:iron_ore",
+      "count": 2
+    },
+    {
+      "item": "isle:coal",
+      "count": 1
+    }
+  ],
+  "output": {
+    "item": "isle:iron_ingot",
+    "count": 1
+  },
+  "time_sec": 8,
+  "station": "isle:furnace",
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 20,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 20,
+      "primary": true
+    }
+  ]
+}

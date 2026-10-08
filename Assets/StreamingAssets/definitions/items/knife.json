@@ -1,0 +1,31 @@
+{
+  "id": "isle:knife",
+  "name": "@item.knife",
+  "tags": [
+    "tool",
+    "tool/knife"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.2,
+  "stack": 1,
+  "durability": 60,
+  "tool_power": 1.0,
+  "equip_slot": "main_hand",
+  "weapon": "isle:knife",
+  "stuff": {
+    "categories": [
+      "stone",
+      "metal"
+    ],
+    "amount": 1
+  },
+  "hold": {
+    "style": "sword",
+    "length": 0.45,
+    "color": "#8A6A48",
+    "tip": "#9FA4AA"
+  }
+}

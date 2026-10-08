@@ -1,0 +1,20 @@
+{
+  "id": "isle:coal",
+  "name": "@item.coal",
+  "tags": [
+    "material",
+    "fuel",
+    "coal"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.6,
+  "stack": 20,
+  "icon_style": {
+    "shape": "coal",
+    "color": "#2E2B2A",
+    "accent": "#5A5552"
+  }
+}

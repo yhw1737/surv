@@ -167,9 +167,21 @@ namespace Isle.Gameplay.Character
             if (!TryGetComponent<InventoryNetwork>(out var inventory)) return null;
             float? total = null;
             foreach (var slot in EquipSlots.All)
-                if (inventory.Slots.Get(slot)?.ArmorTypes is { } byType && byType.TryGetValue(damageType, out var value))
+                if (inventory.Slots.Working(slot)?.ArmorTypes is { } byType && byType.TryGetValue(damageType, out var value))
                     total = (total ?? 0f) + value;
             return total.HasValue ? new System.Collections.Generic.Dictionary<string, float> { [damageType] = total.Value } : null;
+        }
+
+        /// <summary>SYS-CRAFT-02: every worn armor piece loses 1 per hit taken.</summary>
+        void WearArmor()
+        {
+            if (!TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            foreach (var slot in EquipSlots.All)
+            {
+                var item = inventory.Slots.Get(slot);
+                if (item == null || (item.Armor <= 0f && item.ArmorTypes == null)) continue;
+                if (inventory.Slots.Wear(slot, 1)) Feedback.GameFeed.RaiseNotice($"@ui.item_broke|{item.Name}");
+            }
         }
 
         /// <summary>Product of (1 − value) over active <c>damage_resist</c> buffs for this type — values come from each dish.</summary>
@@ -186,7 +198,8 @@ namespace Isle.Gameplay.Character
         {
             if (!TryGetComponent<InventoryNetwork>(out var inventory)) return 0f;
             var total = 0f;
-            foreach (var slot in EquipSlots.All) total += inventory.Slots.Get(slot)?.Armor ?? 0f;
+            // Broken armor gives no armor (SYS-CRAFT-02).
+            foreach (var slot in EquipSlots.All) total += inventory.Slots.Working(slot)?.Armor ?? 0f;
             return total;
         }
 
@@ -346,6 +359,7 @@ namespace Isle.Gameplay.Character
             Status.OnHit(damageType, taken, Time.time, out _);
             Health = Mathf.Clamp(Health - taken, 0f, VitalsCalculator.GaugeMax);
             LastHitAt = Time.time;
+            WearArmor();
             Feedback.GameFeed.RaisePlayerHit(taken);
         }
 

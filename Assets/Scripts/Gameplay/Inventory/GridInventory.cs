@@ -20,13 +20,20 @@ namespace Isle.Gameplay.Inventory
         /// T-040 didn't need it since it never split or moved partial stacks.</summary>
         public int Count { get; }
 
-        public Placement(ItemDef item, Vec2Int position, bool rotated, int count = 1)
+        /// <summary>SYS-CRAFT-02: this item's wear, or null (can't wear out, or brand new).</summary>
+        public ItemWear Wear { get; }
+
+        public Placement(ItemDef item, Vec2Int position, bool rotated, int count = 1, ItemWear wear = null)
         {
             Item = item;
             Position = position;
             Rotated = rotated;
             Count = count;
+            Wear = wear;
         }
+
+        /// <summary>Durable items are individuals: they never merge into a stack (each keeps its own wear).</summary>
+        public static bool Stacks(ItemDef item) => !(item?.Durability > 0);
 
         public GridSize EffectiveSize() => Rotated
             ? new GridSize { W = Item.Grid.H, H = Item.Grid.W }
@@ -58,17 +65,17 @@ namespace Isle.Gameplay.Inventory
         /// position and rotation, merges into its count instead. Not in SYS-INV-01's text, but
         /// <see cref="TrySplit"/> needs some way back together — dragging a split-off stack back onto its
         /// sibling should recombine it, the same way most Tetris-style loot inventories do.</summary>
-        public bool TryPlace(ItemDef item, Vec2Int position, bool rotated = false, int count = 1)
+        public bool TryPlace(ItemDef item, Vec2Int position, bool rotated = false, int count = 1, ItemWear wear = null)
         {
-            var mergeIndex = _placements.FindIndex(p =>
-                ReferenceEquals(p.Item, item) && p.Position == position && p.Rotated == rotated);
+            var mergeIndex = Placement.Stacks(item) ? _placements.FindIndex(p =>
+                ReferenceEquals(p.Item, item) && p.Position == position && p.Rotated == rotated) : -1;
             if (mergeIndex >= 0)
             {
                 _placements[mergeIndex] = new Placement(item, position, rotated, _placements[mergeIndex].Count + count);
                 return true;
             }
 
-            var placement = new Placement(item, position, rotated, count);
+            var placement = new Placement(item, position, rotated, count, wear);
             if (!Fits(placement)) return false;
 
             _placements.Add(placement);
@@ -115,7 +122,7 @@ namespace Isle.Gameplay.Inventory
         /// the same way a manual drag-to-that-exact-cell already does via <see cref="TryPlace"/>.</summary>
         public (Vec2Int position, bool rotated)? FindPlacementSpot(ItemDef item, bool rotated)
         {
-            var existingIndex = _placements.FindIndex(p => ReferenceEquals(p.Item, item));
+            var existingIndex = Placement.Stacks(item) ? _placements.FindIndex(p => ReferenceEquals(p.Item, item)) : -1;
             if (existingIndex >= 0)
                 return (_placements[existingIndex].Position, _placements[existingIndex].Rotated);
 
@@ -130,7 +137,7 @@ namespace Isle.Gameplay.Inventory
         {
             var spot = destination.FindPlacementSpot(placement.Item, placement.Rotated);
             if (spot == null) return false;
-            if (!destination.TryPlace(placement.Item, spot.Value.position, spot.Value.rotated, placement.Count)) return false;
+            if (!destination.TryPlace(placement.Item, spot.Value.position, spot.Value.rotated, placement.Count, placement.Wear)) return false;
 
             _placements.Remove(placement);
             return true;
@@ -159,14 +166,14 @@ namespace Isle.Gameplay.Inventory
             if (destination == this && destPosition == source.Position && destRotated == source.Rotated) return false;
             if (!_placements.Remove(source)) return false;
 
-            var moved = new Placement(source.Item, destPosition, destRotated, splitCount);
+            var moved = new Placement(source.Item, destPosition, destRotated, splitCount, source.Wear);
             if (!destination.FitsAt(moved.Position, moved.EffectiveSize(), exclude: null))
             {
                 _placements.Add(source);
                 return false;
             }
 
-            _placements.Add(new Placement(source.Item, source.Position, source.Rotated, source.Count - splitCount));
+            _placements.Add(new Placement(source.Item, source.Position, source.Rotated, source.Count - splitCount, source.Wear));
             destination._placements.Add(moved);
             return true;
         }
@@ -189,7 +196,7 @@ namespace Isle.Gameplay.Inventory
             {
                 var pos = scratch.FindFreePosition(p.Item.Grid, p.Rotated);
                 if (pos == null) return false;
-                scratch.TryPlace(p.Item, pos.Value, p.Rotated, p.Count);
+                scratch.TryPlace(p.Item, pos.Value, p.Rotated, p.Count, p.Wear);
             }
 
             _placements.Clear();

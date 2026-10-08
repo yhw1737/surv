@@ -35,6 +35,7 @@ namespace Isle.Modding.Defs
             DefRegistry.Register(defs.WorldObjects);
             DefRegistry.Register(defs.Dungeons);
             DefRegistry.Register(defs.Rooms);
+            DefRegistry.Register(defs.Materials);
             DefRegistry.Freeze();
 
             return errors;
@@ -60,6 +61,7 @@ namespace Isle.Modding.Defs
             DefRegistry.Reload(defs.WorldObjects);
             DefRegistry.Reload(defs.Dungeons);
             DefRegistry.Reload(defs.Rooms);
+            DefRegistry.Reload(defs.Materials);
 
             return errors;
         }
@@ -82,7 +84,11 @@ namespace Isle.Modding.Defs
                 WorldObjects = DefinitionLoader.LoadAll<WorldObjectDef>(Path.Combine(contentRoot, "world_objects")),
                 Dungeons = DefinitionLoader.LoadAll<DungeonDef>(Path.Combine(contentRoot, "dungeons")),
                 Rooms = DefinitionLoader.LoadAll<RoomTemplateDef>(Path.Combine(contentRoot, "dungeon_rooms")),
+                Materials = DefinitionLoader.LoadAll<MaterialDef>(Path.Combine(contentRoot, "materials")),
             };
+
+            // SYS-CRAFT-02: template × material → real items and weapons, before anything checks references to them.
+            StuffVariants.Expand(defs.Items, defs.Weapons, defs.Materials.Definitions);
 
             ReferenceResolver.ResolveItemRefs(defs.Items, defs.Recipes, defs.Enchants, defs.Creatures, defs.Fish, defs.Crops, defs.CookMethods);
 
@@ -91,7 +97,7 @@ namespace Isle.Modding.Defs
                      {
                          defs.Items, defs.Creatures, defs.Fish, defs.CookMethods, defs.Recipes,
                          defs.Weapons, defs.Artifacts, defs.Enchants, defs.Crops, defs.Skills, defs.Buffs,
-                         defs.WorldObjects, defs.Dungeons, defs.Rooms
+                         defs.WorldObjects, defs.Dungeons, defs.Rooms, defs.Materials
                      })
                 errors.AddRange(result.Errors);
 
@@ -114,6 +120,7 @@ namespace Isle.Modding.Defs
             public LoadResult<WorldObjectDef> WorldObjects;
             public LoadResult<DungeonDef> Dungeons;
             public LoadResult<RoomTemplateDef> Rooms;
+            public LoadResult<MaterialDef> Materials;
         }
     }
 }

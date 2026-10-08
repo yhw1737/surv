@@ -8,7 +8,7 @@ namespace Isle.UI.Art
     /// <c>wear</c>/<c>hold</c> block, simply isn't drawn (SYS-CHAR-02 §Equipment).</summary>
     public struct FigureOutfit
     {
-        public ItemDef Head, Chest, Legs, Feet, Back, Belt, MainHand, OffHand;
+        public ItemDef Head, Shirt, Chest, Legs, Feet, Back, Belt, MainHand, OffHand;
     }
 
     /// <summary>
@@ -72,6 +72,7 @@ namespace Isle.UI.Art
 
             // Torso.
             mesh.Line(pose.Hip, pose.Neck, Limb, Ink);
+            DrawWear(mesh, outfit.Shirt, WearLayer.Body, pose, torsoUp, torsoBack); // under the outer layer
             DrawWear(mesh, outfit.Chest, WearLayer.Body, pose, torsoUp, torsoBack);
 
             // Front leg, belt.
@@ -98,7 +99,24 @@ namespace Isle.UI.Art
         static void DrawLeg(VectorMesh mesh, Vector2 hip, Vector2 knee, Vector2 foot, in FigureOutfit outfit, Color ink)
         {
             var pants = outfit.Legs?.Wear;
-            if (pants != null)
+            if (pants != null && pants.Style == "shorts")
+            {
+                // Shorts: cloth on the thigh, a bare shin below.
+                var fill = ColourOf(pants.Color, Ink);
+                if (ink != Ink) fill = Darken(fill);
+                var d = (knee - hip).normalized;
+                var n = new Vector2(-d.y, d.x);
+                var hem = Vector2.Lerp(hip, knee, 0.75f);
+                Points.Clear();
+                Points.Add(hip + n * 0.05f);
+                Points.Add(hem + n * 0.075f);
+                Points.Add(hem - n * 0.075f);
+                Points.Add(hip - n * 0.05f);
+                Outlined(mesh, Points, fill);
+                mesh.Line(hem, knee, Limb, ink);
+                mesh.Line(knee, foot, Limb, ink);
+            }
+            else if (pants != null)
             {
                 // Fancy Pants trousers: snug at the hip, flaring wide toward the ankle.
                 var fill = ColourOf(pants.Color, Ink);
@@ -161,6 +179,31 @@ namespace Isle.UI.Art
                     mesh.Line(pose.Shoulder, pose.Hip + up * 0.02f, 0.27f, fill);
                     return;
 
+                case "jacket":
+                case "plate":
+                    if (layer != WearLayer.Body) return;
+                    mesh.Line(pose.Shoulder + up * 0.02f, pose.Hip - up * 0.04f, 0.32f + Edge * 2f, Ink);
+                    mesh.Line(pose.Shoulder + up * 0.02f, pose.Hip - up * 0.04f, 0.32f, fill);
+                    if (wear.Style == "plate")
+                        mesh.Line(Vector2.Lerp(pose.Shoulder, pose.Hip, 0.15f) - back * 0.06f, Vector2.Lerp(pose.Shoulder, pose.Hip, 0.6f) - back * 0.06f, 0.035f, Color.Lerp(fill, Color.white, 0.45f));
+                    else
+                        mesh.Line(pose.Shoulder - back * 0.05f, Vector2.Lerp(pose.Shoulder, pose.Hip, 0.35f) - back * 0.12f, 0.03f, Darken(fill));
+                    return;
+
+                case "parka":
+                    if (layer == WearLayer.Behind)
+                    {
+                        // The hood, down behind the head.
+                        var hood = pose.Neck + up * 0.08f + back * 0.1f;
+                        mesh.Ellipse(hood, 0.15f + Edge, 0.11f + Edge, Ink);
+                        mesh.Ellipse(hood, 0.15f, 0.11f, Darken(fill));
+                        return;
+                    }
+                    mesh.Line(pose.Shoulder + up * 0.03f, pose.Hip - up * 0.08f, 0.38f + Edge * 2f, Ink);
+                    mesh.Line(pose.Shoulder + up * 0.03f, pose.Hip - up * 0.08f, 0.38f, fill);
+                    mesh.Line(pose.Hip - up * 0.05f - back * 0.18f, pose.Hip - up * 0.05f + back * 0.18f, 0.05f, Color.Lerp(fill, Color.white, 0.35f));
+                    return;
+
                 case "cloak":
                     if (layer == WearLayer.Behind)
                     {
@@ -218,6 +261,24 @@ namespace Isle.UI.Art
                     Outlined(mesh, Points, fill);
                     mesh.Line(h + Rotate(new Vector2(0.08f, 0.13f) * HeadScale, tilt), h + Rotate(new Vector2(0.46f, 0.11f) * HeadScale, tilt), 0.04f + Edge * 2f, Ink);
                     mesh.Line(h + Rotate(new Vector2(0.08f, 0.13f) * HeadScale, tilt), h + Rotate(new Vector2(0.46f, 0.11f) * HeadScale, tilt), 0.04f, fill);
+                    return;
+                }
+
+                case "helmet":
+                {
+                    if (layer != WearLayer.Body) return;
+                    var h = pose.Head;
+                    var tilt = pose.HeadTilt;
+                    Points.Clear();
+                    for (var i = 0; i <= 10; i++)
+                    {
+                        var a = Mathf.Lerp(-10f, 190f, i / 10f) * Mathf.Deg2Rad - tilt;
+                        Points.Add(h + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (HeadRadius + 0.04f) + Rotate(new Vector2(0f, 0.02f), tilt));
+                    }
+                    Outlined(mesh, Points, fill);
+                    // Nose guard down the front of the face.
+                    mesh.Line(h + Rotate(new Vector2(0.1f, 0.05f), tilt), h + Rotate(new Vector2(0.1f, -0.1f), tilt), 0.035f + Edge * 2f, Ink);
+                    mesh.Line(h + Rotate(new Vector2(0.1f, 0.05f), tilt), h + Rotate(new Vector2(0.1f, -0.1f), tilt), 0.035f, fill);
                     return;
                 }
 
@@ -297,6 +358,40 @@ namespace Isle.UI.Art
                     Points.Add(hand + d * 0.1f + n * 0.05f);
                     Outlined(mesh, Points, tip);
                     mesh.Line(hand + d * 0.1f - n * 0.13f, hand + d * 0.1f + n * 0.13f, 0.06f, Ink);
+                    return;
+                }
+
+                case "mace":
+                case "club":
+                {
+                    var head = end - d * 0.08f;
+                    Shaft(mesh, hand - d * 0.08f, head, shaft);
+                    if (hold.Style == "club")
+                    {
+                        Points.Clear();
+                        for (var i = 0; i < 10; i++)
+                        {
+                            var a = i / 10f * Mathf.PI * 2f;
+                            Points.Add(head + d * (Mathf.Cos(a) * 0.16f) + n * (Mathf.Sin(a) * 0.1f));
+                        }
+                        Outlined(mesh, Points, shaft);
+                    }
+                    else
+                    {
+                        for (var i = 0; i < 6; i++)
+                        {
+                            var a = i * Mathf.PI / 3f;
+                            var dir = d * Mathf.Cos(a) + n * Mathf.Sin(a);
+                            var side = d * -Mathf.Sin(a) + n * Mathf.Cos(a);
+                            Points.Clear();
+                            Points.Add(head + dir * 0.17f);
+                            Points.Add(head + side * 0.05f);
+                            Points.Add(head - side * 0.05f);
+                            Outlined(mesh, Points, Darken(tip));
+                        }
+                        mesh.Disk(head, 0.11f + Edge, Ink);
+                        mesh.Disk(head, 0.11f, tip);
+                    }
                     return;
                 }
 

@@ -4,13 +4,19 @@
   "ingredients": [
     {
       "item": "isle:wood",
-      "count": 1
+      "count": 2
     },
     {
-      "item": "isle:stone",
+      "item": "isle:fiber",
       "count": 1
     }
   ],
+  "stuff": {
+    "categories": [
+      "stone",
+      "metal"
+    ]
+  },
   "output": {
     "item": "isle:arrow",
     "count": 5

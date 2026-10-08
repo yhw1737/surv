@@ -1,0 +1,30 @@
+{
+  "id": "isle:craft_parka",
+  "name": "@recipe.parka",
+  "ingredients": [],
+  "stuff": {
+    "categories": [
+      "fabric",
+      "leather",
+      "fur"
+    ]
+  },
+  "output": {
+    "item": "isle:parka",
+    "count": 1
+  },
+  "time_sec": 4,
+  "station": "isle:workbench",
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 10,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 8,
+      "primary": true
+    }
+  ]
+}

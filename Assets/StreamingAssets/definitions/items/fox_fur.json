@@ -1,0 +1,19 @@
+{
+  "id": "isle:fox_fur",
+  "name": "@item.fox_fur",
+  "tags": [
+    "material",
+    "fur"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.4,
+  "stack": 10,
+  "icon_style": {
+    "shape": "pelt",
+    "color": "#C66A2E",
+    "accent": "#8E4A1E"
+  }
+}

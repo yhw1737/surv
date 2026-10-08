@@ -1,0 +1,20 @@
+{
+  "id": "isle:cloth",
+  "name": "@material.cloth",
+  "item": "isle:cloth",
+  "categories": [
+    "fabric"
+  ],
+  "tier": 1,
+  "craft_level": 1,
+  "armor_sharp": 0.4,
+  "armor_blunt": 0.3,
+  "armor_heat": 0.5,
+  "warmth": 1.0,
+  "durability": 0.6,
+  "mass": 0.2,
+  "power_sharp": 0,
+  "power_blunt": 0,
+  "tool_speed": 1,
+  "color": "#D9CFB8"
+}

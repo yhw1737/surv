@@ -1,0 +1,31 @@
+{
+  "id": "isle:cap",
+  "name": "@item.cap",
+  "tags": [
+    "clothing",
+    "armor",
+    "apparel"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.05,
+  "stack": 1,
+  "durability": 60,
+  "equip_slot": "head",
+  "armor": 2,
+  "stuff": {
+    "categories": [
+      "fabric",
+      "leather",
+      "fur"
+    ],
+    "amount": 1
+  },
+  "wear": {
+    "style": "cap",
+    "color": "#9A7550"
+  },
+  "warmth": 1
+}

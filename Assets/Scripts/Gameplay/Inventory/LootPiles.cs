@@ -6,11 +6,28 @@ using UnityEngine;
 
 namespace Isle.Gameplay.Inventory
 {
+    /// <summary>One stack in a loot pile, with its wear (SYS-CRAFT-02) when it's a worn tool, weapon or armor.</summary>
+    public readonly struct LootEntry
+    {
+        public ItemDef Item { get; }
+        public int Count { get; }
+        public ItemWear Wear { get; }
+
+        public LootEntry(ItemDef item, int count, ItemWear wear = null)
+        {
+            Item = item;
+            Count = count;
+            Wear = wear;
+        }
+
+        public static implicit operator LootEntry((ItemDef Item, int Count) entry) => new(entry.Item, entry.Count);
+    }
+
     /// <summary>A heap of items on the ground: a dead player's inventory, or loot that didn't fit.</summary>
     public sealed class LootPile
     {
         public Vector2 Position { get; init; }
-        public List<(ItemDef Item, int Count)> Items { get; } = new();
+        public List<LootEntry> Items { get; } = new();
         public GameObject View { get; set; }
     }
 
@@ -26,7 +43,10 @@ namespace Isle.Gameplay.Inventory
 
         public static IReadOnlyList<LootPile> All => _piles;
 
-        public static LootPile Drop(Vector2 at, IEnumerable<(ItemDef Item, int Count)> items)
+        public static LootPile Drop(Vector2 at, IEnumerable<(ItemDef Item, int Count)> items) =>
+            Drop(at, items.Select(i => new LootEntry(i.Item, i.Count)));
+
+        public static LootPile Drop(Vector2 at, IEnumerable<LootEntry> items)
         {
             var pile = new LootPile { Position = at };
             pile.Items.AddRange(items);
@@ -70,11 +90,11 @@ namespace Isle.Gameplay.Inventory
             var taken = new List<(ItemDef Item, int Count)>();
             foreach (var entry in pile.Items.OrderByDescending(e => e.Item.BagGrid != null).ToList())
             {
-                var (item, count) = entry;
-                if (count != 1 || string.IsNullOrEmpty(item.EquipSlot) || slots.Get(item.EquipSlot) != null) continue;
-                if (!slots.TryEquip(item.EquipSlot, item)) continue;
+                var item = entry.Item;
+                if (entry.Count != 1 || string.IsNullOrEmpty(item.EquipSlot) || slots.Get(item.EquipSlot) != null) continue;
+                if (!slots.TryEquip(item.EquipSlot, item, entry.Wear)) continue;
                 pile.Items.Remove(entry);
-                taken.Add(entry);
+                taken.Add((entry.Item, entry.Count));
             }
             taken.AddRange(PickUp(pile, containers()));
             return taken;
@@ -85,9 +105,9 @@ namespace Isle.Gameplay.Inventory
             var taken = new List<(ItemDef, int)>();
             for (var i = pile.Items.Count - 1; i >= 0; i--)
             {
-                var (item, count) = pile.Items[i];
-                if (!InventoryOps.TryGive(containers, item, count)) continue;
-                taken.Add((item, count));
+                var entry = pile.Items[i];
+                if (!InventoryOps.TryGive(containers, entry.Item, entry.Count, entry.Wear)) continue;
+                taken.Add((entry.Item, entry.Count));
                 pile.Items.RemoveAt(i);
             }
 

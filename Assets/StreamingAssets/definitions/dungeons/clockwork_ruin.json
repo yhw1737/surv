@@ -20,5 +20,9 @@
     "skill": "isle:enchanting",
     "shape": "gate_runes",
     "color": "#7A68B8"
-  }
+  },
+  "veins": [
+    "isle:iron_vein",
+    "isle:coal_seam"
+  ]
 }

@@ -1,0 +1,28 @@
+{
+  "id": "isle:helmet",
+  "name": "@item.helmet",
+  "tags": [
+    "clothing",
+    "armor",
+    "apparel"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 0.2,
+  "stack": 1,
+  "durability": 60,
+  "equip_slot": "head",
+  "armor": 6,
+  "stuff": {
+    "categories": [
+      "metal"
+    ],
+    "amount": 3
+  },
+  "wear": {
+    "style": "helmet",
+    "color": "#9A7550"
+  }
+}

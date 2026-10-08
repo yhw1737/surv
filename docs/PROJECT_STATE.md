@@ -6,6 +6,23 @@
 ## Header
 
 - Last updated: **2026-10-07**
+- **2026-10-08 — T-166 materials, durability, repair.** Branch `feature/T-166-material-tiers`, stacked on
+  `feature/T-165-status-visuals` (PR #37) — [PR #38](https://github.com/yhw1737/surv/pull/38), reworked the same day.
+  Found: the bow already existed (workbench + Crafting 5); no metal, durability, repair or quality existed.
+  Developer decisions (two rounds): gear is **kinds × materials** (clothing layers: inner `shirt` slot under `chest`;
+  every kind of clothing, armor, weapon and tool picks a material; materials set per-damage-group protection, warmth,
+  durability, weight, sharp/blunt power; cloth + a hide per animal), stone → copper → iron → steel with veins per biome
+  and in dungeons, furnace + anvil, durability 60/150/300/500, performance ×1/1.25/1.5/1.8, wear per use/per hit,
+  broken-not-destroyed, repair for half at the station, Crafting 10/20/30.
+  Built: `MaterialDef` (13 in `definitions/materials/`), `StuffSpec`/`StuffIngredient`, `StuffVariants` (expands
+  every template × accepted material into real items/weapons at load), `StuffCrafting` (materials, counts, station,
+  level, output, repair cost — shared by server and UI), crafting/repair take a material, craft window material
+  picker; `ItemWear` carried by `Placement`, `EquipSlots`, `LootEntry`, saves; wear hooks, broken gear, tool tiers and
+  speed, best-arrow ammo; repair tab; wear bars; `shirt` slot + styles jacket/parka/plate/shorts/helmet/mace/club;
+  species hides on 7 creatures; old hide recipes take any `leather`; veins, ores, ingots, furnace, anvil; dungeon veins.
+  **Verified:** EditMode 619/619, PlayMode 3/3; figures, icons and stations rendered.
+  Not yet: quality tiers (T-090), butchery knife factor (SYS-HUNT-01 toolFactor isn't implemented), dungeon vein
+  respawn, remote-client sync of wear.
 - **2026-10-07 — T-165 visible status effects.** Branch `feature/T-165-status-visuals` off `main` (after PR #36) — [PR #37](https://github.com/yhw1737/surv/pull/37). Developer request: debuffs readable on the body, for players and creatures.
   Built: `UI/Art/StatusLook.cs` (pure: tint — hit red 0.15 s > burn orange flicker > poison green > cold blue; shiver,
   pant, hunch as vertex moves; looping time-driven particles — water/blood drops, poison bubbles, flames + smoke,
@@ -1879,6 +1896,13 @@ since it's server-side gauge math with no UI yet:
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
 
+- ### 2026-10-08 — T-166 material and kind fill-ins
+  [invented] (SYS-CRAFT-02 §Materials/§Kinds/§Veins): every material factor not fixed by the decided ladder (all of
+  cloth, leathers, furs, wood; stone/metal blunt and heat), kind base armor/warmth/units/levels, knife/club/sword/mace
+  base powers 16/26/26/26, metal warmth 0, recipe inputs and times, charcoal, furnace and anvil kits, repair XP = half,
+  vein numbers, 3 veins per dungeon floor. Cloth from fibre ×3. Deer keeps the plain `isle:hide` (now "leather").
+  The old fixed items (stone hatchet/pickaxe/spear, hide cap/leggings, fur cloak, arrow) are replaced by variants
+  (`hatchet__stone`, `cap__leather`, …); old saves holding them lose those items.
 - ### 2026-10-07 — T-165 status visual values
   [invented] presentation only: tint colours and strengths (hit 0.75, burn 0.3–0.6 flicker, poison 0.55, cold 0.4),
   hit flash 0.15 s (as the creature flash already was), shiver ±0.018 tiles at 55 rad/s, pant 0.025, hunch lean 0.14 /

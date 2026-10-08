@@ -1,0 +1,19 @@
+{
+  "id": "isle:wolf_fur",
+  "name": "@item.wolf_fur",
+  "tags": [
+    "material",
+    "fur"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.6,
+  "stack": 10,
+  "icon_style": {
+    "shape": "pelt",
+    "color": "#8E8A84",
+    "accent": "#5E5A54"
+  }
+}

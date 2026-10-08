@@ -7,6 +7,8 @@ using Isle.Data;
 using Isle.Gameplay.Character;
 using Isle.Gameplay.Combat;
 using Isle.Gameplay.Feedback;
+using Isle.World.Objects;
+using Isle.Gameplay.Crafting;
 using Isle.Gameplay.Hunting;
 using Isle.Gameplay.Inventory;
 using Isle.Networking;
@@ -58,6 +60,15 @@ namespace Isle.Gameplay.Dungeons
 
             /// <summary>Tidal dungeons: is the water up right now?</summary>
             public bool TideHigh;
+        }
+
+        /// <summary>SYS-CRAFT-02: an ore vein on a dungeon floor, mined like the island's (pickaxe tier, harvest time).</summary>
+        public sealed class Vein
+        {
+            public WorldObjectDef Def;
+            public Vector2 Position;
+            public int UsesLeft;
+            public GameObject View;
         }
 
         /// <summary>SYS-DUNG-01 §Tidal Grotto: the floor's low-tide cache — under water (hidden) at high tide.</summary>
@@ -113,6 +124,7 @@ namespace Isle.Gameplay.Dungeons
             public readonly HashSet<Vec2Int> WaterTiles = new();
             public GameObject WaterView;
             public Cache Cache;
+            public readonly List<Vein> Veins = new();
 
             public Vec2Int WorldToTile(Vector2 p) => new(Mathf.FloorToInt(p.x - Origin.x), Mathf.FloorToInt(p.y - Origin.y));
 
@@ -155,6 +167,7 @@ namespace Isle.Gameplay.Dungeons
                 _placed = true;
             }
             TickClearing();
+            TickMining();
             TickTides();
             TickBosses();
         }
@@ -227,6 +240,7 @@ namespace Isle.Gameplay.Dungeons
             BuildView(floor);
             SetUpTides(floor);
             PlaceDoors(floor);
+            PlaceVeins(floor);
             SpawnCreatures(floor);
             return floor;
         }
@@ -364,6 +378,77 @@ namespace Isle.Gameplay.Dungeons
 
         /// <summary>How far a swarm's members stand from their spawn mark. [invented]</summary>
         const float SwarmSpreadTiles = 0.8f;
+
+        // ------------------------------------------------------------------ veins (SYS-CRAFT-02)
+
+        /// <summary>Veins per dungeon floor. [invented]</summary>
+        const int VeinsPerFloor = 3;
+
+        readonly Dictionary<PlayerInteraction, (Vein Vein, float StartedAt, float Seconds, Vector2 From)> _mining = new();
+
+        void PlaceVeins(Floor floor)
+        {
+            var ids = floor.Site.Def.Veins;
+            if (ids == null || ids.Length == 0) return;
+            var defs = ids.Select(id => DefRegistry.TryGet<WorldObjectDef>(id, out var d) ? d : null).Where(d => d?.Gather != null).ToList();
+            if (defs.Count == 0) return;
+            // Combat rooms, nearest the room centre + an offset that keeps clear of spawns and features.
+            var rooms = floor.Layout.Rooms.Where(r => r.Kind == RoomKind.Combat).ToList();
+            for (var i = 0; i < VeinsPerFloor && rooms.Count > 0; i++)
+            {
+                var room = rooms[(int)(Hash(floor.Seed, 41, i) % (uint)rooms.Count)];
+                rooms.Remove(room);
+                var def = defs[i % defs.Count];
+                var spot = OpenTileNear(floor, room.Cell, VeinOffset);
+                var vein = new Vein { Def = def, Position = floor.TileToWorld(spot), UsesLeft = def.Gather.Uses };
+                vein.View = Prop(def.Id.Name, def.Visual?.Shape ?? "ore_vein", def.Visual?.Color, vein.Position, def.Visual?.Size ?? 1.15f, floor.Root.transform);
+                floor.Veins.Add(vein);
+            }
+        }
+
+        static readonly Vec2Int VeinOffset = new(-5, 4);
+
+        void StartMining(PlayerInteraction player, Vein vein)
+        {
+            var gather = vein.Def.Gather;
+            var tool = player.HeldToolFor(gather);
+            if (!ToolTiers.CanWork(tool?.Tier ?? 0, gather.ToolTier))
+            {
+                GameFeed.RaiseNotice("@ui.needs_better_tool");
+                return;
+            }
+            var seconds = GatherCalculator.GatherSeconds(gather.TimeSec, gather.Xp != null ? player.LevelOf(gather.Xp.Skill) : 1);
+            if (tool != null) seconds = ToolTiers.HarvestSeconds(seconds, tool.ToolPower);
+            _mining[player] = (vein, Time.time, seconds, player.transform.position);
+        }
+
+        void TickMining()
+        {
+            if (_mining.Count == 0) return;
+            foreach (var player in _mining.Keys.ToList())
+            {
+                var (vein, started, seconds, from) = _mining[player];
+                if (player == null || vein.UsesLeft <= 0 || Vector2.Distance(player.transform.position, from) > ClearLeashTiles)
+                {
+                    _mining.Remove(player);
+                    if (player != null) GameFeed.RaiseNotice("@ui.gather_cancelled");
+                    continue;
+                }
+                if (Time.time - started < seconds) continue;
+                _mining.Remove(player);
+                var gather = vein.Def.Gather;
+                var count = gather.Count;
+                if (player.HeldToolFor(gather) != null)
+                {
+                    count += gather.ToolBonus;
+                    player.WearHeldTool();
+                }
+                player.AwardXp(gather.Xp, count);
+                player.Receive(gather.Item, count);
+                vein.UsesLeft--;
+                if (vein.UsesLeft <= 0 && vein.View != null) vein.View.SetActive(false); // dungeon veins don't come back (no repopulation yet)
+            }
+        }
 
         // ------------------------------------------------------------------ boss
 
@@ -567,6 +652,8 @@ namespace Isle.Gameplay.Dungeons
         public (Vector2 At, string Text)? Prompt(PlayerInteraction player)
         {
             Vector2 at = player.transform.position;
+            if (_mining.TryGetValue(player, out var mining))
+                return (mining.Vein.Position + Vector2.up * 1.2f, $"{Lang("@ui.gathering")} {Mathf.Clamp01((Time.time - mining.StartedAt) / mining.Seconds) * 100f:0}%");
             if (_clearing.TryGetValue(player, out var clearing))
                 return (clearing.Gate.Position + Vector2.up * 1.6f, $"{GateName(clearing.Floor)} {Mathf.Clamp01((Time.time - clearing.StartedAt) / clearing.Seconds) * 100f:0}%");
             var target = Nearest(at);
@@ -575,6 +662,7 @@ namespace Isle.Gameplay.Dungeons
                 Site site => (site.Entrance + Vector2.up * 2.4f, string.Format(Lang("@ui.dungeon_enter"), Lang(site.Def.Name))),
                 (Floor f, Portal portal) => (portal.Position + Vector2.up * 1.4f, Lang(portal.Kind switch { DoorKind.Down => "@ui.dungeon_down", DoorKind.Up => "@ui.dungeon_up", _ => "@ui.dungeon_exit" })),
                 (Floor f, Key key) => (key.Position + Vector2.up * 0.8f, Lang("@ui.dungeon_key")),
+                (Floor f, Vein vein) => (vein.Position + Vector2.up * 1.2f, $"{Lang("@ui.harvest")} — {Lang(vein.Def.Name)}"),
                 (Floor f, Cache cache) => (cache.Position + Vector2.up * 1f, Lang("@ui.tide_cache")),
                 (Floor f, Barrier barrier) when barrier.LockId >= 0 => (barrier.Position + Vector2.up * 2.2f, Lang("@ui.dungeon_locked")),
                 (Floor f, Barrier barrier) => (barrier.Position + Vector2.up * 2.2f, string.Format(Lang("@ui.dungeon_clear"), GateName(f))),
@@ -604,6 +692,9 @@ namespace Isle.Gameplay.Dungeons
                         if (barrier.View != null) barrier.View.SetActive(false);
                     }
                     GameFeed.RaiseNotice("@ui.dungeon_unlocked");
+                    return true;
+                case (Floor floor, Vein vein):
+                    StartMining(player, vein);
                     return true;
                 case (Floor floor, Cache _):
                     TakeCache(player, floor);
@@ -639,6 +730,7 @@ namespace Isle.Gameplay.Dungeons
             foreach (var key in floor.Keys) if (!key.Taken) Consider((floor, key), key.Position);
             foreach (var barrier in floor.Barriers) if (!barrier.Open) Consider((floor, barrier), barrier.Position, 1.2f);
             if (floor.Cache != null && !floor.Cache.Taken && !floor.Site.TideHigh) Consider((floor, floor.Cache), floor.Cache.Position);
+            foreach (var vein in floor.Veins) if (vein.UsesLeft > 0) Consider((floor, vein), vein.Position, 0.4f);
             return best;
         }
 

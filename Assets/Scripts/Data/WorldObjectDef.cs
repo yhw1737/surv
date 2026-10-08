@@ -104,6 +104,10 @@ namespace Isle.Data
         /// <summary>Extra units per harvest with the right tool in hand.</summary>
         public int ToolBonus { get; init; }
 
+        /// <summary>SYS-CRAFT-02: the node can only be worked with a <see cref="ToolTag"/> tool of at least this tier
+        /// (an iron vein needs a copper pickaxe). 0 = anything, even bare hands.</summary>
+        public int ToolTier { get; init; }
+
         /// <summary>XP this grants (docs/content/xp_table.md). Null grants none.</summary>
         public XpAward Xp { get; init; }
     }

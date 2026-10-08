@@ -17,5 +17,7 @@
     "style": "bow",
     "length": 1.0,
     "color": "#8A5A36"
-  }
+  },
+  "durability": 60,
+  "tier": 1
 }

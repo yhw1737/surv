@@ -528,3 +528,34 @@ Two directories, kept apart because the loader reads each one recursively: `defi
 | Creature | `boss` `{sweep_radius_tiles, shell {below_health, seconds, every_seconds, damage_mult}, drops [{item, count}]}` | Sweep strike hits every player in range; shell phase below a health share; guaranteed drops as a loot pile |
 | Item | `icon_style.shape` | adds `pearl`, `sigil` |
 
+### Materials, durability, veins (T-166, SYS-CRAFT-02)
+
+**Material** (`definitions/materials/*.json`, `MaterialDef`) — what gear can be made of.
+
+| Field | Meaning |
+|---|---|
+| `item` | The item consumed when crafting with it |
+| `categories` | `fabric` `leather` `fur` `wood` `stone` `metal` — matched against a kind's `stuff.categories` |
+| `tier`, `craft_level`, `station` | Tool tier (veins), crafting level needed, a station that overrides the recipe's (metal → anvil) |
+| `armor_sharp`, `armor_blunt`, `armor_heat` | Protection multipliers (sharp = slash + pierce) |
+| `warmth`, `durability`, `mass` | Warmth and durability multipliers, kg per unit |
+| `power_sharp`, `power_blunt`, `tool_speed` | Weapon power by hit type (also arrow power), tool speed |
+| `color` | Tint for the made thing |
+
+**Kinds**: an item with `stuff` `{categories, amount}` is a template. Every accepted material generates
+`<kind>__<material>` (and a weapon for weapon kinds) at load; templates never exist in the world. Its recipe carries
+`stuff` `{categories, count?}` and outputs the template.
+
+| Type | Field | Meaning |
+|---|---|---|
+| Item | `durability` | Uses before it breaks. Durable items never stack |
+| Item | `tier`, `tool_power`, `ammo_power` | Set on variants from the material; on a template `tool_power`/`ammo_power` > 0 marks it a tool / ammo |
+| Item | `stuff_template`, `material` | Set on generated variants |
+| Weapon | `ammo_tag` | Ranged: shoots any item with this tag, strongest `ammo_power` first |
+| World object | `gather.tool_tier` | Needs a `tool_tag` tool of at least this tier |
+| Dungeon | `veins` | Veins placed on each floor (3 per floor) |
+| Equip slots | `shirt` | Inner torso layer, under `chest` |
+| Styles | `hold` `mace` `club`, `wear` `helmet` `jacket` `parka` `plate` `shorts`, icons `ore` `coal` `ingot` | |
+
+Repairs use the recipe that makes the item (the template's for a variant): its station (or the material's), half its
+inputs and half its material, rounded up.

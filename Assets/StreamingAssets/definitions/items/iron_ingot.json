@@ -1,0 +1,21 @@
+{
+  "id": "isle:iron_ingot",
+  "name": "@item.iron_ingot",
+  "tags": [
+    "material",
+    "ingot",
+    "metal",
+    "iron"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 1.2,
+  "stack": 20,
+  "icon_style": {
+    "shape": "ingot",
+    "color": "#8E979F",
+    "accent": "#C4CBD1"
+  }
+}

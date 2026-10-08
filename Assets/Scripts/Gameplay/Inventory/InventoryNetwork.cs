@@ -188,11 +188,11 @@ namespace Isle.Gameplay.Inventory
             var p = placement.Value;
             var dropped = Math.Min(count, p.Count);
             source.Remove(p);
-            if (dropped < p.Count) source.TryPlace(p.Item, p.Position, p.Rotated, p.Count - dropped);
+            if (dropped < p.Count) source.TryPlace(p.Item, p.Position, p.Rotated, p.Count - dropped, p.Wear);
             // Only the server places the pile; a remote client's mirror just removes it from its own copy.
             if (IsServer)
             {
-                LootPiles.Drop(transform.position, new[] { (p.Item, dropped) });
+                LootPiles.Drop(transform.position, new[] { new LootEntry(p.Item, dropped, p.Wear) });
                 Feedback.GameFeed.RaiseItemDropped(p.Item.Id, dropped, transform.position);
             }
             return true;
@@ -201,10 +201,10 @@ namespace Isle.Gameplay.Inventory
         bool ApplyDropEquipped(string slot)
         {
             var item = Slots.Get(slot);
-            if (item == null || !Slots.Unequip(slot)) return false;
+            if (item == null || !Slots.Unequip(slot, out var wear)) return false;
             if (IsServer)
             {
-                LootPiles.Drop(transform.position, new[] { (item, 1) });
+                LootPiles.Drop(transform.position, new[] { new LootEntry(item, 1, wear) });
                 Feedback.GameFeed.RaiseItemDropped(item.Id, 1, transform.position);
             }
             return true;
@@ -242,8 +242,8 @@ namespace Isle.Gameplay.Inventory
             if (count < p.Count) return source.TrySplit(p, count, target, to, toRotated);
 
             source.Remove(p);
-            if (target.TryPlace(p.Item, to, toRotated, p.Count)) return true;
-            source.TryPlace(p.Item, p.Position, p.Rotated, p.Count); // put it back exactly where it was
+            if (target.TryPlace(p.Item, to, toRotated, p.Count, p.Wear)) return true;
+            source.TryPlace(p.Item, p.Position, p.Rotated, p.Count, p.Wear); // put it back exactly where it was
             return false;
         }
 
@@ -262,21 +262,22 @@ namespace Isle.Gameplay.Inventory
             if (!placement.HasValue || placement.Value.Item.EquipSlot != slot) return false;
             // Whatever the slot held goes back where the new item came from (swap), or the equip doesn't happen.
             var previous = Slots.Get(slot);
+            var p = placement.Value;
             if (previous != null)
             {
-                if (Slots.BagFor(slot) == source || !Slots.Unequip(slot)) return false;
-                source.Remove(placement.Value);
-                if (!Slots.TryEquip(slot, placement.Value.Item) || !InventoryOps.TryGive(new List<GridInventory> { source }, previous, 1))
+                if (Slots.BagFor(slot) == source || !Slots.Unequip(slot, out var previousWear)) return false;
+                source.Remove(p);
+                if (!Slots.TryEquip(slot, p.Item, p.Wear) || !InventoryOps.TryGive(new List<GridInventory> { source }, previous, 1, previousWear))
                 {
                     Slots.Unequip(slot);
-                    Slots.TryEquip(slot, previous);
-                    source.TryPlace(placement.Value.Item, placement.Value.Position, placement.Value.Rotated, placement.Value.Count);
+                    Slots.TryEquip(slot, previous, previousWear);
+                    source.TryPlace(p.Item, p.Position, p.Rotated, p.Count, p.Wear);
                     return false;
                 }
                 return true;
             }
-            if (!Slots.TryEquip(slot, placement.Value.Item)) return false;
-            source.Remove(placement.Value);
+            if (!Slots.TryEquip(slot, p.Item, p.Wear)) return false;
+            source.Remove(p);
             return true;
         }
 
@@ -285,9 +286,9 @@ namespace Isle.Gameplay.Inventory
             var target = ContainerAt(container);
             var item = Slots.Get(slot);
             // A bag can't be unequipped into its own grid — the grid goes away with it.
-            if (target == null || item == null || Slots.BagFor(slot) == target || !Slots.Unequip(slot)) return false;
-            if (target.TryPlace(item, pos, rotated)) return true;
-            Slots.TryEquip(slot, item);
+            if (target == null || item == null || Slots.BagFor(slot) == target || !Slots.Unequip(slot, out var wear)) return false;
+            if (target.TryPlace(item, pos, rotated, 1, wear)) return true;
+            Slots.TryEquip(slot, item, wear);
             return false;
         }
 
@@ -321,10 +322,11 @@ namespace Isle.Gameplay.Inventory
             var placement = Bag.PlacementAt(from);
             if (placement == null) return false;
 
-            Bag.Remove(placement.Value);
-            if (Bag.TryPlace(placement.Value.Item, to, toRotated, placement.Value.Count)) return true;
+            var p = placement.Value;
+            Bag.Remove(p);
+            if (Bag.TryPlace(p.Item, to, toRotated, p.Count, p.Wear)) return true;
 
-            Bag.TryPlace(placement.Value.Item, placement.Value.Position, placement.Value.Rotated, placement.Value.Count);
+            Bag.TryPlace(p.Item, p.Position, p.Rotated, p.Count, p.Wear);
             return false;
         }
 
@@ -339,7 +341,7 @@ namespace Isle.Gameplay.Inventory
         bool ApplyEquip(Vec2Int bagPos, string slot)
         {
             var placement = Bag.PlacementAt(bagPos);
-            if (!placement.HasValue || !Slots.TryEquip(slot, placement.Value.Item)) return false;
+            if (!placement.HasValue || !Slots.TryEquip(slot, placement.Value.Item, placement.Value.Wear)) return false;
 
             Bag.Remove(placement.Value);
             return true;
@@ -350,10 +352,10 @@ namespace Isle.Gameplay.Inventory
         bool ApplyUnequip(string slot, Vec2Int bagPos, bool bagRotated)
         {
             var item = Slots.Get(slot);
-            if (item == null || !Slots.Unequip(slot)) return false;
-            if (Bag.TryPlace(item, bagPos, bagRotated)) return true;
+            if (item == null || !Slots.Unequip(slot, out var wear)) return false;
+            if (Bag.TryPlace(item, bagPos, bagRotated, 1, wear)) return true;
 
-            Slots.TryEquip(slot, item);
+            Slots.TryEquip(slot, item, wear);
             return false;
         }
     }

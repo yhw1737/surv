@@ -14,20 +14,47 @@ namespace Isle.Gameplay.Inventory
     public static class InventoryOps
     {
         /// <summary>Merges onto an existing stack first, then the first free spot as-is, then rotated.</summary>
-        public static bool TryGive(IReadOnlyList<GridInventory> containers, ItemDef item, int count)
+        public static bool TryGive(IReadOnlyList<GridInventory> containers, ItemDef item, int count, ItemWear wear = null)
         {
+            if (!Placement.Stacks(item))
+            {
+                // Durable items go in one by one, each its own placement (only the first carries the given wear).
+                if (count > 1 && !HasRoomFor(containers, item, count)) return false;
+                for (var i = 0; i < count; i++)
+                    if (!PlaceFree(containers, item, 1, i == 0 ? wear : null)) return false;
+                return true;
+            }
             foreach (var container in containers)
             {
                 var existing = container.Placements.FirstOrDefault(p => ReferenceEquals(p.Item, item));
                 if (existing.Item != null && container.TryPlace(item, existing.Position, existing.Rotated, count)) return true;
             }
+            return PlaceFree(containers, item, count, wear);
+        }
+
+        static bool PlaceFree(IReadOnlyList<GridInventory> containers, ItemDef item, int count, ItemWear wear)
+        {
             foreach (var rotated in new[] { false, true })
             foreach (var container in containers)
             {
                 var spot = container.FindFreePosition(item.Grid, rotated);
-                if (spot != null && container.TryPlace(item, spot.Value, rotated, count)) return true;
+                if (spot != null && container.TryPlace(item, spot.Value, rotated, count, wear)) return true;
             }
             return false;
+        }
+
+        /// <summary>Room for <paramref name="count"/> separate units, checked on scratch copies so nothing is half-given.</summary>
+        static bool HasRoomFor(IReadOnlyList<GridInventory> containers, ItemDef item, int count)
+        {
+            var scratch = containers.Select(c =>
+            {
+                var copy = new GridInventory(c.Width, c.Height);
+                foreach (var p in c.Placements) copy.TryPlace(p.Item, p.Position, p.Rotated, p.Count, p.Wear);
+                return copy;
+            }).ToList();
+            for (var i = 0; i < count; i++)
+                if (!PlaceFree(scratch, item, 1, null)) return false;
+            return true;
         }
 
         public static int Count(IEnumerable<GridInventory> containers, NamespacedId item) =>
@@ -67,7 +94,7 @@ namespace Isle.Gameplay.Inventory
         public static void SetCount(GridInventory container, Placement placement, int newCount)
         {
             container.Remove(placement);
-            if (newCount > 0) container.TryPlace(placement.Item, placement.Position, placement.Rotated, newCount);
+            if (newCount > 0) container.TryPlace(placement.Item, placement.Position, placement.Rotated, newCount, placement.Wear);
         }
     }
 }
