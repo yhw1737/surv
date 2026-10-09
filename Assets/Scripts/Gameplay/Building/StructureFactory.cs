@@ -51,8 +51,11 @@ namespace Isle.Gameplay.Building
             renderer.sprite = SpriteFor(def);
             // Stands on its foot and sorts by it, like trees, so the player can walk behind a workbench.
             renderer.spriteSortPoint = SpriteSortPoint.Pivot;
-            renderer.sortingOrder = 2;
             go.transform.localScale = Vector3.one * (def.Visual?.Size ?? 1f);
+            // Standing structures interleave with people and trees; flat ones (a crop plot) lie under them all.
+            var flat = def.Visual?.Flat == true;
+            renderer.sortingOrder = flat ? 1 : 2;
+            if (!flat) Isle.Core.Util.ViewTilt.Stand(go.transform);
 
             // Awake hasn't run yet (the object is inactive), so read the def's tags directly.
             if (def.Tags != null && System.Array.IndexOf(def.Tags, CampfireTag) >= 0) go.AddComponent<CampfireInteraction>();

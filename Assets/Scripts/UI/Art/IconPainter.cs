@@ -30,6 +30,11 @@ namespace Isle.UI.Art
                 filterMode = FilterMode.Trilinear,
                 hideFlags = HideFlags.HideAndDontSave,
             };
+            // Pencil pass (PencilLook), at a paper cell per ~1/90 of the icon so it reads at slot size.
+            var cell = Size / 90f;
+            for (var y = 0; y < Size; y++)
+            for (var x = 0; x < Size; x++)
+                _pixels[y * Size + x] = Isle.Core.Util.PencilLook.Shade(_pixels[y * Size + x], x / cell, y / cell);
             texture.SetPixels(_pixels);
             texture.Apply(true);
             return texture;
@@ -48,7 +53,7 @@ namespace Isle.UI.Art
             {
                 var d = sdf(new Vector2((x + 0.5f) * px, (y + 0.5f) * px));
                 var i = y * Size + x;
-                if (ow > 0f) Blend(i, Ink, Mathf.Clamp01(0.5f - (d - ow) / px));
+                if (ow > 0f) Blend(i, Ink, Mathf.Clamp01(0.5f - (d - ow * Isle.Core.Util.PencilLook.InkWobble(x * 256f / Size, y * 256f / Size)) / px));
                 Blend(i, fill, Mathf.Clamp01(0.5f - d / px));
             }
         }

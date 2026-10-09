@@ -75,6 +75,7 @@ namespace Isle.UI.Art
             _previous = _current = _shown = player.transform.position;
             _previousTime = _currentTime = Time.time;
             transform.position = _shown;
+            Isle.Core.Util.ViewTilt.Stand(transform);
 
             GameFeed.PlayerSwing += OnSwing;
         }
@@ -286,7 +287,7 @@ namespace Isle.UI.Art
             var mouse = Mouse.current;
             if (camera == null || mouse == null) return null;
             var p = mouse.position.ReadValue();
-            return camera.ScreenToWorldPoint(new Vector3(p.x, p.y, -camera.transform.position.z));
+            return Isle.Core.Util.ViewTilt.ScreenToGround(camera, p);
         }
 
         FigureOutfit Outfit()

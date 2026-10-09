@@ -457,6 +457,7 @@ namespace Isle.Gameplay.Hunting
             renderer.sprite = ShapeLibrary.Sprite(def.Visual?.Shape, colour);
             renderer.sortingOrder = 5;
             view.transform.localScale = Vector3.one * (radius * 2.2f);
+            Isle.Core.Util.ViewTilt.Stand(view.transform);
             return view;
         }
 

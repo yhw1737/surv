@@ -5,7 +5,26 @@
 
 ## Header
 
-- Last updated: **2026-10-07**
+- Last updated: **2026-10-09**
+- **2026-10-09 — T-300 Unity 6000.3.10f1 + tilted perspective view + pencil look (uncommitted).**
+  Branch `feature/T-300-unity-6000.3` off `main` (after PR #40) — [PR #41](https://github.com/yhw1737/surv/pull/41). Developer authorised all three and asked for ~10
+  minutes of autonomous work. **Upgrade:** ProjectVersion 6000.3.10f1 (Apple silicon editor; the Intel 6000.2.7f2
+  editor crashed under Rosetta), packages bumped (URP 17.3.0, 2d.animation 13.0.4, inputsystem 1.18.0, test-framework
+  1.6.0, …), CLAUDE.md Stack + ADR-001 updated. One upgrade regression found by rendering, not by tests: URP 17.3's
+  `LightingUtility.hlsl` now declares the shape-light textures, so `IsleVector.shader` failed ("redefinition of
+  `_ShapeLightTexture0`") and every stick figure/creature drew magenta — our declarations removed.
+  **View:** perspective camera leaned 40° off straight down from the south (`PlayerCamera.Frame`); the world stays in
+  XY (ground z = 0), standing things (figures, creatures, trees/rocks/bushes, structures, dungeon props) billboard
+  via `Core/Util/ViewTilt.Stand`; mouse → world is a ray to the ground (`ViewTilt.ScreenToGround`, 3 call sites);
+  chunk streaming and node culling centre on `ViewTilt.Focus`; placement ghost sized by perspective; loot piles and
+  `visual.flat` structures (crop plot) lie flat under standing things. Menu backdrop stays orthographic.
+  **Pencil:** `Core/Util/PencilLook` (paper tooth, hatching/cross-hatching in dark tones, graphite ink, outline width
+  wobble) on the shape canvas, ground chunks and icons; the same maths in `IsleVector.shader` for figures, plus a
+  rough ink edge and a 6 fps line boil. **Verified:** EditMode 645/645 (+7 `ViewTiltTests`: screen centre → focus,
+  round trip, perspective reach, billboard facing, pencil transparency/fill/ink), PlayMode 3/3; rendered beach, forest,
+  close-up and icons. Note: the wider far view now shows the fog of war's edge (SYS-MAP-01 reveal radius, unchanged).
+  **Stashed:** T-074/075 carcass hauling, spoilage, scent — `stash@{0}` (verified 646/3 before stashing), to restore
+  on its own branch `feature/T-074-075-carcass`.
 - **2026-10-08 — T-072 butchery.** Branch `feature/T-072-butchery` off `feature/T-167-shipwreck-start` (PR #39)
   — [PR #40](https://github.com/yhw1737/surv/pull/40). Developer decisions: 2.5 kg per raw meat (min 1), copper/steel knife 0.85/1.08, kills leave a
   carcass that E butchers over time. Built: `ButcheryCalculator` (SYS-HUNT-01 §Yield/§Cuts/§Carrying time, pure);
@@ -1926,6 +1945,15 @@ since it's server-side gauge math with no UI yet:
 ## Decided without a spec
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
+
+- ### 2026-10-09 — T-300 view and pencil look (presentation only)
+  [invented] look values: camera pitch 40° off straight down, vertical FOV 35°, 8.5 tiles above/below the focus (the
+  old orthographic half-height), camera from the south. Standing things billboard toward the camera; ground, water,
+  loot piles, arrows and `visual.flat` defs (crop plot) lie flat. The main menu backdrop stays orthographic (side view).
+  Pencil (`PencilLook` + `IsleVector.shader`, kept in step): paper tone #F5F0E0, graphite #333338, ink below
+  luminance 0.14, tooth show 0.42, hatch depth 0.24, hatch every 3.2 paper cells (cross-hatch past darkness 0.62),
+  ink width wobble 0.7–1.3, boil 6 redraws/s with 0.012-tile jitter, 45 cells/unit on figures, 2.2 canvas px per cell on
+  shapes, 6 cells/tile on the ground, 90 cells per icon.
 
 - ### 2026-10-08 — T-072 butchery fill-ins (+ tool auto-select, rod, posture)
   [invented]: kill method → damageFactor mapping (arrow/knife 0.95, blunt 0.70, other melee and DoT 0.85), condition

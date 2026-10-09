@@ -303,7 +303,7 @@ namespace Isle.Gameplay.Character
             var mouse = Mouse.current;
             if (camera == null || mouse == null) return null;
             var p = mouse.position.ReadValue();
-            return camera.ScreenToWorldPoint(new Vector3(p.x, p.y, -camera.transform.position.z));
+            return Isle.Core.Util.ViewTilt.ScreenToGround(camera, p);
         }
 
         public void RequestInteract() => CmdInteract();

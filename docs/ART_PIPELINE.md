@@ -140,6 +140,22 @@ Two constraints that keep the eventual swap cheap:
 - Colours come from tags, not from IDs. A new ingredient gets a sensible colour with no C# edit,
   the same way Absolute Rule 4 wants everything else to work.
 
+## Camera view (2026-10-09)
+
+A **perspective camera leaned 40° off straight down**, from the south, over a flat ground. The world stays in the XY
+plane (z = 0 is the ground) — gameplay positions are unchanged; only presentation stands up.
+
+| | |
+|---|---|
+| Ground (tiles, water, crop plots, loot, arrows) | lies in the ground plane |
+| Standing things (people, creatures, trees, rocks, stations, dungeon props) | upright, rotated to face the camera (`ViewTilt.Stand`), pivot at the foot |
+| A def's `visual.flat: true` | lies flat instead of standing |
+| Sorting | unchanged: custom-axis Y sort by the foot |
+| Mouse → world | ray to the ground plane (`ViewTilt.ScreenToGround`) |
+| Chunk streaming | centred on the camera's ground focus (`ViewTilt.Focus`) |
+
+Pitch 40°, vertical FOV 35°, 8.5 tiles above and below the focus — presentation values, never read by gameplay.
+
 ## Sound
 
 | Category | Count | Source |

@@ -66,7 +66,7 @@ Both: no AI attribution anywhere (Git rules §4).
 
 | | |
 |---|---|
-| Engine | Unity 6 LTS — pinned, no ad-hoc upgrades |
+| Engine | Unity 6.3 LTS (**6000.3.10f1**, Apple silicon editor) — pinned, no ad-hoc upgrades |
 | Scripting backend | **Mono** — IL2CPP kills modding. Never change |
 | Render | URP + 2D Renderer |
 | Net | FishNet (free) |

@@ -619,6 +619,7 @@ namespace Isle.Gameplay.Dungeons
             go.transform.SetParent(parent, false);
             go.transform.position = foot;
             go.transform.localScale = Vector3.one * size;
+            Isle.Core.Util.ViewTilt.Stand(go.transform);
             var renderer = go.AddComponent<SpriteRenderer>();
             renderer.sprite = ShapeLibrary.StandingSprite(shape, ShapeLibrary.ParseColour(colour, Color.gray));
             renderer.spriteSortPoint = SpriteSortPoint.Pivot;
