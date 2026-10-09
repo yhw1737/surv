@@ -562,5 +562,11 @@
   "ui.butcher": "도축",
   "ui.butchering": "도축 중",
   "ui.butcher_cancelled": "도축을 멈췄습니다",
-  "ui.needs_rod": "낚싯대가 필요합니다"
+  "ui.needs_rod": "낚싯대가 필요합니다",
+  "pattern.carcass_of": "{0} 시체",
+  "ui.haul_pick": "들기",
+  "ui.haul_drag": "끌기",
+  "ui.haul_drop": "내려놓기",
+  "ui.carcass_spoiling": "상하는 중",
+  "ui.carcass_rotten": "썩음"
 }

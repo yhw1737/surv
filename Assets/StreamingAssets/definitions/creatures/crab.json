@@ -4,7 +4,8 @@
   "tags": [
     "animal",
     "crustacean",
-    "aggressive"
+    "aggressive",
+    "scavenger"
   ],
   "weight_dist": {
     "type": "lognormal",

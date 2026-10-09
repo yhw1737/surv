@@ -128,9 +128,24 @@ namespace Isle.UI.Art
                 Shelled = _creature.Shell.IsHidden(Time.time),
             };
             var tint = StatusLook.Tint(s, _time);
-            if (_creature.Dead) tint = (new Color(0.45f, 0.42f, 0.4f), 0.35f); // a carcass is greyed, no status shows
+            if (_creature.Dead)
+            {
+                // A carcass is greyed, and greener as it spoils; flies once it's going off.
+                var rot = Mathf.Clamp01(_creature.Spoilage / Isle.Gameplay.Hunting.CarcassCalculator.SpoilRotten);
+                tint = (Color.Lerp(new Color(0.45f, 0.42f, 0.4f), new Color(0.42f, 0.5f, 0.3f), rot), 0.35f + 0.2f * rot);
+            }
             _mesh.TintFrom(bodyStart, tint.Colour, tint.Amount);
-            if (_creature.Dead) return;
+            if (_creature.Dead)
+            {
+                if (_creature.Spoilage >= Isle.Gameplay.Hunting.CarcassCalculator.SpoilHalfYield)
+                {
+                    var keep = _mesh.Transform;
+                    _mesh.Transform = null;
+                    StatusLook.Flies(_mesh, _time + _seed, new Vector2(0f, r * 1.4f), r * 1.2f);
+                    _mesh.Transform = keep;
+                }
+                return;
+            }
             var transform = _mesh.Transform;
             _mesh.Transform = null;
             StatusLook.Particles(_mesh, s, _time + _seed, new StatusBody

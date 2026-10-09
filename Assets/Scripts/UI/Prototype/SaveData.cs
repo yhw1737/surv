@@ -101,6 +101,21 @@ namespace Isle.UI.Prototype
 
         /// <summary>SYS-CRAFT-02 wear; <see cref="WearMax"/> 0 = none recorded (brand new).</summary>
         public int Wear, WearMax;
+
+        /// <summary>SYS-HUNT-01: a carried carcass — which creature, and its body. Empty for anything else.</summary>
+        public string CarcassOf;
+        public float CarcassKg, CarcassCondition, CarcassKill, CarcassSpoil;
+
+        public SavedStack WithCarcass(Isle.Gameplay.Inventory.ItemWear wear)
+        {
+            if (wear?.Carcass is not { } body) return this;
+            CarcassOf = body.Def.Id.Value;
+            CarcassKg = body.WeightKg;
+            CarcassCondition = body.Condition;
+            CarcassKill = body.KillFactor;
+            CarcassSpoil = body.Spoilage;
+            return this;
+        }
     }
 
     /// <summary>Only nodes that differ from fresh are saved: a depleted node and how long until it's back.</summary>

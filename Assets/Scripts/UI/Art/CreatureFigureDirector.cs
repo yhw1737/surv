@@ -15,14 +15,9 @@ namespace Isle.UI.Art
         {
             var director = CreatureDirector.Instance;
             if (director == null) return;
-            foreach (var creature in director.Creatures)
-            {
-                if (creature.View == null || !creature.View.activeInHierarchy || _drawn.Contains(creature)) continue;
-                _material ??= VectorMaterial.Create();
-                if (_material == null) return;
-                CreatureFigure.Attach(creature, _material);
-                _drawn.Add(creature);
-            }
+            if (!Draw(director.Creatures)) return;
+            // A carcass put back down after hauling gets a fresh view, which needs its figure too.
+            if (!Draw(director.Carcasses)) return;
 
             // Dead creatures leave the director's list; forget them now and then.
             if (Time.time >= _nextSweepAt)
@@ -30,6 +25,19 @@ namespace Isle.UI.Art
                 _nextSweepAt = Time.time + 5f;
                 _drawn.RemoveWhere(c => c.View == null);
             }
+        }
+
+        bool Draw(IReadOnlyList<Creature> creatures)
+        {
+            foreach (var creature in creatures)
+            {
+                if (creature.View == null || !creature.View.activeInHierarchy || _drawn.Contains(creature)) continue;
+                _material ??= VectorMaterial.Create();
+                if (_material == null) return false;
+                CreatureFigure.Attach(creature, _material);
+                _drawn.Add(creature);
+            }
+            return true;
         }
 
         void OnDestroy()

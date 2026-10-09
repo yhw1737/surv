@@ -219,6 +219,9 @@ namespace Isle.Gameplay.Character
                 }
             }
 
+            // SYS-HUNT-01 §Carrying: G picks up a small carcass, drags a big one (or helps carry it), G again puts it down.
+            if (kb != null && kb.gKey.wasPressedThisFrame) RequestHaul();
+
             if (kb != null && kb.fKey.wasPressedThisFrame)
             {
                 if (Cast != null) CmdReelIn();
@@ -365,6 +368,8 @@ namespace Isle.Gameplay.Character
                 return;
             }
 
+            if (Hauling != null) return; // put the carcass down first (G)
+
             // SYS-HUNT-01: a carcass in reach gets butchered.
             var carcass = CreatureDirector.Instance != null ? CreatureDirector.Instance.NearestCarcass(transform.position, ReachTiles) : null;
             if (carcass != null)
@@ -431,6 +436,7 @@ namespace Isle.Gameplay.Character
             if (float.IsNaN(aim.x) || float.IsNaN(aim.y)) aim = Vector2.zero; // never trust client values
             if (IsDead || Blocking) return;
             if (TwoHandsUnusable()) return;
+            if (Hauling != null) return; // hands full with a carcass
             if (Time.time < _nextAttackAt)
             {
                 // Pressed just before the weapon is ready: swing as soon as it is (combo input buffer).
@@ -613,6 +619,90 @@ namespace Isle.Gameplay.Character
 
         void CancelGather() => Gathering = null;
 
+        // ------------------------------------------------------------------ hauling (SYS-HUNT-01 §Carrying)
+
+        /// <summary>The carcass this player is dragging or helping to carry, or null.</summary>
+        public Creature Hauling { get; private set; }
+
+        /// <summary>True when someone else leads this carcass and this player is the second pair of hands.</summary>
+        public bool HaulHelping { get; private set; }
+
+        /// <summary>Movement multiplier from hauling: dragging alone ×0.4, carried by two ×0.8, otherwise 1.</summary>
+        public float HaulSpeed =>
+            Hauling == null ? 1f : CarriersOf(Hauling) >= CarcassCalculator.CoopMinPlayers ? CarcassCalculator.CoopSpeedMult : CarcassCalculator.DragSpeedMult;
+
+        /// <summary>Two carriers further apart than this and the helper lets go. [invented]</summary>
+        const float CoopLeashTiles = 2.5f;
+
+        /// <summary>A dragged carcass trails this far behind. [invented]</summary>
+        const float DragTrailTiles = 0.8f;
+
+        static int CarriersOf(Creature carcass) => All.Count(p => p.Hauling == carcass);
+
+        public void RequestHaul() => CmdHaul();
+
+        [ServerRpc]
+        void CmdHaul()
+        {
+            if (IsDead) return;
+            if (Hauling != null)
+            {
+                Hauling = null;
+                HaulHelping = false;
+                return;
+            }
+            var director = CreatureDirector.Instance;
+            var carcass = director != null ? director.NearestCarcass(transform.position, ReachTiles) : null;
+            if (carcass == null) return;
+            CancelGather();
+            Butchering = null;
+            // Light enough: into the bag.
+            if (CarcassCalculator.ClassFor(carcass.Weight) != CarryClass.WorldOnly
+                && DefRegistry.TryGet<ItemDef>(Modding.Defs.CarcassItems.IdFor(carcass.Def.Id), out var item)
+                && TryGetComponent<InventoryNetwork>(out var inventory))
+            {
+                var body = new ItemWear(1, 1) { Carcass = director.TakeCarcass(carcass) };
+                GiveItem(inventory, item, 1, body);
+                return;
+            }
+            // Too heavy: drag it — or, if someone already is, take the other end.
+            HaulHelping = All.Any(p => p != this && p.Hauling == carcass);
+            Hauling = carcass;
+        }
+
+        void UpdateHaul()
+        {
+            if (Hauling == null) return;
+            var director = CreatureDirector.Instance;
+            if (IsDead || director == null || !director.Carcasses.Contains(Hauling))
+            {
+                Hauling = null;
+                HaulHelping = false;
+                return;
+            }
+            var leader = All.FirstOrDefault(p => p.Hauling == Hauling && !p.HaulHelping);
+            if (HaulHelping)
+            {
+                // The helper lets go if they drift apart (or the leader put it down): it's back to one person dragging.
+                if (leader == null || Vector2.Distance(leader.transform.position, transform.position) > CoopLeashTiles)
+                {
+                    Hauling = null;
+                    HaulHelping = false;
+                }
+                return;
+            }
+            var helper = All.FirstOrDefault(p => p != this && p.Hauling == Hauling && p.HaulHelping);
+            Vector2 at = transform.position;
+            Vector2 to;
+            if (helper != null) to = Vector2.Lerp(at, helper.transform.position, 0.5f); // carried between the two
+            else
+            {
+                var heading = TryGetComponent<PlayerMovement>(out var movement) ? movement.LastDirection : Vector2.down;
+                to = at - heading * DragTrailTiles;
+            }
+            CreatureDirector.MoveCarcass(Hauling, to);
+        }
+
         // ------------------------------------------------------------------ butchery (SYS-HUNT-01)
 
         const string KnifeTag = "tool/knife";
@@ -732,6 +822,7 @@ namespace Isle.Gameplay.Character
             if (!IsServer) return;
             UpdateGather();
             UpdateButcher();
+            UpdateHaul();
             UpdateCast();
             if (Fight == null) return;
             if (IsDead || Vector2.Distance(transform.position, _fightSpot) > FightLeashTiles)

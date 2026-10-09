@@ -562,5 +562,11 @@
   "ui.butcher": "Butcher",
   "ui.butchering": "Butchering",
   "ui.butcher_cancelled": "Stopped butchering",
-  "ui.needs_rod": "You need a fishing rod"
+  "ui.needs_rod": "You need a fishing rod",
+  "pattern.carcass_of": "{0} carcass",
+  "ui.haul_pick": "Pick up",
+  "ui.haul_drag": "Drag",
+  "ui.haul_drop": "Put down",
+  "ui.carcass_spoiling": "going off",
+  "ui.carcass_rotten": "rotten"
 }

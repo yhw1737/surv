@@ -192,7 +192,11 @@ namespace Isle.Gameplay.Inventory
             // Only the server places the pile; a remote client's mirror just removes it from its own copy.
             if (IsServer)
             {
-                LootPiles.Drop(transform.position, new[] { new LootEntry(p.Item, dropped, p.Wear) });
+                // A carried carcass goes back on the ground as a carcass, ready to butcher.
+                if (p.Wear?.Carcass is { } body && Hunting.CreatureDirector.Instance != null)
+                    Hunting.CreatureDirector.Instance.PutCarcass(body, transform.position);
+                else
+                    LootPiles.Drop(transform.position, new[] { new LootEntry(p.Item, dropped, p.Wear) });
                 Feedback.GameFeed.RaiseItemDropped(p.Item.Id, dropped, transform.position);
             }
             return true;

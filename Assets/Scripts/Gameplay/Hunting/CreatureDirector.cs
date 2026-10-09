@@ -21,7 +21,7 @@ namespace Isle.Gameplay.Hunting
     {
         public CreatureDef Def { get; init; }
         public float Weight { get; init; }
-        public Vector2 Home { get; init; }
+        public Vector2 Home { get; set; }
         public Vector2 Position { get; set; }
         public float Health { get; set; }
         public float MaxHealth { get; init; }
@@ -70,6 +70,12 @@ namespace Isle.Gameplay.Hunting
 
         /// <summary>SYS-HUNT-01 damageFactor of the killing blow — how much of the body the kill left usable.</summary>
         public float KillFactor { get; set; } = 1f;
+
+        /// <summary>SYS-HUNT-01 §Spoilage: 0 fresh … 1 after a day at 15 °C. Past 0.5 it yields less, past 0.8 only rot.</summary>
+        public float Spoilage { get; set; }
+
+        /// <summary>Scavengers its scent has drawn so far (capped per carcass).</summary>
+        public int ScavengersDrawn { get; set; }
 
         /// <summary>SYS-COMBAT-02 side effects running on it (bleed, burn, poison, stagger count).</summary>
         public CombatStatus Status { get; } = new();
@@ -151,6 +157,7 @@ namespace Isle.Gameplay.Hunting
                 if (awake) Think(creature, players);
             }
             TickStatuses();
+            TickCarcasses(players);
 
             if (Time.time >= _nextRepopulateAt)
             {
@@ -295,6 +302,104 @@ namespace Isle.Gameplay.Hunting
 
         // ------------------------------------------------------------------ carcasses (SYS-HUNT-01)
 
+        /// <summary>Scavengers one carcass can draw, at most. [invented]</summary>
+        const int MaxScavengersPerCarcass = 2;
+        const string ScavengerTag = "scavenger";
+        long _lastCarcassMinute = -1;
+        float _scentClock;
+
+        /// <summary>World carcasses spoil with the air temperature, carried ones with the carrier's; every 5 in-game
+        /// minutes each world carcass may draw a scavenger from its scent radius; a spent one disappears.</summary>
+        void TickCarcasses(IReadOnlyList<PlayerInteraction> players)
+        {
+            var clock = WorldTime.Instance != null ? WorldTime.Instance.Clock : null;
+            if (clock == null) return;
+            var now = clock.TotalMinutes;
+            if (_lastCarcassMinute < 0) _lastCarcassMinute = now;
+            var minutes = now - _lastCarcassMinute;
+            if (minutes <= 0) return;
+            _lastCarcassMinute = now;
+            var air = Isle.World.Weather.WeatherController.Instance != null ? Isle.World.Weather.WeatherController.Instance.AmbientTemp : 15f;
+
+            for (var i = _carcasses.Count - 1; i >= 0; i--)
+            {
+                var carcass = _carcasses[i];
+                carcass.Spoilage = CarcassCalculator.Spoil(carcass.Spoilage, minutes, air);
+                if (carcass.Spoilage < CarcassCalculator.SpoilGone) continue;
+                _carcasses.RemoveAt(i);
+                Destroy(carcass.View);
+            }
+            foreach (var player in players)
+            {
+                if (!player.TryGetComponent<InventoryNetwork>(out var inventory)) continue;
+                var temp = player.TryGetComponent<Vitals>(out var vitals) ? vitals.AmbientTemp : air;
+                foreach (var container in inventory.Containers())
+                foreach (var placed in container.Placements)
+                    if (placed.Wear?.Carcass is { } body) body.Spoilage = CarcassCalculator.Spoil(body.Spoilage, minutes, temp);
+            }
+
+            _scentClock += minutes;
+            while (_scentClock >= CarcassCalculator.ScentRollMinutes)
+            {
+                _scentClock -= CarcassCalculator.ScentRollMinutes;
+                foreach (var carcass in _carcasses.ToList())
+                    if (carcass.ScavengersDrawn < MaxScavengersPerCarcass && Random.value < CarcassCalculator.PredatorChance)
+                        DrawScavenger(carcass);
+            }
+        }
+
+        /// <summary>A scavenger of the carcass's biome turns up at the edge of its scent and heads for it.</summary>
+        void DrawScavenger(Creature carcass)
+        {
+            var world = IslandWorld.Instance;
+            if (world == null || carcass.InDungeon) return;
+            var tile = IslandWorld.WorldToTile(carcass.Position);
+            var biome = "isle:" + world.Island.BiomeAt(tile.X, tile.Y).ToString().ToLowerInvariant();
+            var kinds = DefRegistry.AllWithTag<CreatureDef>(ScavengerTag)
+                .Where(d => d.Spawn?.Biomes != null && d.Spawn.Biomes.Any(b => b.Value == biome)).ToList();
+            if (kinds.Count == 0) return;
+            var radius = CarcassCalculator.ScentRadiusTiles(carcass.Weight);
+            for (var attempt = 0; attempt < 12; attempt++)
+            {
+                var angle = Random.value * Mathf.PI * 2f;
+                var at = carcass.Position + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+                if (!world.IsWalkable(at) || world.WaterAt(IslandWorld.WorldToTile(at)) != null) continue;
+                var scavenger = Create(kinds[Random.Range(0, kinds.Count)], at);
+                // It lives at the carcass now: wandering takes it there.
+                scavenger.Home = carcass.Position;
+                scavenger.WanderTarget = carcass.Position;
+                _creatures.Add(scavenger);
+                carcass.ScavengersDrawn++;
+                return;
+            }
+        }
+
+        /// <summary>A carcass lifted off the ground into a bag: its body as carried state; the world one is gone.</summary>
+        public CarcassState TakeCarcass(Creature carcass)
+        {
+            if (!_carcasses.Remove(carcass)) return null;
+            Destroy(carcass.View);
+            return new CarcassState { Def = carcass.Def, WeightKg = carcass.Weight, Condition = carcass.Condition, KillFactor = carcass.KillFactor, Spoilage = carcass.Spoilage };
+        }
+
+        /// <summary>A carried carcass put down: a world carcass again, as it was.</summary>
+        public Creature PutCarcass(CarcassState body, Vector2 at)
+        {
+            var carcass = Create(body.Def, at, weightKg: body.WeightKg, condition: body.Condition);
+            carcass.Dead = true;
+            carcass.KillFactor = body.KillFactor;
+            carcass.Spoilage = body.Spoilage;
+            _carcasses.Add(carcass);
+            return carcass;
+        }
+
+        /// <summary>Moves a carcass that's being dragged or carried.</summary>
+        public static void MoveCarcass(Creature carcass, Vector2 to)
+        {
+            carcass.Position = to;
+            if (carcass.View != null) carcass.View.transform.position = to;
+        }
+
         readonly List<Creature> _carcasses = new();
 
         public IReadOnlyList<Creature> Carcasses => _carcasses;
@@ -319,17 +424,19 @@ namespace Isle.Gameplay.Hunting
             var cuts = new List<(NamespacedId Item, int Count)>();
             if (!_carcasses.Remove(carcass)) return cuts;
             Destroy(carcass.View);
-            cuts.AddRange(Cuts(carcass.Def.Butcher, carcass.Weight, carcass.Condition, cookingLevel, toolFactor, carcass.KillFactor));
+            cuts.AddRange(Cuts(carcass.Def.Butcher, carcass.Weight, carcass.Condition, cookingLevel, toolFactor, carcass.KillFactor, carcass.Spoilage));
             return cuts;
         }
 
         /// <summary>SYS-HUNT-01 §Yield + §Cuts: the edible weight split by share; damage-sensitive cuts (hide) lose what the
         /// kill and an unskilled hand ruin. Each cut turns into whole items of its unit weight.</summary>
-        public static List<(NamespacedId Item, int Count)> Cuts(ButcherSpec butcher, float weightKg, float condition, int cookingLevel, float toolFactor, float killFactor)
+        public static List<(NamespacedId Item, int Count)> Cuts(ButcherSpec butcher, float weightKg, float condition, int cookingLevel, float toolFactor, float killFactor, float spoilage = 0f)
         {
             var cuts = new List<(NamespacedId Item, int Count)>();
             if (butcher?.Yields == null) return cuts;
-            var edible = ButcheryCalculator.EdibleKg(weightKg, butcher.EdibleRatio, condition, cookingLevel, toolFactor, killFactor);
+            var edible = ButcheryCalculator.EdibleKg(weightKg, butcher.EdibleRatio, condition, cookingLevel, toolFactor, killFactor)
+                         * CarcassCalculator.YieldMult(spoilage);
+            var rotten = CarcassCalculator.IsRotten(spoilage);
             foreach (var cut in butcher.Yields)
             {
                 int count;
@@ -340,7 +447,14 @@ namespace Isle.Gameplay.Hunting
                     count = ButcheryCalculator.Pieces(kg, cut.UnitKg, cut.Min);
                 }
                 else count = cut.Count > 0 ? cut.Count : 1;
-                if (count > 0) cuts.Add((cut.Item, count));
+                var item = cut.Item;
+                if (rotten)
+                {
+                    // Rotten through: only the meat comes off, already gone off (its own spoilage result); hide is lost.
+                    if (!DefRegistry.TryGet<ItemDef>(cut.Item, out var def) || def.Spoilage?.Result.IsValid != true) continue;
+                    item = def.Spoilage.Result;
+                }
+                if (count > 0) cuts.Add((item, count));
             }
             return cuts;
         }
@@ -407,9 +521,9 @@ namespace Isle.Gameplay.Hunting
             return creature;
         }
 
-        Creature Create(CreatureDef def, Vector2 position, bool inDungeon = false)
+        Creature Create(CreatureDef def, Vector2 position, bool inDungeon = false, float weightKg = -1f, float condition = -1f)
         {
-            var weight = RollWeight(def);
+            var weight = weightKg > 0f ? weightKg : RollWeight(def);
             var radius = BodyReach.RadiusForWeight(def.Combat?.BodyRadiusTiles ?? DefaultBodyRadius, weight, def.WeightDist?.Mean ?? weight);
             var view = CreateView(def, radius);
             view.transform.position = position;
@@ -420,7 +534,7 @@ namespace Isle.Gameplay.Hunting
                 Weight = weight,
                 Home = position,
                 Position = position,
-                Condition = RollCondition(def),
+                Condition = condition > 0f ? condition : RollCondition(def),
                 Health = weight * def.HealthPerKg,
                 MaxHealth = weight * def.HealthPerKg,
                 WanderTarget = position,

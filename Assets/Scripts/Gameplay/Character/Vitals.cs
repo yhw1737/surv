@@ -142,12 +142,13 @@ namespace Isle.Gameplay.Character
             // carry_capacity_mult: a strong back carries more before it slows; move_speed_mult: on top of that.
             var buffs = ActiveBuffs();
             var weight = CarriedWeightKg() / Mathf.Max(0.1f, BuffEffects.Mult(buffs, "carry_capacity_mult"));
-            _movement.WeightMultiplier = WeightCalculator.SpeedMultiplier(weight) * BuffEffects.Mult(buffs, "move_speed_mult");
+            var hauling = TryGetComponent<PlayerInteraction>(out var hauler) ? hauler.HaulSpeed : 1f;
+            _movement.WeightMultiplier = WeightCalculator.SpeedMultiplier(weight) * BuffEffects.Mult(buffs, "move_speed_mult") * hauling;
             Overloaded = WeightCalculator.IsOverloaded(weight);
             if (Stamina <= 0f) Exhausted = true;
             else if (Exhausted && Stamina >= ExhaustionRecoverStamina) Exhausted = false;
             _movement.SprintAllowed = !Exhausted && Stamina > 0f;
-            _movement.RollAllowed = Stamina >= RollStaminaCost && !Overloaded;
+            _movement.RollAllowed = Stamina >= RollStaminaCost && !Overloaded && hauling >= 1f; // no rolling with a carcass
 
             if (_movement.IsSprinting) SpendStamina(SprintStaminaPerSecond * Time.deltaTime * BuffEffects.Mult(buffs, "sprint_cost_mult"));
             CurrentActivity = _movement.IsSprinting ? Activity.Sprinting : _movement.IsMoving ? Activity.Walking : Activity.Idle;

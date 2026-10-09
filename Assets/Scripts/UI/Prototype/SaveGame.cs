@@ -202,7 +202,7 @@ namespace Isle.UI.Prototype
             if (player.TryGetComponent<InventoryNetwork>(out var inventory))
             {
                 foreach (var placed in inventory.Bag.Placements)
-                    save.Bag.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0 });
+                    save.Bag.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0 }.WithCarcass(placed.Wear));
                 foreach (var slot in EquipSlots.All)
                 {
                     var item = inventory.Slots.Get(slot);
@@ -211,7 +211,7 @@ namespace Isle.UI.Prototype
                     var equip = new SavedEquip { Slot = slot, Item = KeyOf(item), Wear = slotWear?.Current ?? 0, WearMax = slotWear?.Max ?? 0 };
                     if (inventory.Slots.BagFor(slot) is { } pack)
                         foreach (var placed in pack.Placements)
-                            equip.Contents.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0 });
+                            equip.Contents.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0 }.WithCarcass(placed.Wear));
                     save.Equipped.Add(equip);
                 }
             }
@@ -253,7 +253,7 @@ namespace Isle.UI.Prototype
                 }
                 if (built.TryGetComponent<StorageBox>(out var box))
                     foreach (var placed in box.Contents.Placements)
-                        saved.Contents.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0 });
+                        saved.Contents.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0 }.WithCarcass(placed.Wear));
                 save.Structures.Add(saved);
             }
 
@@ -261,7 +261,7 @@ namespace Isle.UI.Prototype
             {
                 var saved = new SavedPile { X = pile.Position.x, Y = pile.Position.y, Shape = pile.Shape };
                 foreach (var entry in pile.Items)
-                    saved.Items.Add(new SavedStack { Item = KeyOf(entry.Item), Count = entry.Count, Wear = entry.Wear?.Current ?? 0, WearMax = entry.Wear?.Max ?? 0 });
+                    saved.Items.Add(new SavedStack { Item = KeyOf(entry.Item), Count = entry.Count, Wear = entry.Wear?.Current ?? 0, WearMax = entry.Wear?.Max ?? 0 }.WithCarcass(entry.Wear));
                 save.Piles.Add(saved);
             }
             return save;
@@ -286,14 +286,14 @@ namespace Isle.UI.Prototype
                 inventory.Bag.Clear();
                 foreach (var stack in save.Bag)
                     if (TryItem(stack.Item, out var item))
-                        inventory.Bag.TryPlace(item, new Vec2Int(stack.X, stack.Y), stack.Rotated, stack.Count, WearOf(stack.Wear, stack.WearMax));
+                        inventory.Bag.TryPlace(item, new Vec2Int(stack.X, stack.Y), stack.Rotated, stack.Count, WearOf(stack));
                 inventory.Slots.Clear();
                 foreach (var equip in save.Equipped)
                 {
                     if (!TryItem(equip.Item, out var item) || !inventory.Slots.TryEquip(equip.Slot, item, WearOf(equip.Wear, equip.WearMax))) continue;
                     if (inventory.Slots.BagFor(equip.Slot) is not { } pack) continue;
                     foreach (var stack in equip.Contents)
-                        if (TryItem(stack.Item, out var inner)) pack.TryPlace(inner, new Vec2Int(stack.X, stack.Y), stack.Rotated, stack.Count, WearOf(stack.Wear, stack.WearMax));
+                        if (TryItem(stack.Item, out var inner)) pack.TryPlace(inner, new Vec2Int(stack.X, stack.Y), stack.Rotated, stack.Count, WearOf(stack));
                 }
             }
 
@@ -341,12 +341,12 @@ namespace Isle.UI.Prototype
                     StructureFactory.Plant(built, crop, saved.PlantedAt);
                 if (built.TryGetComponent<StorageBox>(out var box))
                     foreach (var stack in saved.Contents)
-                        if (TryItem(stack.Item, out var item)) box.Contents.TryPlace(item, new Vec2Int(stack.X, stack.Y), stack.Rotated, stack.Count, WearOf(stack.Wear, stack.WearMax));
+                        if (TryItem(stack.Item, out var item)) box.Contents.TryPlace(item, new Vec2Int(stack.X, stack.Y), stack.Rotated, stack.Count, WearOf(stack));
             }
 
             foreach (var saved in save.Piles)
                 LootPiles.Drop(new Vector2(saved.X, saved.Y),
-                    saved.Items.Select(s => new LootEntry(TryItem(s.Item, out var item) ? item : null, s.Count, WearOf(s.Wear, s.WearMax))).Where(x => x.Item != null),
+                    saved.Items.Select(s => new LootEntry(TryItem(s.Item, out var item) ? item : null, s.Count, WearOf(s))).Where(x => x.Item != null),
                     string.IsNullOrEmpty(saved.Shape) ? null : saved.Shape);
 
             GameFeed.RaiseNotice("@ui.save_loaded");
@@ -360,6 +360,26 @@ namespace Isle.UI.Prototype
         /// <summary>An item from the save that still resolves — a removed mod's item is skipped, not fatal.</summary>
         /// <summary>SYS-CRAFT-02: a saved wear, or null for none (old saves, items that don't wear).</summary>
         static ItemWear WearOf(int current, int max) => max > 0 ? new ItemWear(current, max) : null;
+
+        /// <summary>A saved stack's record: wear, or for a carried carcass its body (SYS-HUNT-01).</summary>
+        static ItemWear WearOf(SavedStack stack)
+        {
+            if (!string.IsNullOrEmpty(stack.CarcassOf) && TryCreature(stack.CarcassOf, out var def))
+                return new ItemWear(1, 1)
+                {
+                    Carcass = new Isle.Gameplay.Hunting.CarcassState
+                    {
+                        Def = def, WeightKg = stack.CarcassKg, Condition = stack.CarcassCondition, KillFactor = stack.CarcassKill, Spoilage = stack.CarcassSpoil,
+                    },
+                };
+            return WearOf(stack.Wear, stack.WearMax);
+        }
+
+        static bool TryCreature(string key, out CreatureDef def)
+        {
+            def = null;
+            return NamespacedId.TryParse(key, out var id, out _) && DefRegistry.TryGet(id, out def);
+        }
 
         static bool TryItem(string key, out ItemDef item)
         {

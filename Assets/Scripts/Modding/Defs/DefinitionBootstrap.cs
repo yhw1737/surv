@@ -95,6 +95,7 @@ namespace Isle.Modding.Defs
 
             // SYS-CRAFT-02: template × material → real items and weapons, before anything checks references to them.
             StuffVariants.Expand(defs.Items, defs.Weapons, defs.Materials.Definitions);
+            CarcassItems.Expand(defs.Items, defs.Creatures);
 
             ReferenceResolver.ResolveItemRefs(defs.Items, defs.Recipes, defs.Enchants, defs.Creatures, defs.Fish, defs.Crops, defs.CookMethods);
 

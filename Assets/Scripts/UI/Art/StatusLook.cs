@@ -168,6 +168,20 @@ namespace Isle.UI.Art
             }
         }
 
+        /// <summary>Flies buzzing over something going off (a spoiling carcass). [invented look]</summary>
+        public static void Flies(VectorMesh mesh, float time, Vector2 centre, float radius)
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                var a = time * (3f + i * 0.7f) + i * 1.7f;
+                var at = centre + new Vector2(Mathf.Cos(a) * radius, Mathf.Sin(a * 1.6f) * radius * 0.5f + 0.15f);
+                mesh.Disk(at, 0.045f, Ink);
+                var wing = new Color(1f, 1f, 1f, 0.7f);
+                mesh.Disk(at + new Vector2(-0.03f, 0.035f), 0.028f, wing);
+                mesh.Disk(at + new Vector2(0.03f, 0.035f), 0.028f, wing);
+            }
+        }
+
         /// <summary>Sweat flicking off both sides of the head.</summary>
         static void SweatDrops(VectorMesh mesh, float time, in StatusBody body)
         {

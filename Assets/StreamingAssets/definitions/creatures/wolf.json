@@ -4,7 +4,8 @@
   "tags": [
     "animal",
     "mammal",
-    "aggressive"
+    "aggressive",
+    "scavenger"
   ],
   "weight_dist": {
     "type": "lognormal",

@@ -266,6 +266,11 @@ namespace Isle.UI.Prototype
                 prompts.Add((player.CastPoint + Vector2.up * 0.6f, bite ? Lang.Get("@ui.key_lmb") : null, Lang.Get(bite ? "@ui.hook_now" : "@ui.waiting_bite")));
                 return prompts;
             }
+            if (player.Hauling != null)
+            {
+                prompts.Add((player.Hauling.Position + Vector2.up * (player.Hauling.Radius * 2f + 0.4f), "G", Lang.Get("@ui.haul_drop")));
+                return prompts;
+            }
             if (player.Butchering != null)
             {
                 prompts.Add((player.Butchering.Position + Vector2.up * (player.Butchering.Radius * 2f + 0.4f), null, $"{Lang.Get("@ui.butchering")} {player.ButcherProgress * 100f:0}%"));
@@ -289,7 +294,12 @@ namespace Isle.UI.Prototype
             var carcass = Isle.Gameplay.Hunting.CreatureDirector.Instance?.NearestCarcass(position, PlayerInteraction.ReachTiles);
             if (carcass != null && LootPiles.Nearest(position, PlayerInteraction.ReachTiles) == null)
             {
-                prompts.Add((carcass.Position + Vector2.up * (carcass.Radius * 2f + 0.4f), "E", $"{Lang.Get("@ui.butcher")} — {Lang.Get(carcass.Def.Name)}"));
+                var top = carcass.Position + Vector2.up * (carcass.Radius * 2f + 0.4f);
+                var state = Isle.Gameplay.Hunting.CarcassCalculator.IsRotten(carcass.Spoilage) ? $"  ({Lang.Get("@ui.carcass_rotten")})"
+                    : carcass.Spoilage >= Isle.Gameplay.Hunting.CarcassCalculator.SpoilHalfYield ? $"  ({Lang.Get("@ui.carcass_spoiling")})" : "";
+                prompts.Add((top, "E", $"{Lang.Get("@ui.butcher")} — {Lang.Get(carcass.Def.Name)}{state}"));
+                var light = Isle.Gameplay.Hunting.CarcassCalculator.ClassFor(carcass.Weight) != Isle.Gameplay.Hunting.CarryClass.WorldOnly;
+                prompts.Add((top + Vector2.up * 0.55f, "G", Lang.Get(light ? "@ui.haul_pick" : "@ui.haul_drag")));
                 return prompts;
             }
 
