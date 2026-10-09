@@ -9,7 +9,7 @@ Each player remembers what they've seen. The island starts hidden; walking revea
 
 ```
 cell        = 2 × 2 tiles                     // fog resolution, 576 × 576 cells for a 1152-tile map (was 4 × 4 until 2026-10-06)
-reveal      = every cell whose centre is within 16 tiles of the player, checked 4× a second
+reveal      = every cell whose centre is within 24 tiles of the player, checked 4× a second   // 16 until 2026-10-09 (developer: wider for the tilted view)
 explored    = permanent (no re-fogging), saved with the game
 ```
 

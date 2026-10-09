@@ -356,6 +356,8 @@ stood up now so the solo beta is already a listen-server session with one client
   > **2026-10-08**: done — SYS-START-01. `TraitDef` (30), `ScenarioDef`, `SurvivorGenerator`, `StartDirector`, `IslandWorld.ShoreStart`, survivor page on the menu, traits as permanent effects, survivor saved.
 - [x] **T-300** Unity 6000.3.10f1 + tilted perspective view + pencil look — editor upgrade (Apple silicon), a perspective camera leaned 40° with upright billboarded figures/props, and a coloured-pencil texture (grain, hatching, graphite lines, boil) on figures, shapes, ground and icons. Developer request 2026-10-09
   > **2026-10-09**: done — ART_PIPELINE §Camera view. `ViewTilt` (stand, ground ray, focus), `PencilLook` + `IsleVector.shader`, `visual.flat`. URP 17.3 shader fix (shape-light textures now declared by URP).
+- [x] **T-301** World feel — smooth water collision along the drawn shore, trees/rocks block, see-through occluders, orange outline on the E target, wider fog reveal (24 tiles), tree variety. Developer request 2026-10-09
+  > **2026-10-09**: done — SYS-WORLD-03 §Walls, ART_PIPELINE §Camera view, SYS-MAP-01 reveal 24. `ShoreField`, `block_radius`, `visual.jitter`, `OcclusionFader`, `InteractHighlight`, `Isle/Outline`.
 - [ ] **T-150** Save / load round trip — quit mid-game, resume with world, inventory and skills intact
   > **2026-10-04 (prototype)**: JSON save in persistentDataPath — seed, clock, vitals, position, shelter, bag, hand, depleted nodes, campfires, loot piles. Autosave 60 s + on quit, F9 deletes. Skills aren't saved (no XP yet); creatures and weather re-roll. Not yet in SQLite, and the load path isn't covered by a PlayMode test.
 - [ ] **T-151** Solo bug pass — play the full loop repeatedly, fix what blocks it

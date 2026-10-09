@@ -36,6 +36,10 @@ namespace Isle.Data
         /// <summary>Collects rain to drink (SYS-SURV-01 §Water sources: rain catcher). Null otherwise.</summary>
         public RainCatcherSpec RainCatcher { get; init; }
 
+        /// <summary>Tiles around a standing node's foot that nothing can walk through (a tree's trunk, a rock). 0 for
+        /// none — bushes, grass.</summary>
+        public float BlockRadius { get; init; }
+
         /// <summary>SYS-CRAFT-01 §Quality <c>stationTier</c>, 0..1: how much a crafting station adds to the quality of
         /// gear made at it. 0 for anything that isn't one.</summary>
         public float StationTier { get; init; }

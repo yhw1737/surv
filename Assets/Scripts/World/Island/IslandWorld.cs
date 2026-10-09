@@ -85,6 +85,7 @@ namespace Isle.World.Island
             var nodesMs = timer.ElapsedMilliseconds;
             BuildMap();
             Debug.Log($"[Isle] Island {Seed} built in {timer.ElapsedMilliseconds} ms (shape {shapeMs}, water {waterMs - shapeMs}, nodes {nodesMs - waterMs}, map {timer.ElapsedMilliseconds - nodesMs}); {_nodes.Count} nodes, {_water.Count} water tiles, {Island.BlobCount} landmasses");
+            _shoreAt = ShoreAtTile;
             PlayerMovement.IsWalkable = IsWalkable;
         }
 
@@ -93,11 +94,41 @@ namespace Isle.World.Island
         /// Returns null for a point it doesn't own, else whether that point can be stood on.</summary>
         public static System.Func<Vector2, bool?> ExtraWalkable { get; set; }
 
+        /// <summary>Dry land, outside every standing node's trunk. The water's edge is the smooth drawn shoreline
+        /// (<see cref="ShoreField"/>), not the tile grid.</summary>
         public bool IsWalkable(Vector2 world)
         {
             if (ExtraWalkable?.Invoke(world) is { } underground) return underground;
-            var tile = WorldToTile(world);
-            return Island.IsLand(tile.X, tile.Y) && !_water.ContainsKey(tile);
+            var half = IslandGenerator.Size / 2f;
+            if (ShoreField.IsWater(ShoreField.At(_shoreAt, world.x + half - 0.5f, world.y + half - 0.5f))) return false;
+            return !BlockedByNode(world);
+        }
+
+        /// <summary>A standing node (a tree, a rock) whose <c>block_radius</c> covers this point. Depleted nodes (felled,
+        /// mined out) don't block.</summary>
+        public bool BlockedByNode(Vector2 world)
+        {
+            var centre = WorldToTile(world);
+            for (var dy = -1; dy <= 1; dy++)
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                if (!_nodeByTile.TryGetValue(new Vec2Int(centre.X + dx, centre.Y + dy), out var node)) continue;
+                var radius = node.Def.BlockRadius;
+                if (radius <= 0f || (node.Def.Gather != null && node.UsesLeft <= 0)) continue;
+                if ((node.Position - world).sqrMagnitude < radius * radius) return true;
+            }
+            return false;
+        }
+
+        /// <summary>Blurred water per tile, filled as it's asked for (main thread only).</summary>
+        readonly Dictionary<Vec2Int, float> _shore = new();
+        System.Func<int, int, float> _shoreAt;
+
+        float ShoreAtTile(int x, int y)
+        {
+            var tile = new Vec2Int(x, y);
+            if (_shore.TryGetValue(tile, out var value)) return value;
+            return _shore[tile] = ShoreField.AtTile((tx, ty) => !Island.IsLand(tx, ty) || _water.ContainsKey(new Vec2Int(tx, ty)), x, y);
         }
 
         readonly Dictionary<Vec2Int, WorldObjectDef> _water = new();
@@ -377,7 +408,8 @@ namespace Isle.World.Island
                     {
                         Def = def,
                         Tile = tile,
-                        Position = TileToWorld(tile),
+                        // Standing nodes sit off the tile centre (a hashed, fixed offset), so woods don't grow on a grid.
+                        Position = TileToWorld(tile) + (def.Gather != null ? NodeOffset(tile) : Vector2.zero),
                         UsesLeft = def.Gather?.Uses ?? 0,
                     };
                     _nodes.Add(node);
@@ -386,6 +418,30 @@ namespace Isle.World.Island
                     if (!_nodesByChunk.TryGetValue(chunk, out var inChunk)) _nodesByChunk[chunk] = inChunk = new List<ResourceNode>();
                     inChunk.Add(node);
                 }
+            }
+        }
+
+        /// <summary>How far a standing node may sit from its tile's centre, each axis. [invented look]</summary>
+        const float NodeJitterTiles = 0.3f;
+
+        static Vector2 NodeOffset(Vec2Int tile)
+        {
+            var h = NodeHash(tile);
+            return new Vector2(((h & 0xFFFF) / 65535f - 0.5f) * 2f * NodeJitterTiles, (((h >> 16) & 0xFFFF) / 65535f - 0.5f) * 2f * NodeJitterTiles);
+        }
+
+        /// <summary>A stable per-tile hash for placement and look variety.</summary>
+        public static uint NodeHash(Vec2Int tile)
+        {
+            unchecked
+            {
+                var h = (uint)(tile.X * 73856093) ^ (uint)(tile.Y * 19349663) ^ 0x9E3779B9u;
+                h ^= h >> 15;
+                h *= 0x2C1B3C6Du;
+                h ^= h >> 12;
+                h *= 0x297A2D39u;
+                h ^= h >> 15;
+                return h;
             }
         }
 
@@ -433,6 +489,14 @@ namespace Isle.World.Island
             _map.SetPixel(node.Tile.X, node.Tile.Y, depleted ? BiomeColour(node.Tile) : NodeColour(node.Def));
         }
 
+        /// <summary>One of three shades of a node's colour: darker and cooler, as is, lighter and warmer.</summary>
+        static Color Shade(Color c, int shade, float jitter)
+        {
+            var k = (shade - 1) * jitter;
+            var warm = new Color(Mathf.Clamp01(c.r * (1f + k * 1.2f)), Mathf.Clamp01(c.g * (1f + k)), Mathf.Clamp01(c.b * (1f + k * 0.6f)), c.a);
+            return warm;
+        }
+
         static Color NodeColour(WorldObjectDef def) => ShapeLibrary.ParseColour(def.Visual?.Color, PlaceholderVisuals.ColorForTags(def.Tags));
 
         static readonly Color DepletedTint = new(1f, 1f, 1f, 0.25f);
@@ -446,13 +510,21 @@ namespace Isle.World.Island
             // Water lies flat under everything. Standing things (trees, rocks, bushes) are placed by their foot and sort
             // by it against the player and creatures (same order, custom-axis sort), so you walk behind a trunk.
             var standing = node.Def.Gather != null;
-            view.sprite = standing ? ShapeLibrary.StandingSprite(node.Def.Visual?.Shape, NodeColour(node.Def))
-                : ShapeLibrary.Sprite(node.Def.Visual?.Shape, NodeColour(node.Def));
+            // Variety (presentation): a drawing variant, one of three shades, a size and a mirror, all from the tile's
+            // hash, so the same island always looks the same.
+            var hash = NodeHash(node.Tile);
+            var jitter = node.Def.Visual?.Jitter ?? 0f;
+            var colour = NodeColour(node.Def);
+            if (jitter > 0f) colour = Shade(colour, (int)(hash >> 8) % 3, jitter);
+            view.sprite = standing ? ShapeLibrary.StandingSprite(node.Def.Visual?.Shape, colour, (int)(hash % 7919u))
+                : ShapeLibrary.Sprite(node.Def.Visual?.Shape, colour);
+            if (standing && jitter > 0f) view.flipX = ((hash >> 24) & 1u) == 1u;
             view.spriteSortPoint = SpriteSortPoint.Pivot;
             view.sortingOrder = standing ? 2 : 1;
             view.transform.SetParent(transform, worldPositionStays: false);
             view.transform.position = node.Position;
-            view.transform.localScale = Vector3.one * (node.Def.Visual?.Size ?? NodeDiameterTiles);
+            var sizeJitter = jitter > 0f ? 1f + jitter * (((hash >> 16) & 0xFF) / 127.5f - 1f) : 1f;
+            view.transform.localScale = Vector3.one * ((node.Def.Visual?.Size ?? NodeDiameterTiles) * sizeJitter);
             if (standing) Isle.Core.Util.ViewTilt.Stand(view.transform);
             node.View = view;
             var chunk = Chunk.CoordFromTilePosition(node.Tile);

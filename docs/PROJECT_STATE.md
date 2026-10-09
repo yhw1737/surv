@@ -6,8 +6,22 @@
 ## Header
 
 - Last updated: **2026-10-09**
+- **2026-10-09 — T-301 world feel.** Branch `feature/T-301-world-feel`, stacked on `feature/T-090-quality` (PR #43).
+  — [PR #44](https://github.com/yhw1737/surv/pull/44). Developer request (one PR): smooth water collision, see-through occluders, orange outline on what E acts on, wider
+  fog of war, trees impassable, tree variety. Built: `World/Island/ShoreField` (the ground renderer's blurred water
+  field, shared by collision — walk to the drawn shoreline), `IslandWorld.IsWalkable` = smooth shore + standing-node
+  trunks (`block_radius` on tree/palm/rock; felled nodes don't block; `BlockedByNode` via the tile index), standing
+  nodes hashed 0.3 tiles off-centre, `PlayerMovement` frees a walker already inside a wall; `UI/Art/OcclusionFader`
+  (35% alpha for standing sprites in front covering the player), `UI/Art/InteractHighlight` + `Isle/Outline` shader
+  (ring-only sprite outline) + `IsleVector` `_Silhouette` (figure outline), HUD names the E target and lifts prompt
+  bubbles to standing height; fog reveal 16 → 24 tiles (SYS-MAP-01); trees 4 drawings / palms 2, `visual.jitter` size,
+  shade, mirror. Unity 6 note: a SpriteRenderer's colour and flip reach custom shaders as `unity_SpriteColor` /
+  `unity_SpriteProps`, not the mesh — first outline attempt drew white and unmirrored. **Verified:** EditMode 678/678
+  (+4 `ShoreFieldTests`), PlayMode 3/3 (tree trunk blocks, felled tree doesn't; coast-search helper no longer stops at
+  trees); rendered a dense wood (variety, fading, outline), a pine close-up, a carcass outline, the walkable edge
+  along a beach.
 - **2026-10-09 — T-090 quality tiers.** Branch `feature/T-090-quality`, stacked on `feature/T-074-075-carcass`
-  (PR #42), **uncommitted** (waiting for the developer's check). Built: `QualityCalculator` (SYS-CRAFT-01 §Quality score, tiers, power /
+  (PR #42) — [PR #43](https://github.com/yhw1737/surv/pull/43). Built: `QualityCalculator` (SYS-CRAFT-01 §Quality score, tiers, power /
   durability / slot table, material purity), `QualityTier`; `ItemWear.Quality` (kept through repair, saved as tier+1);
   `CmdCraft` gives gear a tier from the crafter's own level, consumed inputs' purity, the station's `station_tier`
   (new world-object field: workbench 0.25, furnace/anvil 0.5) and a 0.5 minigame stand-in; max durability scaled by
@@ -1968,6 +1982,12 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-09 — T-301 world-feel values
+  Developer-decided: reveal radius 16 → 24 tiles ("좀 넓혀줘" — 24 chosen). [invented]: block radius tree 0.4 / palm
+  0.3 / rock 0.45, node offset ±0.3 tiles, occluder alpha 0.35 and fade 7/s, player screen box 1.9 × 0.7 tiles,
+  outline width 0.05 tiles and colour #FF8C1A, ring threshold, jitter tree 0.15 / palm 0.12 / rock 0.12 / berry bush
+  0.1, the tree and palm variant drawings, shoreline at field 0.5 (= the renderer's).
+
 - ### 2026-10-09 — T-090 quality fill-ins (spec open questions)
   [invented]: `materialPurity` = mean over consumed units (Crude 0 … Master 1, unrated inputs 0.5); `stationTier` from
   a new `station_tier` world-object field (workbench 0.25, furnace 0.5, anvil 0.5, none 0); `minigameScore` 0.5 until

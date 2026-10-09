@@ -252,33 +252,38 @@ namespace Isle.UI.Prototype
 
         /// <summary>World point, key, text for every prompt that applies right now. Mirrors the server: E goes to the
         /// nearest of water, a harvestable node or a station; a loot pile is picked up first.</summary>
-        static List<(Vector2 At, string Key, string Text)> PromptsFor(PlayerInteraction player)
+        /// <summary>Up for something standing in the tilted view (toward the camera), and a point that high over a foot.</summary>
+        static Vector3 Up => Isle.Core.Util.ViewTilt.Standing * Vector3.up;
+
+        static Vector3 Above(Vector2 foot, float height) => (Vector3)foot + Up * height;
+
+        static List<(Vector3 At, string Key, string Text)> PromptsFor(PlayerInteraction player)
         {
-            var prompts = new List<(Vector2, string, string)>();
+            var prompts = new List<(Vector3, string, string)>();
             var world = IslandWorld.Instance;
             if (world == null) return prompts;
             Vector2 position = player.transform.position;
-            var overHead = Isle.UI.Art.StickFigureView.PositionOf(player) + Vector2.up * 2.1f;
+            var overHead = Above(Isle.UI.Art.StickFigureView.PositionOf(player), 2.1f);
 
             if (player.Cast != null)
             {
                 var bite = player.Cast.State == Isle.Gameplay.Fishing.CastState.Bite;
-                prompts.Add((player.CastPoint + Vector2.up * 0.6f, bite ? Lang.Get("@ui.key_lmb") : null, Lang.Get(bite ? "@ui.hook_now" : "@ui.waiting_bite")));
+                prompts.Add((Above(player.CastPoint, 0.6f), bite ? Lang.Get("@ui.key_lmb") : null, Lang.Get(bite ? "@ui.hook_now" : "@ui.waiting_bite")));
                 return prompts;
             }
             if (player.Hauling != null)
             {
-                prompts.Add((player.Hauling.Position + Vector2.up * (player.Hauling.Radius * 2f + 0.4f), "G", Lang.Get("@ui.haul_drop")));
+                prompts.Add((Above(player.Hauling.Position, player.Hauling.Radius * 2f + 0.4f), "G", Lang.Get("@ui.haul_drop")));
                 return prompts;
             }
             if (player.Butchering != null)
             {
-                prompts.Add((player.Butchering.Position + Vector2.up * (player.Butchering.Radius * 2f + 0.4f), null, $"{Lang.Get("@ui.butchering")} {player.ButcherProgress * 100f:0}%"));
+                prompts.Add((Above(player.Butchering.Position, player.Butchering.Radius * 2f + 0.4f), null, $"{Lang.Get("@ui.butchering")} {player.ButcherProgress * 100f:0}%"));
                 return prompts;
             }
             if (player.Gathering != null)
             {
-                prompts.Add((player.Gathering.Position + Vector2.up * (NodeHeight(player.Gathering) + 0.3f), null, $"{Lang.Get("@ui.gathering")} {player.GatherProgress * 100f:0}%"));
+                prompts.Add((Above(player.Gathering.Position, NodeHeight(player.Gathering) + 0.3f), null, $"{Lang.Get("@ui.gathering")} {player.GatherProgress * 100f:0}%"));
                 return prompts;
             }
 
@@ -294,17 +299,22 @@ namespace Isle.UI.Prototype
             var carcass = Isle.Gameplay.Hunting.CreatureDirector.Instance?.NearestCarcass(position, PlayerInteraction.ReachTiles);
             if (carcass != null && LootPiles.Nearest(position, PlayerInteraction.ReachTiles) == null)
             {
-                var top = carcass.Position + Vector2.up * (carcass.Radius * 2f + 0.4f);
+                var top = Above(carcass.Position, carcass.Radius * 2f + 0.4f);
+                Isle.UI.Art.InteractHighlight.Show(carcass.View);
                 var state = Isle.Gameplay.Hunting.CarcassCalculator.IsRotten(carcass.Spoilage) ? $"  ({Lang.Get("@ui.carcass_rotten")})"
                     : carcass.Spoilage >= Isle.Gameplay.Hunting.CarcassCalculator.SpoilHalfYield ? $"  ({Lang.Get("@ui.carcass_spoiling")})" : "";
                 prompts.Add((top, "E", $"{Lang.Get("@ui.butcher")} — {Lang.Get(carcass.Def.Name)}{state}"));
                 var light = Isle.Gameplay.Hunting.CarcassCalculator.ClassFor(carcass.Weight) != Isle.Gameplay.Hunting.CarryClass.WorldOnly;
-                prompts.Add((top + Vector2.up * 0.55f, "G", Lang.Get(light ? "@ui.haul_pick" : "@ui.haul_drag")));
+                prompts.Add((top + Up * 0.55f, "G", Lang.Get(light ? "@ui.haul_pick" : "@ui.haul_drag")));
                 return prompts;
             }
 
             var pile = LootPiles.Nearest(position, PlayerInteraction.ReachTiles);
-            if (pile != null) prompts.Add((pile.Position + Vector2.up * 0.7f, "E", Lang.Get("@ui.pick_up")));
+            if (pile != null)
+            {
+                prompts.Add((Above(pile.Position, 0.7f), "E", Lang.Get("@ui.pick_up")));
+                Isle.UI.Art.InteractHighlight.Show(pile.View);
+            }
 
             var harvest = world.NearestNode(position, PlayerInteraction.ReachTiles, n => n.IsHarvestable);
             var nearStation = WorldObjectRegistry.NearestInteractable(position, PlayerInteraction.ReachTiles);
@@ -316,17 +326,22 @@ namespace Isle.UI.Prototype
             if (pile == null)
             {
                 if (waterDistance < harvestDistance && waterDistance < stationDistance)
-                    prompts.Add((IslandWorld.TileToWorld(water.Value) + Vector2.up * 0.5f, "E", $"{Lang.Get("@ui.drink")} — {Lang.Get(world.WaterAt(water.Value).Name)}"));
+                    prompts.Add((Above(IslandWorld.TileToWorld(water.Value), 0.5f), "E", $"{Lang.Get("@ui.drink")} — {Lang.Get(world.WaterAt(water.Value).Name)}"));
                 else if (harvest != null && harvestDistance <= stationDistance)
-                    prompts.Add((harvest.Position + Vector2.up * (NodeHeight(harvest) + 0.3f), "E", $"{Lang.Get("@ui.harvest")} — {Lang.Get(harvest.Def.Name)}"));
+                {
+                    prompts.Add((Above(harvest.Position, NodeHeight(harvest) + 0.3f), "E", $"{Lang.Get("@ui.harvest")} — {Lang.Get(harvest.Def.Name)}"));
+                    if (harvest.View != null) Isle.UI.Art.InteractHighlight.Show(harvest.View.gameObject);
+                }
                 else if (nearStation != null)
                 {
                     var name = Lang.Get(nearStation.Def?.Name);
                     if (nearStation.TryGetComponent<RainCatcher>(out var catcher)) name += $" ({catcher.Water:0.0}/{catcher.Capacity:0})";
                     if (nearStation.TryGetComponent<CropPlot>(out var plot) && plot.Crop != null) name = $"{Lang.Get(plot.Crop.Name)} {plot.Growth * 100f:0}%";
-                    var top = (Vector2)nearStation.transform.position + Vector2.up * ((nearStation.Def?.Visual?.Size ?? 1f) * 0.95f + 0.2f);
+                    var flat = nearStation.Def?.Visual?.Flat == true;
+                    var top = flat ? Above(nearStation.transform.position, 0.4f) : Above(nearStation.transform.position, (nearStation.Def?.Visual?.Size ?? 1f) * 0.95f + 0.2f);
                     prompts.Add((top, "E", name));
-                    if (IsNight() && nearStation.HasTag("station/campfire")) prompts.Add((top + Vector2.up * 0.7f, "R", Lang.Get("@ui.rest_short")));
+                    Isle.UI.Art.InteractHighlight.Show(nearStation.gameObject);
+                    if (IsNight() && nearStation.HasTag("station/campfire")) prompts.Add((top + Up * 0.7f, "R", Lang.Get("@ui.rest_short")));
                 }
             }
 

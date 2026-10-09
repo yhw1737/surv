@@ -60,6 +60,8 @@ namespace Isle.UI.Prototype
             root.AddComponent<PlayerCamera>();
             root.AddComponent<Isle.UI.Art.StickFigureDirector>();
             root.AddComponent<Isle.UI.Art.CreatureFigureDirector>();
+            root.AddComponent<Isle.UI.Art.InteractHighlight>();
+            root.AddComponent<Isle.UI.Art.OcclusionFader>();
             root.AddComponent<FeedbackOverlay>();
             root.AddComponent<MapState>();
             root.AddComponent<Minimap>();
