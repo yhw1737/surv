@@ -82,6 +82,9 @@ middle or the open sea is deep.
 - **Standing nodes block their trunk.** A def's `block_radius` (tiles) is a circle around the node no walker's centre
   enters: tree 0.4, palm 0.3, rock 0.45 [invented]; bushes and grass 0. Felled or mined-out nodes don't block. Someone
   already inside a wall (a tree grew back on them) moves freely until out.
+- **Used-up nodes leave a remnant until they grow back** (2026-10-09, developer): a def's `visual.depleted` shape —
+  trees and palms a stump, rocks and veins rubble, berry bushes a bare bush, grass stubble. Remnants don't block.
+  Without one, the node fades to a ghost as before.
 - Standing nodes sit up to 0.3 tiles off their tile centre (hashed per tile, fixed) [invented], so woods aren't a grid.
 
 ## Gathering

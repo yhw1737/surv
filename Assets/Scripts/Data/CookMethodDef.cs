@@ -17,7 +17,9 @@ namespace Isle.Data
         /// <summary>Station this must be performed at, e.g. <c>isle:forge</c>.</summary>
         public NamespacedId Station { get; init; }
 
-        public float DurationSec { get; init; }
+        /// <summary>SYS-COOK-01 §Cook time: this method's time multiplier (grill 1, boil 1.5, stew 2, dry and smoke 3;
+        /// 0 = instant, eating raw).</summary>
+        public float TimeMult { get; init; } = 1f;
         public CookInput Input { get; init; }
         public CookModifiers Modifiers { get; init; }
 

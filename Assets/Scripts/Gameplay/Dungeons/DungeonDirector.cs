@@ -651,14 +651,12 @@ namespace Isle.Gameplay.Dungeons
 
         // ------------------------------------------------------------------ interaction
 
-        /// <summary>What E would do here, for the HUD: world point, key cap, label. Null when nothing dungeon-related is in reach.</summary>
+        /// <summary>What E would do here, for the HUD: world point, key cap, label. Null when nothing dungeon-related is
+        /// in reach. Work under way (mining, clearing) is <see cref="Progress"/> instead.</summary>
         public (Vector2 At, string Text)? Prompt(PlayerInteraction player)
         {
             Vector2 at = player.transform.position;
-            if (_mining.TryGetValue(player, out var mining))
-                return (mining.Vein.Position + Vector2.up * 1.2f, $"{Lang("@ui.gathering")} {Mathf.Clamp01((Time.time - mining.StartedAt) / mining.Seconds) * 100f:0}%");
-            if (_clearing.TryGetValue(player, out var clearing))
-                return (clearing.Gate.Position + Vector2.up * 1.6f, $"{GateName(clearing.Floor)} {Mathf.Clamp01((Time.time - clearing.StartedAt) / clearing.Seconds) * 100f:0}%");
+            if (_mining.ContainsKey(player) || _clearing.ContainsKey(player)) return null;
             var target = Nearest(at);
             return target switch
             {
@@ -817,6 +815,17 @@ namespace Isle.Gameplay.Dungeons
         }
 
         public bool IsClearing(PlayerInteraction player) => _clearing.ContainsKey(player);
+
+        /// <summary>Work in progress here (mining a vein, clearing a gate): where, and how far along — the HUD draws a
+        /// bar. Null when the player isn't doing either.</summary>
+        public (Vector2 At, float Height, float Fraction)? Progress(PlayerInteraction player)
+        {
+            if (_mining.TryGetValue(player, out var mining))
+                return (mining.Vein.Position, 1.2f, Mathf.Clamp01((Time.time - mining.StartedAt) / mining.Seconds));
+            if (_clearing.TryGetValue(player, out var clearing))
+                return (clearing.Gate.Position, 1.6f, Mathf.Clamp01((Time.time - clearing.StartedAt) / clearing.Seconds));
+            return null;
+        }
 
         string GateName(Floor floor) => Lang(floor.Site.Def.Gate?.Name ?? "@gate.rubble");
 

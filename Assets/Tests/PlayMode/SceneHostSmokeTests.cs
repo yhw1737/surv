@@ -150,6 +150,12 @@ namespace Isle.Tests.PlayMode
             player.RequestHaul();
             yield return WaitUntil(() => CountOf(inventory, "isle:carcass__rabbit") == 1, 2f, "rabbit carcass never picked up");
             Assert.IsFalse(CreatureDirector.Instance.Carcasses.Contains(rabbit), "picked-up carcass still on the ground");
+            // G with nothing in reach puts the bagged carcass down in front of you; G again picks it back up.
+            player.RequestHaul();
+            yield return WaitUntil(() => CountOf(inventory, "isle:carcass__rabbit") == 0, 2f, "G never put the bagged carcass down");
+            Assert.IsTrue(CreatureDirector.Instance.Carcasses.Any(c => c.Def.Id.Value == "isle:rabbit"), "put-down carcass isn't on the ground");
+            player.RequestHaul();
+            yield return WaitUntil(() => CountOf(inventory, "isle:carcass__rabbit") == 1, 2f, "put-down carcass never picked up again");
             var carried = inventory.Containers().SelectMany(c => c.Placements).First(pl => pl.Item.Id.Value == "isle:carcass__rabbit");
             Assert.AreEqual(rabbit.Weight, carried.Wear.Carcass.WeightKg, 1e-4f, "carried body lost its weight");
             var bagIndex = inventory.Containers().IndexOf(inventory.Containers().First(c => c.Placements.Contains(carried)));
@@ -259,7 +265,10 @@ namespace Isle.Tests.PlayMode
             // SYS-COOK-01: grill one raw meat at the lit campfire → a generated dish; eating it grants the grill's
             // meat reaction (endurance) and its cooked nutrition.
             player.RequestCook("isle:grill", new[] { "isle:raw_meat" });
-            yield return WaitUntil(() => Dish(inventory) != null, 3f, "meat never cooked");
+            // SYS-COOK-01 §Cook time: it takes a few seconds now, standing still.
+            yield return WaitUntil(() => player.Cooking != null || Dish(inventory) != null, 2f, "cooking didn't start");
+            Assert.IsNull(Dish(inventory), "cooked instantly");
+            yield return WaitUntil(() => Dish(inventory) != null, 12f, "meat never cooked");
             Assert.AreEqual(rawBefore - 1, CountOf(inventory, "isle:raw_meat"));
             var dish = Dish(inventory);
             Assert.Greater(dish.Nutrition.Hunger, 0f);

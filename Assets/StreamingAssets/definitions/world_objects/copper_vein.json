@@ -37,6 +37,7 @@
   },
   "visual": {
     "shape": "ore_vein",
+    "depleted": "rubble",
     "color": "#B9744A",
     "size": 1.15
   }

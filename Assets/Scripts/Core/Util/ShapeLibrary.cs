@@ -33,6 +33,7 @@ namespace Isle.Core.Util
             "campfire", "crate", "warehouse", "workbench", "pot", "rack", "rain_catcher", "plot", "sack",
             "sea_cave", "giant_tree", "sinkhole", "ruin_gate", "stairs_down", "stairs_up", "key", "locked_door",
             "gate_water", "gate_roots", "gate_bars", "gate_runes", "chest", "ore_vein", "furnace", "anvil", "wreckage",
+            "stump", "rubble", "bush_bare", "stubble",
         };
 
         /// <summary>A sprite one world unit across at scale 1, cached per (shape, colour).</summary>
@@ -206,6 +207,43 @@ namespace Isle.Core.Util
                     canvas.Inked = false;
                     canvas.Circle(0.42f, 0.62f, 0.05f, light);
                     canvas.Inked = true;
+                    break;
+                // What's left after a harvest, until the node grows back (visual.depleted).
+                case "stump":
+                    // A cut trunk: flared roots, bark sides, a pale cut face with rings.
+                    canvas.Tri(0.38f, 0.04f, 0.62f, 0.04f, 0.5f, 0.1f, Bark);
+                    canvas.Rect(0.43f, 0.04f, 0.57f, 0.12f, Bark);
+                    canvas.Ellipse(0.5f, 0.12f, 0.07f, 0.025f, Wood);
+                    canvas.Inked = false;
+                    canvas.Ellipse(0.5f, 0.12f, 0.035f, 0.012f, Color.Lerp(Wood, Bark, 0.4f));
+                    canvas.Inked = true;
+                    break;
+                case "rubble":
+                    canvas.Ellipse(0.36f, 0.1f, 0.11f, 0.07f, dark);
+                    canvas.Ellipse(0.6f, 0.09f, 0.13f, 0.07f, c);
+                    canvas.Ellipse(0.5f, 0.15f, 0.08f, 0.06f, c);
+                    canvas.Ellipse(0.74f, 0.13f, 0.06f, 0.045f, dark);
+                    canvas.Inked = false;
+                    canvas.Ellipse(0.57f, 0.12f, 0.05f, 0.02f, light);
+                    canvas.Inked = true;
+                    break;
+                case "bush_bare":
+                    // The bush picked clean: the same mound, duller and without berries.
+                {
+                    var dull = Color.Lerp(c, new Color(0.45f, 0.4f, 0.3f), 0.35f);
+                    canvas.Circle(0.3f, 0.3f, 0.18f, Color.Lerp(dull, Color.black, 0.3f));
+                    canvas.Circle(0.7f, 0.3f, 0.18f, Color.Lerp(dull, Color.black, 0.3f));
+                    canvas.Circle(0.5f, 0.42f, 0.22f, dull);
+                    canvas.Circle(0.3f, 0.38f, 0.15f, dull);
+                    canvas.Circle(0.7f, 0.38f, 0.15f, dull);
+                    break;
+                }
+                case "stubble":
+                    for (var i = 0; i < 6; i++)
+                    {
+                        var x = 0.24f + i * 0.1f;
+                        canvas.Rect(x - 0.015f, 0.05f, x + 0.015f, 0.1f + (i % 3) * 0.025f, i % 2 == 0 ? c : dark);
+                    }
                     break;
                 case "grass":
                     for (var i = 0; i < 7; i++)

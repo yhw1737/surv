@@ -6,6 +6,20 @@
 ## Header
 
 - Last updated: **2026-10-09**
+- **2026-10-09 — T-302 work feedback.** Branch `feature/T-302-work-feedback`, stacked on `feature/T-301-world-feel`
+  (PR #44). Developer requests: (1) used-up nodes leave a stump /
+  rubble / bare bush / stubble (`visual.depleted`, `IslandWorld.ApplyLook`, 4 new shapes) instead of fading; (2) a
+  bagged carcass couldn't be taken out — G with nothing in reach now puts it down ahead (`PutDownBagged`), and a pick-up
+  with a full bag leaves it in the world instead of a loot pile; (3) carcass spoilage shown as % of the way to gone
+  (`CarcassCalculator.SpoilShare`) on the bag tile bar, in the tooltip and in the E prompt; (4) cooking takes time —
+  developer chose `(4 + 2n) × time_mult × (1 − 0.5·Lv/50)` and gathering-like rules (stand still, ingredients taken at
+  the end, cancel free) — `CookTimeCalculator`, `CookMethodDef.TimeMult` replaces the unused `duration_sec`,
+  `PlayerInteraction.Cooking/UpdateCook/CanCook/FinishCook`; (5) timed work (gather, butcher, cook, dungeon mining and
+  clearing) shows only a progress bar (`PrototypeHud.DrawProgress`, `DungeonDirector.Progress`). Also: the editor
+  migrated `Assets/Settings/UniversalRP.asset` (asset version 12 → 13). **Verified:** EditMode 688/688 (+6
+  `CookTimeTests`, +4 `CarcassSpoilShareTests`), PlayMode 3/3 (cooking starts, isn't instant, finishes; G puts the
+  bagged rabbit down and picks it up again); remnants rendered (stumps, rubble, bare bush, stubble). Not verified
+  visually: the IMGUI progress bar and tooltip lines, the bag tile freshness bar.
 - **2026-10-09 — T-301 world feel.** Branch `feature/T-301-world-feel`, stacked on `feature/T-090-quality` (PR #43).
   — [PR #44](https://github.com/yhw1737/surv/pull/44). Developer request (one PR): smooth water collision, see-through occluders, orange outline on what E acts on, wider
   fog of war, trees impassable, tree variety. Built: `World/Island/ShoreField` (the ground renderer's blurred water
@@ -1982,6 +1996,12 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-09 — T-302 values
+  Developer-decided: cook time formula and constants (base 4 s, 2 s per ingredient, Lv 50 saves half), method
+  multipliers grill 1 / boil 1.5 / stew 2 / dry 3 / smoke 3 (raw 0), gathering-like cook rules. [invented]: cook
+  cancel distance = the gather leash 0.3 tiles, put-down distance 0.6 tiles ahead, spoilage % = spoilage / 1.5, the
+  remnant drawings and which node gets which, progress bar 64 × 7 px.
+
 - ### 2026-10-09 — T-301 world-feel values
   Developer-decided: reveal radius 16 → 24 tiles ("좀 넓혀줘" — 24 chosen). [invented]: block radius tree 0.4 / palm
   0.3 / rock 0.45, node offset ±0.3 tiles, occluder alpha 0.35 and fade 7/s, player screen box 1.9 × 0.7 tiles,

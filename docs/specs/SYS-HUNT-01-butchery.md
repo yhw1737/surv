@@ -195,3 +195,11 @@ coast, wolf in the forest, crocodile in the marsh); small carcasses go **in the 
 
 Not yet: hide quality (T-090); a two-player carry pose (the carcass just sits between them).
 
+Revised 2026-10-09 (developer: a bagged frog couldn't be taken out, spoilage should be visible):
+- **G with nothing in reach puts down a carcass carried in the bags**, 0.6 tiles ahead; G on it picks it up again.
+  Dragging it out of the inventory onto the ground still works too. Picking one up with no room in the bags leaves it
+  where it lies ("bag is full") instead of turning it into a loot pile.
+- **Spoilage is shown as a percentage of the way from fresh to gone** (`SpoilShare = spoilage / 1.5`; going off from
+  33%, rotten from 53%): a freshness bar on the carcass's bag tile, a line in its tooltip (with "G — put down"), and in
+  the E prompt over a carcass on the ground.
+

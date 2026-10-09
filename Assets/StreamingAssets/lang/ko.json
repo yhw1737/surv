@@ -575,5 +575,7 @@
   "quality.common": "보통",
   "quality.fine": "고급",
   "quality.superior": "최고급",
-  "quality.master": "명품"
+  "quality.master": "명품",
+  "ui.spoilage": "부패도",
+  "ui.cook_cancelled": "요리를 멈췄습니다"
 }

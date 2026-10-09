@@ -218,12 +218,27 @@ namespace Isle.UI.Prototype
         {
             var camera = Camera.main;
             if (camera == null) return;
+            _progress = null;
             foreach (var (at, key, text) in PromptsFor(_player))
             {
                 var screen = camera.WorldToScreenPoint(at);
                 if (screen.z < 0f) continue;
                 DrawBubble(new Vector2(screen.x, Screen.height - screen.y), key, text);
             }
+            if (_progress is { } bar && camera.WorldToScreenPoint(bar.At) is var p && p.z > 0f)
+                DrawProgress(new Vector2(p.x, Screen.height - p.y), bar.Fraction);
+        }
+
+        /// <summary>A plain progress bar over work that takes time (gathering, butchering, cooking).</summary>
+        static void DrawProgress(Vector2 anchor, float fraction)
+        {
+            const float width = 64f, height = 7f;
+            var rect = new Rect(anchor.x - width * 0.5f, anchor.y - height, width, height);
+            GUI.color = new Color(0f, 0f, 0f, 0.7f);
+            GUI.DrawTexture(rect, Texture2D.whiteTexture);
+            GUI.color = UiTheme.Accent;
+            GUI.DrawTexture(new Rect(rect.x + 1f, rect.y + 1f, (rect.width - 2f) * Mathf.Clamp01(fraction), rect.height - 2f), Texture2D.whiteTexture);
+            GUI.color = Color.white;
         }
 
         void DrawBubble(Vector2 anchor, string key, string text)
@@ -252,6 +267,19 @@ namespace Isle.UI.Prototype
 
         /// <summary>World point, key, text for every prompt that applies right now. Mirrors the server: E goes to the
         /// nearest of water, a harvestable node or a station; a loot pile is picked up first.</summary>
+        /// <summary>A carcass's spoilage as the UI shows it: a percentage of the way to gone, and the stage once it's
+        /// going off.</summary>
+        static string SpoilText(float spoilage)
+        {
+            var text = $"{Isle.Gameplay.Hunting.CarcassCalculator.SpoilShare(spoilage) * 100f:0}%";
+            if (Isle.Gameplay.Hunting.CarcassCalculator.IsRotten(spoilage)) return $"{text} · {Lang.Get("@ui.carcass_rotten")}";
+            if (spoilage >= Isle.Gameplay.Hunting.CarcassCalculator.SpoilHalfYield) return $"{text} · {Lang.Get("@ui.carcass_spoiling")}";
+            return text;
+        }
+
+        /// <summary>This frame's work-in-progress bar (where, how far), or null.</summary>
+        static (Vector3 At, float Fraction)? _progress;
+
         /// <summary>Up for something standing in the tilted view (toward the camera), and a point that high over a foot.</summary>
         static Vector3 Up => Isle.Core.Util.ViewTilt.Standing * Vector3.up;
 
@@ -276,22 +304,32 @@ namespace Isle.UI.Prototype
                 prompts.Add((Above(player.Hauling.Position, player.Hauling.Radius * 2f + 0.4f), "G", Lang.Get("@ui.haul_drop")));
                 return prompts;
             }
+            // Work that takes time shows only a progress bar, no words (DrawPrompt draws it).
             if (player.Butchering != null)
             {
-                prompts.Add((Above(player.Butchering.Position, player.Butchering.Radius * 2f + 0.4f), null, $"{Lang.Get("@ui.butchering")} {player.ButcherProgress * 100f:0}%"));
+                _progress = (Above(player.Butchering.Position, player.Butchering.Radius * 2f + 0.4f), player.ButcherProgress);
                 return prompts;
             }
             if (player.Gathering != null)
             {
-                prompts.Add((Above(player.Gathering.Position, NodeHeight(player.Gathering) + 0.3f), null, $"{Lang.Get("@ui.gathering")} {player.GatherProgress * 100f:0}%"));
+                _progress = (Above(player.Gathering.Position, NodeHeight(player.Gathering) + 0.3f), player.GatherProgress);
+                return prompts;
+            }
+            if (player.Cooking != null)
+            {
+                _progress = (Above(Isle.UI.Art.StickFigureView.PositionOf(player), 2.1f), player.CookProgress);
                 return prompts;
             }
 
+            if (Isle.Gameplay.Dungeons.DungeonDirector.Instance?.Progress(player) is { } work)
+            {
+                _progress = (Above(work.At, work.Height), work.Fraction);
+                return prompts;
+            }
             var dungeon = Isle.Gameplay.Dungeons.DungeonDirector.Instance?.Prompt(player);
             if (dungeon != null)
             {
-                var clearing = Isle.Gameplay.Dungeons.DungeonDirector.Instance.IsClearing(player);
-                prompts.Add((dungeon.Value.At, clearing ? null : "E", dungeon.Value.Text));
+                prompts.Add((dungeon.Value.At, "E", dungeon.Value.Text));
                 return prompts;
             }
 
@@ -301,8 +339,7 @@ namespace Isle.UI.Prototype
             {
                 var top = Above(carcass.Position, carcass.Radius * 2f + 0.4f);
                 Isle.UI.Art.InteractHighlight.Show(carcass.View);
-                var state = Isle.Gameplay.Hunting.CarcassCalculator.IsRotten(carcass.Spoilage) ? $"  ({Lang.Get("@ui.carcass_rotten")})"
-                    : carcass.Spoilage >= Isle.Gameplay.Hunting.CarcassCalculator.SpoilHalfYield ? $"  ({Lang.Get("@ui.carcass_spoiling")})" : "";
+                var state = $"  ({Lang.Get("@ui.spoilage")} {SpoilText(carcass.Spoilage)})";
                 prompts.Add((top, "E", $"{Lang.Get("@ui.butcher")} — {Lang.Get(carcass.Def.Name)}{state}"));
                 var light = Isle.Gameplay.Hunting.CarcassCalculator.ClassFor(carcass.Weight) != Isle.Gameplay.Hunting.CarryClass.WorldOnly;
                 prompts.Add((top + Up * 0.55f, "G", Lang.Get(light ? "@ui.haul_pick" : "@ui.haul_drag")));
@@ -365,6 +402,11 @@ namespace Isle.UI.Prototype
             if (wear?.Quality is { } quality)
                 lines.Add($"{Lang.Get("@ui.quality")}: {Lang.Get("@quality." + quality.ToString().ToLowerInvariant())} (×{Isle.Gameplay.Crafting.QualityCalculator.PowerMult(quality):0.##})");
             if (wear != null && wear.Carcass == null) lines.Add($"{Lang.Get("@ui.durability")}: {wear.Current} / {wear.Max}");
+            if (wear?.Carcass is { } body)
+            {
+                lines.Add($"{Lang.Get("@ui.spoilage")}: {SpoilText(body.Spoilage)}");
+                lines.Add($"G — {Lang.Get("@ui.haul_drop")}");
+            }
 
             if (DishFactory.IsDish(item))
             {

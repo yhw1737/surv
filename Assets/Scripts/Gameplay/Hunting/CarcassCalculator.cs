@@ -43,6 +43,10 @@ namespace Isle.Gameplay.Hunting
             spoilage + minutes * SpoilRatePerMinute * TempFactor(ambientTemp);
 
         /// <summary>Yield multiplier once it's going off (above 0.5 → ×0.6).</summary>
+        /// <summary>Spoilage as a share of the way to gone (<see cref="SpoilGone"/>), 0..1 — what the UI shows as a
+        /// percentage. Going off from 0.33, rotten from 0.53.</summary>
+        public static float SpoilShare(float spoilage) => Math.Clamp(spoilage / SpoilGone, 0f, 1f);
+
         public static float YieldMult(float spoilage) => spoilage >= SpoilHalfYield ? SpoilHalfYieldMult : 1f;
 
         /// <summary>Above 0.8 only rotten meat comes off it.</summary>

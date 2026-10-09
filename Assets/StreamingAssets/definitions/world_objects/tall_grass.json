@@ -34,6 +34,7 @@
   },
   "visual": {
     "shape": "grass",
+    "depleted": "stubble",
     "color": "#7DBA4A",
     "size": 0.9
   }
