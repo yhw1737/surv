@@ -106,6 +106,9 @@ namespace Isle.Networking
         Vector2 _rollDirection;
         Vector2 _lastDirection = Vector2.down;
 
+        /// <summary>The last direction moved in (unit length) — what a dragged load trails behind.</summary>
+        public Vector2 LastDirection => _lastDirection;
+
         static bool CanStand(Vector2 position) => IsWalkable == null || IsWalkable(position);
 
         void Awake()

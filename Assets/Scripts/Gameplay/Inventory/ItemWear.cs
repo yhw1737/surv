@@ -12,6 +12,10 @@ namespace Isle.Gameplay.Inventory
         public int Current { get; private set; }
         public int Max { get; private set; }
 
+        /// <summary>SYS-HUNT-01: for a carried carcass, the body it holds (weight, condition, spoilage). The wear numbers
+        /// are unused then. Same travel path as wear: slot, bag, pile, save.</summary>
+        public Hunting.CarcassState Carcass { get; init; }
+
         public bool Broken => Current <= 0;
         public bool NeedsRepair => Current < Max;
         public float Fraction => Max > 0 ? Current / (float)Max : 0f;

@@ -33,7 +33,7 @@ namespace Isle.Gameplay.Inventory
         }
 
         /// <summary>Durable items are individuals: they never merge into a stack (each keeps its own wear).</summary>
-        public static bool Stacks(ItemDef item) => !(item?.Durability > 0);
+        public static bool Stacks(ItemDef item) => !(item?.Durability > 0) && !(item?.Tags?.Contains("carcass") ?? false);
 
         public GridSize EffectiveSize() => Rotated
             ? new GridSize { W = Item.Grid.H, H = Item.Grid.W }
@@ -205,7 +205,7 @@ namespace Isle.Gameplay.Inventory
         }
 
         /// <summary>Sum of <c>Item.Weight * Count</c> across every placement — feeds <see cref="WeightCalculator"/>.</summary>
-        public float TotalWeightKg() => _placements.Sum(p => p.Item.Weight * p.Count);
+        public float TotalWeightKg() => _placements.Sum(p => (p.Wear?.Carcass?.WeightKg ?? p.Item.Weight) * p.Count);
 
         bool Fits(Placement placement) => FitsAt(placement.Position, placement.EffectiveSize(), exclude: null);
 

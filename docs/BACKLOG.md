@@ -293,8 +293,10 @@ stood up now so the solo beta is already a listen-server session with one client
   > **2026-10-08**: done — `ButcheryCalculator` with the 4 spec cases + rabbit; kills leave carcasses, E butchers over time (split among up to 3), Cooking + best knife + kill method + overkill + condition set the yield; meat 2.5 kg pieces (min 1); copper/steel knife 0.85/1.08. See SYS-HUNT-01 §Implementation.
 - [x] **T-073** Cut splitting + damage-sensitive outputs
   > **2026-10-08**: done with T-072 — yields split by share, damage-sensitive cuts (hides) by survival rate; blunt kills ruin hide. Hide quality tiers wait for T-090.
-- [ ] **T-074** ★ Carcass drag (solo path; the two-player carry lands with T-046)
-- [ ] **T-075** Carcass spoilage + predator scent
+- [x] **T-074** ★ Carcass drag (solo path; the two-player carry lands with T-046)
+  > **2026-10-09**: done with T-075 — G picks up carcasses under 15 kg into the bag (body travels with the item), drags heavier ones at ×0.4, a second player makes it a ×0.8 two-person carry. See SYS-HUNT-01 §Implementation (T-074 + T-075).
+- [x] **T-075** Carcass spoilage + predator scent
+  > **2026-10-09**: done — spoilage by temperature (≥0.5 ×0.6, ≥0.8 rotten meat only, 1.5 gone), scent draws the biome's scavengers (max 2), flies on spoiling carcasses.
 - [ ] **T-080** `FishSelector` weighting
   > **2026-10-03 (prototype)**: `FishSelector` done for handline (SYS-FISH-01 §Species selection). Rod/minigame still open.
 - [ ] **T-081** Tension minigame

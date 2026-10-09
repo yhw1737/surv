@@ -172,6 +172,26 @@ How it's wired:
   wolf 0.2, crocodile 0.8, fox 0.03, rabbit 0.015, snake 0.015 (min 0 — a ruined hide gives nothing).
 - Cooking XP for butchering: 5 + 2 per piece [invented].
 
-Not yet: carrying and dragging (T-074), carcass spoilage and scent (T-075), hide quality from survival rate (needs
-T-090 quality), carcasses never disappear on their own until T-075.
+Not yet: hide quality from survival rate (needs T-090 quality).
+
+## Implementation (T-074 + T-075, 2026-10-09)
+
+Decided with the developer: scavengers are **the biome's aggressive animals** (creature tag `scavenger`: crab on the
+coast, wolf in the forest, crocodile in the marsh); small carcasses go **in the bag** as the spec says.
+
+- `CarcassCalculator` (static pure) — §Spoilage and scent and §Carrying constants and formulas.
+- **Spoilage**: world carcasses spoil with the air temperature, carried ones with the carrier's, per in-game minute.
+  ≥ 0.5 yields ×0.6; ≥ 0.8 only rotten meat — each meat cut turns into its own `spoilage.result` item (data-driven),
+  hide is lost. At **1.5** [invented] only bones are left and the carcass disappears. Drawn greener as it spoils, with
+  flies from 0.5; the prompt says "going off" / "rotten".
+- **Scent**: every 5 in-game minutes each world carcass rolls 0.15 to draw a scavenger of its tile's biome, placed on
+  the scent circle (6 + 0.12 × kg) and homed on the carcass. At most **2 per carcass** [invented]. None underground.
+- **Carrying** (G): under 15 kg → into the bag as a generated item (`isle:carcass__<animal>`, 1×2 if the species
+  averages under 5 kg, else 2×3) carrying its body (weight, condition, kill factor, spoilage) — weight counts for real,
+  it survives saves and death piles, dropping it from the bag lays the carcass back down. Over 15 kg → dragged:
+  speed ×0.4, it trails 0.8 tiles behind [invented], no attacking, gathering, butchering or rolling. A second player
+  pressing G on it takes the other end: both move at ×0.8 and it rides between them; more than 2.5 tiles apart
+  [invented] and the helper lets go. G again puts it down.
+
+Not yet: hide quality (T-090); a two-player carry pose (the carcass just sits between them).
 

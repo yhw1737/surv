@@ -201,6 +201,13 @@ namespace Isle.UI.Art
                     p.Polygon(new[] { V(0.26f, 0.56f), V(0.34f, 0.66f), V(0.7f, 0.66f), V(0.78f, 0.56f) }, a, true, 0.02f);
                     p.Line(V(0.3f, 0.44f), V(0.5f, 0.44f), 0.02f, Light(c, 0.4f), false);
                     break;
+                case "carcass":
+                    // A small body on its back, legs up — what's carried home to butcher.
+                    p.Ellipse(V(0.5f, 0.42f), 0.3f, 0.17f, 0f, c);
+                    p.Ellipse(V(0.5f, 0.38f), 0.2f, 0.09f, 0f, a);
+                    p.Disk(V(0.2f, 0.36f), 0.11f, c);
+                    foreach (var x in new[] { 0.36f, 0.48f, 0.6f, 0.7f }) p.Line(V(x, 0.55f), V(x + 0.03f, 0.78f), 0.05f, Dark(c, 0.15f));
+                    break;
                 case "pearl":
                     p.Polygon(new[] { V(0.18f, 0.3f), V(0.3f, 0.62f), V(0.5f, 0.7f), V(0.7f, 0.62f), V(0.82f, 0.3f), V(0.5f, 0.2f) }, a, true, 0.04f);
                     p.Disk(V(0.5f, 0.46f), 0.17f, c);

@@ -6,7 +6,18 @@
 ## Header
 
 - Last updated: **2026-10-09**
-- **2026-10-09 — T-300 Unity 6000.3.10f1 + tilted perspective view + pencil look (uncommitted).**
+- **2026-10-09 — T-074 + T-075 carcass hauling, spoilage and scent.** Branch `feature/T-074-075-carcass`,
+  stacked on `feature/T-300-unity-6000.3` (PR #41) — built before T-300, restored onto it so the two don't conflict. Developer decisions: scavengers are the biome's aggressive animals; small
+  carcasses go in the bag. Built: `CarcassCalculator` (pure), `CarcassState` carried on the item record
+  (`ItemWear.Carcass`), generated carcass items (`CarcassItems`), carcass-aware stacking and carried weight;
+  `CreatureDirector` spoilage/scent/despawn ticks, `TakeCarcass`/`PutCarcass`/`MoveCarcass`, rotten cuts via each meat's
+  spoilage result; hauling in `PlayerInteraction` (G: pick up / drag / help carry / put down, speed via Vitals, no
+  attack/gather/roll while hauling), dropping a carried carcass lays it down; saves keep carried bodies; HUD prompts;
+  greener carcasses with flies; carcass icon; `scavenger` tag on crab, wolf, crocodile. **Verified:** EditMode 646/646
+  (+8 `CarcassTests`), PlayMode 3/3 (rabbit picked up → dropped → butchered; boar dragged at ×0.4 and follows; left to
+  rot it gives rotten meat and no hide); spoiling carcasses and icons rendered. The SceneHost bow check now accepts an
+  arrow that hits something close at once (animals roam near after the day skip).
+- **2026-10-09 — T-300 Unity 6000.3.10f1 + tilted perspective view + pencil look.**
   Branch `feature/T-300-unity-6000.3` off `main` (after PR #40) — [PR #41](https://github.com/yhw1737/surv/pull/41). Developer authorised all three and asked for ~10
   minutes of autonomous work. **Upgrade:** ProjectVersion 6000.3.10f1 (Apple silicon editor; the Intel 6000.2.7f2
   editor crashed under Rosetta), packages bumped (URP 17.3.0, 2d.animation 13.0.4, inputsystem 1.18.0, test-framework
@@ -23,8 +34,6 @@
   rough ink edge and a 6 fps line boil. **Verified:** EditMode 645/645 (+7 `ViewTiltTests`: screen centre → focus,
   round trip, perspective reach, billboard facing, pencil transparency/fill/ink), PlayMode 3/3; rendered beach, forest,
   close-up and icons. Note: the wider far view now shows the fog of war's edge (SYS-MAP-01 reveal radius, unchanged).
-  **Stashed:** T-074/075 carcass hauling, spoilage, scent — `stash@{0}` (verified 646/3 before stashing), to restore
-  on its own branch `feature/T-074-075-carcass`.
 - **2026-10-08 — T-072 butchery.** Branch `feature/T-072-butchery` off `feature/T-167-shipwreck-start` (PR #39)
   — [PR #40](https://github.com/yhw1737/surv/pull/40). Developer decisions: 2.5 kg per raw meat (min 1), copper/steel knife 0.85/1.08, kills leave a
   carcass that E butchers over time. Built: `ButcheryCalculator` (SYS-HUNT-01 §Yield/§Cuts/§Carrying time, pure);
@@ -1946,6 +1955,9 @@ since it's server-side gauge math with no UI yet:
 
 > ⚠️ Everything here is **debt owed to the spec sheets**. Let it accumulate and balancing becomes impossible.
 
+- ### 2026-10-09 — T-074/075 fill-ins
+  [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
+  co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
 - ### 2026-10-09 — T-300 view and pencil look (presentation only)
   [invented] look values: camera pitch 40° off straight down, vertical FOV 35°, 8.5 tiles above/below the focus (the
   old orthographic half-height), camera from the south. Standing things billboard toward the camera; ground, water,
