@@ -7,7 +7,7 @@
 
 - Last updated: **2026-10-09**
 - **2026-10-09 — T-302 work feedback.** Branch `feature/T-302-work-feedback`, stacked on `feature/T-301-world-feel`
-  (PR #44). Developer requests: (1) used-up nodes leave a stump /
+  (PR #44) — [PR #45](https://github.com/yhw1737/surv/pull/45). Developer requests: (1) used-up nodes leave a stump /
   rubble / bare bush / stubble (`visual.depleted`, `IslandWorld.ApplyLook`, 4 new shapes) instead of fading; (2) a
   bagged carcass couldn't be taken out — G with nothing in reach now puts it down ahead (`PutDownBagged`), and a pick-up
   with a full bag leaves it in the world instead of a loot pile; (3) carcass spoilage shown as % of the way to gone
