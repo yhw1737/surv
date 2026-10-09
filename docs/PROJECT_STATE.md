@@ -7,7 +7,7 @@
 
 - Last updated: **2026-10-09**
 - **2026-10-09 — T-301 world feel.** Branch `feature/T-301-world-feel`, stacked on `feature/T-090-quality` (PR #43).
-  Developer request (one PR): smooth water collision, see-through occluders, orange outline on what E acts on, wider
+  — [PR #44](https://github.com/yhw1737/surv/pull/44). Developer request (one PR): smooth water collision, see-through occluders, orange outline on what E acts on, wider
   fog of war, trees impassable, tree variety. Built: `World/Island/ShoreField` (the ground renderer's blurred water
   field, shared by collision — walk to the drawn shoreline), `IslandWorld.IsWalkable` = smooth shore + standing-node
   trunks (`block_radius` on tree/palm/rock; felled nodes don't block; `BlockedByNode` via the tile index), standing
@@ -21,7 +21,7 @@
   trees); rendered a dense wood (variety, fading, outline), a pine close-up, a carcass outline, the walkable edge
   along a beach.
 - **2026-10-09 — T-090 quality tiers.** Branch `feature/T-090-quality`, stacked on `feature/T-074-075-carcass`
-  (PR #42), **uncommitted** (waiting for the developer's check). Built: `QualityCalculator` (SYS-CRAFT-01 §Quality score, tiers, power /
+  (PR #42) — [PR #43](https://github.com/yhw1737/surv/pull/43). Built: `QualityCalculator` (SYS-CRAFT-01 §Quality score, tiers, power /
   durability / slot table, material purity), `QualityTier`; `ItemWear.Quality` (kept through repair, saved as tier+1);
   `CmdCraft` gives gear a tier from the crafter's own level, consumed inputs' purity, the station's `station_tier`
   (new world-object field: workbench 0.25, furnace/anvil 0.5) and a 0.5 minigame stand-in; max durability scaled by
