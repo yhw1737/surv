@@ -7,7 +7,7 @@
 
 - Last updated: **2026-10-09**
 - **2026-10-09 — T-074 + T-075 carcass hauling, spoilage and scent.** Branch `feature/T-074-075-carcass`,
-  stacked on `feature/T-300-unity-6000.3` (PR #41) — built before T-300, restored onto it so the two don't conflict. Developer decisions: scavengers are the biome's aggressive animals; small
+  stacked on `feature/T-300-unity-6000.3` (PR #41) — [PR #42](https://github.com/yhw1737/surv/pull/42). Built before T-300, restored onto it so the two don't conflict. Developer decisions: scavengers are the biome's aggressive animals; small
   carcasses go in the bag. Built: `CarcassCalculator` (pure), `CarcassState` carried on the item record
   (`ItemWear.Carcass`), generated carcass items (`CarcassItems`), carcass-aware stacking and carried weight;
   `CreatureDirector` spoilage/scent/despawn ticks, `TakeCarcass`/`PutCarcass`/`MoveCarcass`, rotten cuts via each meat's
