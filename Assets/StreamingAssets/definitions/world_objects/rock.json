@@ -34,9 +34,11 @@
     },
     "time_sec": 8
   },
+  "block_radius": 0.45,
   "visual": {
     "shape": "rock",
     "color": "#8C8C8C",
-    "size": 1.15
+    "size": 1.15,
+    "jitter": 0.12
   }
 }

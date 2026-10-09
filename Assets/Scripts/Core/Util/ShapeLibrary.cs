@@ -43,15 +43,75 @@ namespace Isle.Core.Util
             return _cache[(shape, colour)] = UnityEngine.Sprite.Create(texture, new Rect(0, 0, Size, Size), new Vector2(0.5f, 0.5f), Size, 0, SpriteMeshType.FullRect);
         }
 
-        static readonly Dictionary<(string, Color), Sprite> _standing = new();
+        static readonly Dictionary<(string, Color, int), Sprite> _standing = new();
 
         /// <summary>The same drawing with its pivot at the foot of the shape (shapes stand on the bottom of their canvas),
-        /// so a tree is placed by its trunk and sorts by where it meets the ground.</summary>
-        public static Sprite StandingSprite(string shape, Color colour)
+        /// so a tree is placed by its trunk and sorts by where it meets the ground. <paramref name="variant"/> picks one
+        /// of a shape's alternative drawings (<see cref="VariantCount"/>); shapes without any ignore it.</summary>
+        public static Sprite StandingSprite(string shape, Color colour, int variant = 0)
         {
-            if (_standing.TryGetValue((shape, colour), out var sprite)) return sprite;
-            var texture = Sprite(shape, colour).texture;
-            return _standing[(shape, colour)] = UnityEngine.Sprite.Create(texture, new Rect(0, 0, Size, Size), new Vector2(0.5f, FootPivot), Size, 0, SpriteMeshType.FullRect);
+            variant = VariantCount(shape) > 1 ? Mathf.Abs(variant) % VariantCount(shape) : 0;
+            if (_standing.TryGetValue((shape, colour, variant), out var sprite)) return sprite;
+            var texture = variant == 0 ? Sprite(shape, colour).texture : Draw(shape, colour, variant);
+            return _standing[(shape, colour, variant)] = UnityEngine.Sprite.Create(texture, new Rect(0, 0, Size, Size), new Vector2(0.5f, FootPivot), Size, 0, SpriteMeshType.FullRect);
+        }
+
+        /// <summary>How many drawings a shape has: trees 4 (round, tall, spreading, conifer), palms 2.</summary>
+        public static int VariantCount(string shape) => shape switch
+        {
+            "tree" => 4,
+            "palm" => 2,
+            _ => 1,
+        };
+
+        /// <summary>The tree's other drawings: 1 tall and narrow, 2 low and spreading, 3 a conifer.</summary>
+        static void DrawTreeVariant(Canvas canvas, int variant, Color c, Color light, Color dark)
+        {
+            switch (variant)
+            {
+                case 1:
+                    canvas.Tri(0.38f, 0.04f, 0.62f, 0.04f, 0.5f, 0.16f, Bark);
+                    canvas.Rect(0.46f, 0.04f, 0.54f, 0.42f, Bark);
+                    canvas.Ellipse(0.5f, 0.46f, 0.17f, 0.12f, dark);
+                    canvas.Ellipse(0.5f, 0.6f, 0.2f, 0.2f, c);
+                    canvas.Ellipse(0.46f, 0.76f, 0.16f, 0.16f, c);
+                    canvas.Ellipse(0.55f, 0.85f, 0.12f, 0.12f, c);
+                    canvas.Inked = false;
+                    canvas.Ellipse(0.43f, 0.72f, 0.05f, 0.08f, light);
+                    canvas.Circle(0.55f, 0.86f, 0.04f, light);
+                    canvas.Inked = true;
+                    break;
+                case 2:
+                    canvas.Tri(0.3f, 0.04f, 0.7f, 0.04f, 0.5f, 0.22f, Bark);
+                    canvas.Rect(0.42f, 0.04f, 0.58f, 0.4f, Bark);
+                    canvas.Line(0.46f, 0.32f, 0.26f, 0.46f, 0.03f, Bark);
+                    canvas.Line(0.54f, 0.32f, 0.76f, 0.46f, 0.03f, Bark);
+                    canvas.Circle(0.22f, 0.48f, 0.15f, dark);
+                    canvas.Circle(0.78f, 0.48f, 0.15f, dark);
+                    canvas.Circle(0.5f, 0.46f, 0.17f, dark);
+                    canvas.Circle(0.17f, 0.6f, 0.15f, c);
+                    canvas.Circle(0.83f, 0.6f, 0.15f, c);
+                    canvas.Circle(0.36f, 0.66f, 0.19f, c);
+                    canvas.Circle(0.64f, 0.66f, 0.19f, c);
+                    canvas.Circle(0.5f, 0.76f, 0.16f, c);
+                    canvas.Inked = false;
+                    canvas.Circle(0.32f, 0.72f, 0.06f, light);
+                    canvas.Circle(0.6f, 0.78f, 0.05f, light);
+                    canvas.Circle(0.16f, 0.64f, 0.04f, light);
+                    canvas.Inked = true;
+                    break;
+                default:
+                    // Conifer: four stacked tiers, darker underneath.
+                    canvas.Rect(0.46f, 0.04f, 0.54f, 0.26f, Bark);
+                    canvas.Tri(0.14f, 0.18f, 0.86f, 0.18f, 0.5f, 0.52f, dark);
+                    canvas.Tri(0.19f, 0.34f, 0.81f, 0.34f, 0.5f, 0.68f, Color.Lerp(c, dark, 0.5f));
+                    canvas.Tri(0.25f, 0.5f, 0.75f, 0.5f, 0.5f, 0.83f, c);
+                    canvas.Tri(0.32f, 0.66f, 0.68f, 0.66f, 0.5f, 0.97f, c);
+                    canvas.Inked = false;
+                    canvas.Tri(0.4f, 0.7f, 0.47f, 0.7f, 0.47f, 0.9f, light);
+                    canvas.Inked = true;
+                    break;
+            }
         }
 
         /// <summary>Fraction of the canvas below a standing shape's foot (trunks start at about 4%).</summary>
@@ -61,11 +121,16 @@ namespace Isle.Core.Util
         public static Color ParseColour(string hex, Color fallback) =>
             !string.IsNullOrEmpty(hex) && ColorUtility.TryParseHtmlString(hex, out var colour) ? colour : fallback;
 
-        public static Texture2D Draw(string shape, Color c)
+        public static Texture2D Draw(string shape, Color c, int variant = 0)
         {
             var canvas = new Canvas();
             var light = Color.Lerp(c, Color.white, 0.35f);
             var dark = Color.Lerp(c, Color.black, 0.35f);
+            if (shape == "tree" && variant > 0)
+            {
+                DrawTreeVariant(canvas, variant, c, light, dark);
+                return canvas.Finish();
+            }
             switch (shape)
             {
                 case "tree":
@@ -94,15 +159,19 @@ namespace Isle.Core.Util
                 }
                 case "palm":
                 {
-                    // A leaning, segmented trunk under a burst of drooping fronds and two coconuts.
-                    var px = new[] { 0.46f, 0.48f, 0.52f, 0.57f, 0.6f };
-                    var py = new[] { 0.04f, 0.2f, 0.36f, 0.52f, 0.66f };
+                    // A leaning, segmented trunk under a burst of drooping fronds and two coconuts. Variant 1 is taller,
+                    // straighter, with a fuller crown.
+                    var tall = variant == 1;
+                    var px = tall ? new[] { 0.48f, 0.49f, 0.5f, 0.52f, 0.54f } : new[] { 0.46f, 0.48f, 0.52f, 0.57f, 0.6f };
+                    var py = tall ? new[] { 0.04f, 0.22f, 0.4f, 0.57f, 0.72f } : new[] { 0.04f, 0.2f, 0.36f, 0.52f, 0.66f };
                     for (var i = 0; i < 4; i++) canvas.Line(px[i], py[i], px[i + 1], py[i + 1], 0.045f - i * 0.004f, i % 2 == 0 ? Bark : Color.Lerp(Bark, Color.white, 0.12f));
                     // Fronds fan out from the crown and droop at the tips — the side ones most.
-                    const float crownX = 0.6f, crownY = 0.66f;
-                    for (var i = 0; i < 7; i++)
+                    var crownX = px[4];
+                    var crownY = py[4];
+                    var fronds = tall ? 9 : 7;
+                    for (var i = 0; i < fronds; i++)
                     {
-                        var a = Mathf.Lerp(12f, 168f, i / 6f) * Mathf.Deg2Rad;
+                        var a = Mathf.Lerp(12f, 168f, i / (fronds - 1f)) * Mathf.Deg2Rad;
                         var side = Mathf.Abs(Mathf.Cos(a));
                         var tipX = crownX + Mathf.Cos(a) * 0.36f;
                         var tipY = crownY + Mathf.Sin(a) * 0.2f - 0.2f * side * side;
@@ -112,8 +181,8 @@ namespace Isle.Core.Util
                         canvas.Tri(crownX, crownY, midX, midY + 0.06f, tipX, tipY, colour);
                         canvas.Tri(crownX, crownY, midX, midY - 0.04f, tipX, tipY, colour);
                     }
-                    canvas.Circle(0.56f, 0.62f, 0.045f, Bark);
-                    canvas.Circle(0.65f, 0.61f, 0.045f, Bark);
+                    canvas.Circle(crownX - 0.04f, crownY - 0.04f, 0.045f, Bark);
+                    canvas.Circle(crownX + 0.05f, crownY - 0.05f, 0.045f, Bark);
                     break;
                 }
                 case "rock":

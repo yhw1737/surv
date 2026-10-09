@@ -73,6 +73,17 @@ middle or the open sea is deep.
 | `isle:river` | river | 7 **[invented]** | width 2–3 **[invented]** | `stream` | freshwater | 1.0 **[invented]** |
 | `isle:ocean` | ocean | — | everything off-island | `seawater` | saltwater | 2.0 **[invented]** |
 
+## Walls (2026-10-09, developer request)
+
+- **Water's edge is the drawn shoreline, not the tile grid.** Per-tile water (sea, ponds, rivers = 1, land = 0) is
+  blurred with the 5×5 binomial kernel and interpolated between tile centres (`ShoreField`); a point is water where
+  that field is ≥ 0.5. This is exactly the line `GroundRenderer` paints, so you walk to the water you see. A single
+  water tile is too small to draw or to block (field 0.14).
+- **Standing nodes block their trunk.** A def's `block_radius` (tiles) is a circle around the node no walker's centre
+  enters: tree 0.4, palm 0.3, rock 0.45 [invented]; bushes and grass 0. Felled or mined-out nodes don't block. Someone
+  already inside a wall (a tree grew back on them) moves freely until out.
+- Standing nodes sit up to 0.3 tiles off their tile centre (hashed per tile, fixed) [invented], so woods aren't a grid.
+
 ## Gathering
 
 A node with a `gather` block can be harvested while it has uses left. **Harvesting takes time**

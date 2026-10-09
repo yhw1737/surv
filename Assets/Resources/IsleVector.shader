@@ -5,11 +5,19 @@
 // Drawn in pencil (2026-10-09): paper grain, hatching in dark tones, rough graphite ink, and a gentle line boil.
 Shader "Isle/Vector"
 {
-    Properties { }
+    Properties
+    {
+        // A solid colour instead of the drawing (alpha > 0): the orange outline copies behind an interactable.
+        _Silhouette ("Silhouette", Color) = (0, 0, 0, 0)
+    }
 
     HLSLINCLUDE
     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
     #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
+
+    CBUFFER_START(UnityPerMaterial)
+        float4 _Silhouette;
+    CBUFFER_END
 
     // Pencil look (Core/Util/PencilLook.cs mirrors this; keep the two in step). Values [invented look].
     #define PENCIL_CELLS_PER_UNIT 45.0
@@ -93,6 +101,9 @@ Shader "Isle/Vector"
         #if !defined(UNITY_COLORSPACE_GAMMA)
         c.rgb = SRGBToLinear(c.rgb);
         #endif
+        // Material colours arrive already in the blending colour space.
+        // Only the solid drawing makes the outline — not the faint foot shadow or other see-through parts.
+        if (_Silhouette.a > 0.0) c = half4(_Silhouette.rgb, colourSRGB.a < 0.5 ? 0.0 : c.a * _Silhouette.a);
         return c;
     }
     ENDHLSL
@@ -152,6 +163,7 @@ Shader "Isle/Vector"
             half4 frag(Varyings input) : SV_Target
             {
                 half4 pencil = PencilFragment(input.color, input.uv, input.positionOS);
+                if (_Silhouette.a > 0.0) return pencil; // outlines glow the same by day and night
                 SurfaceData2D surfaceData;
                 InputData2D inputData;
                 InitializeSurfaceData(pencil.rgb, pencil.a, half4(1, 1, 1, 1), half3(0, 0, 1), surfaceData);

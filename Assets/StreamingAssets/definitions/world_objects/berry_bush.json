@@ -34,6 +34,7 @@
   "visual": {
     "shape": "bush",
     "color": "#3C8F45",
-    "size": 1.1
+    "size": 1.1,
+    "jitter": 0.1
   }
 }

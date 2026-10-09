@@ -433,6 +433,8 @@ This document constrains us before it serves modders.
 | World object | `light_radius` | Tiles of light while active (lit campfire) |
 | World object | `station_tier` | 0..1, SYS-CRAFT-01 `stationTier` for gear crafted at it (workbench 0.25, furnace and anvil 0.5). 2026-10-09 |
 | World object | `visual.flat` | Lies on the ground instead of standing toward the camera (crop plot). 2026-10-09 |
+| World object | `block_radius` | Tiles around a standing node nothing walks through (tree 0.4, rock 0.45); felled nodes don't block. 2026-10-09 |
+| World object | `visual.jitter` | 0..1 per-node variety: size and shade up to ±this, random mirroring; shapes with variants (tree 4, palm 2) also pick a drawing. 2026-10-09 |
 | Weapon | `ammo` | Item each shot uses up — set means the weapon is ranged |
 | Weapon | `projectile_speed` | Tiles per second |
 | Creature | `spawn.time` | Now also the creature's waking hours — it sleeps outside them |

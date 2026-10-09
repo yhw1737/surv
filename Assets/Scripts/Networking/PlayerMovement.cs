@@ -20,7 +20,8 @@ namespace Isle.Networking
     /// stamina when <see cref="IsSprinting"/> is set or <see cref="RollStarted"/> fires.
     /// </para>
     /// <para>
-    /// No collider/<c>Rigidbody2D</c>: the sea is the only wall, checked through <see cref="IsWalkable"/>.
+    /// No collider/<c>Rigidbody2D</c>: water and standing nodes (tree trunks, rocks) are the walls, checked through
+    /// <see cref="IsWalkable"/>.
     /// </para>
     /// </summary>
     public sealed class PlayerMovement : TickNetworkBehaviour
@@ -191,8 +192,10 @@ namespace Isle.Networking
 
             // Each axis is checked on its own, so walking diagonally into the shore slides along it.
             var position = transform.position;
-            if (CanStand(position + new Vector3(step.x, 0f))) position.x += step.x;
-            if (CanStand(position + new Vector3(0f, step.y))) position.y += step.y;
+            // Somewhere you can't stand (a tree grew back on you, an old save): walk out freely.
+            var free = !CanStand(position);
+            if (free || CanStand(position + new Vector3(step.x, 0f))) position.x += step.x;
+            if (free || CanStand(position + new Vector3(0f, step.y))) position.y += step.y;
             transform.position = position;
         }
 

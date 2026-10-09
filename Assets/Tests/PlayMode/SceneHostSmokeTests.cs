@@ -108,6 +108,11 @@ namespace Isle.Tests.PlayMode
             // Harvests take time now (SYS-WORLD-03); a master gatherer keeps the test short (tree 10 s → 3 s).
             player.Skills.Restore(NamespacedId.Parse("isle:gathering"), Isle.Gameplay.Skills.XpCurve.TotalXpTo(50));
             yield return HarvestNearest(player, world, "isle:tree");
+            // Standing trees block their trunk; a felled one doesn't.
+            var standingTree = world.Nodes.First(n => n.Def.Id.Value == "isle:tree" && n.UsesLeft > 0);
+            Assert.IsFalse(world.IsWalkable(standingTree.Position), "walked through a tree trunk");
+            var felled = world.Nodes.First(n => n.Def.Id.Value == "isle:tree" && n.UsesLeft <= 0);
+            Assert.IsTrue(world.IsWalkable(felled.Position), "a felled tree still blocks");
             yield return HarvestNearest(player, world, "isle:rock");
             Assert.AreEqual(4, CountOf(inventory, "isle:wood"), "tree harvest");
             Assert.Greater(player.Skills.TotalXp(NamespacedId.Parse("isle:gathering")), 0d, "harvesting earned no gathering XP");
@@ -547,7 +552,8 @@ namespace Isle.Tests.PlayMode
                 for (var offset = -20; offset <= 20; offset += 4)
                 {
                     var tile = new Isle.Core.Vec2Int(size / 2 + (direction.Y != 0 ? offset : 0), size / 2 + (direction.X != 0 ? offset : 0));
-                    while (world.IsWalkable(IslandWorld.TileToWorld(tile)) || world.WaterAt(tile) != null && world.WaterAt(tile).Ocean == false)
+                    // Out from the middle until the sea (trees and ponds on the way don't stop the search).
+                    for (var steps = 0; world.WaterAt(tile)?.Ocean != true && steps < size; steps++)
                         tile = new Isle.Core.Vec2Int(tile.X + direction.X, tile.Y + direction.Y);
                     if (world.WaterAt(tile)?.Ocean != true) continue;
                     var shore = new Isle.Core.Vec2Int(tile.X - direction.X, tile.Y - direction.Y);

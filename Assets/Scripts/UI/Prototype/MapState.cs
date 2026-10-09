@@ -17,7 +17,7 @@ namespace Isle.UI.Prototype
 
         /// <summary>The revealed edge fades over this many tiles instead of stepping cell by cell. Presentation.</summary>
         const float EdgeFadeTiles = 5f;
-        public const float RevealRadiusTiles = 16f;
+        public const float RevealRadiusTiles = 24f;
         public const int MarkerCapacity = 32;
 
         static readonly Color32 Hidden = new(10, 12, 18, 255);

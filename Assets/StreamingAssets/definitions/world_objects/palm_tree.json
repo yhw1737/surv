@@ -31,9 +31,11 @@
     },
     "time_sec": 6
   },
+  "block_radius": 0.3,
   "visual": {
     "shape": "palm",
     "color": "#3E9B3A",
-    "size": 3.4
+    "size": 3.4,
+    "jitter": 0.12
   }
 }

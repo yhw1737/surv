@@ -108,6 +108,9 @@ namespace Isle.Data
         /// <summary>Lies on the ground (a crop plot, a rug) instead of standing up toward the camera. Things that stand
         /// — people, trees, stations — are the default.</summary>
         public bool Flat { get; init; }
+        /// <summary>Per-instance variety for placed nodes, 0..1: each one is up to this much larger or smaller and
+        /// lighter or darker, and may be mirrored. 0 draws them all alike.</summary>
+        public float Jitter { get; init; }
     }
 
     /// <summary>XP an action grants (docs/content/xp_table.md): <c>base + per_unit × units</c> to <c>skill</c>, before
