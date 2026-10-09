@@ -358,6 +358,8 @@ stood up now so the solo beta is already a listen-server session with one client
   > **2026-10-09**: done — ART_PIPELINE §Camera view. `ViewTilt` (stand, ground ray, focus), `PencilLook` + `IsleVector.shader`, `visual.flat`. URP 17.3 shader fix (shape-light textures now declared by URP).
 - [x] **T-301** World feel — smooth water collision along the drawn shore, trees/rocks block, see-through occluders, orange outline on the E target, wider fog reveal (24 tiles), tree variety. Developer request 2026-10-09
   > **2026-10-09**: done — SYS-WORLD-03 §Walls, ART_PIPELINE §Camera view, SYS-MAP-01 reveal 24. `ShoreField`, `block_radius`, `visual.jitter`, `OcclusionFader`, `InteractHighlight`, `Isle/Outline`.
+- [x] **T-302** Work feedback — remnants for used-up nodes, G puts a bagged carcass down, carcass spoilage shown, cooking takes time, timed work shows only a progress bar. Developer request 2026-10-09
+  > **2026-10-09**: done — SYS-COOK-01 §Cook time, SYS-HUNT-01 revision 2026-10-09, SYS-WORLD-03 §Walls (remnants), ART_PIPELINE. `CookTimeCalculator`, `visual.depleted`, `time_mult`, `SpoilShare`.
 - [ ] **T-150** Save / load round trip — quit mid-game, resume with world, inventory and skills intact
   > **2026-10-04 (prototype)**: JSON save in persistentDataPath — seed, clock, vitals, position, shelter, bag, hand, depleted nodes, campfires, loot piles. Autosave 60 s + on quit, F9 deletes. Skills aren't saved (no XP yet); creatures and weather re-roll. Not yet in SQLite, and the load path isn't covered by a PlayMode test.
 - [ ] **T-151** Solo bug pass — play the full loop repeatedly, fix what blocks it

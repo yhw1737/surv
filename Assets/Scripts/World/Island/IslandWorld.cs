@@ -482,11 +482,29 @@ namespace Isle.World.Island
         /// upload per batch, not per node.</summary>
         void Paint(ResourceNode node)
         {
-            // Every node is drawn as its own shape; a depleted one fades to a ghost of itself (a stump, a stripped
-            // bush). The map pixel underneath keeps the node's colour for the minimap while it has something to give.
+            // Every node is drawn as its own shape; a depleted one shows what's left (visual.depleted: a stump,
+            // rubble, a bare bush) or, without one, fades to a ghost of itself. The map pixel underneath keeps the
+            // node's colour for the minimap while it has something to give.
             var depleted = node.Def.Gather != null && node.UsesLeft <= 0;
-            if (node.View != null) node.View.color = depleted ? DepletedTint : Color.white;
+            ApplyLook(node);
             _map.SetPixel(node.Tile.X, node.Tile.Y, depleted ? BiomeColour(node.Tile) : NodeColour(node.Def));
+        }
+
+        /// <summary>The node's drawing for its state: live (its variant), its remnant, or a faded ghost.</summary>
+        void ApplyLook(ResourceNode node)
+        {
+            var view = node.View;
+            if (view == null) return;
+            var depleted = node.Def.Gather != null && node.UsesLeft <= 0;
+            var remnant = depleted ? node.Def.Visual?.Depleted : null;
+            var hash = NodeHash(node.Tile);
+            var jitter = node.Def.Visual?.Jitter ?? 0f;
+            var colour = NodeColour(node.Def);
+            if (jitter > 0f) colour = Shade(colour, (int)(hash >> 8) % 3, jitter);
+            var standing = node.Def.Gather != null;
+            view.sprite = !standing ? ShapeLibrary.Sprite(node.Def.Visual?.Shape, colour)
+                : ShapeLibrary.StandingSprite(remnant ?? node.Def.Visual?.Shape, colour, remnant != null ? 0 : (int)(hash % 7919u));
+            view.color = depleted && remnant == null ? DepletedTint : Color.white;
         }
 
         /// <summary>One of three shades of a node's colour: darker and cooler, as is, lighter and warmer.</summary>
@@ -514,10 +532,6 @@ namespace Isle.World.Island
             // hash, so the same island always looks the same.
             var hash = NodeHash(node.Tile);
             var jitter = node.Def.Visual?.Jitter ?? 0f;
-            var colour = NodeColour(node.Def);
-            if (jitter > 0f) colour = Shade(colour, (int)(hash >> 8) % 3, jitter);
-            view.sprite = standing ? ShapeLibrary.StandingSprite(node.Def.Visual?.Shape, colour, (int)(hash % 7919u))
-                : ShapeLibrary.Sprite(node.Def.Visual?.Shape, colour);
             if (standing && jitter > 0f) view.flipX = ((hash >> 24) & 1u) == 1u;
             view.spriteSortPoint = SpriteSortPoint.Pivot;
             view.sortingOrder = standing ? 2 : 1;
@@ -527,6 +541,7 @@ namespace Isle.World.Island
             view.transform.localScale = Vector3.one * ((node.Def.Visual?.Size ?? NodeDiameterTiles) * sizeJitter);
             if (standing) Isle.Core.Util.ViewTilt.Stand(view.transform);
             node.View = view;
+            ApplyLook(node); // live, or already used up (a save, or felled while out of view)
             var chunk = Chunk.CoordFromTilePosition(node.Tile);
             if (!_viewsByChunk.TryGetValue(chunk, out var list)) _viewsByChunk[chunk] = list = new List<SpriteRenderer>();
             list.Add(view);

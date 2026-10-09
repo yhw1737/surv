@@ -36,6 +36,7 @@
   "block_radius": 0.4,
   "visual": {
     "shape": "tree",
+    "depleted": "stump",
     "color": "#2F7D32",
     "size": 3.6,
     "jitter": 0.15

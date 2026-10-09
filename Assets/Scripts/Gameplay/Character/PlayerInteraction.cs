@@ -360,11 +360,12 @@ namespace Isle.Gameplay.Character
                 return;
             }
 
-            // Pressing E again while gathering or butchering stops it.
-            if (Gathering != null || Butchering != null)
+            // Pressing E again while gathering, butchering or cooking stops it.
+            if (Gathering != null || Butchering != null || Cooking != null)
             {
                 CancelGather();
                 Butchering = null;
+                Cooking = null;
                 return;
             }
 
@@ -607,6 +608,7 @@ namespace Isle.Gameplay.Character
 
         void StartGather(ResourceNode node)
         {
+            Cooking = null;
             Gathering = node;
             _gatherFrom = transform.position;
             _gatherStartedAt = Time.time;
@@ -655,21 +657,50 @@ namespace Isle.Gameplay.Character
             }
             var director = CreatureDirector.Instance;
             var carcass = director != null ? director.NearestCarcass(transform.position, ReachTiles) : null;
-            if (carcass == null) return;
+            if (carcass == null)
+            {
+                // Nothing to pick up: G puts down a carcass carried in the bag, in front of you.
+                if (director != null) PutDownBagged(director);
+                return;
+            }
             CancelGather();
             Butchering = null;
-            // Light enough: into the bag.
+            Cooking = null;
+            // Light enough: into the bag — or, with no room, it stays where it lies.
             if (CarcassCalculator.ClassFor(carcass.Weight) != CarryClass.WorldOnly
                 && DefRegistry.TryGet<ItemDef>(Modding.Defs.CarcassItems.IdFor(carcass.Def.Id), out var item)
                 && TryGetComponent<InventoryNetwork>(out var inventory))
             {
+                var at = carcass.Position;
                 var body = new ItemWear(1, 1) { Carcass = director.TakeCarcass(carcass) };
-                GiveItem(inventory, item, 1, body);
+                if (InventoryOps.TryGive(inventory.Containers(), item, 1, body))
+                    GameFeed.RaiseItemGained(item.Id, 1);
+                else
+                {
+                    director.PutCarcass(body.Carcass, at);
+                    GameFeed.RaiseNotice("@ui.bag_full");
+                }
                 return;
             }
             // Too heavy: drag it — or, if someone already is, take the other end.
             HaulHelping = All.Any(p => p != this && p.Hauling == carcass);
             Hauling = carcass;
+        }
+
+        /// <summary>Takes the first carcass carried in the bags out and lays it on the ground just ahead.</summary>
+        void PutDownBagged(CreatureDirector director)
+        {
+            if (!TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            foreach (var container in inventory.Containers())
+            foreach (var placed in container.Placements)
+            {
+                if (placed.Wear?.Carcass is not { } body) continue;
+                container.Remove(placed);
+                var ahead = TryGetComponent<PlayerMovement>(out var movement) ? movement.LastDirection : Vector2.down;
+                director.PutCarcass(body, (Vector2)transform.position + ahead * 0.6f);
+                GameFeed.RaiseItemDropped(placed.Item.Id, 1, transform.position);
+                return;
+            }
         }
 
         void UpdateHaul()
@@ -722,6 +753,7 @@ namespace Isle.Gameplay.Character
         {
             // People butchering the same carcass together split the time (up to 3).
             var together = 1 + All.Count(p => p != this && p.Butchering == carcass);
+            Cooking = null;
             Butchering = carcass;
             _butcherFrom = transform.position;
             _butcherStartedAt = Time.time;
@@ -825,6 +857,7 @@ namespace Isle.Gameplay.Character
             UpdateGather();
             UpdateButcher();
             UpdateHaul();
+            UpdateCook();
             UpdateCast();
             if (Fight == null) return;
             if (IsDead || Vector2.Distance(transform.position, _fightSpot) > FightLeashTiles)
@@ -1277,39 +1310,88 @@ namespace Isle.Gameplay.Character
 
         public void RequestCook(string methodId, IEnumerable<string> ingredientIds) => CmdCook(methodId, string.Join(",", ingredientIds));
 
-        /// <summary>SYS-COOK-01 §Resolution: validate (count, unlock level, station), take the ingredients, resolve,
-        /// and hand over the dish — or the method's failure result.</summary>
+        /// <summary>SYS-COOK-01 §Resolution + §Cook time: validate (count, unlock level, station, ingredients held),
+        /// then cook for the method's time — standing still, like gathering. The ingredients are taken and the dish
+        /// handed over (or the method's failure result) only when it's done; moving away cancels at no cost.</summary>
         [ServerRpc]
         void CmdCook(string methodText, string ingredientsText)
         {
             if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
             if (!NamespacedId.TryParse(methodText, out var methodId, out _) || !DefRegistry.TryGet<CookMethodDef>(methodId, out var method)) return;
-            var ids = (ingredientsText ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries);
-            if (!CookingResolver.CountAllowed(method, ids.Length)) return;
-            if (method.UnlockSkill != null && method.UnlockSkill.Level > CookingLevelFor(method))
-            {
-                GameFeed.RaiseNotice("@ui.method_locked");
-                return;
-            }
-            if (method.Station.IsValid && !WorldObjectRegistry.IsActiveNear(transform.position, method.Station, ReachTiles))
-            {
-                GameFeed.RaiseNotice("@ui.need_station");
-                return;
-            }
-
-            // Check everything is held (counting repeats) before taking anything.
-            var containers = inventory.Containers();
             var parsed = new List<NamespacedId>();
-            foreach (var text in ids)
+            foreach (var text in (ingredientsText ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries))
             {
                 if (!NamespacedId.TryParse(text, out var id, out _)) return;
                 parsed.Add(id);
             }
-            foreach (var group in parsed.GroupBy(id => id))
-                if (InventoryOps.Count(containers, group.Key) < group.Count()) return;
+            if (!CanCook(inventory, method, parsed, notify: true)) return;
 
+            var seconds = CookTimeCalculator.Seconds(parsed.Count, method.TimeMult, CookingLevelFor(method));
+            if (seconds <= 0f)
+            {
+                FinishCook(inventory, method, parsed);
+                return;
+            }
+            CancelGather();
+            Butchering = null;
+            Cooking = method;
+            _cookIngredients = parsed;
+            _cookFrom = transform.position;
+            _cookStartedAt = Time.time;
+            _cookSeconds = seconds;
+        }
+
+        /// <summary>The method being cooked right now, or null.</summary>
+        public CookMethodDef Cooking { get; private set; }
+
+        public float CookProgress => Cooking == null || _cookSeconds <= 0f ? 0f : Mathf.Clamp01((Time.time - _cookStartedAt) / _cookSeconds);
+
+        List<NamespacedId> _cookIngredients;
+        Vector2 _cookFrom;
+        float _cookStartedAt, _cookSeconds;
+
+        void UpdateCook()
+        {
+            if (Cooking == null) return;
+            if (IsDead || Vector2.Distance(transform.position, _cookFrom) > GatherLeashTiles)
+            {
+                if (!IsDead) GameFeed.RaiseNotice("@ui.cook_cancelled");
+                Cooking = null;
+                return;
+            }
+            if (Time.time - _cookStartedAt < _cookSeconds) return;
+            var method = Cooking;
+            Cooking = null;
+            // Checked again: the fire may have gone out or the food been moved while it cooked.
+            if (TryGetComponent<InventoryNetwork>(out var inventory) && CanCook(inventory, method, _cookIngredients, notify: true))
+                FinishCook(inventory, method, _cookIngredients);
+        }
+
+        bool CanCook(InventoryNetwork inventory, CookMethodDef method, List<NamespacedId> ingredients, bool notify)
+        {
+            if (!CookingResolver.CountAllowed(method, ingredients.Count)) return false;
+            if (method.UnlockSkill != null && method.UnlockSkill.Level > CookingLevelFor(method))
+            {
+                if (notify) GameFeed.RaiseNotice("@ui.method_locked");
+                return false;
+            }
+            if (method.Station.IsValid && !WorldObjectRegistry.IsActiveNear(transform.position, method.Station, ReachTiles))
+            {
+                if (notify) GameFeed.RaiseNotice("@ui.need_station");
+                return false;
+            }
+            // Everything held (counting repeats).
+            var containers = inventory.Containers();
+            foreach (var group in ingredients.GroupBy(id => id))
+                if (InventoryOps.Count(containers, group.Key) < group.Count()) return false;
+            return true;
+        }
+
+        void FinishCook(InventoryNetwork inventory, CookMethodDef method, List<NamespacedId> ids)
+        {
+            var containers = inventory.Containers();
             var ingredients = new List<ItemDef>();
-            foreach (var id in parsed)
+            foreach (var id in ids)
             {
                 var taken = InventoryOps.TakeOne(containers, id);
                 if (taken?.Nutrition == null) return;

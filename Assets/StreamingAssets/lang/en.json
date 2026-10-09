@@ -575,5 +575,7 @@
   "quality.common": "Common",
   "quality.fine": "Fine",
   "quality.superior": "Superior",
-  "quality.master": "Master"
+  "quality.master": "Master",
+  "ui.spoilage": "Spoilage",
+  "ui.cook_cancelled": "Stopped cooking"
 }

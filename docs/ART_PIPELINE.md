@@ -163,6 +163,8 @@ Added the same day (developer request):
 | See-through occluders | a standing sprite nearer the camera than the local player that covers the player on screen fades to 35% alpha (`OcclusionFader`) |
 | Interact highlight | whatever E would act on gets an orange outline: sprites a ring-only `Isle/Outline` copy, vector figures eight flat-orange copies (`IsleVector` `_Silhouette`) — unlit, so readable at night (`InteractHighlight`) |
 | Prompt bubbles | sit at the standing height above the object (`foot + up × h`), not h tiles north on the ground |
+| Work in progress | gathering, butchering, cooking, dungeon mining/clearing show **only a progress bar** over the work — no speech bubble or text (2026-10-09, developer: "과친절함") |
+| Remnants | used-up nodes draw `visual.depleted` (stump, rubble, bare bush, stubble) instead of fading |
 | Variety | trees draw one of 4 shapes (round, tall, spreading, conifer), palms 2; size ±jitter, 3 shades, mirrored — all from the tile's hash, so an island always looks the same |
 
 ## Sound

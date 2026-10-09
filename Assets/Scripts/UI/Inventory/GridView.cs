@@ -204,6 +204,15 @@ namespace Isle.UI.Inventory
         /// is washed red.</summary>
         internal static void WearBar(RectTransform parent, ItemWear wear)
         {
+            // SYS-HUNT-01: a carried carcass shows how fresh it is instead — green, then amber going off, red rotten.
+            if (wear?.Carcass is { } body)
+            {
+                var spoil = body.Spoilage;
+                var colour = spoil >= Isle.Gameplay.Hunting.CarcassCalculator.SpoilRotten ? Isle.UI.Prototype.UiTheme.Bad
+                    : spoil >= Isle.Gameplay.Hunting.CarcassCalculator.SpoilHalfYield ? Isle.UI.Prototype.UiTheme.Accent : Isle.UI.Prototype.UiTheme.Good;
+                Bar(parent, 1f - Isle.Gameplay.Hunting.CarcassCalculator.SpoilShare(spoil), colour);
+                return;
+            }
             if (wear == null || !wear.NeedsRepair) return;
             if (wear.Broken)
             {
@@ -217,6 +226,11 @@ namespace Isle.UI.Inventory
                 image.color = new Color(0.85f, 0.15f, 0.1f, 0.35f);
                 image.raycastTarget = false;
             }
+            Bar(parent, wear.Fraction, wear.Fraction > 0.5f ? Isle.UI.Prototype.UiTheme.Good : wear.Fraction > 0.2f ? Isle.UI.Prototype.UiTheme.Accent : Isle.UI.Prototype.UiTheme.Bad);
+        }
+
+        static void Bar(RectTransform parent, float fraction, Color colour)
+        {
             var back = new GameObject("Wear", typeof(RectTransform), typeof(Image));
             var backRect = (RectTransform)back.transform;
             backRect.SetParent(parent, false);
@@ -233,11 +247,11 @@ namespace Isle.UI.Inventory
             var fillRect = (RectTransform)fill.transform;
             fillRect.SetParent(backRect, false);
             fillRect.anchorMin = Vector2.zero;
-            fillRect.anchorMax = new Vector2(Mathf.Clamp01(wear.Fraction), 1f);
+            fillRect.anchorMax = new Vector2(Mathf.Clamp01(fraction), 1f);
             fillRect.offsetMin = new Vector2(1f, 1f);
             fillRect.offsetMax = new Vector2(-1f, -1f);
             var fillImage = fill.GetComponent<Image>();
-            fillImage.color = wear.Fraction > 0.5f ? Isle.UI.Prototype.UiTheme.Good : wear.Fraction > 0.2f ? Isle.UI.Prototype.UiTheme.Accent : Isle.UI.Prototype.UiTheme.Bad;
+            fillImage.color = colour;
             fillImage.raycastTarget = false;
         }
 

@@ -37,6 +37,7 @@
   "block_radius": 0.45,
   "visual": {
     "shape": "rock",
+    "depleted": "rubble",
     "color": "#8C8C8C",
     "size": 1.15,
     "jitter": 0.12

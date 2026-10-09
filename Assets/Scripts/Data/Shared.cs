@@ -111,6 +111,9 @@ namespace Isle.Data
         /// <summary>Per-instance variety for placed nodes, 0..1: each one is up to this much larger or smaller and
         /// lighter or darker, and may be mirrored. 0 draws them all alike.</summary>
         public float Jitter { get; init; }
+        /// <summary>Shape key drawn while a harvestable node is used up (a tree's stump), until it grows back. Null
+        /// fades the node to a faint ghost instead.</summary>
+        public string Depleted { get; init; }
     }
 
     /// <summary>XP an action grants (docs/content/xp_table.md): <c>base + per_unit × units</c> to <c>skill</c>, before

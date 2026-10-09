@@ -60,6 +60,27 @@ Intent: boil's 1.80 thirst is the early-drought answer; dry's 4.00 preservation 
 
 **There must be no best dish — only the right dish for the situation.**
 
+## Cook time (2026-10-09, developer)
+
+Cooking takes time, like gathering:
+
+```
+seconds = (4 + 2 × ingredients) × method.time_mult × (1 − 0.5 × cookingLevel / 50)
+time_mult: grill 1, boil 1.5, stew 2, dry 3, smoke 3, raw 0 (eating raw is instant)
+```
+
+- You stand still while it cooks; moving (more than 0.3 tiles) or pressing E again cancels it, at no cost.
+- Everything (count, unlock, station lit, ingredients held) is checked when it starts **and again when it's done**;
+  the ingredients are taken and the dish handed over only then.
+- Shown as a plain progress bar over the cook.
+
+| # | Case | Expected |
+|---|---|---|
+| 1 | grill, 1 ingredient, Lv 0 | 6 s |
+| 2 | boil, 3 ingredients, Lv 0 | 15 s |
+| 3 | dry, 2 ingredients, Lv 50 | 12 s |
+| 4 | raw | 0 s (instant) |
+
 ## Tag reactions
 
 ```json

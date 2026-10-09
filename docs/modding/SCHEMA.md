@@ -170,7 +170,7 @@ The engine applies SYS-HUNT-01's formula. Modders fill in `edible_ratio` and `yi
   "name": "@cook_method.steam_bake",
   "unlock_skill": { "skill": "isle:cooking", "level": 26 },
   "station": "coolmod:steam_oven",
-  "duration_sec": 90,
+  "time_mult": 1.5,
   "input": { "min_items": 1, "max_items": 5, "requires_water_ml": 200 },
   "modifiers": {
     "hunger": 1.15, "thirst": 0.9, "preservation": 1.4,
@@ -434,6 +434,8 @@ This document constrains us before it serves modders.
 | World object | `station_tier` | 0..1, SYS-CRAFT-01 `stationTier` for gear crafted at it (workbench 0.25, furnace and anvil 0.5). 2026-10-09 |
 | World object | `visual.flat` | Lies on the ground instead of standing toward the camera (crop plot). 2026-10-09 |
 | World object | `block_radius` | Tiles around a standing node nothing walks through (tree 0.4, rock 0.45); felled nodes don't block. 2026-10-09 |
+| World object | `visual.depleted` | Shape drawn while a harvestable node is used up (`stump`, `rubble`, `bush_bare`, `stubble`); none fades it to a ghost. 2026-10-09 |
+| Cook method | `time_mult` | SYS-COOK-01 §Cook time multiplier (grill 1, boil 1.5, dry 3, raw 0). Replaces the unused `duration_sec`. 2026-10-09 |
 | World object | `visual.jitter` | 0..1 per-node variety: size and shade up to ±this, random mirroring; shapes with variants (tree 4, palm 2) also pick a drawing. 2026-10-09 |
 | Weapon | `ammo` | Item each shot uses up — set means the weapon is ranged |
 | Weapon | `projectile_speed` | Tiles per second |
