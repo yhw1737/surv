@@ -79,7 +79,7 @@ You cannot build the core character presentation of an 18-month project on an AP
 
 | Layer | Choice | Note |
 |---|---|---|
-| Engine | Unity 6 LTS | version pinned |
+| Engine | Unity 6 LTS | version pinned — **6000.3.10f1** since 2026-10-09 (the one allowed upgrade, from 6000.2.7f2) |
 | **Scripting backend** | **Mono** | ★ prerequisite for modding |
 | Render | URP + 2D Renderer | 2D lights, normal maps |
 | Rig | `com.unity.2d.animation` | Limb solver = arms, look-at = head |
@@ -105,6 +105,11 @@ Player Settings → Configuration → Scripting Backend = Mono
 
 **2. Pin the Unity version**
 Pick one Unity 6 LTS minor and allow at most one major upgrade before EA. Do not chase releases: 2D Animation package upgrades have been reported to break existing bones and IK Manager 2D rigs, and the character rig is this game's heart. Upgrades go on a branch and merge only after rig regression tests pass. (Unity 6.3 drops Havok Physics from Pro/Enterprise — irrelevant for a 2D project.)
+
+> **2026-10-09: upgraded 6000.2.7f2 → 6000.3.10f1** (developer). The editor build is now Apple silicon, which also ends
+> the Rosetta translation crashes of the Intel editor. Packages moved with it (URP 17.3.0, 2D Animation 13.0.4, Input
+> System 1.18.0, Test Framework 1.6.0, …). No code changes were needed; EditMode 638/638 and PlayMode 3/3 on the new
+> editor. The rig isn't built yet, so the 2D Animation risk above didn't apply.
 
 **3. Build the mod API from day one**
 Author all internal content in the same JSON schema mods use. Not one hardcoded path. Design Addressables groups identically to mod asset bundles — once they diverge they cannot be merged. **This is how we offset the one category (C) where Unity loses: the engine doesn't provide it, so we build it now rather than in six months.**

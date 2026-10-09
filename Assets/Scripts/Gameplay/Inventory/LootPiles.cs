@@ -60,7 +60,7 @@ namespace Isle.Gameplay.Inventory
             view.transform.position = at;
             var renderer = view.AddComponent<SpriteRenderer>();
             renderer.sprite = shape != null ? ShapeLibrary.Sprite(shape, new Color(0.55f, 0.42f, 0.3f)) : _sprite;
-            renderer.sortingOrder = 4;
+            renderer.sortingOrder = 1; // lies on the ground: under anything standing (people, trees) in the tilted view
             view.transform.localScale = Vector3.one * (shape != null ? 1.4f : 0.7f); // wreckage is bigger than a sack
             pile.View = view;
 

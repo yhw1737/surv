@@ -500,7 +500,8 @@ namespace Isle.UI.Prototype
             if (camera == null || at == null) return;
 
             var screen = camera.WorldToScreenPoint(at.Value);
-            var pixelsPerTile = Screen.height / (camera.orthographicSize * 2f);
+            // A tile's on-screen size where the mouse is (the view is in perspective, so it shrinks with distance).
+            var pixelsPerTile = Mathf.Abs(camera.WorldToScreenPoint(at.Value + Vector2.right).x - screen.x);
             var ok = _player.CanPlaceAt(at.Value);
             GUI.color = ok ? new Color(0.3f, 1f, 0.3f, 0.5f) : new Color(1f, 0.3f, 0.3f, 0.5f);
             GUI.DrawTexture(new Rect(screen.x - pixelsPerTile * 0.45f, Screen.height - screen.y - pixelsPerTile * 0.45f, pixelsPerTile * 0.9f, pixelsPerTile * 0.9f), Texture2D.whiteTexture);
@@ -560,7 +561,7 @@ namespace Isle.UI.Prototype
             var mouse = Mouse.current;
             if (camera == null || mouse == null) return null;
             var p = mouse.position.ReadValue();
-            return camera.ScreenToWorldPoint(new Vector3(p.x, p.y, -camera.transform.position.z));
+            return Isle.Core.Util.ViewTilt.ScreenToGround(camera, p);
         }
 
         void DrawHelp()

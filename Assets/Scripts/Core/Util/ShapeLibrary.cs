@@ -405,7 +405,8 @@ namespace Isle.Core.Util
                     if (d < _union[i]) _union[i] = d;
                     // Cartoon line work: each primitive's own ink ring first, then its fill — overlapping parts keep
                     // the line where one sits on another (a canopy's blobs, a crate's planks).
-                    if (Inked) Blend(i, Outline, Mathf.Clamp01(0.5f - (d - OutlineWidth) / AaWidth));
+                    // Pencil: the outline's width wanders along the stroke.
+                    if (Inked) Blend(i, Outline, Mathf.Clamp01(0.5f - (d - OutlineWidth * PencilLook.InkWobble(x, y)) / AaWidth));
                     var coverage = Mathf.Clamp01(0.5f - d / AaWidth);
                     if (coverage <= 0f) continue;
                     Blend(i, colour, coverage);
@@ -472,9 +473,16 @@ namespace Isle.Core.Util
                 return -Mathf.Sqrt(dmin.x) * Mathf.Sign(dmin.y);
             }
 
-            /// <summary>Uploads (with mipmaps, trilinear). The ink is already drawn per primitive.</summary>
+            /// <summary>Canvas pixels per pencil paper cell.</summary>
+            const float PixelsPerPaperCell = 2.2f;
+
+            /// <summary>Pencil pass (<see cref="PencilLook"/>), then uploads (with mipmaps, trilinear). The ink is already
+            /// drawn per primitive.</summary>
             public Texture2D Finish()
             {
+                for (var y = 0; y < Size; y++)
+                for (var x = 0; x < Size; x++)
+                    _pixels[y * Size + x] = PencilLook.Shade(_pixels[y * Size + x], x / PixelsPerPaperCell, y / PixelsPerPaperCell);
                 var texture = new Texture2D(Size, Size, TextureFormat.RGBA32, mipChain: true) { filterMode = FilterMode.Trilinear, wrapMode = TextureWrapMode.Clamp };
                 texture.SetPixels(_pixels);
                 texture.Apply(updateMipmaps: true);

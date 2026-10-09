@@ -239,7 +239,7 @@ namespace Isle.World.Island
             var camera = Camera.main;
             if (camera == null) return;
 
-            var centre = Chunk.CoordFromTilePosition(WorldToTile(camera.transform.position));
+            var centre = Chunk.CoordFromTilePosition(WorldToTile(Isle.Core.Util.ViewTilt.FocusOr(camera)));
             var wanted = new HashSet<Vec2Int>();
             for (var dx = -VisibleChunkRadius; dx <= VisibleChunkRadius; dx++)
             for (var dy = -VisibleChunkRadius; dy <= VisibleChunkRadius; dy++)
@@ -453,6 +453,7 @@ namespace Isle.World.Island
             view.transform.SetParent(transform, worldPositionStays: false);
             view.transform.position = node.Position;
             view.transform.localScale = Vector3.one * (node.Def.Visual?.Size ?? NodeDiameterTiles);
+            if (standing) Isle.Core.Util.ViewTilt.Stand(view.transform);
             node.View = view;
             var chunk = Chunk.CoordFromTilePosition(node.Tile);
             if (!_viewsByChunk.TryGetValue(chunk, out var list)) _viewsByChunk[chunk] = list = new List<SpriteRenderer>();

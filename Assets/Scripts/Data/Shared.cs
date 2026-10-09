@@ -105,6 +105,9 @@ namespace Isle.Data
         public string Shape { get; init; }
         public string Color { get; init; }
         public float Size { get; init; } = 1f;
+        /// <summary>Lies on the ground (a crop plot, a rug) instead of standing up toward the camera. Things that stand
+        /// — people, trees, stations — are the default.</summary>
+        public bool Flat { get; init; }
     }
 
     /// <summary>XP an action grants (docs/content/xp_table.md): <c>base + per_unit × units</c> to <c>skill</c>, before

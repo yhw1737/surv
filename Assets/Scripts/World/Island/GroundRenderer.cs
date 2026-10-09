@@ -20,6 +20,9 @@ namespace Isle.World.Island
     {
         const int PixelsPerTile = 16;
         const int ChunkPixels = Chunk.Size * PixelsPerTile;
+        /// <summary>Pencil paper cells per tile on the ground — coarser than on figures, so ground strokes read as loose
+        /// shading. [invented look]</summary>
+        const float PaperCellsPerTile = 6f;
 
         /// <summary>Chunks around the camera to draw, and how far out to keep them before freeing. Presentation values.</summary>
         const int DrawRadius = 1;
@@ -44,7 +47,7 @@ namespace Isle.World.Island
         {
             var camera = Camera.main;
             if (_world == null || camera == null) return;
-            var centre = Chunk.CoordFromTilePosition(IslandWorld.WorldToTile(camera.transform.position));
+            var centre = Chunk.CoordFromTilePosition(IslandWorld.WorldToTile(Isle.Core.Util.ViewTilt.FocusOr(camera)));
 
             for (var dx = -DrawRadius - 1; dx <= DrawRadius + 1; dx++)
             for (var dy = -DrawRadius - 1; dy <= DrawRadius + 1; dy++)
@@ -168,7 +171,9 @@ namespace Isle.World.Island
                 var fine = SmoothNoise(wx / 0.7f, wy / 0.7f, 911) - 0.5f;
                 var broad = SmoothNoise(wx / 4f, wy / 4f, 733) - 0.5f;
                 var shade = 1f + fine * 0.07f + broad * 0.09f * (1f - wet * 0.6f);
-                pixels[py * ChunkPixels + px] = new Color(colour.r * shade, colour.g * shade, colour.b * shade, 1f);
+                // Pencil pass, in world space so strokes run on across chunk seams.
+                pixels[py * ChunkPixels + px] = PencilLook.Shade(new Color(colour.r * shade, colour.g * shade, colour.b * shade, 1f),
+                    wx * PaperCellsPerTile, wy * PaperCellsPerTile);
             }
             return pixels;
         }
