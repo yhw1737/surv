@@ -568,5 +568,12 @@
   "ui.haul_drag": "끌기",
   "ui.haul_drop": "내려놓기",
   "ui.carcass_spoiling": "상하는 중",
-  "ui.carcass_rotten": "썩음"
+  "ui.carcass_rotten": "썩음",
+  "ui.quality": "품질",
+  "ui.crafted_quality": "품질: {0}",
+  "quality.crude": "조잡",
+  "quality.common": "보통",
+  "quality.fine": "고급",
+  "quality.superior": "최고급",
+  "quality.master": "명품"
 }

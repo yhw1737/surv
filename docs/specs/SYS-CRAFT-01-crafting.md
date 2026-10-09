@@ -104,8 +104,28 @@ Scripts/Gameplay/Crafting/
   RepairSystem.cs
 ```
 
+## Implementation (T-090, 2026-10-09)
+
+The open questions below were filled in [invented] to unblock quality; they are listed in PROJECT_STATE §Decided
+without a spec and can be changed in one place each.
+
+| Input | Rule |
+|---|---|
+| `craftingLevel` | the crafter's own level in the recipe's primary skill (no adjacent assist) |
+| `materialPurity` | mean over every consumed unit: Crude 0, Common 0.25, Fine 0.5, Superior 0.75, Master 1; an input without a quality (raw materials) counts **0.5** |
+| `stationTier` | the recipe's station's `station_tier` (world-object data): workbench 0.25, furnace 0.5, anvil 0.5; no station 0 |
+| `minigameScore` | **0.5** until the forging minigame (T-091) exists |
+
+- Only gear gets a tier (items with `durability`; they never stack). Its max durability is
+  `round(base × durability mult)`; the tier rides on the item's wear record (slot, bag, pile, save) and survives repair.
+- `Power` scales a melee weapon's and a bow's damage, a tool's harvest speed, and each armor piece's protection.
+  Items with no tier (start gear, salvage, anything crafted before T-090) count as Common.
+- With these defaults a new survivor makes Common gear by hand (score ≈ 0.33); Crude needs poor inputs. Lv 30 at an
+  anvil makes Fine; Lv 50 makes Superior; Master needs the minigame or Master inputs.
+- Enchant slots follow the tier table but nothing fills them yet (T-106).
+
 ## Open questions
-- How `stationTier` is derived
-- How `materialPurity` is computed (mean quality tier of inputs?)
+- ~~How `stationTier` is derived~~ — [invented] above
+- ~~How `materialPurity` is computed~~ — [invented] above
 - The Core enchant type list
 - Whether Enchanting gets its own adjacent-assist / minigame, or reuses this sheet's — not decided, tracked at BACKLOG T-106

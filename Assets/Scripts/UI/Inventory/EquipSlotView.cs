@@ -104,7 +104,7 @@ namespace Isle.UI.Inventory
             _icon.GetComponent<EquipDragHandler>().Bind(this, item);
             // No Placement exists for an equipped item (no grid position/rotation) — build a bare one
             // just to feed ItemTooltip's existing name/weight/size display.
-            _icon.GetComponent<ItemTooltip>().Bind(new Placement(item, default, false), null);
+            _icon.GetComponent<ItemTooltip>().Bind(new Placement(item, default, false, 1, Slots.WearOf(SlotName)), null);
         }
     }
 }

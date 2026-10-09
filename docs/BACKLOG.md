@@ -305,7 +305,8 @@ stood up now so the solo beta is already a listen-server session with one client
 
 ## Phase 7 · Crafting + cooking ★
 
-- [ ] **T-090** `QualityCalculator` + 5 verification cases
+- [x] **T-090** `QualityCalculator` + 5 verification cases
+  > **2026-10-09**: done — SYS-CRAFT-01 §Implementation (T-090). Crafted gear carries a tier (`ItemWear.Quality`) that scales durability and power (weapons, bows, tool speed, armor); `station_tier` on stations; tooltip + repair window show it; saved. Open-question fill-ins [invented]. Hide quality from butchery still open.
 - [ ] **T-091** Forging minigame
 - [ ] **T-092** `AdjacentAssist`
 - [ ] **T-093** Crafter mark + repair (slot *count* only — application moves to **T-106**)

@@ -6,6 +6,16 @@
 ## Header
 
 - Last updated: **2026-10-09**
+- **2026-10-09 — T-090 quality tiers.** Branch `feature/T-090-quality`, stacked on `feature/T-074-075-carcass`
+  (PR #42), **uncommitted** (waiting for the developer's check). Built: `QualityCalculator` (SYS-CRAFT-01 §Quality score, tiers, power /
+  durability / slot table, material purity), `QualityTier`; `ItemWear.Quality` (kept through repair, saved as tier+1);
+  `CmdCraft` gives gear a tier from the crafter's own level, consumed inputs' purity, the station's `station_tier`
+  (new world-object field: workbench 0.25, furnace/anvil 0.5) and a 0.5 minigame stand-in; max durability scaled by
+  tier; power applied to melee, bow damage, tool harvest speed and armor (flat + per type); "Quality: X" notice;
+  tooltips (hover now carries the item's wear) and the repair window show the tier and durability. **Verified:**
+  EditMode 674/674 (+21 `QualityTests`: 5 spec cases, boundaries, clamp, tier table, durability scaling, purity, new-survivor
+  Common, unrated = Common, repair keeps tier), PlayMode 3/3 (crafted stone spear carries a tier, max durability
+  scaled). Not verified visually: the IMGUI tooltip and repair-window lines.
 - **2026-10-09 — T-074 + T-075 carcass hauling, spoilage and scent.** Branch `feature/T-074-075-carcass`,
   stacked on `feature/T-300-unity-6000.3` (PR #41) — [PR #42](https://github.com/yhw1737/surv/pull/42). Built before T-300, restored onto it so the two don't conflict. Developer decisions: scavengers are the biome's aggressive animals; small
   carcasses go in the bag. Built: `CarcassCalculator` (pure), `CarcassState` carried on the item record
@@ -1958,6 +1968,12 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-09 — T-090 quality fill-ins (spec open questions)
+  [invented]: `materialPurity` = mean over consumed units (Crude 0 … Master 1, unrated inputs 0.5); `stationTier` from
+  a new `station_tier` world-object field (workbench 0.25, furnace 0.5, anvil 0.5, none 0); `minigameScore` 0.5 until
+  T-091; only durable gear gets a tier; Power scales melee, bow, tool speed and armor; untiered items count as Common;
+  Korean tier names 조잡/보통/고급/최고급/명품.
+
 - ### 2026-10-09 — T-300 view and pencil look (presentation only)
   [invented] look values: camera pitch 40° off straight down, vertical FOV 35°, 8.5 tiles above/below the focus (the
   old orthographic half-height), camera from the south. Standing things billboard toward the camera; ground, water,

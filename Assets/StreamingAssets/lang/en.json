@@ -568,5 +568,12 @@
   "ui.haul_drag": "Drag",
   "ui.haul_drop": "Put down",
   "ui.carcass_spoiling": "going off",
-  "ui.carcass_rotten": "rotten"
+  "ui.carcass_rotten": "rotten",
+  "ui.quality": "Quality",
+  "ui.crafted_quality": "Quality: {0}",
+  "quality.crude": "Crude",
+  "quality.common": "Common",
+  "quality.fine": "Fine",
+  "quality.superior": "Superior",
+  "quality.master": "Master"
 }

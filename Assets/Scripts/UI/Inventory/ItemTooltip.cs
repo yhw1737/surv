@@ -34,8 +34,9 @@ namespace Isle.UI.Inventory
         /// <summary>When set, the HUD draws its own richer tooltip from <see cref="Hovered"/> and this panel stays off.</summary>
         public static bool UseExternal { get; set; }
 
-        /// <summary>The item under the pointer and the grid it sits in (null for an equipped item), or null.</summary>
-        public static (ItemDef Item, GridInventory Container)? Hovered { get; private set; }
+        /// <summary>The item under the pointer, the grid it sits in (null for an equipped item) and its own wear and
+        /// quality (null when it has none), or null.</summary>
+        public static (ItemDef Item, GridInventory Container, ItemWear Wear)? Hovered { get; private set; }
 
         public void Bind(Placement placement, GridInventory container)
         {
@@ -52,7 +53,7 @@ namespace Isle.UI.Inventory
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            Hovered = (_placement.Item, _container);
+            Hovered = (_placement.Item, _container, _placement.Wear);
             if (UseExternal) return;
             EnsurePanel();
             var size = _placement.EffectiveSize();

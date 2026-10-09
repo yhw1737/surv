@@ -1,6 +1,7 @@
 {
   "id": "isle:furnace",
   "name": "@world_object.furnace",
+  "station_tier": 0.5,
   "tags": [
     "station/furnace",
     "stone"

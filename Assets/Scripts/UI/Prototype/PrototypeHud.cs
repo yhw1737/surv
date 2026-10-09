@@ -149,7 +149,7 @@ namespace Isle.UI.Prototype
             if (_helpOpen) DrawHelp();
             if (_death != null ? _death.IsDead : _vitals.Health <= 0f) DrawDeath();
             if (_hover != null) DrawTooltip(_hover, _hoverContainer);
-            else if (Isle.UI.Inventory.ItemTooltip.Hovered is { } hovered) DrawTooltip(hovered.Item, hovered.Container);
+            else if (Isle.UI.Inventory.ItemTooltip.Hovered is { } hovered) DrawTooltip(hovered.Item, hovered.Container, hovered.Wear);
 
             if (Event.current.type == EventType.Repaint)
                 PointerGate.Captured = _placing != null || OverPanel() || Isle.UI.Inventory.InventoryScreen.PointerOverUi;
@@ -343,9 +343,13 @@ namespace Isle.UI.Prototype
         /// <summary>What an item is and does: ingredients and what eating it gives (dishes as cooked; raw food through
         /// the <c>eat_raw</c> method, exactly as the server will apply it), buffs with durations, freshness, and
         /// for gear its armor / warmth / bag size.</summary>
-        void DrawTooltip(ItemDef item, GridInventory container)
+        void DrawTooltip(ItemDef item, GridInventory container, ItemWear wear = null)
         {
             var lines = new List<string> { Lang.Get(item.Name) };
+            // SYS-CRAFT-01 §Quality: the tier a piece was crafted at, and what it does.
+            if (wear?.Quality is { } quality)
+                lines.Add($"{Lang.Get("@ui.quality")}: {Lang.Get("@quality." + quality.ToString().ToLowerInvariant())} (×{Isle.Gameplay.Crafting.QualityCalculator.PowerMult(quality):0.##})");
+            if (wear != null && wear.Carcass == null) lines.Add($"{Lang.Get("@ui.durability")}: {wear.Current} / {wear.Max}");
 
             if (DishFactory.IsDish(item))
             {

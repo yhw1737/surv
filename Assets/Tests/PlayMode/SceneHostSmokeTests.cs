@@ -116,6 +116,11 @@ namespace Isle.Tests.PlayMode
             player.RequestCraft("isle:craft_spear", "isle:stone");
             yield return WaitUntil(() => CountOf(inventory, "isle:spear__stone") == 1, 3f, "spear never crafted");
             Assert.AreEqual(2, CountOf(inventory, "isle:wood"), "wood not consumed");
+            // SYS-CRAFT-01 §Quality: crafted gear carries its tier, and its durability is scaled by it.
+            var spear = inventory.Bag.Placements.First(p => p.Item.Id.Value == "isle:spear__stone");
+            Assert.IsNotNull(spear.Wear?.Quality, "crafted spear has no quality");
+            Assert.AreEqual(Isle.Gameplay.Crafting.QualityCalculator.MaxDurability(spear.Item.Durability.Value, spear.Wear.Quality.Value), spear.Wear.Max,
+                "durability not scaled by quality");
 
             // Drinking is from terrain water now: stand on the shore and E drinks the sea.
             Teleport(player, CoastSpot(world).Shore);

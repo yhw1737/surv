@@ -171,7 +171,7 @@ namespace Isle.Gameplay.Character
             float? total = null;
             foreach (var slot in EquipSlots.All)
                 if (inventory.Slots.Working(slot)?.ArmorTypes is { } byType && byType.TryGetValue(damageType, out var value))
-                    total = (total ?? 0f) + value;
+                    total = (total ?? 0f) + value * Crafting.QualityCalculator.PowerOf(inventory.Slots.WearOf(slot)); // SYS-CRAFT-01 §Quality
             return total.HasValue ? new System.Collections.Generic.Dictionary<string, float> { [damageType] = total.Value } : null;
         }
 
@@ -202,7 +202,8 @@ namespace Isle.Gameplay.Character
             if (!TryGetComponent<InventoryNetwork>(out var inventory)) return 0f;
             var total = 0f;
             // Broken armor gives no armor (SYS-CRAFT-02).
-            foreach (var slot in EquipSlots.All) total += inventory.Slots.Working(slot)?.Armor ?? 0f;
+            // SYS-CRAFT-01 §Quality scales each piece's protection.
+            foreach (var slot in EquipSlots.All) total += (inventory.Slots.Working(slot)?.Armor ?? 0f) * Crafting.QualityCalculator.PowerOf(inventory.Slots.WearOf(slot));
             return total;
         }
 

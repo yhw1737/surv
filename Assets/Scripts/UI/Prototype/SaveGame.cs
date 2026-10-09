@@ -8,6 +8,7 @@ using Isle.Gameplay.Building;
 using Isle.Gameplay.Character;
 using Isle.Gameplay.Cooking;
 using Isle.Gameplay.Feedback;
+using Isle.Gameplay.Crafting;
 using Isle.Gameplay.Inventory;
 using Isle.Modding.Defs;
 using Isle.World.Island;
@@ -202,16 +203,16 @@ namespace Isle.UI.Prototype
             if (player.TryGetComponent<InventoryNetwork>(out var inventory))
             {
                 foreach (var placed in inventory.Bag.Placements)
-                    save.Bag.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0 }.WithCarcass(placed.Wear));
+                    save.Bag.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0, Quality = QualityRank(placed.Wear) }.WithCarcass(placed.Wear));
                 foreach (var slot in EquipSlots.All)
                 {
                     var item = inventory.Slots.Get(slot);
                     if (item == null) continue;
                     var slotWear = inventory.Slots.WearOf(slot);
-                    var equip = new SavedEquip { Slot = slot, Item = KeyOf(item), Wear = slotWear?.Current ?? 0, WearMax = slotWear?.Max ?? 0 };
+                    var equip = new SavedEquip { Slot = slot, Item = KeyOf(item), Wear = slotWear?.Current ?? 0, WearMax = slotWear?.Max ?? 0, Quality = QualityRank(slotWear) };
                     if (inventory.Slots.BagFor(slot) is { } pack)
                         foreach (var placed in pack.Placements)
-                            equip.Contents.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0 }.WithCarcass(placed.Wear));
+                            equip.Contents.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0, Quality = QualityRank(placed.Wear) }.WithCarcass(placed.Wear));
                     save.Equipped.Add(equip);
                 }
             }
@@ -253,7 +254,7 @@ namespace Isle.UI.Prototype
                 }
                 if (built.TryGetComponent<StorageBox>(out var box))
                     foreach (var placed in box.Contents.Placements)
-                        saved.Contents.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0 }.WithCarcass(placed.Wear));
+                        saved.Contents.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0, Quality = QualityRank(placed.Wear) }.WithCarcass(placed.Wear));
                 save.Structures.Add(saved);
             }
 
@@ -261,7 +262,7 @@ namespace Isle.UI.Prototype
             {
                 var saved = new SavedPile { X = pile.Position.x, Y = pile.Position.y, Shape = pile.Shape };
                 foreach (var entry in pile.Items)
-                    saved.Items.Add(new SavedStack { Item = KeyOf(entry.Item), Count = entry.Count, Wear = entry.Wear?.Current ?? 0, WearMax = entry.Wear?.Max ?? 0 }.WithCarcass(entry.Wear));
+                    saved.Items.Add(new SavedStack { Item = KeyOf(entry.Item), Count = entry.Count, Wear = entry.Wear?.Current ?? 0, WearMax = entry.Wear?.Max ?? 0, Quality = QualityRank(entry.Wear) }.WithCarcass(entry.Wear));
                 save.Piles.Add(saved);
             }
             return save;
@@ -290,7 +291,7 @@ namespace Isle.UI.Prototype
                 inventory.Slots.Clear();
                 foreach (var equip in save.Equipped)
                 {
-                    if (!TryItem(equip.Item, out var item) || !inventory.Slots.TryEquip(equip.Slot, item, WearOf(equip.Wear, equip.WearMax))) continue;
+                    if (!TryItem(equip.Item, out var item) || !inventory.Slots.TryEquip(equip.Slot, item, WearOf(equip.Wear, equip.WearMax, equip.Quality))) continue;
                     if (inventory.Slots.BagFor(equip.Slot) is not { } pack) continue;
                     foreach (var stack in equip.Contents)
                         if (TryItem(stack.Item, out var inner)) pack.TryPlace(inner, new Vec2Int(stack.X, stack.Y), stack.Rotated, stack.Count, WearOf(stack));
@@ -359,7 +360,11 @@ namespace Isle.UI.Prototype
 
         /// <summary>An item from the save that still resolves — a removed mod's item is skipped, not fatal.</summary>
         /// <summary>SYS-CRAFT-02: a saved wear, or null for none (old saves, items that don't wear).</summary>
-        static ItemWear WearOf(int current, int max) => max > 0 ? new ItemWear(current, max) : null;
+        static ItemWear WearOf(int current, int max, int quality) =>
+            max > 0 ? new ItemWear(current, max) { Quality = quality > 0 ? (QualityTier)(quality - 1) : null } : null;
+
+        /// <summary>SYS-CRAFT-01: a quality tier as saved (tier + 1), 0 for none.</summary>
+        static int QualityRank(ItemWear wear) => wear?.Quality is { } tier ? (int)tier + 1 : 0;
 
         /// <summary>A saved stack's record: wear, or for a carried carcass its body (SYS-HUNT-01).</summary>
         static ItemWear WearOf(SavedStack stack)
@@ -372,7 +377,7 @@ namespace Isle.UI.Prototype
                         Def = def, WeightKg = stack.CarcassKg, Condition = stack.CarcassCondition, KillFactor = stack.CarcassKill, Spoilage = stack.CarcassSpoil,
                     },
                 };
-            return WearOf(stack.Wear, stack.WearMax);
+            return WearOf(stack.Wear, stack.WearMax, stack.Quality);
         }
 
         static bool TryCreature(string key, out CreatureDef def)
