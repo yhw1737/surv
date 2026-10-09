@@ -7,7 +7,7 @@
 
 - Last updated: **2026-10-09**
 - **2026-10-09 — T-300 Unity 6000.3.10f1 + tilted perspective view + pencil look (uncommitted).**
-  Branch `feature/T-300-unity-6000.3` off `main` (after PR #40). Developer authorised all three and asked for ~10
+  Branch `feature/T-300-unity-6000.3` off `main` (after PR #40) — [PR #41](https://github.com/yhw1737/surv/pull/41). Developer authorised all three and asked for ~10
   minutes of autonomous work. **Upgrade:** ProjectVersion 6000.3.10f1 (Apple silicon editor; the Intel 6000.2.7f2
   editor crashed under Rosetta), packages bumped (URP 17.3.0, 2d.animation 13.0.4, inputsystem 1.18.0, test-framework
   1.6.0, …), CLAUDE.md Stack + ADR-001 updated. One upgrade regression found by rendering, not by tests: URP 17.3's
