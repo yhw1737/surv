@@ -498,7 +498,8 @@ namespace Isle.Gameplay.Character
             if (target == null) return;
 
             var power = PowerCalculator.FinalPower(weapon.BasePower, level, situationalMult: MeleeCombo.SituationalMult(target.IsStaggered))
-                        * attack.PowerMult * Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "melee_power_mult");
+                        * attack.PowerMult * Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "melee_power_mult")
+                        * QualityCalculator.PowerOf(inventory.Slots.WearOf(MainHandSlot)); // SYS-CRAFT-01 §Quality
             var loot = new List<(NamespacedId Item, int Count)>();
             float dealt;
             // SYS-HUNT-01: a knife kills cleanly (like a dagger), blunt trauma ruins the most, the rest is ordinary melee.
@@ -613,7 +614,8 @@ namespace Isle.Gameplay.Character
             _gatherSeconds = node.Def.Gather.TimeSec <= 0f ? 0f : GatherCalculator.GatherSeconds(node.Def.Gather.TimeSec, LevelOf(skill));
             // SYS-CRAFT-02: a better tool is faster.
             if (TryGetComponent<InventoryNetwork>(out var inventory) && MatchingTool(inventory, node.Def.Gather) is { } tool)
-                _gatherSeconds = ToolTiers.HarvestSeconds(_gatherSeconds, tool.ToolPower);
+                _gatherSeconds = ToolTiers.HarvestSeconds(_gatherSeconds,
+                    (tool.ToolPower > 0f ? tool.ToolPower : 1f) * QualityCalculator.PowerOf(inventory.Slots.WearOf(MainHandSlot))); // + §Quality
             _gatherSeconds /= GatherSpeed();
         }
 
@@ -918,7 +920,8 @@ namespace Isle.Gameplay.Character
             var direction = (aim - origin).sqrMagnitude > 0.0001f ? (aim - origin).normalized : Vector2.right;
             var damage = PowerCalculator.FinalPower(weapon.BasePower, LevelOf(weapon.CombatSkill)) * RangedCalculator.ChargeMult(charge)
                          * Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "ranged_power_mult")
-                         * (ammo.AmmoPower > 0f ? ammo.AmmoPower : 1f);
+                         * (ammo.AmmoPower > 0f ? ammo.AmmoPower : 1f)
+                         * QualityCalculator.PowerOf(inventory.Slots.WearOf(MainHandSlot)); // SYS-CRAFT-01 §Quality
 
             Projectiles.Instance.Fire(origin + direction * MuzzleOffsetTiles, direction, weapon.ProjectileSpeed, damage, weapon.DamageType ?? DamageTypes.Pierce,
                 loot => { foreach (var (item, count) in loot) GiveItem(inventory, item, count); },
@@ -1127,12 +1130,27 @@ namespace Isle.Gameplay.Character
 
             var containers = inventory.Containers();
             if (!CraftingCalculator.HasIngredients(needs, CraftingCalculator.StockOf(containers))) return;
-            if (!DefRegistry.TryGet<ItemDef>(output, out _)) return;
+            if (!DefRegistry.TryGet<ItemDef>(output, out var outputDef)) return;
 
             // No room check up front: paying frees space, and anything that still doesn't fit drops at your feet.
-            ConsumeIngredients(containers, needs);
+            var consumed = new List<QualityTier?>();
+            ConsumeIngredients(containers, needs, consumed);
             AwardXp(recipe.Xp, needs.Sum(i => i.Count));
-            GiveItem(inventory, output, recipe.Output.Count);
+            if (outputDef.Durability is not > 0)
+            {
+                GiveItem(inventory, output, recipe.Output.Count);
+                return;
+            }
+
+            // SYS-CRAFT-01 §Quality: gear gets a tier from your own level (no assist), the inputs, the station and the
+            // minigame; the tier sets its durability and power.
+            var stationTier = station.IsValid && DefRegistry.TryGet<WorldObjectDef>(station, out var stationDef) ? stationDef.StationTier : 0f;
+            var tier = QualityCalculator.TierFor(QualityCalculator.Score(LevelOf(PrimarySkill(recipe)), QualityCalculator.MaterialPurity(consumed),
+                stationTier, QualityCalculator.NoMinigameScore));
+            var max = QualityCalculator.MaxDurability(outputDef.Durability.Value, tier);
+            for (var i = 0; i < Math.Max(1, recipe.Output.Count); i++)
+                GiveItem(inventory, outputDef, 1, new ItemWear(max, max) { Quality = tier });
+            GameFeed.RaiseNotice($"@ui.crafted_quality|@quality.{tier.ToString().ToLowerInvariant()}");
         }
 
         static NamespacedId PrimarySkill(CraftRecipeDef recipe) => StuffCrafting.PrimarySkill(recipe);
@@ -1470,7 +1488,7 @@ namespace Isle.Gameplay.Character
 
         /// <summary>Takes each requirement in the same order <see cref="CraftingCalculator.HasIngredients"/> counted
         /// it, so a recipe that passed the check always has enough to pay.</summary>
-        static void ConsumeIngredients(IReadOnlyList<GridInventory> containers, IngredientRef[] needs)
+        static void ConsumeIngredients(IReadOnlyList<GridInventory> containers, IngredientRef[] needs, List<QualityTier?> consumed = null)
         {
             if (needs == null) return;
             foreach (var need in needs)
@@ -1483,6 +1501,7 @@ namespace Isle.Gameplay.Character
                     if (!CraftingCalculator.Matches(need, new Stock(placed.Item.Id, placed.Item.Tags, placed.Count))) continue;
                     var take = Math.Min(stillNeeded, placed.Count);
                     stillNeeded -= take;
+                    for (var i = 0; i < take; i++) consumed?.Add(placed.Wear?.Quality); // SYS-CRAFT-01 materialPurity
                     InventoryOps.SetCount(container, placed, placed.Count - take);
                 }
             }

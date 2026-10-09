@@ -1,6 +1,7 @@
 {
   "id": "isle:workbench",
   "name": "@world_object.workbench",
+  "station_tier": 0.25,
   "tags": [
     "station/workbench",
     "wood"

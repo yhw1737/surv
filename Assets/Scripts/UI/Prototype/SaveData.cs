@@ -89,6 +89,9 @@ namespace Isle.UI.Prototype
 
         /// <summary>SYS-CRAFT-02 wear; <see cref="WearMax"/> 0 = none recorded (brand new).</summary>
         public int Wear, WearMax;
+
+        /// <summary>SYS-CRAFT-01 quality tier + 1; 0 = none (not crafted, or an old save).</summary>
+        public int Quality;
         public List<SavedStack> Contents = new();
     }
 
@@ -101,6 +104,9 @@ namespace Isle.UI.Prototype
 
         /// <summary>SYS-CRAFT-02 wear; <see cref="WearMax"/> 0 = none recorded (brand new).</summary>
         public int Wear, WearMax;
+
+        /// <summary>SYS-CRAFT-01 quality tier + 1; 0 = none (not crafted, or an old save).</summary>
+        public int Quality;
 
         /// <summary>SYS-HUNT-01: a carried carcass — which creature, and its body. Empty for anything else.</summary>
         public string CarcassOf;

@@ -387,7 +387,8 @@ namespace Isle.UI.Prototype
                 var row = new Rect(0, y, view.width, rowPx);
                 GUI.Box(row, GUIContent.none, st.Slot);
                 DrawIcon(new Rect(row.x + 6f, row.y + 8f, 48f, 48f), Isle.UI.Art.ItemIcons.Texture(item), wear.Broken);
-                GUI.Label(new Rect(row.x + 60f, row.y + 6f, 220f, 20f), Lang.Get(item.Name) + (slot != null ? UiTheme.Colour($"  ({Lang.Get("@ui.repair_equipped")})", UiTheme.Muted) : ""), st.Text);
+                var qualityText = wear.Quality is { } quality ? UiTheme.Colour($"  {Lang.Get("@quality." + quality.ToString().ToLowerInvariant())}", UiTheme.Accent) : "";
+                GUI.Label(new Rect(row.x + 60f, row.y + 6f, 260f, 20f), Lang.Get(item.Name) + qualityText + (slot != null ? UiTheme.Colour($"  ({Lang.Get("@ui.repair_equipped")})", UiTheme.Muted) : ""), st.Text);
                 DurabilityBar(new Rect(row.x + 60f, row.y + 30f, 150f, 8f), wear.Fraction);
                 GUI.Label(new Rect(row.x + 216f, row.y + 24f, 120f, 20f), wear.Broken ? UiTheme.Colour(Lang.Get("@ui.broken"), UiTheme.Bad) : $"{wear.Current} / {wear.Max}", st.Small);
 

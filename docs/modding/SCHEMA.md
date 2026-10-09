@@ -431,6 +431,8 @@ This document constrains us before it serves modders.
 | World object | `storage` `{w,h}` | Container grid (crate 10×6) |
 | World object | `rain_catcher` `{capacity, fill_per_second}` | Collects rain; one drink per unit, +40 thirst |
 | World object | `light_radius` | Tiles of light while active (lit campfire) |
+| World object | `station_tier` | 0..1, SYS-CRAFT-01 `stationTier` for gear crafted at it (workbench 0.25, furnace and anvil 0.5). 2026-10-09 |
+| World object | `visual.flat` | Lies on the ground instead of standing toward the camera (crop plot). 2026-10-09 |
 | Weapon | `ammo` | Item each shot uses up — set means the weapon is ranged |
 | Weapon | `projectile_speed` | Tiles per second |
 | Creature | `spawn.time` | Now also the creature's waking hours — it sleeps outside them |

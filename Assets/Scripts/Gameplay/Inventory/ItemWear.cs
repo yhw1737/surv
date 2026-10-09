@@ -16,6 +16,10 @@ namespace Isle.Gameplay.Inventory
         /// are unused then. Same travel path as wear: slot, bag, pile, save.</summary>
         public Hunting.CarcassState Carcass { get; init; }
 
+        /// <summary>SYS-CRAFT-01 §Quality: the tier it was crafted at; null for items that weren't crafted (start gear,
+        /// salvage), which count as Common. Kept through repairs.</summary>
+        public Crafting.QualityTier? Quality { get; init; }
+
         public bool Broken => Current <= 0;
         public bool NeedsRepair => Current < Max;
         public float Fraction => Max > 0 ? Current / (float)Max : 0f;

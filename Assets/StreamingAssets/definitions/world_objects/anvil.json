@@ -1,6 +1,7 @@
 {
   "id": "isle:anvil",
   "name": "@world_object.anvil",
+  "station_tier": 0.5,
   "tags": [
     "station/anvil",
     "metal"
