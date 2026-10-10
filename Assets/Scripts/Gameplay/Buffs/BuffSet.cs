@@ -22,6 +22,18 @@ namespace Isle.Gameplay.Buffs
         public bool IsActive(NamespacedId buffId, long currentTimeMin) =>
             _expiresAtMin.TryGetValue(buffId, out var expiresAt) && (expiresAt == 0 || expiresAt > currentTimeMin);
 
+        /// <summary>When a buff runs out (world minutes; 0 = never), or null if it isn't held.</summary>
+        public long? ExpiresAt(NamespacedId buffId) => _expiresAtMin.TryGetValue(buffId, out var at) ? at : null;
+
+        /// <summary>Every held buff with its expiry, for saving.</summary>
+        public IEnumerable<(NamespacedId Id, long ExpiresAt)> Entries()
+        {
+            foreach (var (id, at) in _expiresAtMin) yield return (id, at);
+        }
+
+        /// <summary>Puts a saved buff back exactly as it was.</summary>
+        public void Restore(NamespacedId buffId, long expiresAtMin) => _expiresAtMin[buffId] = expiresAtMin;
+
         public IEnumerable<NamespacedId> ActiveBuffIds(long currentTimeMin)
         {
             foreach (var (id, expiresAt) in _expiresAtMin)

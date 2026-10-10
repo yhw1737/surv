@@ -31,6 +31,16 @@ namespace Isle.Gameplay.Inventory
 
         public float SpoilageOf(GridInventory bag, ItemDef item) => _spoilage.GetValueOrDefault((bag, item));
 
+        /// <summary>Every item type ageing in <paramref name="bag"/>, for saving.</summary>
+        public IEnumerable<(ItemDef Item, float Spoilage)> EntriesFor(GridInventory bag)
+        {
+            foreach (var ((owner, item), value) in _spoilage)
+                if (owner == bag) yield return (item, value);
+        }
+
+        /// <summary>Puts a saved freshness back (a reload mustn't make food fresh again).</summary>
+        public void Restore(GridInventory bag, ItemDef item, float spoilage) => _spoilage[(bag, item)] = spoilage;
+
         public void Tick(GridInventory bag, float inGameMinutes)
         {
             // Forget types no longer in the bag, so a fresh batch later starts at 0.

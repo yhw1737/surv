@@ -14,6 +14,15 @@ namespace Isle.Gameplay.Cooking
 
         readonly Dictionary<string, (int Count, long Since)> _eaten = new();
 
+        /// <summary>Every remembered dish kind, for saving.</summary>
+        public IEnumerable<(string Signature, int Count, long Since)> Entries()
+        {
+            foreach (var (signature, (count, since)) in _eaten) yield return (signature, count, since);
+        }
+
+        /// <summary>Puts a saved memory back exactly as it was.</summary>
+        public void Restore(string signature, int count, long since) => _eaten[signature] = (count, since);
+
         /// <summary>Records one eat of <paramref name="signature"/> and returns the nutrition multiplier for it.</summary>
         public float Eat(string signature, long nowMinutes)
         {

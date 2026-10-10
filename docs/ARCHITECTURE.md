@@ -143,6 +143,14 @@ AOI: chunk-based, 3×3 chunks around each player.
 
 Chunks are written on unload only — never per frame.
 
+**Prototype save (until SQLite lands):** one JSON file per slot (`SaveData`, version 6), autosaved every 60 s, on
+quit and on going back to the menu. It holds: seed, clock, position (underground → that dungeon's entrance), shelter,
+vitals, wetness, timed buffs with their expiry, satiety memory, skills, survivor and traits, equipment and every
+carried container (with each item's wear, quality and carried carcass), food freshness per carried container,
+depleted nodes, campfires, structures (contents, crop and planting time, water, lit), loot piles, carcasses on the
+ground, explored map and markers. Re-rolled by design: live creatures, weather, dungeon layouts. The round trip is
+pinned by `SaveRoundTripTests` (T-150).
+
 ## Deferred simulation (performance core)
 
 ```

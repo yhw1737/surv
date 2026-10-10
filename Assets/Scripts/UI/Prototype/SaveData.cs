@@ -13,7 +13,7 @@ namespace Isle.UI.Prototype
     public sealed class SaveData
     {
         /// <summary>Bump when a field changes meaning; an older file is ignored rather than misread.</summary>
-        public const int CurrentVersion = 5;
+        public const int CurrentVersion = 6;
 
         /// <summary>Oldest version still readable. v3 only lacks <see cref="Skills"/>, which then start from zero.</summary>
         public const int MinReadableVersion = 3;
@@ -43,6 +43,14 @@ namespace Isle.UI.Prototype
         public string SurvivorName;
         public List<string> Traits = new();
 
+        /// <summary>T-150 (version 6): timed buffs with their expiry (world minutes, 0 = never), wetness, food freshness
+        /// per carried container, satiety memory, and carcasses lying on the ground. Older saves load with none.</summary>
+        public List<SavedBuff> Buffs = new();
+        public float Wet;
+        public List<SavedSpoil> Spoilage = new();
+        public List<SavedSatiety> Satiety = new();
+        public List<SavedCarcass> Carcasses = new();
+
         public string ToJson() => JsonUtility.ToJson(this);
 
         /// <summary>Null when the text isn't a save of the current version.</summary>
@@ -57,6 +65,10 @@ namespace Isle.UI.Prototype
                 save.Markers ??= new List<SavedMarker>();
                 save.Traits ??= new List<string>();
                 save.Explored ??= string.Empty;
+                save.Buffs ??= new List<SavedBuff>();
+                save.Spoilage ??= new List<SavedSpoil>();
+                save.Satiety ??= new List<SavedSatiety>();
+                save.Carcasses ??= new List<SavedCarcass>();
                 return save;
             }
             catch (ArgumentException)
@@ -157,5 +169,36 @@ namespace Isle.UI.Prototype
         public float X, Y;
         public string Shape;
         public List<SavedStack> Items = new();
+    }
+
+    [System.Serializable]
+    public sealed class SavedBuff
+    {
+        public string Id;
+        public long ExpiresAt;
+    }
+
+    /// <summary>Freshness of one item type in one carried container (index into the player's containers).</summary>
+    [System.Serializable]
+    public sealed class SavedSpoil
+    {
+        public int Container;
+        public string Item;
+        public float Value;
+    }
+
+    [System.Serializable]
+    public sealed class SavedSatiety
+    {
+        public string Signature;
+        public int Count;
+        public long Since;
+    }
+
+    [System.Serializable]
+    public sealed class SavedCarcass
+    {
+        public string Creature;
+        public float X, Y, Kg, Condition, Kill, Spoil;
     }
 }
