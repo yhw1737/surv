@@ -178,12 +178,15 @@ namespace Isle.UI.Prototype
         static SaveData Capture(PlayerInteraction player)
         {
             var world = IslandWorld.Instance;
+            // Underground, the save puts you back at the dungeon's entrance: dungeons are rebuilt fresh on entry.
+            Vector2 at = player.transform.position;
+            if (Isle.Gameplay.Dungeons.DungeonDirector.Instance?.SurfaceFor(at) is { } surface) at = surface;
             var save = new SaveData
             {
                 Seed = world.Seed,
                 TotalMinutes = WorldTime.Instance != null ? WorldTime.Instance.Clock.TotalMinutes : 0,
-                PlayerX = player.transform.position.x,
-                PlayerY = player.transform.position.y,
+                PlayerX = at.x,
+                PlayerY = at.y,
             };
 
             if (player.TryGetComponent<Vitals>(out var vitals))
@@ -194,6 +197,11 @@ namespace Isle.UI.Prototype
                 save.Stamina = vitals.Stamina;
                 save.Temperature = vitals.Temperature;
                 save.HypothermiaSeverity = vitals.HypothermiaSeverity;
+                save.Wet = vitals.WetPenalty;
+                foreach (var (id, expiresAt) in vitals.Buffs.Entries())
+                    save.Buffs.Add(new SavedBuff { Id = id.Value, ExpiresAt = expiresAt });
+                foreach (var (signature, count, since) in vitals.Satiety.Entries())
+                    save.Satiety.Add(new SavedSatiety { Signature = signature, Count = count, Since = since });
             }
             if (player.TryGetComponent<DeathHandler>(out var death))
             {
@@ -215,7 +223,21 @@ namespace Isle.UI.Prototype
                             equip.Contents.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0, Quality = QualityRank(placed.Wear) }.WithCarcass(placed.Wear));
                     save.Equipped.Add(equip);
                 }
+                // Food freshness per carried container, by its place in the container list (bag, then equipped bags).
+                var containers = inventory.Containers();
+                for (var i = 0; i < containers.Count; i++)
+                    foreach (var (item, value) in SpoilageTracker.Live.EntriesFor(containers[i]))
+                        save.Spoilage.Add(new SavedSpoil { Container = i, Item = KeyOf(item), Value = value });
             }
+
+            if (Isle.Gameplay.Hunting.CreatureDirector.Instance != null)
+                foreach (var carcass in Isle.Gameplay.Hunting.CreatureDirector.Instance.Carcasses)
+                    if (!carcass.InDungeon)
+                        save.Carcasses.Add(new SavedCarcass
+                        {
+                            Creature = carcass.Def.Id.Value, X = carcass.Position.x, Y = carcass.Position.y, Kg = carcass.Weight,
+                            Condition = carcass.Condition, Kill = carcass.KillFactor, Spoil = carcass.Spoilage,
+                        });
 
             if (MapState.Instance != null)
             {
@@ -313,6 +335,31 @@ namespace Isle.UI.Prototype
 
             foreach (var saved in save.Skills)
                 if (NamespacedId.TryParse(saved.Id, out var skillId, out _)) player.Skills.Restore(skillId, saved.Xp);
+
+            // T-150: what time-limited state the character carried (after Become, which sets up the traits).
+            if (vitals != null)
+            {
+                vitals.RestoreWet(save.Wet);
+                foreach (var saved in save.Buffs)
+                    if (NamespacedId.TryParse(saved.Id, out var buffId, out _) && DefRegistry.TryGet<BuffDef>(buffId, out _))
+                        vitals.Buffs.Restore(buffId, saved.ExpiresAt);
+                foreach (var saved in save.Satiety)
+                    if (!string.IsNullOrEmpty(saved.Signature)) vitals.Satiety.Restore(saved.Signature, saved.Count, saved.Since);
+            }
+            if (inventory != null)
+            {
+                var containers = inventory.Containers();
+                foreach (var saved in save.Spoilage)
+                    if (saved.Container >= 0 && saved.Container < containers.Count && TryItem(saved.Item, out var food))
+                        SpoilageTracker.Live.Restore(containers[saved.Container], food, saved.Value);
+            }
+            if (Isle.Gameplay.Hunting.CreatureDirector.Instance is { } creatures)
+                foreach (var saved in save.Carcasses)
+                    if (TryCreature(saved.Creature, out var creatureDef))
+                        creatures.PutCarcass(new Isle.Gameplay.Hunting.CarcassState
+                        {
+                            Def = creatureDef, WeightKg = saved.Kg, Condition = saved.Condition, KillFactor = saved.Kill, Spoilage = saved.Spoil,
+                        }, new Vector2(saved.X, saved.Y));
 
             foreach (var saved in save.Nodes)
             {

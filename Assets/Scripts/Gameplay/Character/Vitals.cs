@@ -380,6 +380,9 @@ namespace Isle.Gameplay.Character
             Feedback.GameFeed.RaisePlayerHit(taken);
         }
 
+        /// <summary>A saved wetness, put back on load.</summary>
+        public void RestoreWet(float wetPenalty) => WetPenalty = Mathf.Max(0f, wetPenalty);
+
         /// <summary>Server-side "got wet" event for a future swimming system to call (§Temperature:
         /// "wetPenalty −6 from rain or swimming") — rain itself is handled automatically each
         /// <see cref="Tick"/> via <see cref="WeatherController.IsRaining"/> now (SYS-WORLD-02).

@@ -6,6 +6,15 @@
 ## Header
 
 - Last updated: **2026-10-10**
+- **2026-10-10 — T-150 save/load round trip.** Branch `feature/T-150-save-roundtrip`, stacked on
+  `feature/T-091-forging`. Built a PlayMode
+  round trip (`SaveRoundTripTests`: skills, vitals, timed buff + expiry, wetness, satiety, worn/quality gear, carried
+  carcass, food freshness, carcass on the ground, felled tree, clock, crate + contents, planted plot + planting time,
+  loot pile, map marker → back to menu → Continue → compared). Fixed what wasn't saved — save version 6 (older saves
+  still load): buffs with expiry, wetness, food freshness per carried container (a reload reset it — an exploit),
+  satiety memory, carcasses on the ground; a save made underground stores the dungeon's entrance instead of a point
+  in a dungeon that won't exist after loading. **Verified:** EditMode 697/697, PlayMode 4/4 (+1 round trip).
+  Not covered by a test: the underground → entrance rule.
 - **2026-10-10 — T-091 forging minigame.** Branch `feature/T-091-forging` off `main` (after PR #45).
   Built: `Gameplay/Crafting/ForgingMinigame` (SYS-CRAFT-01: window = band centre ± 0.10 × (1 + Lv/50), which is the
   spec's [0.55, 0.75] at Lv 0; strikes 3..8; score = successes / required; co-op decay ×0.5 and +0.08 ready);
@@ -2011,6 +2020,11 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-10 — T-150 save choices
+  [invented]: a save underground resumes at that dungeon's entrance (dungeons are rebuilt on entry); food freshness is
+  keyed by the carried container's index (bag, then equipped bags in slot order); carcasses inside dungeons aren't
+  saved; save version 6 keeps reading versions 3–5 (new fields empty).
+
 - ### 2026-10-10 — T-091 forging values
   Spec reading: the success window is centred on the target band and equals it at Lv 0. [invented]: bellows rate 0.5/s,
   decay 0.2/s, strike cooldown 0.4 s, cold start, strikes per recipe (knife 3 … breastplate 8), arrows not forged,

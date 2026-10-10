@@ -361,8 +361,9 @@ stood up now so the solo beta is already a listen-server session with one client
   > **2026-10-09**: done — SYS-WORLD-03 §Walls, ART_PIPELINE §Camera view, SYS-MAP-01 reveal 24. `ShoreField`, `block_radius`, `visual.jitter`, `OcclusionFader`, `InteractHighlight`, `Isle/Outline`.
 - [x] **T-302** Work feedback — remnants for used-up nodes, G puts a bagged carcass down, carcass spoilage shown, cooking takes time, timed work shows only a progress bar. Developer request 2026-10-09
   > **2026-10-09**: done — SYS-COOK-01 §Cook time, SYS-HUNT-01 revision 2026-10-09, SYS-WORLD-03 §Walls (remnants), ART_PIPELINE. `CookTimeCalculator`, `visual.depleted`, `time_mult`, `SpoilShare`.
-- [ ] **T-150** Save / load round trip — quit mid-game, resume with world, inventory and skills intact
+- [x] **T-150** Save / load round trip — quit mid-game, resume with world, inventory and skills intact
   > **2026-10-04 (prototype)**: JSON save in persistentDataPath — seed, clock, vitals, position, shelter, bag, hand, depleted nodes, campfires, loot piles. Autosave 60 s + on quit, F9 deletes. Skills aren't saved (no XP yet); creatures and weather re-roll. Not yet in SQLite, and the load path isn't covered by a PlayMode test.
+  > **2026-10-10**: done — `SaveRoundTripTests` (PlayMode): rich state → back to menu → Continue → everything compared. The test found what was missing and it's now saved (version 6): timed buffs, wetness, food freshness (a reload made food fresh again), satiety memory, carcasses on the ground; a save made underground now resumes at that dungeon's entrance. Contents listed in ARCHITECTURE §Storage. Still JSON, not SQLite.
 - [ ] **T-151** Solo bug pass — play the full loop repeatedly, fix what blocks it
 - [ ] **T-152** 🚩 **Solo beta gate** — gather → hunt → fish → cook → craft → fight → sleep, playable end to end by one player with no blocking bug. **Do not start Phase 10 until this passes**
 

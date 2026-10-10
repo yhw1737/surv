@@ -649,6 +649,10 @@ namespace Isle.Gameplay.Dungeons
 
         public bool IsUnderground(Vector2 p) => FloorAt(p) != null;
 
+        /// <summary>The way back up from a point underground: its dungeon's entrance on the island. Null on the surface.
+        /// Saves store this (dungeons are rebuilt fresh on entry, so a save never resumes inside one).</summary>
+        public Vector2? SurfaceFor(Vector2 p) => FloorAt(p)?.Site.Entrance;
+
         // ------------------------------------------------------------------ interaction
 
         /// <summary>What E would do here, for the HUD: world point, key cap, label. Null when nothing dungeon-related is
