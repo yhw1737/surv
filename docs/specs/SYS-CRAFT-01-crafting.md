@@ -55,6 +55,22 @@ minigameScore  = successes / required
 ```
 **Co-op forging:** two players (one bellows, one hammer) halve heat decay and add +0.08 to `minigameScore`.
 
+### Implementation (T-091, 2026-10-10)
+- Runs when a recipe names `"minigame": "isle:forging"` **and** it is made at a station tagged `forge` (the anvil) —
+  so a copper sword is forged, a stone hatchet (no station) is made at once. Strikes come from the recipe's
+  `forge_strikes` (clamped to 3..8).
+- **Window:** centred on the target band, half-width = `successWindow` — at Lv 0 that is exactly [0.55, 0.75], at
+  Lv 50 [0.45, 0.85].
+- [invented]: bellows +0.5 heat/s, decay 0.2/s (co-op 0.1/s), one strike per 0.4 s, heat starts cold (0); strikes
+  per recipe — knife 3; hatchet, pickaxe, spear, boots 4; helmet, mace 5; greaves, sword 6; breastplate 8. Arrows
+  aren't forged.
+- After the last strike the craft is checked again and only then paid for; the score replaces the 0.5 stand-in in
+  §Quality. Walking away (0.3 tiles) or E cancels at no cost. The craft and cook windows close while forging (the
+  mouse is the bellows and the hammer).
+- Server-side state machine (`ForgingMinigame`); the client sends only "bellows held" and "strike".
+- **Not yet:** co-op forging (the halved decay and +0.08 are in `ForgingMinigame` but no second player can join a
+  forge yet — Phase 10).
+
 ## Adjacent assist ★
 ```
 effectiveLevel = max(own, own + (bestNearbyLevel - own) * AdjacentAssistRatio)

@@ -183,6 +183,17 @@ namespace Isle.Gameplay.Character
                 // A line is out: the left button hooks a bite; nothing else.
                 if (mouse != null && mouse.leftButton.wasPressedThisFrame && !PointerGate.Captured) CmdHook();
             }
+            else if (Forge != null)
+            {
+                // SYS-CRAFT-01 §Forging: right button works the bellows, left button strikes.
+                var bellows = mouse != null && mouse.rightButton.isPressed;
+                if (bellows != _sentBellows)
+                {
+                    _sentBellows = bellows;
+                    CmdForgeBellows(bellows);
+                }
+                if (mouse != null && mouse.leftButton.wasPressedThisFrame) CmdForgeStrike();
+            }
             else if (Fight != null)
             {
                 // While a fish is on, the left button reels instead of attacking.
@@ -360,12 +371,14 @@ namespace Isle.Gameplay.Character
                 return;
             }
 
-            // Pressing E again while gathering, butchering or cooking stops it.
-            if (Gathering != null || Butchering != null || Cooking != null)
+            // Pressing E again while gathering, butchering, cooking or forging stops it.
+            if (Gathering != null || Butchering != null || Cooking != null || Forge != null)
             {
+                if (Forge != null) GameFeed.RaiseNotice("@ui.forge_cancelled");
                 CancelGather();
                 Butchering = null;
                 Cooking = null;
+                Forge = null;
                 return;
             }
 
@@ -858,6 +871,7 @@ namespace Isle.Gameplay.Character
             UpdateButcher();
             UpdateHaul();
             UpdateCook();
+            UpdateForge();
             UpdateCast();
             if (Fight == null) return;
             if (IsDead || Vector2.Distance(transform.position, _fightSpot) > FightLeashTiles)
@@ -1135,55 +1149,134 @@ namespace Isle.Gameplay.Character
         [ServerRpc]
         void CmdCraft(string recipeText, string materialText)
         {
-            if (IsDead) return;
+            if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
             if (!NamespacedId.TryParse(recipeText, out var recipeId, out _)) return;
             if (!DefRegistry.TryGet<CraftRecipeDef>(recipeId, out var recipe) || recipe.Output == null) return;
-            if (!TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            MaterialDef material = null;
+            if (recipe.Stuff != null && (!NamespacedId.TryParse(materialText, out var materialId, out _) || !DefRegistry.TryGet(materialId, out material))) return;
+            if (PrepareCraft(inventory, recipe, material, notify: true) is not { } craft) return;
 
+            // SYS-CRAFT-01 §Forging: gear made at a forge (the anvil) is hammered out first; the inputs are taken only
+            // when it's done, and walking away cancels it at no cost.
+            if (craft.Output.Durability is > 0 && recipe.Minigame.IsValid && recipe.Minigame.Name == ForgingMinigame.Key
+                && craft.Station.IsValid && DefRegistry.TryGet<WorldObjectDef>(craft.Station, out var forge) && forge.Tags != null
+                && System.Array.IndexOf(forge.Tags, ForgeTag) >= 0)
+            {
+                CancelGather();
+                Butchering = null;
+                Cooking = null;
+                Forge = new ForgingMinigame(recipe.ForgeStrikes, LevelOf(PrimarySkill(recipe)));
+                _forgeCraft = (recipe, material);
+                _forgeFrom = transform.position;
+                _bellows = false;
+                return;
+            }
+            CompleteCraft(inventory, recipe, craft, QualityCalculator.NoMinigameScore);
+        }
+
+        /// <summary>World-object tag of a station where gear is forged (the anvil).</summary>
+        public const string ForgeTag = "forge";
+
+        /// <summary>A craft that passed every check: what it takes, what it makes, where.</summary>
+        sealed class Craft
+        {
+            public IngredientRef[] Needs;
+            public ItemDef Output;
+            public NamespacedId Station;
+        }
+
+        /// <summary>SYS-CRAFT-01/02 checks — material, station, skills, inputs held — and the bill. Null when any fails.</summary>
+        Craft PrepareCraft(InventoryNetwork inventory, CraftRecipeDef recipe, MaterialDef material, bool notify)
+        {
             // SYS-CRAFT-02: a template recipe needs a material it accepts; the material can move it to another station
             // and raise the level it needs, and adds its units to the bill.
-            MaterialDef material = null;
             var needs = recipe.Ingredients ?? System.Array.Empty<IngredientRef>();
             var output = recipe.Output.Item;
             if (recipe.Stuff != null)
             {
-                if (!NamespacedId.TryParse(materialText, out var materialId, out _) || !DefRegistry.TryGet(materialId, out material)) return;
+                if (material == null) return null;
                 var made = StuffCrafting.OutputFor(recipe, material);
-                if (made == null) return;
+                if (made == null) return null;
                 output = made.Id;
                 needs = needs.Append(new IngredientRef { Item = material.Item, Count = StuffCrafting.CountFor(recipe) }).ToArray();
             }
             var station = StuffCrafting.StationFor(recipe, material);
-            if (station.IsValid && !WorldObjectRegistry.IsActiveNear(transform.position, station, ReachTiles)) return;
+            if (station.IsValid && !WorldObjectRegistry.IsActiveNear(transform.position, station, ReachTiles)) return null;
             if (!MeetsSkills(recipe.Skills) || (material != null && LevelOf(PrimarySkill(recipe)) < material.CraftLevel))
             {
-                GameFeed.RaiseNotice("@ui.skill_too_low");
-                return;
+                if (notify) GameFeed.RaiseNotice("@ui.skill_too_low");
+                return null;
             }
+            if (!CraftingCalculator.HasIngredients(needs, CraftingCalculator.StockOf(inventory.Containers()))) return null;
+            if (!DefRegistry.TryGet<ItemDef>(output, out var outputDef)) return null;
+            return new Craft { Needs = needs, Output = outputDef, Station = station };
+        }
 
-            var containers = inventory.Containers();
-            if (!CraftingCalculator.HasIngredients(needs, CraftingCalculator.StockOf(containers))) return;
-            if (!DefRegistry.TryGet<ItemDef>(output, out var outputDef)) return;
-
+        /// <summary>Pays for and hands over a prepared craft; gear gets its SYS-CRAFT-01 quality tier.</summary>
+        void CompleteCraft(InventoryNetwork inventory, CraftRecipeDef recipe, Craft craft, float minigameScore)
+        {
             // No room check up front: paying frees space, and anything that still doesn't fit drops at your feet.
+            var containers = inventory.Containers();
             var consumed = new List<QualityTier?>();
-            ConsumeIngredients(containers, needs, consumed);
-            AwardXp(recipe.Xp, needs.Sum(i => i.Count));
+            ConsumeIngredients(containers, craft.Needs, consumed);
+            AwardXp(recipe.Xp, craft.Needs.Sum(i => i.Count));
+            var outputDef = craft.Output;
             if (outputDef.Durability is not > 0)
             {
-                GiveItem(inventory, output, recipe.Output.Count);
+                GiveItem(inventory, outputDef.Id, recipe.Output.Count);
                 return;
             }
 
             // SYS-CRAFT-01 §Quality: gear gets a tier from your own level (no assist), the inputs, the station and the
             // minigame; the tier sets its durability and power.
-            var stationTier = station.IsValid && DefRegistry.TryGet<WorldObjectDef>(station, out var stationDef) ? stationDef.StationTier : 0f;
+            var stationTier = craft.Station.IsValid && DefRegistry.TryGet<WorldObjectDef>(craft.Station, out var stationDef) ? stationDef.StationTier : 0f;
             var tier = QualityCalculator.TierFor(QualityCalculator.Score(LevelOf(PrimarySkill(recipe)), QualityCalculator.MaterialPurity(consumed),
-                stationTier, QualityCalculator.NoMinigameScore));
+                stationTier, minigameScore));
             var max = QualityCalculator.MaxDurability(outputDef.Durability.Value, tier);
             for (var i = 0; i < Math.Max(1, recipe.Output.Count); i++)
                 GiveItem(inventory, outputDef, 1, new ItemWear(max, max) { Quality = tier });
             GameFeed.RaiseNotice($"@ui.crafted_quality|@quality.{tier.ToString().ToLowerInvariant()}");
+        }
+
+        // ------------------------------------------------------------------ forging (SYS-CRAFT-01 §Forging minigame)
+
+        /// <summary>The forging under way, or null. Server state; the HUD draws it.</summary>
+        public ForgingMinigame Forge { get; private set; }
+
+        (CraftRecipeDef Recipe, MaterialDef Material) _forgeCraft;
+        Vector2 _forgeFrom;
+        bool _bellows, _sentBellows;
+
+        /// <summary>Test and tooling entry points: hold the bellows, strike the hammer.</summary>
+        public void RequestForgeBellows(bool held) => CmdForgeBellows(held);
+        public void RequestForgeStrike() => CmdForgeStrike();
+
+        [ServerRpc]
+        void CmdForgeBellows(bool held) => _bellows = held;
+
+        [ServerRpc]
+        void CmdForgeStrike()
+        {
+            if (Forge != null && Forge.Strike()) GameFeed.RaiseForgeStrike(transform.position, Forge.LastHit);
+        }
+
+        void UpdateForge()
+        {
+            if (Forge == null) return;
+            if (IsDead || Vector2.Distance(transform.position, _forgeFrom) > GatherLeashTiles)
+            {
+                if (!IsDead) GameFeed.RaiseNotice("@ui.forge_cancelled");
+                Forge = null;
+                return;
+            }
+            Forge.Step(Time.deltaTime, _bellows);
+            if (!Forge.Done) return;
+            var score = Forge.Score;
+            Forge = null;
+            var (recipe, material) = _forgeCraft;
+            // Checked again: the inputs may have moved while the metal was worked.
+            if (TryGetComponent<InventoryNetwork>(out var inventory) && PrepareCraft(inventory, recipe, material, notify: true) is { } craft)
+                CompleteCraft(inventory, recipe, craft, score);
         }
 
         static NamespacedId PrimarySkill(CraftRecipeDef recipe) => StuffCrafting.PrimarySkill(recipe);

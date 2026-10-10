@@ -49,5 +49,9 @@ namespace Isle.Gameplay.Feedback
         public static void RaiseStorageOpened(object box) => StorageOpened?.Invoke(box);
         public static void RaiseXpGained(NamespacedId skill, float amount, int newLevel) => XpGained?.Invoke(skill, amount, newLevel);
         public static void RaiseNotice(string langKey) => Notice?.Invoke(langKey);
+
+        /// <summary>A forging hammer strike at a point, and whether it landed in the heat window.</summary>
+        public static event Action<Vector2, bool> ForgeStrike;
+        public static void RaiseForgeStrike(Vector2 at, bool hit) => ForgeStrike?.Invoke(at, hit);
     }
 }

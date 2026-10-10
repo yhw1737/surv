@@ -29,6 +29,9 @@ namespace Isle.Data
 
         /// <summary>Minigame to run, e.g. <c>isle:forging</c>. Invalid means craft instantly.</summary>
         public NamespacedId Minigame { get; init; }
+
+        /// <summary>SYS-CRAFT-01 §Forging: hammer strikes this recipe takes (3..8) when forged.</summary>
+        public int ForgeStrikes { get; init; } = 4;
     }
 
     /// <summary>SYS-CRAFT-02: a recipe whose output is a template asks the crafter to pick a material from these

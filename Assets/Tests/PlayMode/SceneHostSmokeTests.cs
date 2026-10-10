@@ -127,6 +127,33 @@ namespace Isle.Tests.PlayMode
             Assert.AreEqual(Isle.Gameplay.Crafting.QualityCalculator.MaxDurability(spear.Item.Durability.Value, spear.Wear.Quality.Value), spear.Wear.Max,
                 "durability not scaled by quality");
 
+            // SYS-CRAFT-01 §Forging: a copper knife at an anvil is hammered out — bellows into the window, strike, three
+            // times — and only then made, from the inputs still held.
+            player.Skills.Restore(NamespacedId.Parse("isle:crafting"), Isle.Gameplay.Skills.XpCurve.TotalXpTo(10));
+            var anvil = Isle.Gameplay.Building.StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:anvil")),
+                (Vector2)player.transform.position + Vector2.right * 1f);
+            Give(inventory, "isle:copper_ingot", 2);
+            Give(inventory, "isle:wood", 2);
+            player.RequestCraft("isle:craft_knife", "isle:copper");
+            yield return WaitUntil(() => player.Forge != null, 2f, "forging never started");
+            Assert.AreEqual(0, CountOf(inventory, "isle:knife__copper"), "forged gear made before the hammering");
+            var forge = player.Forge;
+            for (var strike = 0; strike < forge.Required; strike++)
+            {
+                player.RequestForgeBellows(true);
+                yield return WaitUntil(() => forge.Heat >= Isle.Gameplay.Crafting.ForgingMinigame.BandCentre, 6f, "bellows never heated the metal");
+                player.RequestForgeBellows(false);
+                player.RequestForgeStrike();
+                yield return WaitUntil(() => forge.Strikes > strike, 2f, "the hammer never fell");
+                yield return new WaitForSeconds(Isle.Gameplay.Crafting.ForgingMinigame.StrikeCooldown);
+            }
+            yield return WaitUntil(() => CountOf(inventory, "isle:knife__copper") == 1, 3f, "forged knife never made");
+            Assert.IsNull(player.Forge, "forging didn't end");
+            Assert.Greater(forge.Successes, 0, "no strike landed in the window");
+            var knife = inventory.Bag.Placements.First(p => p.Item.Id.Value == "isle:knife__copper");
+            Assert.IsNotNull(knife.Wear?.Quality, "forged knife has no quality");
+            Isle.Gameplay.Building.StructureFactory.Remove(anvil);
+
             // Drinking is from terrain water now: stand on the shore and E drinks the sea.
             Teleport(player, CoastSpot(world).Shore);
             var thirstBefore = vitals.Thirst;

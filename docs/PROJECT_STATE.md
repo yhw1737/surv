@@ -5,7 +5,22 @@
 
 ## Header
 
-- Last updated: **2026-10-09**
+- Last updated: **2026-10-10**
+- **2026-10-10 — T-091 forging minigame.** Branch `feature/T-091-forging` off `main` (after PR #45).
+  Built: `Gameplay/Crafting/ForgingMinigame` (SYS-CRAFT-01: window = band centre ± 0.10 × (1 + Lv/50), which is the
+  spec's [0.55, 0.75] at Lv 0; strikes 3..8; score = successes / required; co-op decay ×0.5 and +0.08 ready);
+  `CmdCraft` split into `PrepareCraft` / `CompleteCraft`, forged when the recipe's `minigame` is forging and the
+  station is tagged `forge` (anvil); RMB bellows / LMB strike while forging (`CmdForgeBellows`, `CmdForgeStrike`),
+  inputs taken only at the end, leash/E cancel; the score replaces the 0.5 stand-in in quality;
+  `CraftRecipeDef.ForgeStrikes`, 10 metal-capable recipes got `minigame` + `forge_strikes`; HUD heat gauge with the
+  window, a glowing heat bar, needle and strike pips (craft/cook windows close while forging); `GameFeed.ForgeStrike`
+  event. Figure: each strike is a hammer swing with sparks (landed) or a puff of dust (missed) at the anvil, the
+  figure faces the nearest `forge` station while hammering (not the mouse), and any timed work (gather, butcher, cook,
+  forge) holds the working pose. **Verified:** EditMode 697/697 (+9 `ForgingTests`), PlayMode 3/3 (copper knife at an
+  anvil: forging starts, nothing made until the strikes, three strikes in the window, knife with a tier); rendered the
+  figure facing the anvil with the strike effect. Not verified visually: the IMGUI forge gauge — batch mode runs no
+  OnGUI, so IMGUI can't be captured (tried screen read-back and a manual OnGUI call into a render texture). Note: the scratchpad's `compile.py` was cleaned out by the OS; Unity batch runs
+  compile anyway.
 - **2026-10-09 — T-302 work feedback.** Branch `feature/T-302-work-feedback`, stacked on `feature/T-301-world-feel`
   (PR #44) — [PR #45](https://github.com/yhw1737/surv/pull/45). Developer requests: (1) used-up nodes leave a stump /
   rubble / bare bush / stubble (`visual.depleted`, `IslandWorld.ApplyLook`, 4 new shapes) instead of fading; (2) a
@@ -1996,6 +2011,11 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-10 — T-091 forging values
+  Spec reading: the success window is centred on the target band and equals it at Lv 0. [invented]: bellows rate 0.5/s,
+  decay 0.2/s, strike cooldown 0.4 s, cold start, strikes per recipe (knife 3 … breastplate 8), arrows not forged,
+  cancel leash 0.3 tiles, gauge layout, spark look (9 sparks / 4 dust puffs, 0.35 s).
+
 - ### 2026-10-09 — T-302 values
   Developer-decided: cook time formula and constants (base 4 s, 2 s per ingredient, Lv 50 saves half), method
   multipliers grill 1 / boil 1.5 / stew 2 / dry 3 / smoke 3 (raw 0), gathering-like cook rules. [invented]: cook

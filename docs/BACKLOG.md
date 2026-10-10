@@ -307,7 +307,8 @@ stood up now so the solo beta is already a listen-server session with one client
 
 - [x] **T-090** `QualityCalculator` + 5 verification cases
   > **2026-10-09**: done — SYS-CRAFT-01 §Implementation (T-090). Crafted gear carries a tier (`ItemWear.Quality`) that scales durability and power (weapons, bows, tool speed, armor); `station_tier` on stations; tooltip + repair window show it; saved. Open-question fill-ins [invented]. Hide quality from butchery still open.
-- [ ] **T-091** Forging minigame
+- [x] **T-091** Forging minigame
+  > **2026-10-10**: done — SYS-CRAFT-01 §Forging Implementation. `ForgingMinigame` (server-stepped), forged recipes at the anvil (`minigame` + `forge_strikes`, anvil tag `forge`), heat gauge HUD, score feeds quality. Co-op forging not joinable yet.
 - [ ] **T-092** `AdjacentAssist`
 - [ ] **T-093** Crafter mark + repair (slot *count* only — application moves to **T-106**)
 - [ ] **T-100** ★ `TagReactionEngine` (SYS-COOK-01)

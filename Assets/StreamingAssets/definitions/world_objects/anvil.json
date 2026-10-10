@@ -4,6 +4,7 @@
   "station_tier": 0.5,
   "tags": [
     "station/anvil",
+    "forge",
     "metal"
   ],
   "visual": {

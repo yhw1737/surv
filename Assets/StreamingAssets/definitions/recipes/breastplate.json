@@ -24,5 +24,7 @@
       "level": 1,
       "primary": true
     }
-  ]
+  ],
+  "minigame": "isle:forging",
+  "forge_strikes": 8
 }
