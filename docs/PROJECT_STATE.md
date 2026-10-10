@@ -38,14 +38,14 @@
   entrance/rest/boss over 50 seeds), PlayMode 4/4 (fog hurts and poisons, antidote keeps it out, Mire Mother HP 1100
   calls 3 broods at 50%, herbs on the island); rendered a fog room (green haze, poisoned figure).
 - **2026-10-10 — T-203 Rootwood Hollow (part 1 of T-203).** Branch `feature/T-203-dungeons`, stacked on
-  `feature/T-150-save-roundtrip` (the whole of T-203 and its follow-ups below). Developer decisions: Heartwood HP 800 / strike 18,
+  `feature/T-150-save-roundtrip` — [PR #48](https://github.com/yhw1737/surv/pull/48) (the whole of T-203 and its follow-ups below). Developer decisions: Heartwood HP 800 / strike 18,
   root slam + summons below 50% (not while burning), burning calls 2 creatures. Built: regrowing root walls (300 s,
   waits for clearance), torch burning (permanent, 2 root sprites, wakes the room, "Burn" prompt), boss summons, root
   sprite / web spider / Elder Heartwood, heartwood and root sigil. **Verified:** EditMode 697/697, PlayMode 4/4 (cut →
   set to regrow in 5 min → waits for the player → regrows; torch burns it for good with +2 sprites; Heartwood HP 800
   calls sprites at 40% HP within the cap). Not rendered: the new creatures (existing bodies stand in).
 - **2026-10-10 — T-150 save/load round trip.** Branch `feature/T-150-save-roundtrip`, stacked on
-  `feature/T-091-forging`. Built a PlayMode
+  `feature/T-091-forging` — [PR #47](https://github.com/yhw1737/surv/pull/47). Built a PlayMode
   round trip (`SaveRoundTripTests`: skills, vitals, timed buff + expiry, wetness, satiety, worn/quality gear, carried
   carcass, food freshness, carcass on the ground, felled tree, clock, crate + contents, planted plot + planting time,
   loot pile, map marker → back to menu → Continue → compared). Fixed what wasn't saved — save version 6 (older saves
@@ -53,7 +53,7 @@
   satiety memory, carcasses on the ground; a save made underground stores the dungeon's entrance instead of a point
   in a dungeon that won't exist after loading. **Verified:** EditMode 697/697, PlayMode 4/4 (+1 round trip).
   Not covered by a test: the underground → entrance rule.
-- **2026-10-10 — T-091 forging minigame.** Branch `feature/T-091-forging` off `main` (after PR #45).
+- **2026-10-10 — T-091 forging minigame.** Branch `feature/T-091-forging` off `main` (after PR #45) — [PR #46](https://github.com/yhw1737/surv/pull/46).
   Built: `Gameplay/Crafting/ForgingMinigame` (SYS-CRAFT-01: window = band centre ± 0.10 × (1 + Lv/50), which is the
   spec's [0.55, 0.75] at Lv 0; strikes 3..8; score = successes / required; co-op decay ×0.5 and +0.08 ready);
   `CmdCraft` split into `PrepareCraft` / `CompleteCraft`, forged when the recipe's `minigame` is forging and the
