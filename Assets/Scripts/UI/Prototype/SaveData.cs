@@ -13,7 +13,7 @@ namespace Isle.UI.Prototype
     public sealed class SaveData
     {
         /// <summary>Bump when a field changes meaning; an older file is ignored rather than misread.</summary>
-        public const int CurrentVersion = 6;
+        public const int CurrentVersion = 7;
 
         /// <summary>Oldest version still readable. v3 only lacks <see cref="Skills"/>, which then start from zero.</summary>
         public const int MinReadableVersion = 3;
@@ -51,6 +51,10 @@ namespace Isle.UI.Prototype
         public List<SavedSatiety> Satiety = new();
         public List<SavedCarcass> Carcasses = new();
 
+        /// <summary>Version 7: what each dungeon remembers — its boss fallen, keys taken, gates opened or burned, the
+        /// tide cache, veins mined (SYS-DUNG-01 §I/O).</summary>
+        public List<Isle.Gameplay.Dungeons.DungeonDirector.SiteState> Dungeons = new();
+
         public string ToJson() => JsonUtility.ToJson(this);
 
         /// <summary>Null when the text isn't a save of the current version.</summary>
@@ -69,6 +73,7 @@ namespace Isle.UI.Prototype
                 save.Spoilage ??= new List<SavedSpoil>();
                 save.Satiety ??= new List<SavedSatiety>();
                 save.Carcasses ??= new List<SavedCarcass>();
+                save.Dungeons ??= new List<Isle.Gameplay.Dungeons.DungeonDirector.SiteState>();
                 return save;
             }
             catch (ArgumentException)

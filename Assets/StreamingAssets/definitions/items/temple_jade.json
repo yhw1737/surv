@@ -1,0 +1,19 @@
+{
+  "id": "isle:temple_jade",
+  "name": "@item.temple_jade",
+  "tags": [
+    "gem",
+    "dungeon_material"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.4,
+  "stack": 10,
+  "icon_style": {
+    "shape": "pearl",
+    "color": "#4FA07A",
+    "accent": "#C8F0D8"
+  }
+}

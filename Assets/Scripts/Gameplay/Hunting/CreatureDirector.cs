@@ -44,6 +44,14 @@ namespace Isle.Gameplay.Hunting
 
         /// <summary>The dash after the wind-up: until this time it charges along <see cref="LungeDirection"/>.</summary>
         public float LungeEndsAt { get; set; } = -1f;
+
+        /// <summary>A boss's next summon (SYS-DUNG-01); 0 summons as soon as it's due.</summary>
+        public float NextSummonAt { get; set; }
+
+        /// <summary>Charges since it last overheated, and until when it's overheated (SYS-DUNG-01 Sentinel).</summary>
+        public int Charges { get; set; }
+        public float OverheatUntil { get; set; } = float.NegativeInfinity;
+        public bool IsOverheated => Time.time < OverheatUntil;
         public Vector2 LungeDirection { get; set; }
         public bool IsLunging => LungeEndsAt >= 0f;
 
@@ -156,6 +164,9 @@ namespace Isle.Gameplay.Hunting
                 if (creature.View.activeSelf != awake) creature.View.SetActive(awake);
                 if (awake) Think(creature, players);
             }
+            // Spawned during the loop above (a boss calling help) join once it's done.
+            foreach (var (def, at, inDungeon) in _queued) SpawnAt(def, at, inDungeon);
+            _queued.Clear();
             TickStatuses();
             TickCarcasses(players);
 
@@ -271,6 +282,7 @@ namespace Isle.Gameplay.Hunting
             if (!_creatures.Contains(target) || target.Submerged) return 0f;
             var healthBefore = target.Health;
             damage *= target.Shell.DamageMult(Time.time, target.Def.Boss?.Shell);
+            if (target.IsOverheated) damage *= target.Def.Boss?.Overheat?.DamageMult ?? 1f;
             var dealt = Mathf.Min(damage, Mathf.Max(0f, target.Health));
             target.Health -= damage;
             if (!quiet) target.LastHitAt = Time.time; // a bleed tick doesn't flash or wake it every frame
@@ -512,6 +524,29 @@ namespace Isle.Gameplay.Hunting
             return count;
         }
 
+        readonly List<(CreatureDef Def, Vector2 At, bool InDungeon)> _queued = new();
+
+        /// <summary>SYS-DUNG-01 boss summons (Elder Heartwood's root sprites): below the health share, every few seconds,
+        /// a ring of helpers — never more than the cap alive, and none while the boss burns.</summary>
+        void TickSummon(Creature boss, BossSummonSpec summon)
+        {
+            if (boss.Health / Mathf.Max(1f, boss.MaxHealth) > summon.BelowHealth || Time.time < boss.NextSummonAt) return;
+            if (boss.Status.Stacks(Combat.DamageTypes.Heat) > 0)
+            {
+                boss.NextSummonAt = Time.time + 1f; // burning: try again in a moment
+                return;
+            }
+            boss.NextSummonAt = Time.time + Mathf.Max(1f, summon.EverySeconds);
+            if (!DefRegistry.TryGet<CreatureDef>(summon.Creature, out var def)) return;
+            var alive = _creatures.Count(c => c.Def == def && Vector2.Distance(c.Position, boss.Position) < 15f) + _queued.Count(q => q.Def == def);
+            var count = Mathf.Min(summon.Count, summon.MaxAlive - alive);
+            for (var i = 0; i < count; i++)
+            {
+                var angle = (i + 0.5f) / Mathf.Max(1, count) * Mathf.PI * 2f + Time.time;
+                _queued.Add((def, boss.Position + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * (boss.Radius + 1f), boss.InDungeon));
+            }
+        }
+
         /// <summary>Places one creature of <paramref name="def"/> at <paramref name="position"/> — dungeons use this for
         /// their rooms' spawn marks (SYS-DUNG-01). Server-side.</summary>
         public Creature SpawnAt(CreatureDef def, Vector2 position, bool inDungeon)
@@ -599,6 +634,18 @@ namespace Isle.Gameplay.Hunting
                 return;
             }
 
+            if (creature.Def.Boss?.Summon is { } summon) TickSummon(creature, summon);
+
+            // Overheated: it stands, venting, and takes extra damage (see Damage) until it cools.
+            if (creature.IsOverheated)
+            {
+                creature.StrikeLandsAt = -1f;
+                creature.LungeEndsAt = -1f;
+                creature.View.transform.position = creature.Position;
+                Flash(creature);
+                return;
+            }
+
             if (creature.Def.Boss?.Shell != null)
             {
                 creature.Shell.Tick(Time.time, creature.Health / Mathf.Max(1f, creature.MaxHealth), creature.Def.Boss.Shell);
@@ -632,7 +679,14 @@ namespace Isle.Gameplay.Hunting
                     {
                         // The dash: straight along the committed line; it lands early if it reaches the player.
                         if (BodyReach.InReach(distance, creature.Radius, combat.AttackRangeTiles * 0.6f) || Time.time >= creature.LungeEndsAt)
+                        {
                             LandStrike(creature, target, distance, combat);
+                            if (creature.Def.Boss?.Overheat is { } overheat && ++creature.Charges >= Mathf.Max(1, overheat.Charges))
+                            {
+                                creature.Charges = 0;
+                                creature.OverheatUntil = Time.time + overheat.Seconds;
+                            }
+                        }
                         else
                             Step(creature, creature.LungeDirection, combat.LungeSpeed);
                     }

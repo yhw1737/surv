@@ -1,0 +1,41 @@
+{
+  "id": "isle:bitter_herb_patch",
+  "name": "@world_object.bitter_herb_patch",
+  "tags": [
+    "node/herb",
+    "herb"
+  ],
+  "spawn": {
+    "biomes": [
+      "isle:marsh"
+    ],
+    "density": 0.004,
+    "cluster": {
+      "scale_tiles": 20,
+      "coverage": 0.2,
+      "inside": 3.5,
+      "outside": 0.1
+    },
+    "elsewhere": 0.0
+  },
+  "gather": {
+    "item": "isle:bitter_herb",
+    "count": 2,
+    "uses": 1,
+    "respawn_minutes": 1440,
+    "stamina_cost": 4,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 15,
+      "per_unit": 0
+    },
+    "time_sec": 3
+  },
+  "visual": {
+    "shape": "grass",
+    "depleted": "stubble",
+    "color": "#7A8A44",
+    "size": 0.9,
+    "jitter": 0.1
+  }
+}

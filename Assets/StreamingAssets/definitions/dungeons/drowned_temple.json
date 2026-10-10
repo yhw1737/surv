@@ -12,8 +12,8 @@
   "floor_color": "#5E6A55",
   "wall_color": "#20261B",
   "creatures": [
+    "isle:bog_drowned",
     "isle:snake",
-    "isle:frog",
     "isle:crocodile"
   ],
   "gate": {
@@ -25,5 +25,12 @@
   "veins": [
     "isle:iron_vein",
     "isle:coal_seam"
-  ]
+  ],
+  "boss": "isle:mire_mother",
+  "miasma": {
+    "share": 0.33,
+    "damage_per_second": 2,
+    "damage_type": "toxic",
+    "color": "#7FA04A"
+  }
 }

@@ -102,6 +102,10 @@ namespace Isle.UI.Art
                 case "bird": Bird(r, body, moving); break;
                 case "frog": Frog(r, body, moving); break;
                 case "turtle": Turtle(r, body, moving); break;
+                case "treant": Treant(r, body, moving); break;
+                case "spider": Spider(r, body, moving); break;
+                case "wisp": Wisp(r, body); break;
+                case "automaton": Automaton(r, body, moving); break;
                 default: Quadruped(look, r, body, moving); break;
             }
             DrawStatus(bodyStart, r, facing);
@@ -128,6 +132,8 @@ namespace Isle.UI.Art
                 Shelled = _creature.Shell.IsHidden(Time.time),
             };
             var tint = StatusLook.Tint(s, _time);
+            // SYS-DUNG-01 Sentinel: overheated, it glows hot and flickers while it vents.
+            if (_creature.IsOverheated) tint = (new Color(1f, 0.42f, 0.12f), 0.45f + 0.2f * Mathf.Sin(_time * 18f));
             if (_creature.Dead)
             {
                 // A carcass is greyed, and greener as it spoils; flies once it's going off.
@@ -426,6 +432,134 @@ namespace Isle.UI.Art
             _mesh.Disk(eye + V(0.02f * k, 0.01f * k), 0.08f * k, Color.white);
             Eye(eye + V(0.04f * k, 0.01f * k), 0.045f * k);
             _mesh.Line(c + V(0.25f * k, 0.02f * k), c + V(0.42f * k, 0.06f * k), 0.025f * k, Ink);
+        }
+
+        /// <summary>A walking tree (the Elder Heartwood, root sprites): root feet, a bark trunk with a face, branch arms
+        /// tipped with leaf clumps. The wind-up raises the branches; the strike slams them down.</summary>
+        void Treant(float r, Color body, float moving)
+        {
+            var stride = _phase * Tau;
+            for (var side = -1; side <= 1; side += 2)
+            for (var i = 0; i < 2; i++)
+            {
+                var hip = V(side * (0.15f + i * 0.2f) * r, 0.35f * r);
+                var reach = Mathf.Sin(stride + i * Mathf.PI + (side > 0 ? 0f : Mathf.PI)) * 0.15f * r * moving;
+                Limb(hip, V(side * (0.4f + i * 0.25f) * r + reach, 0.02f), 0.12f * r, Dark(body, 0.2f));
+            }
+            var sway = Mathf.Sin(_time * 1.3f + _seed) * 0.04f * r;
+            var top = V(sway, 1.5f * r);
+            Poly(new List<Vector2> { V(-0.42f * r, 0.3f * r), V(0.42f * r, 0.3f * r), top + V(0.32f * r, 0f), top + V(-0.32f * r, 0f) }, body);
+            _mesh.Line(V(-0.1f * r, 0.45f * r), V(-0.05f * r, 1.2f * r), 0.04f * r, Dark(body, 0.3f));
+            _mesh.Line(V(0.18f * r, 0.5f * r), V(0.12f * r, 1.0f * r), 0.035f * r, Dark(body, 0.3f));
+            var lift = _crouch * 0.55f * r - _stretch * 0.5f * r;
+            for (var side = -1; side <= 1; side += 2)
+            {
+                var shoulder = top + V(side * 0.3f * r, -0.25f * r);
+                var elbow = shoulder + V(side * 0.45f * r, 0.1f * r + lift * 0.5f);
+                var hand = elbow + V(side * 0.15f * r + _stretch * 0.35f * r, -0.25f * r + lift);
+                Limb(shoulder, elbow, 0.11f * r, body);
+                Limb(elbow, hand, 0.09f * r, body);
+                Ell(hand + V(0f, 0.12f * r), 0.26f * r, 0.2f * r, _accent);
+            }
+            Ell(top + V(0f, 0.25f * r), 0.55f * r, 0.32f * r, _accent);
+            Ell(top + V(-0.3f * r, 0.15f * r), 0.3f * r, 0.22f * r, Dark(_accent, 0.15f));
+            Ell(top + V(0.32f * r, 0.18f * r), 0.28f * r, 0.2f * r, Dark(_accent, 0.1f));
+            var face = top + V(0.05f * r, -0.4f * r);
+            var glow = new Color(1f, 0.85f, 0.35f);
+            if (_sleep > 0.5f) glow = Ink;
+            _mesh.Disk(face + V(-0.12f * r, 0f), 0.06f * r, glow);
+            _mesh.Disk(face + V(0.12f * r, 0f), 0.06f * r, glow);
+            _mesh.Line(face + V(-0.12f * r, -0.2f * r), face + V(0.12f * r, -0.18f * r), 0.03f * r, Ink);
+        }
+
+        /// <summary>A spider: eight arched legs scuttling in turn, a round abdomen with a red mark, a small head.</summary>
+        void Spider(float r, Color body, float moving)
+        {
+            var c = V(-0.1f * r, 0.45f * r);
+            var scuttle = _phase * Tau * 2f;
+            for (var side = -1; side <= 1; side += 2)
+            for (var i = 0; i < 4; i++)
+            {
+                var hip = c + V(0.25f * r + side * 0.05f * r, 0.05f * r);
+                var spread = (i - 1.5f) * 0.32f * r;
+                var lift = Mathf.Max(0f, Mathf.Sin(scuttle + i * 1.7f + side)) * 0.12f * r * moving;
+                var knee = hip + V(spread * 0.6f + side * 0.08f * r, 0.4f * r + lift);
+                var foot = V(hip.x + spread * 1.4f + side * 0.1f * r, 0.02f);
+                Limb(hip, knee, 0.06f * r, Dark(body, 0.1f));
+                Limb(knee, foot, 0.05f * r, Dark(body, 0.1f));
+            }
+            Ell(c + V(-0.25f * r, 0.12f * r), 0.5f * r, 0.4f * r, body);
+            Poly(new List<Vector2> { c + V(-0.3f * r, 0.3f * r), c + V(-0.2f * r, 0.12f * r), c + V(-0.3f * r, -0.06f * r), c + V(-0.4f * r, 0.12f * r) }, _accent);
+            var head = c + V(0.4f * r, 0.08f * r);
+            Ell(head, 0.24f * r, 0.2f * r, Dark(body, 0.1f));
+            for (var i = 0; i < 3; i++) _mesh.Disk(head + V((0.06f + i * 0.06f) * r, 0.06f * r + (i % 2) * 0.03f * r), 0.03f * r, new Color(0.9f, 0.2f, 0.15f));
+            _mesh.Line(head + V(0.2f * r, -0.05f * r), head + V(0.3f * r, -0.15f * r), 0.03f * r, Ink);
+        }
+
+        /// <summary>A floating flame (spark wisp): flickering layered tongues around a white-hot core, two dark eyes;
+        /// it bobs in the air and casts no feet.</summary>
+        void Wisp(float r, Color body)
+        {
+            var k = r * 3.6f;
+            var c = V(0f, 0.5f * k + Mathf.Sin(_time * 4f + _seed) * 0.08f * k);
+            // Outer glow, then rounded flame layers whose tips lick upward and flicker.
+            _mesh.Ellipse(c + V(0f, 0.05f * k), 0.42f * k, 0.38f * k, new Color(body.r, body.g, body.b, 0.25f));
+            for (var layer = 0; layer < 3; layer++)
+            {
+                var size = (1f - layer * 0.3f) * 0.3f * k;
+                var colour = layer == 0 ? Dark(body, 0.05f) : layer == 1 ? body : _accent;
+                var flick = Mathf.Sin(_time * (11f + layer * 3f) + _seed + layer) * 0.07f * k;
+                if (layer == 0) Ell(c, size, size * 0.9f, colour);
+                else _mesh.Ellipse(c, size, size * 0.9f, colour);
+                var tip = new List<Vector2> { c + V(-size * 0.75f, size * 0.25f), c + V(flick, size * 1.9f), c + V(size * 0.75f, size * 0.25f) };
+                if (layer == 0) Poly(tip, colour);
+                else _mesh.Polygon(tip, colour);
+            }
+            _mesh.Disk(c + V(0f, -0.02f * k), 0.08f * k, new Color(1f, 0.98f, 0.85f));
+            Eye(c + V(-0.07f * k, 0.06f * k), 0.035f * k);
+            Eye(c + V(0.09f * k, 0.06f * k), 0.035f * k);
+        }
+
+        /// <summary>A clockwork automaton (the Sentinel): piston legs, a riveted box body with a gear on the chest, a
+        /// visor slit that glows — hotter when it overheats — and heavy arms that swing into a charge.</summary>
+        void Automaton(float r, Color body, float moving)
+        {
+            var stride = _phase * Tau;
+            for (var side = -1; side <= 1; side += 2)
+            {
+                var hip = V(side * 0.3f * r, 0.6f * r);
+                var step = Mathf.Sin(stride + (side > 0 ? 0f : Mathf.PI)) * 0.18f * r * moving;
+                Limb(hip, V(side * 0.3f * r + step, 0.3f * r), 0.16f * r, Dark(body, 0.25f));
+                Limb(V(side * 0.3f * r + step, 0.3f * r), V(side * 0.32f * r + step, 0.04f), 0.12f * r, Dark(body, 0.35f));
+                Ell(V(side * 0.34f * r + step, 0.04f), 0.18f * r, 0.06f * r, Dark(body, 0.4f));
+            }
+            var lean = _stretch * 0.25f * r;
+            var low = V(lean * 0.3f, 0.55f * r);
+            var high = V(lean, 1.55f * r);
+            Poly(new List<Vector2> { low + V(-0.55f * r, 0f), low + V(0.55f * r, 0f), high + V(0.62f * r, 0f), high + V(-0.62f * r, 0f) }, body);
+            var gear = Vector2.Lerp(low, high, 0.45f) + V(0.05f * r, 0f);
+            var spin = _time * (1.5f + _speed);
+            for (var i = 0; i < 8; i++)
+            {
+                var a = spin + i * Mathf.PI / 4f;
+                _mesh.Disk(gear + V(Mathf.Cos(a) * 0.26f * r, Mathf.Sin(a) * 0.26f * r), 0.07f * r, _accent);
+            }
+            Ell(gear, 0.24f * r, 0.24f * r, _accent);
+            _mesh.Disk(gear, 0.08f * r, Dark(body, 0.4f));
+            foreach (var corner in new[] { V(-0.5f * r, 0.08f * r), V(0.5f * r, 0.08f * r), V(-0.55f * r, 0.9f * r), V(0.55f * r, 0.9f * r) })
+                _mesh.Disk(low + corner, 0.035f * r, Dark(body, 0.4f));
+            var head = high + V(0.08f * r, 0.28f * r);
+            Poly(new List<Vector2> { head + V(-0.3f * r, -0.22f * r), head + V(0.34f * r, -0.22f * r), head + V(0.3f * r, 0.22f * r), head + V(-0.26f * r, 0.22f * r) }, Dark(body, 0.1f));
+            var visor = _creature.IsOverheated ? new Color(1f, 0.35f, 0.1f) : new Color(1f, 0.85f, 0.4f);
+            _mesh.Line(head + V(-0.12f * r, 0.02f * r), head + V(0.28f * r, 0.02f * r), 0.07f * r, visor);
+            var swing = _crouch * 0.4f * r - _stretch * 0.2f * r;
+            for (var side = -1; side <= 1; side += 2)
+            {
+                var shoulder = high + V(side * 0.62f * r, -0.15f * r);
+                var hand = shoulder + V(side * 0.18f * r + lean, -0.7f * r + swing);
+                Limb(shoulder, hand, 0.15f * r, Dark(body, 0.15f));
+                Ell(hand, 0.18f * r, 0.16f * r, Dark(body, 0.3f));
+            }
         }
 
         void Turtle(float r, Color body, float moving)

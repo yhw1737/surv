@@ -139,6 +139,7 @@ namespace Isle.UI.Prototype
                 DrawGauges();
                 DrawClock();
                 DrawPrompt();
+                DrawBossBar();
             }
             _hover = null;
             if (_craftOpen) DrawCraftWindow();

@@ -380,6 +380,17 @@ namespace Isle.Gameplay.Character
             Feedback.GameFeed.RaisePlayerHit(taken);
         }
 
+        /// <summary>Exposure — poison fog, not a blow: food resistance applies, armor doesn't (and doesn't wear), no hit
+        /// flash; the damage type's status still builds (the body turns green).</summary>
+        public void TakeExposure(float amount, string damageType)
+        {
+            if (!IsServer || amount <= 0f) return;
+            var taken = Combat.DamageTypes.Damage(amount, damageType, FoodResistMult(damageType), 0f) * BuffEffects.Mult(ActiveBuffs(), "damage_taken_mult");
+            if (taken <= 0f) return;
+            Status.OnHit(damageType, taken, Time.time, out _);
+            Health = Mathf.Clamp(Health - taken, 0f, VitalsCalculator.GaugeMax);
+        }
+
         /// <summary>A saved wetness, put back on load.</summary>
         public void RestoreWet(float wetPenalty) => WetPenalty = Mathf.Max(0f, wetPenalty);
 

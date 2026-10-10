@@ -1,0 +1,61 @@
+{
+  "id": "isle:bog_drowned",
+  "name": "@creature.bog_drowned",
+  "tags": [
+    "undead",
+    "aggressive",
+    "dungeon"
+  ],
+  "weight_dist": {
+    "type": "lognormal",
+    "mean": 30.0,
+    "sigma": 0.15,
+    "min": 22.0,
+    "max": 40.0
+  },
+  "health_per_kg": 3.0,
+  "ai": "isle:territorial_charger",
+  "butcher": {
+    "edible_ratio": 0.3,
+    "condition_range": [
+      1.0,
+      1.0
+    ],
+    "yields": [
+      {
+        "item": "isle:fiber",
+        "share": 1.0,
+        "unit_kg": 10.0,
+        "min": 1
+      }
+    ]
+  },
+  "carry": {
+    "inventory_allowed": true,
+    "drag_speed_penalty": 0.0,
+    "coop_carry_penalty": 0.0
+  },
+  "combat": {
+    "vision_tiles": 6,
+    "move_speed": 0.6,
+    "chase_speed": 1.6,
+    "damage": 12,
+    "attack_range_tiles": 1.0,
+    "attack_interval_seconds": 2.0,
+    "body_radius_tiles": 0.45,
+    "windup_seconds": 0.7,
+    "lunge_tiles": 0.5,
+    "lunge_speed": 4.0,
+    "damage_type": "blunt"
+  },
+  "resist": {
+    "heat": 1.5,
+    "pierce": 0.6,
+    "toxic": 0.0
+  },
+  "look": {
+    "body": "reptile",
+    "color": "#5A6650",
+    "accent": "#3A4434"
+  }
+}

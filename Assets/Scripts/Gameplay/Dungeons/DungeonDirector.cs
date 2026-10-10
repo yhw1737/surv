@@ -104,6 +104,13 @@ namespace Isle.Gameplay.Dungeons
             public HashSet<Vec2Int> Tiles = new();
             public bool Open;
             public GameObject View;
+
+            /// <summary>Clockwork Ruin gear group (open while the floor's phase equals it); -1 for any other door.</summary>
+            public int Gear = -1;
+
+            /// <summary>When a cleared gate grows back (Time.time), or -1. Burned gates never do.</summary>
+            public float RegrowAt = -1f;
+            public bool Burned;
         }
 
         public sealed class Floor
@@ -123,6 +130,8 @@ namespace Isle.Gameplay.Dungeons
             public HashSet<int> Flooded = new();
             public readonly HashSet<Vec2Int> WaterTiles = new();
             public GameObject WaterView;
+            public readonly HashSet<Vec2Int> MiasmaTiles = new();
+            public float CreatedAt;
             public Cache Cache;
             public readonly List<Vein> Veins = new();
 
@@ -167,9 +176,114 @@ namespace Isle.Gameplay.Dungeons
                 _placed = true;
             }
             TickClearing();
+            TickRegrowth();
+            TickMiasma();
+            TickGears();
             TickMining();
             TickTides();
             TickBosses();
+        }
+
+        // ------------------------------------------------------------------ save state (SYS-DUNG-01 §I/O)
+
+        /// <summary>What a save keeps of one dungeon: whether its boss fell, and per floor what's been opened or used.
+        /// Layouts aren't saved — same seed, same floors.</summary>
+        [System.Serializable]
+        public sealed class SiteState
+        {
+            public string Dungeon;
+            public bool BossDefeated;
+            public List<FloorState> Floors = new();
+        }
+
+        [System.Serializable]
+        public sealed class FloorState
+        {
+            public int Index;
+            public List<int> Keys = new();      // lock ids whose key was taken
+            public List<int> Gates = new();     // edge indices of opened soft gates and locked doors (not regrowing)
+            public List<int> Burned = new();    // edge indices of burned gates
+            public bool CacheTaken;
+            public List<int> VeinUses = new();  // uses left, by vein order
+        }
+
+        readonly Dictionary<string, SiteState> _pendingState = new();
+
+        public List<SiteState> Snapshot()
+        {
+            var states = new List<SiteState>();
+            foreach (var site in _sites)
+            {
+                var state = new SiteState { Dungeon = site.Def.Id.Value, BossDefeated = site.BossDefeated };
+                foreach (var ((siteIndex, index), floor) in _floors)
+                {
+                    if (siteIndex != site.Index) continue;
+                    var saved = new FloorState { Index = index, CacheTaken = floor.Cache?.Taken ?? false };
+                    foreach (var key in floor.Keys) if (key.Taken) saved.Keys.Add(key.LockId);
+                    foreach (var gate in floor.Barriers)
+                    {
+                        if (gate.Gear >= 0) continue;
+                        if (gate.Burned) saved.Burned.Add(gate.Edge);
+                        else if (gate.Open && gate.RegrowAt < 0f) saved.Gates.Add(gate.Edge);
+                    }
+                    foreach (var vein in floor.Veins) saved.VeinUses.Add(vein.UsesLeft);
+                    state.Floors.Add(saved);
+                }
+                // A floor that wasn't built this session keeps what the save it came from said.
+                if (_pendingState.TryGetValue(state.Dungeon, out var earlier))
+                    foreach (var old in earlier.Floors)
+                        if (state.Floors.All(f => f.Index != old.Index)) state.Floors.Add(old);
+                states.Add(state);
+            }
+            return states;
+        }
+
+        /// <summary>Puts a save's dungeon state back: bosses at once, floors as they're built (or now, if they are).</summary>
+        public void Restore(IEnumerable<SiteState> states)
+        {
+            _pendingState.Clear();
+            foreach (var state in states ?? Enumerable.Empty<SiteState>())
+                if (!string.IsNullOrEmpty(state.Dungeon)) _pendingState[state.Dungeon] = state;
+            ApplyPendingSites();
+            foreach (var floor in _floors.Values) ApplyPending(floor);
+        }
+
+        void ApplyPendingSites()
+        {
+            foreach (var site in _sites)
+                if (_pendingState.TryGetValue(site.Def.Id.Value, out var state) && state.BossDefeated) site.BossDefeated = true;
+        }
+
+        void ApplyPending(Floor floor)
+        {
+            if (!_pendingState.TryGetValue(floor.Site.Def.Id.Value, out var state)) return;
+            var saved = state.Floors.FirstOrDefault(f => f.Index == floor.Index);
+            if (saved == null) return;
+            foreach (var key in floor.Keys)
+            {
+                if (!saved.Keys.Contains(key.LockId)) continue;
+                key.Taken = true;
+                if (key.View != null) key.View.SetActive(false);
+            }
+            foreach (var gate in floor.Barriers)
+            {
+                if (gate.Gear >= 0) continue;
+                var burned = saved.Burned.Contains(gate.Edge);
+                if (!burned && !saved.Gates.Contains(gate.Edge)) continue;
+                gate.Open = true;
+                gate.Burned = burned;
+                if (gate.View != null) gate.View.SetActive(false);
+            }
+            if (floor.Cache != null && saved.CacheTaken)
+            {
+                floor.Cache.Taken = true;
+                if (floor.Cache.View != null) floor.Cache.View.SetActive(false);
+            }
+            for (var i = 0; i < floor.Veins.Count && i < saved.VeinUses.Count; i++)
+            {
+                floor.Veins[i].UsesLeft = saved.VeinUses[i];
+                if (saved.VeinUses[i] <= 0 && floor.Veins[i].View != null) floor.Veins[i].View.SetActive(false);
+            }
         }
 
         // ------------------------------------------------------------------ entrances
@@ -188,6 +302,7 @@ namespace Isle.Gameplay.Dungeons
                 site.View = Prop($"{def.Id.Name}_entrance", def.Entrance?.Shape ?? "ruin_gate", def.Entrance?.Color, site.Entrance, def.Entrance?.Size ?? 2.6f, transform);
                 _sites.Add(site);
             }
+            ApplyPendingSites();
         }
 
         /// <summary>A walkable tile in the def's biome, as far as possible from the entrances already placed (spread over
@@ -221,6 +336,8 @@ namespace Isle.Gameplay.Dungeons
             if (_floors.TryGetValue((site.Index, index), out var floor)) return floor;
             var seed = (IslandWorld.Instance != null ? IslandWorld.Instance.Seed : 1) ^ (site.Index * 7919);
             var layout = DungeonGenerator.Generate(seed, index, site.Def.Floors, site.Def.Danger);
+            // Clockwork Ruin: loops first, so the tiles get their doorways carved.
+            if (site.Def.Clockwork is { } clockwork) ClockworkDoors.AddLoops(layout, seed + index, clockwork.LoopChance);
             var templates = DefRegistry.All<RoomTemplateDef>()
                 .Where(t => t.Dungeons == null || t.Dungeons.Contains(site.Def.Id))
                 .Select(t => new RoomTemplate { Id = t.Id.Value, Tags = t.Tags, Rows = t.Rows }).ToList();
@@ -233,15 +350,19 @@ namespace Isle.Gameplay.Dungeons
                 Tiles = tiles,
                 Origin = new Vector2(RegionOrigin + site.Index * FloorSpacing, RegionOrigin + index * FloorSpacing),
                 Seed = seed + index,
+                CreatedAt = Time.time,
             };
             floor.Root = new GameObject($"{site.Def.Id.Name}_floor{index}");
             floor.Root.transform.SetParent(transform, false);
             _floors[(site.Index, index)] = floor;
             BuildView(floor);
             SetUpTides(floor);
+            SetUpMiasma(floor);
             PlaceDoors(floor);
+            SetUpGears(floor);
             PlaceVeins(floor);
             SpawnCreatures(floor);
+            ApplyPending(floor);
             return floor;
         }
 
@@ -525,6 +646,139 @@ namespace Isle.Gameplay.Dungeons
 
         static readonly Color WaterColour = new(0.25f, 0.53f, 0.76f, 0.55f);
 
+        // ------------------------------------------------------------------ gear doors (Clockwork Ruin)
+
+        void SetUpGears(Floor floor)
+        {
+            var clockwork = floor.Site.Def.Clockwork;
+            if (clockwork == null) return;
+            var colour = string.IsNullOrEmpty(clockwork.Color) ? "#B08D3C" : clockwork.Color;
+            foreach (var (e, group) in ClockworkDoors.Assign(floor.Layout, floor.Seed, clockwork.Share))
+            {
+                var edge = floor.Layout.Edges[e];
+                var a = floor.Layout.Rooms[edge.A].Cell;
+                var b = floor.Layout.Rooms[edge.B].Cell;
+                var door = new Barrier { Edge = e, Gear = group, LockId = GearDoor };
+                foreach (var t in DungeonTiles.DoorwayTiles(a, b)) door.Tiles.Add(t);
+                var centre = DungeonTiles.DoorwayCentre(a, b);
+                door.Position = floor.Origin + new Vector2(centre.X, centre.Y + 0.5f) + (a.Y == b.Y ? Vector2.zero : new Vector2(0.5f, -0.5f));
+                door.View = Prop("gear_door", "gear_door", colour, door.Position, 2.6f, floor.Root.transform);
+                door.Open = group == 0; // phase 0 at creation
+                door.View.SetActive(!door.Open);
+                floor.Barriers.Add(door);
+            }
+        }
+
+        /// <summary><see cref="Barrier.LockId"/> of a gear door: not a lock, not the soft gate, not interactable.</summary>
+        const int GearDoor = -2;
+
+        /// <summary>How far everyone must be from a gear door for it to shut. [invented]</summary>
+        const float GearClearanceTiles = 1.4f;
+
+        /// <summary>Every period the floor's phase flips: group-0 doors open in even periods, group-1 doors in odd ones.
+        /// A door about to shut blinks for the last few seconds; one with someone standing in it waits for them.</summary>
+        void TickGears()
+        {
+            foreach (var floor in _floors.Values)
+            {
+                var clockwork = floor.Site.Def.Clockwork;
+                if (clockwork == null) continue;
+                var period = Mathf.Max(1f, clockwork.PeriodSeconds);
+                var elapsed = Time.time - floor.CreatedAt;
+                var phase = (int)(elapsed / period) % 2;
+                var untilFlip = period - elapsed % period;
+                var blink = untilFlip <= clockwork.WarnSeconds && Mathf.Repeat(Time.time * 4f, 1f) < 0.5f;
+                foreach (var door in floor.Barriers)
+                {
+                    if (door.Gear < 0) continue;
+                    var open = door.Gear == phase;
+                    if (!open && door.Open && PlayerInteraction.All.Any(p => Vector2.Distance(p.transform.position, door.Position) < GearClearanceTiles))
+                        open = true; // never shut on someone
+                    door.Open = open;
+                    if (door.View == null) continue;
+                    // Open doors about to shut flicker into view as a warning.
+                    door.View.SetActive(!open || blink);
+                }
+            }
+        }
+
+        /// <summary>The floor's current gear phase (0 or 1); -1 on a floor without gear doors.</summary>
+        public int GearPhase(Floor floor)
+        {
+            var clockwork = floor.Site.Def.Clockwork;
+            if (clockwork == null) return -1;
+            return (int)((Time.time - floor.CreatedAt) / Mathf.Max(1f, clockwork.PeriodSeconds)) % 2;
+        }
+
+        // ------------------------------------------------------------------ miasma (Drowned Temple)
+
+        void SetUpMiasma(Floor floor)
+        {
+            var miasma = floor.Site.Def.Miasma;
+            if (miasma == null || miasma.Share <= 0f) return;
+            foreach (var room in Tides.PickRooms(floor.Layout, miasma.Share, floor.Seed, MiasmaSalt))
+            {
+                var cell = floor.Layout.Rooms[room].Cell;
+                for (var x = 0; x < DungeonTiles.RoomTiles; x++)
+                for (var y = 0; y < DungeonTiles.RoomTiles; y++)
+                {
+                    var tile = new Vec2Int(cell.X * DungeonTiles.RoomTiles + x, cell.Y * DungeonTiles.RoomTiles + y);
+                    if (floor.Tiles.IsFloor(tile.X, tile.Y)) floor.MiasmaTiles.Add(tile);
+                }
+            }
+            // A sickly haze over those rooms, one pixel per tile (always there: the fog doesn't lift).
+            var size = floor.Tiles.Size;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            var pixels = new Color32[size * size];
+            var colour = ShapeLibrary.ParseColour(miasma.Color, new Color(0.5f, 0.63f, 0.29f));
+            colour.a = MiasmaAlpha;
+            foreach (var t in floor.MiasmaTiles) pixels[t.Y * size + t.X] = colour;
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            var view = new GameObject("Miasma");
+            view.transform.SetParent(floor.Root.transform, false);
+            view.transform.position = floor.Origin;
+            var renderer = view.AddComponent<SpriteRenderer>();
+            renderer.sprite = Sprite.Create(texture, new Rect(0, 0, size, size), Vector2.zero, 1f);
+            renderer.sortingOrder = -6; // over the floor and water, under everything standing
+        }
+
+        const int MiasmaSalt = 7349;
+
+        /// <summary>The haze's opacity. [invented look]</summary>
+        const float MiasmaAlpha = 0.4f;
+
+        float _nextMiasmaAt;
+        readonly HashSet<PlayerInteraction> _inMiasma = new();
+
+        /// <summary>Once a second, everyone standing in poison fog takes its damage (an antidote's toxic resistance
+        /// takes it to nothing); stepping in says so once.</summary>
+        void TickMiasma()
+        {
+            if (Time.time < _nextMiasmaAt) return;
+            _nextMiasmaAt = Time.time + 1f;
+            foreach (var player in PlayerInteraction.All)
+            {
+                var floor = FloorAt(player.transform.position);
+                var miasma = floor?.Site.Def.Miasma;
+                var inside = miasma != null && floor.MiasmaTiles.Contains(floor.WorldToTile(player.transform.position));
+                if (!inside)
+                {
+                    _inMiasma.Remove(player);
+                    continue;
+                }
+                if (_inMiasma.Add(player) && player.IsOwner) GameFeed.RaiseNotice("@ui.miasma");
+                if (player.TryGetComponent<Vitals>(out var vitals)) vitals.TakeExposure(miasma.DamagePerSecond, miasma.DamageType);
+            }
+        }
+
+        /// <summary>Whether a point lies in poison fog (for tests and tools).</summary>
+        public bool IsMiasma(Vector2 p)
+        {
+            var floor = FloorAt(p);
+            return floor != null && floor.MiasmaTiles.Contains(floor.WorldToTile(p));
+        }
+
         /// <summary>Where in its room the cache sits, from the room centre (off the centre so it doesn't sit on the room's
         /// feature or a key). [invented]</summary>
         static readonly Vec2Int CacheOffset = new(4, -4);
@@ -670,6 +924,7 @@ namespace Isle.Gameplay.Dungeons
                 (Floor f, Vein vein) => (vein.Position + Vector2.up * 1.2f, $"{Lang("@ui.harvest")} — {Lang(vein.Def.Name)}"),
                 (Floor f, Cache cache) => (cache.Position + Vector2.up * 1f, Lang("@ui.tide_cache")),
                 (Floor f, Barrier barrier) when barrier.LockId >= 0 => (barrier.Position + Vector2.up * 2.2f, Lang("@ui.dungeon_locked")),
+                (Floor f, Barrier barrier) when CanBurn(player, f) => (barrier.Position + Vector2.up * 2.2f, string.Format(Lang("@ui.dungeon_burn"), GateName(f))),
                 (Floor f, Barrier barrier) => (barrier.Position + Vector2.up * 2.2f, string.Format(Lang("@ui.dungeon_clear"), GateName(f))),
                 _ => null,
             };
@@ -707,6 +962,9 @@ namespace Isle.Gameplay.Dungeons
                 case (Floor floor, Barrier barrier) when barrier.LockId >= 0:
                     GameFeed.RaiseNotice("@ui.dungeon_need_key");
                     return true;
+                case (Floor floor, Barrier barrier) when CanBurn(player, floor):
+                    Burn(floor, barrier);
+                    return true;
                 case (Floor floor, Barrier barrier):
                     StartClearing(player, floor, barrier);
                     return true;
@@ -733,7 +991,7 @@ namespace Isle.Gameplay.Dungeons
             var floor = FloorAt(at);
             foreach (var portal in floor.Portals) Consider((floor, portal), portal.Position);
             foreach (var key in floor.Keys) if (!key.Taken) Consider((floor, key), key.Position);
-            foreach (var barrier in floor.Barriers) if (!barrier.Open) Consider((floor, barrier), barrier.Position, 1.2f);
+            foreach (var barrier in floor.Barriers) if (!barrier.Open && barrier.Gear < 0) Consider((floor, barrier), barrier.Position, 1.2f);
             if (floor.Cache != null && !floor.Cache.Taken && !floor.Site.TideHigh) Consider((floor, floor.Cache), floor.Cache.Position);
             foreach (var vein in floor.Veins) if (vein.UsesLeft > 0) Consider((floor, vein), vein.Position, 0.4f);
             return best;
@@ -813,12 +1071,66 @@ namespace Isle.Gameplay.Dungeons
                 if (Time.time - started < seconds) continue;
                 gate.Open = true;
                 if (gate.View != null) gate.View.SetActive(false);
+                var regrow = floor.Site.Def.Gate?.RegrowSeconds ?? 0f;
+                if (regrow > 0f) gate.RegrowAt = Time.time + regrow;
                 _clearing.Remove(player);
                 GameFeed.RaiseNotice("@ui.dungeon_cleared");
             }
         }
 
         public bool IsClearing(PlayerInteraction player) => _clearing.ContainsKey(player);
+
+        /// <summary>SYS-DUNG-01 Rootwood Hollow: cut roots grow back (5 min). A gate someone is standing in waits until
+        /// they've stepped out, so nobody is ever shut inside it.</summary>
+        void TickRegrowth()
+        {
+            foreach (var floor in _floors.Values)
+            foreach (var gate in floor.Barriers)
+            {
+                if (gate.RegrowAt < 0f || gate.Burned || Time.time < gate.RegrowAt) continue;
+                if (PlayerInteraction.All.Any(p => Vector2.Distance(p.transform.position, gate.Position) < RegrowClearanceTiles)) continue;
+                gate.RegrowAt = -1f;
+                gate.Open = false;
+                if (gate.View != null) gate.View.SetActive(true);
+                if (PlayerInteraction.All.Any(p => FloorAt(p.transform.position) == floor)) GameFeed.RaiseNotice("@ui.roots_regrew");
+            }
+        }
+
+        /// <summary>How far everyone must be from a gate for it to grow back. [invented]</summary>
+        const float RegrowClearanceTiles = 1.6f;
+
+        /// <summary>Whether this player could burn this floor's soft gate: the dungeon allows it and they hold a tool
+        /// with its tag (a lit torch).</summary>
+        public bool CanBurn(PlayerInteraction player, Floor floor)
+        {
+            var tag = floor.Site.Def.Gate?.Burn?.ToolTag;
+            if (string.IsNullOrEmpty(tag) || !player.TryGetComponent<InventoryNetwork>(out var inventory)) return false;
+            foreach (var slot in new[] { "main_hand", "off_hand" })
+                if (inventory.Slots.Working(slot)?.Tags is { } tags && System.Array.IndexOf(tags, tag) >= 0) return true;
+            return false;
+        }
+
+        /// <summary>Fire clears a root wall at once and for good — and enrages the Hollow: its spawn comes out of the
+        /// roots, and everything nearby wakes.</summary>
+        void Burn(Floor floor, Barrier gate)
+        {
+            var burn = floor.Site.Def.Gate.Burn;
+            gate.Open = true;
+            gate.Burned = true;
+            gate.RegrowAt = -1f;
+            if (gate.View != null) gate.View.SetActive(false);
+            if (burn.Spawn.IsValid && DefRegistry.TryGet<CreatureDef>(burn.Spawn, out var def) && CreatureDirector.Instance is { } creatures)
+                for (var i = 0; i < burn.Count; i++)
+                {
+                    var spot = gate.Position + new Vector2(Mathf.Cos(i * 2.4f), Mathf.Sin(i * 2.4f)) * 1.2f;
+                    if (Walkable(spot) != true) spot = gate.Position;
+                    var spawned = creatures.SpawnAt(def, spot, inDungeon: true);
+                    spawned.State = CreatureState.Engage;
+                    spawned.LastHitAt = Time.time;
+                }
+            WakeNear(gate.Position);
+            GameFeed.RaiseNotice("@ui.gate_burned");
+        }
 
         /// <summary>Work in progress here (mining a vein, clearing a gate): where, and how far along — the HUD draws a
         /// bar. Null when the player isn't doing either.</summary>

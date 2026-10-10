@@ -1,0 +1,63 @@
+{
+  "id": "isle:bog_brood",
+  "name": "@creature.bog_brood",
+  "tags": [
+    "animal",
+    "aggressive",
+    "dungeon",
+    "venomous"
+  ],
+  "weight_dist": {
+    "type": "lognormal",
+    "mean": 1.5,
+    "sigma": 0.15,
+    "min": 1.0,
+    "max": 2.2
+  },
+  "health_per_kg": 6.0,
+  "ai": "isle:territorial_charger",
+  "butcher": {
+    "edible_ratio": 0.3,
+    "condition_range": [
+      1.0,
+      1.0
+    ],
+    "yields": [
+      {
+        "item": "isle:raw_meat",
+        "share": 1.0,
+        "unit_kg": 2.5,
+        "min": 1
+      }
+    ]
+  },
+  "carry": {
+    "inventory_allowed": true,
+    "drag_speed_penalty": 0.0,
+    "coop_carry_penalty": 0.0
+  },
+  "combat": {
+    "vision_tiles": 6,
+    "move_speed": 1.0,
+    "chase_speed": 3.2,
+    "damage": 3,
+    "attack_range_tiles": 0.6,
+    "attack_interval_seconds": 1.1,
+    "body_radius_tiles": 0.2,
+    "windup_seconds": 0.3,
+    "lunge_tiles": 0.8,
+    "lunge_speed": 7.0,
+    "damage_type": "toxic"
+  },
+  "resist": {
+    "toxic": 0.0,
+    "heat": 1.5
+  },
+  "group_size": 3,
+  "look": {
+    "body": "frog",
+    "color": "#4E5A3A",
+    "accent": "#2E3622",
+    "belly": "#8A9468"
+  }
+}

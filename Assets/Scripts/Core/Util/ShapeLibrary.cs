@@ -33,7 +33,7 @@ namespace Isle.Core.Util
             "campfire", "crate", "warehouse", "workbench", "pot", "rack", "rain_catcher", "plot", "sack",
             "sea_cave", "giant_tree", "sinkhole", "ruin_gate", "stairs_down", "stairs_up", "key", "locked_door",
             "gate_water", "gate_roots", "gate_bars", "gate_runes", "chest", "ore_vein", "furnace", "anvil", "wreckage",
-            "stump", "rubble", "bush_bare", "stubble",
+            "stump", "rubble", "bush_bare", "stubble", "gear_door",
         };
 
         /// <summary>A sprite one world unit across at scale 1, cached per (shape, colour).</summary>
@@ -452,6 +452,23 @@ namespace Isle.Core.Util
                     for (var i = 0; i < 6; i++) canvas.Rect(0.1f + i * 0.15f, 0.04f, 0.15f + i * 0.15f, 0.84f, c);
                     canvas.Rect(0.06f, 0.4f, 0.94f, 0.46f, c);
                     break;
+                case "gear_door":
+                {
+                    // A riveted brass slab with a big cog in the middle (Clockwork Ruin's swapping doors).
+                    canvas.Rect(0.08f, 0.04f, 0.92f, 0.9f, dark);
+                    canvas.Rect(0.14f, 0.08f, 0.86f, 0.84f, c);
+                    for (var i = 0; i < 8; i++)
+                    {
+                        var a = i * Mathf.PI / 4f;
+                        canvas.Circle(0.5f + Mathf.Cos(a) * 0.22f, 0.46f + Mathf.Sin(a) * 0.22f, 0.06f, light);
+                    }
+                    canvas.Circle(0.5f, 0.46f, 0.2f, light);
+                    canvas.Circle(0.5f, 0.46f, 0.07f, dark);
+                    canvas.Inked = false;
+                    foreach (var (x, y) in new[] { (0.2f, 0.14f), (0.8f, 0.14f), (0.2f, 0.78f), (0.8f, 0.78f) }) canvas.Circle(x, y, 0.025f, dark);
+                    canvas.Inked = true;
+                    break;
+                }
                 case "gate_runes":
                     canvas.Rect(0.1f, 0.04f, 0.9f, 0.88f, new Color(0.45f, 0.42f, 0.4f));
                     canvas.Inked = false;

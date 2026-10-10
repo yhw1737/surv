@@ -47,6 +47,13 @@
       ],
       "grant_buff": "isle:food_poisoning",
       "power": 2.0
+    },
+    {
+      "when": [
+        "antidote"
+      ],
+      "grant_buff": "isle:antidote",
+      "power": 1.0
     }
   ],
   "naming": "@pattern.boiled",

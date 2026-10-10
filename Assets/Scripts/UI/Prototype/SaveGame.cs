@@ -230,6 +230,8 @@ namespace Isle.UI.Prototype
                         save.Spoilage.Add(new SavedSpoil { Container = i, Item = KeyOf(item), Value = value });
             }
 
+            if (Isle.Gameplay.Dungeons.DungeonDirector.Instance is { } dungeons) save.Dungeons = dungeons.Snapshot();
+
             if (Isle.Gameplay.Hunting.CreatureDirector.Instance != null)
                 foreach (var carcass in Isle.Gameplay.Hunting.CreatureDirector.Instance.Carcasses)
                     if (!carcass.InDungeon)
@@ -353,6 +355,8 @@ namespace Isle.UI.Prototype
                     if (saved.Container >= 0 && saved.Container < containers.Count && TryItem(saved.Item, out var food))
                         SpoilageTracker.Live.Restore(containers[saved.Container], food, saved.Value);
             }
+            Isle.Gameplay.Dungeons.DungeonDirector.Instance?.Restore(save.Dungeons);
+
             if (Isle.Gameplay.Hunting.CreatureDirector.Instance is { } creatures)
                 foreach (var saved in save.Carcasses)
                     if (TryCreature(saved.Creature, out var creatureDef))

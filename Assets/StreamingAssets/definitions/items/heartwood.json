@@ -1,0 +1,20 @@
+{
+  "id": "isle:heartwood",
+  "name": "@item.heartwood",
+  "tags": [
+    "wood",
+    "heartwood",
+    "dungeon_material"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 2
+  },
+  "weight": 1.5,
+  "stack": 10,
+  "icon_style": {
+    "shape": "log",
+    "color": "#7A3E22",
+    "accent": "#E0A060"
+  }
+}

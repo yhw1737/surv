@@ -92,6 +92,192 @@ namespace Isle.Tests.PlayMode
             // gameplay flow runs here rather than in its own test.
             yield return GatherCraftDrinkHunt();
             yield return EnterClearAndLeaveADungeon();
+            yield return RootwoodHollow();
+            yield return DrownedTemple();
+            yield return ClockworkRuin();
+        }
+
+        /// <summary>T-203 Clockwork Ruin: gear doors swap every period (never shutting on anyone); the Sentinel charges,
+        /// overheats after three charges and takes ×1.5 damage meanwhile, and calls beetles below half.</summary>
+        IEnumerator ClockworkRuin()
+        {
+            var player = FindLocalPlayer();
+            var world = IslandWorld.Instance;
+            var vitals = player.GetComponent<Vitals>();
+            var dungeons = Isle.Gameplay.Dungeons.DungeonDirector.Instance;
+            var site = dungeons.Sites.FirstOrDefault(s => s.Def.Id.Value == "isle:clockwork_ruin");
+            Assert.IsNotNull(site, "no Clockwork Ruin on the island");
+            Isle.Gameplay.Dungeons.DungeonDirector.Floor floor = null;
+            for (var i = 0; i < site.Def.Floors && (floor == null || !floor.Barriers.Any(b => b.Gear >= 0)); i++) floor = dungeons.EnsureFloor(site, i);
+            var gears = floor.Barriers.Where(b => b.Gear >= 0).ToList();
+            Assert.Greater(gears.Count, 0, "no gear doors on any floor");
+            Teleport(player, site.Entrance + Vector2.down * 2f);
+
+            // Phase 0, then phase 1: each door is open exactly in its own phase, and blocks while shut.
+            foreach (var phase in new[] { 0, 1 })
+            {
+                floor.CreatedAt = Time.time - phase * site.Def.Clockwork.PeriodSeconds - 1f;
+                yield return null;
+                yield return null;
+                Assert.AreEqual(phase, dungeons.GearPhase(floor));
+                foreach (var door in gears)
+                {
+                    Assert.AreEqual(door.Gear == phase, door.Open, $"gear door (group {door.Gear}) in phase {phase}");
+                    Assert.AreEqual(door.Open, world.IsWalkable(door.Position), "a gear door's walkability doesn't match it");
+                }
+            }
+
+            // Standing in a door that's due to shut holds it open.
+            var held = gears.FirstOrDefault(d => d.Open);
+            if (held != null)
+            {
+                Teleport(player, held.Position);
+                floor.CreatedAt = Time.time - (1 - held.Gear) * site.Def.Clockwork.PeriodSeconds - 1f;
+                yield return null;
+                yield return null;
+                Assert.IsTrue(held.Open, "a gear door shut on the player");
+                Teleport(player, site.Entrance + Vector2.down * 2f);
+                yield return null;
+                yield return null;
+                Assert.IsFalse(held.Open, "the door never shut once the player stepped out");
+            }
+
+            // The Sentinel: HP 1300; three charges, then it overheats.
+            var last = dungeons.EnsureFloor(site, site.Def.Floors - 1);
+            var boss = site.Boss;
+            Assert.IsNotNull(boss, "Sentinel never spawned");
+            Assert.AreEqual(1300f, boss.MaxHealth, 0.01f, "Sentinel HP");
+            foreach (var creature in CreatureDirector.Instance.Creatures.Where(c => c != boss && c.InDungeon && dungeons.FloorAt(c.Position) == last).ToList())
+                CreatureDirector.Instance.Damage(creature, 100000f, new System.Collections.Generic.List<(NamespacedId, int)>());
+            vitals.Restore(100f, 100f, 100f, 100f, Vitals.ComfortableTemperature, 0f); // fed, watered, warm: only what's tested hurts
+            Teleport(player, boss.Position + Vector2.down * 3.5f);
+            yield return WaitUntil(() => boss.IsOverheated || vitals.Health <= 0f, 20f, "the Sentinel never overheated");
+            Assert.IsTrue(boss.IsOverheated, "the player fell before the Sentinel overheated");
+            Teleport(player, site.Entrance + Vector2.down * 2f);
+
+            // Hitting it while it vents does ×1.5.
+            var before = boss.Health;
+            CreatureDirector.Instance.Damage(boss, 100f, new System.Collections.Generic.List<(NamespacedId, int)>());
+            var hot = before - boss.Health;
+            boss.OverheatUntil = float.NegativeInfinity;
+            before = boss.Health;
+            CreatureDirector.Instance.Damage(boss, 100f, new System.Collections.Generic.List<(NamespacedId, int)>());
+            var cool = before - boss.Health;
+            Assert.AreEqual(1.5f, hot / cool, 0.01f, "overheated damage multiplier");
+
+            // Below half it calls clockwork beetles.
+            var beetle = DefRegistry.Get<CreatureDef>(NamespacedId.Parse("isle:clockwork_beetle"));
+            Teleport(player, boss.Position + Vector2.down * 8f);
+            boss.Health = boss.MaxHealth * 0.4f;
+            yield return WaitUntil(() => CreatureDirector.Instance.Creatures.Count(c => c.Def == beetle && Vector2.Distance(c.Position, boss.Position) < 6f) >= 2, 4f, "the Sentinel never called beetles");
+            Teleport(player, site.Entrance + Vector2.down * 2f);
+            vitals.Restore(100f, 100f, 100f, 100f, Vitals.ComfortableTemperature, 0f); // fed, watered, warm: only what's tested hurts
+        }
+
+        /// <summary>T-203 Drowned Temple: poison fog hurts and poisons; an antidote shrugs it off; the Mire Mother has
+        /// HP 1100 and calls bog broods below 60%; bitter herbs grow in the marsh.</summary>
+        IEnumerator DrownedTemple()
+        {
+            var player = FindLocalPlayer();
+            var world = IslandWorld.Instance;
+            var vitals = player.GetComponent<Vitals>();
+            var dungeons = Isle.Gameplay.Dungeons.DungeonDirector.Instance;
+            Assert.IsTrue(world.Nodes.Any(n => n.Def.Id.Value == "isle:bitter_herb_patch"), "no bitter herbs on the island");
+            var site = dungeons.Sites.FirstOrDefault(s => s.Def.Id.Value == "isle:drowned_temple");
+            Assert.IsNotNull(site, "no Drowned Temple on the island");
+            var floor = dungeons.EnsureFloor(site, 0);
+            Assert.Greater(floor.MiasmaTiles.Count, 0, "no poison fog on the floor");
+            var fog = floor.TileToWorld(floor.MiasmaTiles.First(t => world.IsWalkable(floor.TileToWorld(t))));
+            Assert.IsTrue(dungeons.IsMiasma(fog));
+
+            // Only the fog should hurt here: clear the floor's creatures out of the way first.
+            foreach (var creature in CreatureDirector.Instance.Creatures.Where(c => c.InDungeon && dungeons.FloorAt(c.Position) == floor).ToList())
+                CreatureDirector.Instance.Damage(creature, 100000f, new System.Collections.Generic.List<(NamespacedId, int)>());
+            vitals.Restore(100f, 100f, 100f, 100f, Vitals.ComfortableTemperature, 0f); // fed, watered, warm: only what's tested hurts
+            Teleport(player, fog);
+            yield return new WaitForSeconds(2.5f);
+            Assert.Less(vitals.Health, 98f, "poison fog did no harm");
+            Assert.Greater(vitals.Status.Stacks(Isle.Gameplay.Combat.DamageTypes.Toxic), 0, "poison fog didn't poison");
+
+            // An antidote (full toxic resistance) shrugs it off.
+            var clock = Isle.World.Time.WorldTime.Instance.Clock;
+            vitals.Status.Clear();
+            vitals.Buffs.Grant(DefRegistry.Get<BuffDef>(NamespacedId.Parse("isle:antidote")), clock.TotalMinutes);
+            vitals.Restore(100f, 100f, 100f, 100f, Vitals.ComfortableTemperature, 0f); // fed, watered, warm: only what's tested hurts
+            yield return new WaitForSeconds(2.5f);
+            Assert.AreEqual(100f, vitals.Health, 0.5f, "the antidote didn't keep the fog out");
+            Teleport(player, site.Entrance + Vector2.down * 2f);
+
+            // The Mire Mother.
+            dungeons.EnsureFloor(site, site.Def.Floors - 1);
+            var boss = site.Boss;
+            Assert.IsNotNull(boss, "Mire Mother never spawned");
+            Assert.AreEqual(1100f, boss.MaxHealth, 0.01f, "Mire Mother HP");
+            Teleport(player, boss.Position + Vector2.down * 6f);
+            var brood = DefRegistry.Get<CreatureDef>(NamespacedId.Parse("isle:bog_brood"));
+            boss.Health = boss.MaxHealth * 0.5f;
+            yield return WaitUntil(() => CreatureDirector.Instance.Creatures.Count(c => c.Def == brood && Vector2.Distance(c.Position, boss.Position) < 6f) >= 3, 4f, "the Mire Mother never called her brood");
+            Teleport(player, site.Entrance + Vector2.down * 2f);
+        }
+
+        /// <summary>T-203 Rootwood Hollow: cut roots grow back; a torch burns them for good but calls root sprites; the
+        /// Elder Heartwood calls sprites of its own below half health.</summary>
+        IEnumerator RootwoodHollow()
+        {
+            var player = FindLocalPlayer();
+            var world = IslandWorld.Instance;
+            var dungeons = Isle.Gameplay.Dungeons.DungeonDirector.Instance;
+            var site = dungeons.Sites.FirstOrDefault(s => s.Def.Id.Value == "isle:rootwood_hollow");
+            Assert.IsNotNull(site, "no Rootwood Hollow on the island");
+            var floor = dungeons.EnsureFloor(site, 0);
+            var gate = floor.Barriers.Single(b => b.LockId < 0);
+            player.Skills.Restore(site.Def.Gate.Skill, Isle.Gameplay.Skills.XpCurve.TotalXpTo(50));
+            var edge = floor.Layout.Edges[gate.Edge];
+            var a = floor.Layout.Rooms[edge.A].Cell;
+            var b2 = floor.Layout.Rooms[edge.B].Cell;
+            var door = Isle.World.Generation.DungeonTiles.DoorwayCentre(a, b2);
+            var stand = floor.TileToWorld(a.Y == b2.Y ? new Isle.Core.Vec2Int(door.X + 1, door.Y) : new Isle.Core.Vec2Int(door.X, door.Y + 1));
+            Teleport(player, stand);
+            player.RequestInteract();
+            yield return WaitUntil(() => gate.Open, 8f, "root wall never cut");
+            Assert.Greater(gate.RegrowAt, Time.time, "cut roots aren't set to grow back");
+            Assert.AreEqual(300f, gate.RegrowAt - Time.time, 10f, "roots don't regrow in 5 minutes");
+
+            // Grown back once the time is up (someone standing in it is waited for).
+            gate.RegrowAt = Time.time;
+            yield return null;
+            Assert.IsTrue(gate.Open, "roots grew back on the player standing in them");
+            Teleport(player, stand + (stand - gate.Position).normalized * 3f);
+            yield return WaitUntil(() => !gate.Open, 2f, "roots never grew back");
+
+            // A torch burns them away for good and wakes root sprites.
+            var inventory = player.GetComponent<InventoryNetwork>();
+            var torch = DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:torch"));
+            inventory.Slots.Unequip("off_hand", out _);
+            Assert.IsTrue(inventory.Slots.TryEquip("off_hand", torch), "couldn't hold a torch");
+            var sprite = DefRegistry.Get<CreatureDef>(NamespacedId.Parse("isle:root_sprite"));
+            var spritesBefore = CreatureDirector.Instance.Creatures.Count(c => c.Def == sprite);
+            Teleport(player, stand);
+            player.RequestInteract();
+            yield return WaitUntil(() => gate.Open, 2f, "the torch didn't burn the roots");
+            Assert.IsTrue(gate.Burned, "burned roots not marked");
+            Assert.AreEqual(spritesBefore + 2, CreatureDirector.Instance.Creatures.Count(c => c.Def == sprite), "burning didn't call 2 root sprites");
+            gate.RegrowAt = Time.time;
+            yield return null;
+            Assert.IsTrue(gate.Open, "burned roots grew back");
+            inventory.Slots.Unequip("off_hand", out _);
+
+            // The Elder Heartwood: HP 800; below half it calls root sprites.
+            var last = dungeons.EnsureFloor(site, site.Def.Floors - 1);
+            var boss = site.Boss;
+            Assert.IsNotNull(boss, "Elder Heartwood never spawned");
+            Assert.AreEqual(800f, boss.MaxHealth, 0.01f, "Elder Heartwood HP");
+            Teleport(player, boss.Position + Vector2.down * 6f);
+            boss.Health = boss.MaxHealth * 0.4f;
+            var near = 0;
+            yield return WaitUntil(() => (near = CreatureDirector.Instance.Creatures.Count(c => c.Def == sprite && Vector2.Distance(c.Position, boss.Position) < 6f)) >= 2, 4f, "the Heartwood never called root sprites");
+            Assert.LessOrEqual(near, boss.Def.Boss.Summon.MaxAlive, "summons past the cap");
+            Assert.IsNotNull(last);
         }
 
         /// <summary>Drives the real ServerRpc paths on the host: harvest a tree and a rock, craft a spear from
@@ -334,6 +520,8 @@ namespace Isle.Tests.PlayMode
             vitals.TakeDamage(10f);
             var expectedHit = Isle.Gameplay.Combat.DamageTypes.Damage(10f, "blunt", 1f, parka.ArmorTypes["blunt"]);
             Assert.AreEqual(expectedHit, healthBefore - vitals.Health, 0.3f, "armor not applied");
+            // SYS-CRAFT-02: the hit wore the cloak (checked now: a wild animal may land a blow during the harvests below).
+            Assert.AreEqual(59, inventory.Slots.WearOf("chest").Current, "hit didn't wear the cloak");
 
             // Backpack: equipping one adds a second container that items can go into.
             Give(inventory, "isle:straw_backpack", 1);
@@ -348,10 +536,9 @@ namespace Isle.Tests.PlayMode
             yield return HarvestNearest(player, world, "isle:tree");
             Assert.AreEqual(woodBefore + 6, CountOf(inventory, "isle:wood"), "hatchet bonus not applied");
 
-            // SYS-CRAFT-02: the harvest wore the hatchet and the hit wore the cloak; a broken hatchet is no tool; a repair
-            // costs half the recipe and lowers the maximum to ×0.92.
+            // SYS-CRAFT-02: the harvest wore the hatchet; a broken hatchet is no tool; a repair costs half the recipe and
+            // lowers the maximum to ×0.92.
             Assert.AreEqual(59, inventory.Slots.WearOf("main_hand").Current, "harvest didn't wear the hatchet");
-            Assert.AreEqual(59, inventory.Slots.WearOf("chest").Current, "hit didn't wear the cloak");
             inventory.Slots.Wear("main_hand", 59);
             Assert.IsNull(inventory.Slots.Working("main_hand"), "broken hatchet still works");
             woodBefore = CountOf(inventory, "isle:wood");

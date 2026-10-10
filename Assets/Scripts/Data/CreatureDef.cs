@@ -153,8 +153,32 @@ namespace Isle.Data
 
         public BossShellSpec Shell { get; init; }
 
+        public BossSummonSpec Summon { get; init; }
+
+        public BossOverheatSpec Overheat { get; init; }
+
         /// <summary>Dropped where it dies, on top of its butcher yields.</summary>
         public IngredientRef[] Drops { get; init; }
+    }
+
+    /// <summary>After every <see cref="Charges"/> charges (lunges) it overheats: it stops for <see cref="Seconds"/> and
+    /// takes <see cref="DamageMult"/> damage meanwhile — the window to hit it hard (Clockwork Ruin's Sentinel).</summary>
+    public sealed class BossOverheatSpec
+    {
+        public int Charges { get; init; } = 3;
+        public float Seconds { get; init; }
+        public float DamageMult { get; init; } = 1f;
+    }
+
+    /// <summary>Below <see cref="BelowHealth"/> it calls <see cref="Count"/> of <see cref="Creature"/> every
+    /// <see cref="EverySeconds"/>, never more than <see cref="MaxAlive"/> at once — and not while it's burning.</summary>
+    public sealed class BossSummonSpec
+    {
+        public NamespacedId Creature { get; init; }
+        public int Count { get; init; }
+        public float EverySeconds { get; init; }
+        public float BelowHealth { get; init; }
+        public int MaxAlive { get; init; } = 6;
     }
 
     /// <summary>Below <see cref="BelowHealth"/> it hides every <see cref="EverySeconds"/> for <see cref="Seconds"/>,
