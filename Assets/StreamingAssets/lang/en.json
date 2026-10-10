@@ -577,5 +577,7 @@
   "quality.superior": "Superior",
   "quality.master": "Master",
   "ui.spoilage": "Spoilage",
-  "ui.cook_cancelled": "Stopped cooking"
+  "ui.cook_cancelled": "Stopped cooking",
+  "ui.forge_hint": "Right button: bellows · Left button: hammer",
+  "ui.forge_cancelled": "Stopped forging"
 }

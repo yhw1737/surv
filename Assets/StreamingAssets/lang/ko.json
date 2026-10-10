@@ -577,5 +577,7 @@
   "quality.superior": "최고급",
   "quality.master": "명품",
   "ui.spoilage": "부패도",
-  "ui.cook_cancelled": "요리를 멈췄습니다"
+  "ui.cook_cancelled": "요리를 멈췄습니다",
+  "ui.forge_hint": "우클릭: 풀무 · 좌클릭: 망치",
+  "ui.forge_cancelled": "단조를 멈췄습니다"
 }

@@ -87,6 +87,9 @@ namespace Isle.UI.Prototype
             if (_openBox != null && (_player == null || Vector2.Distance(_player.transform.position, _openBox.transform.position) > PlayerInteraction.ReachTiles))
                 _openBox = null;
 
+            // Forging takes the mouse (bellows, hammer): the craft and cook windows get out of the way.
+            if (_player != null && _player.Forge != null) _craftOpen = _cookOpen = false;
+
             UpdatePlacing();
             IsPlacing = _placing != null;
         }
@@ -146,6 +149,7 @@ namespace Isle.UI.Prototype
             if (_placing != null) DrawPlacementGhost();
             if (_player.DrawStartedAt >= 0f) DrawChargeBar();
             if (_player.Fight != null) DrawFight();
+            if (_player.Forge != null) DrawForge();
             if (_helpOpen) DrawHelp();
             if (_death != null ? _death.IsDead : _vitals.Health <= 0f) DrawDeath();
             if (_hover != null) DrawTooltip(_hover, _hoverContainer);
@@ -594,6 +598,39 @@ namespace Isle.UI.Prototype
 
         /// <summary>SYS-FISH-01 tension bar: the safe band in green, the needle, the fish's stamina, and the two
         /// failure meters.</summary>
+        /// <summary>SYS-CRAFT-01 §Forging: the heat gauge with its success window, the heat needle, and a pip per strike
+        /// (landed, missed, still to come).</summary>
+        void DrawForge()
+        {
+            var forge = _player.Forge;
+            const float width = 320f;
+            var x = (Screen.width - width) * 0.5f;
+            var y = Screen.height * 0.62f;
+            Panel(new Rect(x - 10f, y - 30f, width + 20f, 78f));
+            GUI.Label(new Rect(x, y - 26f, width, RowHeight), Lang.Get("@ui.forge_hint"), _label);
+
+            var bar = new Rect(x, y, width, 18f);
+            GUI.color = new Color(0.15f, 0.15f, 0.15f);
+            GUI.DrawTexture(bar, Texture2D.whiteTexture);
+            GUI.color = new Color(0.3f, 0.8f, 0.3f, 0.8f);
+            GUI.DrawTexture(new Rect(x + width * forge.WindowLow, y, width * (forge.WindowHigh - forge.WindowLow), 18f), Texture2D.whiteTexture);
+            // Heat glows from dull red to yellow-white as it climbs.
+            GUI.color = Color.Lerp(new Color(0.55f, 0.12f, 0.05f, 0.85f), new Color(1f, 0.85f, 0.4f, 0.85f), forge.Heat);
+            GUI.DrawTexture(new Rect(x, y + 5f, width * forge.Heat, 8f), Texture2D.whiteTexture);
+            GUI.color = Color.white;
+            GUI.DrawTexture(new Rect(x + width * forge.Heat - 2f, y - 4f, 4f, 26f), Texture2D.whiteTexture);
+
+            const float pip = 12f, gap = 6f;
+            var results = forge.Results;
+            var pipsX = x + (width - forge.Required * (pip + gap) + gap) * 0.5f;
+            for (var i = 0; i < forge.Required; i++)
+            {
+                GUI.color = i >= results.Length ? new Color(0.4f, 0.4f, 0.4f) : results[i] ? UiTheme.Good : UiTheme.Bad;
+                GUI.DrawTexture(new Rect(pipsX + i * (pip + gap), y + 28f, pip, pip), Texture2D.whiteTexture);
+            }
+            GUI.color = Color.white;
+        }
+
         void DrawFight()
         {
             var fight = _player.Fight;

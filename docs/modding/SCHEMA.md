@@ -435,6 +435,8 @@ This document constrains us before it serves modders.
 | World object | `visual.flat` | Lies on the ground instead of standing toward the camera (crop plot). 2026-10-09 |
 | World object | `block_radius` | Tiles around a standing node nothing walks through (tree 0.4, rock 0.45); felled nodes don't block. 2026-10-09 |
 | World object | `visual.depleted` | Shape drawn while a harvestable node is used up (`stump`, `rubble`, `bush_bare`, `stubble`); none fades it to a ghost. 2026-10-09 |
+| Craft recipe | `forge_strikes` | SYS-CRAFT-01 §Forging: hammer strikes (3..8) when the recipe's `minigame` is `isle:forging` and it's made at a station tagged `forge`. 2026-10-10 |
+| World object tag | `forge` | A station where `isle:forging` recipes are hammered out (the anvil). 2026-10-10 |
 | Cook method | `time_mult` | SYS-COOK-01 §Cook time multiplier (grill 1, boil 1.5, dry 3, raw 0). Replaces the unused `duration_sec`. 2026-10-09 |
 | World object | `visual.jitter` | 0..1 per-node variety: size and shade up to ±this, random mirroring; shapes with variants (tree 4, palm 2) also pick a drawing. 2026-10-09 |
 | Weapon | `ammo` | Item each shot uses up — set means the weapon is ranged |

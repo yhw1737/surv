@@ -78,13 +78,76 @@ namespace Isle.UI.Art
             Isle.Core.Util.ViewTilt.Stand(transform);
 
             GameFeed.PlayerSwing += OnSwing;
+            GameFeed.ForgeStrike += OnForgeStrike;
         }
 
         void OnDestroy()
         {
             GameFeed.PlayerSwing -= OnSwing;
+            GameFeed.ForgeStrike -= OnForgeStrike;
             if (_player != null && ByPlayer.TryGetValue(_player, out var v) && v == this) ByPlayer.Remove(_player);
             if (_mesh != null) Destroy(_mesh);
+        }
+
+        // SYS-CRAFT-01 §Forging: a hammer blow is a swing, with sparks when it lands in the heat window (dust when not).
+        void OnForgeStrike(Vector2 at, bool hit)
+        {
+            if (Nearest(at) != this) return;
+            _swingAt = Time.time;
+            _forgeAt = Time.time;
+            _forgeHit = hit;
+        }
+
+        float _forgeAt = -10f;
+        bool _forgeHit;
+
+        /// <summary>Seconds the sparks of a forge strike fly. [invented look]</summary>
+        const float SparkSeconds = 0.35f;
+
+        void DrawSparks(in StickFigurePose pose, float now)
+        {
+            var age = now - _forgeAt;
+            if (age < 0f || age > SparkSeconds) return;
+            var t = age / SparkSeconds;
+            // Just ahead of the figure, at anvil height (the drawing is mirrored by facing already).
+            var origin = new Vector2(0.5f, 0.45f);
+            var count = _forgeHit ? 9 : 4;
+            for (var i = 0; i < count; i++)
+            {
+                var angle = (20f + 140f * i / Mathf.Max(1, count - 1)) * Mathf.Deg2Rad;
+                var reach = (_forgeHit ? 0.45f : 0.2f) * t * (0.7f + 0.3f * Mathf.Sin(i * 12.9898f));
+                var p = origin + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle) * 0.8f - t * 0.5f) * reach;
+                var colour = _forgeHit ? Color.Lerp(new Color(1f, 0.95f, 0.6f), new Color(1f, 0.45f, 0.1f), t) : new Color(0.6f, 0.6f, 0.6f, 0.7f);
+                colour.a *= 1f - t;
+                _vector.Disk(new Vector2(p.x * Mathf.Sign(pose.FacingScale), p.y), _forgeHit ? 0.025f : 0.05f, colour);
+            }
+        }
+
+        /// <summary>The nearest station where gear is forged (tag <c>forge</c>), to face while hammering.</summary>
+        static Vector2? NearestForge(Vector2 from)
+        {
+            Vector2? best = null;
+            var bestDistance = float.MaxValue;
+            foreach (var instance in Isle.World.Objects.WorldObjectRegistry.All)
+            {
+                if (instance == null || !instance.HasTag(PlayerInteraction.ForgeTag)) continue;
+                var d = ((Vector2)instance.transform.position - from).sqrMagnitude;
+                if (d < bestDistance) (bestDistance, best) = (d, instance.transform.position);
+            }
+            return best;
+        }
+
+        StickFigureView Nearest(Vector2 at)
+        {
+            StickFigureView nearest = null;
+            var best = float.MaxValue;
+            foreach (var view in ByPlayer.Values)
+            {
+                if (view == null) continue;
+                var d = ((Vector2)view._player.transform.position - at).sqrMagnitude;
+                if (d < best) (best, nearest) = (d, view);
+            }
+            return nearest;
         }
 
         // The feed doesn't say who swung; the nearest figure takes it.
@@ -146,7 +209,8 @@ namespace Isle.UI.Art
                 input.AimAngle = Mathf.Clamp(Mathf.Atan2(fromShoulder.y, Mathf.Abs(fromShoulder.x)), -1.45f, 1.45f);
                 // A held weapon turns the body to face the mouse; empty-handed it does so while standing still.
                 var standing = _velocity.magnitude < 0.3f;
-                if ((input.HoldsItem || standing) && action is FigureAction.None or FigureAction.Swing or FigureAction.Draw or FigureAction.Block && Mathf.Abs(fromShoulder.x) > 0.05f)
+                if ((input.HoldsItem || standing) && _player.Forge == null // hammering faces the anvil, not the mouse
+                    && action is FigureAction.None or FigureAction.Swing or FigureAction.Draw or FigureAction.Block && Mathf.Abs(fromShoulder.x) > 0.05f)
                     input.FacingTarget = Mathf.Sign(fromShoulder.x);
             }
             _animator.Step(input, dt);
@@ -162,6 +226,7 @@ namespace Isle.UI.Art
             _vector.Clear();
             StickFigureDrawer.Draw(_vector, pose, outfit, lineEnd, now);
             DrawStatus(pose, now);
+            DrawSparks(pose, now);
             _vector.Fill(_mesh);
             // Bounds centred on the feet: the 2D renderer's custom-axis sort uses the bounds centre, so this makes the
             // figure sort by where it stands — the same rule as the trees' foot pivots. Big enough to never cull early.
@@ -260,7 +325,9 @@ namespace Isle.UI.Art
                 since = now - _swingAt;
                 return FigureAction.Swing;
             }
-            if (_player.Gathering != null) return FigureAction.Gather;
+            // Work that takes time — gathering, butchering, cooking, forging between blows — holds the working pose.
+            if (_player.Gathering != null || _player.Butchering != null || _player.Cooking != null || _player.Forge != null)
+                return FigureAction.Gather;
             return FigureAction.None;
         }
 
@@ -271,6 +338,8 @@ namespace Isle.UI.Art
             {
                 case FigureAction.Gather when _player.Gathering != null:
                     return Mathf.Sign(_player.Gathering.Position.x - shown.x);
+                case FigureAction.Gather or FigureAction.Swing when _player.Forge != null && NearestForge(shown) is { } anvil:
+                    return Mathf.Sign(anvil.x - shown.x);
                 case FigureAction.Cast or FigureAction.Bite or FigureAction.Reel:
                     return Mathf.Sign(_player.CastPoint.x - shown.x);
                 case FigureAction.Block:
