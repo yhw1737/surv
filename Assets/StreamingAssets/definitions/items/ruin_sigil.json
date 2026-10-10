@@ -1,0 +1,19 @@
+{
+  "id": "isle:ruin_sigil",
+  "name": "@item.ruin_sigil",
+  "tags": [
+    "sigil",
+    "quest"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.5,
+  "stack": 1,
+  "icon_style": {
+    "shape": "sigil",
+    "color": "#7A68B8",
+    "accent": "#E8E0F8"
+  }
+}

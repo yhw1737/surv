@@ -435,6 +435,12 @@ This document constrains us before it serves modders.
 | World object | `visual.flat` | Lies on the ground instead of standing toward the camera (crop plot). 2026-10-09 |
 | World object | `block_radius` | Tiles around a standing node nothing walks through (tree 0.4, rock 0.45); felled nodes don't block. 2026-10-09 |
 | World object | `visual.depleted` | Shape drawn while a harvestable node is used up (`stump`, `rubble`, `bush_bare`, `stubble`); none fades it to a ghost. 2026-10-09 |
+| Dungeon | `clockwork {period_seconds, share, loop_chance, warn_seconds, color}` | Gear doors that swap every period (Clockwork Ruin 30 s, 40% of doors, loops 0.6). 2026-10-10 |
+| Creature boss | `overheat {charges, seconds, damage_mult}` | After N landed charges it stops for S seconds taking ×mult damage. 2026-10-10 |
+| Dungeon | `miasma {share, damage_per_second, damage_type, color}` | Poison-fog rooms (Drowned Temple: a third, 2/s toxic); food `damage_resist` for the type protects. 2026-10-10 |
+| Dungeon gate | `regrow_seconds` | Seconds after clearing that a soft gate closes again (Rootwood Hollow 300); 0 stays open. 2026-10-10 |
+| Dungeon gate | `burn {tool_tag, spawn, count}` | Holding a tool with the tag, E burns the gate for good and spawns `count` × `spawn` nearby. 2026-10-10 |
+| Creature boss | `summon {creature, count, every_seconds, below_health, max_alive}` | Below the health share, calls helpers every few seconds (cap alive), not while burning. 2026-10-10 |
 | Craft recipe | `forge_strikes` | SYS-CRAFT-01 §Forging: hammer strikes (3..8) when the recipe's `minigame` is `isle:forging` and it's made at a station tagged `forge`. 2026-10-10 |
 | World object tag | `forge` | A station where `isle:forging` recipes are hammered out (the anvil). 2026-10-10 |
 | Cook method | `time_mult` | SYS-COOK-01 §Cook time multiplier (grill 1, boil 1.5, dry 3, raw 0). Replaces the unused `duration_sec`. 2026-10-09 |

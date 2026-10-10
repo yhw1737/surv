@@ -1,0 +1,20 @@
+{
+  "id": "isle:clockwork_gear",
+  "name": "@item.clockwork_gear",
+  "tags": [
+    "metal",
+    "gear",
+    "dungeon_material"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.6,
+  "stack": 10,
+  "icon_style": {
+    "shape": "sigil",
+    "color": "#B08D3C",
+    "accent": "#F0D890"
+  }
+}

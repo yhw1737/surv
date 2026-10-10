@@ -153,3 +153,87 @@ resist pierce ×1.5.
 **Not yet:** the angler's line across the flooded channel (the generic soft gate stands in), boss health bar, eels
 attacking from water onto land, sigil use (T-204), dungeon save state.
 
+## Implementation (T-203, 2026-10-10) — Rootwood Hollow
+
+Decided with the developer (2026-10-10): **Elder Heartwood HP 800, strike 18**; pattern **root slam** (hits everyone
+around it) **+ summons** root sprites below 50% HP, **not while it burns**; burning a root wall **calls 2 creatures**
+and the wall never grows back. Regrowth 5 min (table above).
+
+| Piece | Where | Notes |
+|---|---|---|
+| Regrowing roots | `DungeonGate.regrow_seconds`, `DungeonDirector.TickRegrowth` | a cleared gate closes again after 300 s; it waits while anyone is within 1.6 tiles, so nobody is shut inside |
+| Burning | `DungeonGate.burn {tool_tag, spawn, count}`, `DungeonDirector.Burn` | E while holding a `light` tool (a torch, either hand): open for good, 2 root sprites come out of the roots, nearby creatures wake; the prompt says "Burn" instead of "Clear" |
+| Boss summons | `BossSpec.summon {creature, count, every_seconds, below_health, max_alive}`, `CreatureDirector.TickSummon` | spawns join after the creature loop; burning (heat stacks) postpones the next summon by a second |
+| Creatures | `root_sprite`, `web_spider`, `elder_heartwood` | the Hollow's table is now root sprite, web spider, wolf |
+| Items | `heartwood`, `root_sigil` | the boss drops 1 sigil + 3 heartwood; butchering it gives wood |
+
+**[invented]**: Elder Heartwood resist slash ×1.5, heat ×2, blunt ×0.5 (spec: weak to slash and heat), sweep 2.2,
+summon 2 every 12 s, at most 6 alive within 15 tiles, 400 kg × 2 HP/kg, chase 1.8, strike interval 2.6 s, wind-up
+0.9 s, blunt. Root sprite 2 kg × 5 HP/kg, strike 4 pierce, chase 3.6, pairs, heat ×2 / slash ×1.2 / pierce ×0.7,
+gives fibre. Web spider 6 kg × 4 HP/kg, strike 6 toxic, chase 3.0, blunt ×1.3 / heat ×1.5, gives fibre. Regrow
+clearance 1.6 tiles. Looks reuse existing bodies (sprite = frog, spider = crab, Heartwood = turtle) until art.
+
+**Not yet:** Clockwork Ruin (T-203 continues); a treant/spider figure; sigil use (T-204); dungeon save state (a
+regrowing wall resets with its floor).
+
+## Implementation (T-203, 2026-10-10) — Drowned Temple
+
+Decided with the developer (2026-10-10): **Mire Mother HP 1100, strike 20**, toxic; pattern **toxic spit** (hits
+everyone around it) **+ brood** below 60% HP; **poison fog in a third of the rooms, 2 toxic damage a second**; the
+antidote is a **new ingredient, bitter herb, boiled** (immunity 5 min, table above).
+
+| Piece | Where | Notes |
+|---|---|---|
+| Poison fog | `DungeonDef.miasma {share, damage_per_second, damage_type, color}`, `DungeonDirector.SetUpMiasma/TickMiasma` | rooms picked like the tides' (`Tides.PickRooms`, its own salt; never entrance, rest or boss), a green haze over them, once a second `Vitals.TakeExposure` — food resistance yes, armor no (and no wear), no hit flash, poison status builds (the body turns green) |
+| Antidote | `items/bitter_herb.json` (tag `antidote`), `world_objects/bitter_herb_patch.json` (marsh), `buffs/antidote.json`, boil's tag reaction `antidote → isle:antidote` | the buff is `damage_resist toxic 1.0` for 360 world minutes (= 5 real minutes at 1.2 min/s) — so it also blunts the Mire Mother's spit. By tag: any modded `antidote` ingredient works |
+| Boss | `creatures/mire_mother.json` | sweep (toxic spit) 2.4 tiles; summons 3 bog broods every 14 s below 60%, at most 9; drops mire sigil + 3 temple jade |
+| Creatures | `bog_brood`, `bog_drowned` | the Temple's table is bog drowned, snake, crocodile |
+
+**[invented]**: Mire Mother resist toxic ×0, heat ×1.5, blunt ×1.5; 550 kg × 2 HP/kg, chase 2.2, strike interval 2.4 s,
+wind-up 0.8 s, short lunge 2 tiles; summon cadence and cap. Bog brood 1.5 kg × 6 HP/kg, strike 3 toxic, chase 3.2,
+threes, immune to toxic. Bog drowned 30 kg × 3 HP/kg, strike 12 blunt, chase 1.6, heat ×1.5 / pierce ×0.6, immune to
+toxic. Bitter herb: hunger 2, spoils in 72 h, 2 per patch, patches cluster in the marsh (density 0.004), respawn 1
+day. Haze opacity 0.4. Stand-in bodies: Mire Mother and broods = frog, drowned = reptile.
+
+**Not yet:** floodgate pressure plates (the spec's second Temple mechanic); poison pools; the cook's miasma soft
+gate (the generic portcullis stands); Clockwork Ruin.
+
+## Implementation (T-203, 2026-10-10) — Clockwork Ruin
+
+Decided with the developer (2026-10-10): **Sentinel HP 1300, strike 22**; it **charges in straight lines and, after
+the third charge, overheats and stops for 4 s taking ×1.5 damage**; **clockwork beetles** below 50% HP; the timer
+mechanic is **gear doors in two groups that swap every 30 s**, with **the way from the entrance to the boss always
+open** and a warning blink before a door shuts.
+
+| Piece | Where | Notes |
+|---|---|---|
+| Loops | `World/Generation/ClockworkDoors.AddLoops` | grid-neighbour rooms not yet joined get a doorway (chance 0.6), only within one lock region (never around a locked door or the vault's gate) and never into the boss room or the vault; added before the tiles are carved |
+| Gear groups | `ClockworkDoors.Assign/Valid/Reachable` | up to 40% of plain doors, greedily: a door joins a group only if, in both phases, the exit stays reachable from the entrance and no room is shut off in both phases; 1,000-seed test |
+| Runtime | `DungeonDef.clockwork {period_seconds, share, loop_chance, warn_seconds, color}`, `DungeonDirector.SetUpGears/TickGears/GearPhase` | phase = ⌊(t − floor created) / 30 s⌋ mod 2; a door of group g is open in phase g; open doors blink for the last 3 s; a door never shuts on someone within 1.4 tiles (it waits); gear doors aren't E targets; new `gear_door` shape |
+| Boss | `BossSpec.overheat {charges, seconds, damage_mult}`, `CreatureDirector` | counts landed charges; overheated it stands still (no strikes) and glows orange, damage ×1.5; summons 2 clockwork beetles every 15 s below 50% (max 4) |
+| Creatures / items | `clockwork_beetle`, `spark_wisp`, `sentinel`; `clockwork_gear`, `ruin_sigil` | the Ruin's table is clockwork beetle, spark wisp, wolf; the Sentinel drops a ruin sigil + 3 clockwork gears |
+
+**[invented]**: loop chance 0.6, gear share 0.4, clearance 1.4 tiles, blink 4 Hz. Sentinel resist pierce ×1.5 (the
+joints), slash ×0.5, blunt ×0.8, toxic ×0; 650 kg × 2 HP/kg; charge: attack range 3, wind-up 0.8 s, 6 tiles at 10/s,
+sweep 1.8 on landing, interval 1.8 s. Clockwork beetle 12 kg × 4 HP/kg, strike 8 pierce, slash ×0.5 / pierce ×1.3 /
+blunt ×1.2, gives a gear. Spark wisp 2 kg × 5 HP/kg, strike 5 heat, chase 4, immune to heat. Stand-in bodies:
+Sentinel = turtle, beetle = crab, wisp = bird.
+
+**Not yet:** the rune door soft gate's pattern puzzle (the generic gate stands); a gear sound; Drowned Temple
+floodgates.
+
+## Save state (2026-10-10)
+`DungeonDirector.Snapshot/Restore` (save version 7): per dungeon its boss slain, and per floor the keys taken, soft
+gates and locked doors opened, gates burned, the tide cache taken and each vein's uses left. A slain boss never
+respawns after a reload (its room's way out opens instead). Floors aren't stored — the seed rebuilds them and the state
+is applied as each is built; a floor not visited this session keeps what the save said. [invented]: a root wall that
+was cut but is still due to regrow is saved closed; creatures, carcasses and loot underground aren't saved.
+
+## Boss bar and creature figures (2026-10-10)
+- **Boss health bar** (`PrototypeHud.Boss.cs`): across the top while the local player shares a floor with a living
+  boss within 16 tiles [invented]; red, orange while overheated, grey while shelled. (T-202's "Not yet: boss health
+  bar".)
+- **New figure bodies** (`CreatureFigure`, `look.body`): `treant` (Elder Heartwood, root sprite — branches rise on
+  the wind-up and slam on the strike, glowing eyes), `spider` (web spider, clockwork beetle), `wisp` (spark wisp —
+  a floating flicker), `automaton` (Sentinel — gear spins, visor runs hot while overheated). Placeholder shapes until
+  stage 4; the stand-ins listed above are replaced for these creatures (the Temple's still use frog/reptile).

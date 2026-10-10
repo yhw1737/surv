@@ -1,0 +1,62 @@
+{
+  "id": "isle:root_sprite",
+  "name": "@creature.root_sprite",
+  "tags": [
+    "plant",
+    "aggressive",
+    "dungeon"
+  ],
+  "weight_dist": {
+    "type": "lognormal",
+    "mean": 2.0,
+    "sigma": 0.15,
+    "min": 1.4,
+    "max": 2.8
+  },
+  "health_per_kg": 5.0,
+  "ai": "isle:territorial_charger",
+  "butcher": {
+    "edible_ratio": 0.3,
+    "condition_range": [
+      1.0,
+      1.0
+    ],
+    "yields": [
+      {
+        "item": "isle:fiber",
+        "share": 1.0,
+        "unit_kg": 0.5,
+        "min": 1
+      }
+    ]
+  },
+  "carry": {
+    "inventory_allowed": true,
+    "drag_speed_penalty": 0.0,
+    "coop_carry_penalty": 0.0
+  },
+  "combat": {
+    "vision_tiles": 6,
+    "move_speed": 1.2,
+    "chase_speed": 3.6,
+    "damage": 4,
+    "attack_range_tiles": 0.6,
+    "attack_interval_seconds": 1.0,
+    "body_radius_tiles": 0.22,
+    "windup_seconds": 0.3,
+    "lunge_tiles": 0.8,
+    "lunge_speed": 7.0,
+    "damage_type": "pierce"
+  },
+  "resist": {
+    "heat": 2.0,
+    "slash": 1.2,
+    "pierce": 0.7
+  },
+  "group_size": 2,
+  "look": {
+    "body": "treant",
+    "color": "#6E5A3A",
+    "accent": "#6E8F3A"
+  }
+}

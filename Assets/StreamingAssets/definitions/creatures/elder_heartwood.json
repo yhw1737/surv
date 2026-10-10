@@ -1,0 +1,82 @@
+{
+  "id": "isle:elder_heartwood",
+  "name": "@creature.elder_heartwood",
+  "tags": [
+    "plant",
+    "aggressive",
+    "dungeon",
+    "boss"
+  ],
+  "weight_dist": {
+    "type": "lognormal",
+    "mean": 400.0,
+    "sigma": 0.0,
+    "min": 400.0,
+    "max": 400.0
+  },
+  "health_per_kg": 2.0,
+  "ai": "isle:territorial_charger",
+  "butcher": {
+    "edible_ratio": 0.3,
+    "condition_range": [
+      1.0,
+      1.0
+    ],
+    "yields": [
+      {
+        "item": "isle:wood",
+        "share": 1.0,
+        "unit_kg": 10.0,
+        "min": 1
+      }
+    ]
+  },
+  "carry": {
+    "inventory_allowed": false,
+    "drag_speed_penalty": 0.0,
+    "coop_carry_penalty": 0.0
+  },
+  "combat": {
+    "vision_tiles": 10,
+    "move_speed": 0.5,
+    "chase_speed": 1.8,
+    "damage": 18,
+    "attack_range_tiles": 2.0,
+    "attack_interval_seconds": 2.6,
+    "body_radius_tiles": 1.2,
+    "windup_seconds": 0.9,
+    "lunge_tiles": 0.0,
+    "lunge_speed": 0.0,
+    "damage_type": "blunt"
+  },
+  "resist": {
+    "slash": 1.5,
+    "heat": 2.0,
+    "blunt": 0.5
+  },
+  "boss": {
+    "sweep_radius_tiles": 2.2,
+    "summon": {
+      "creature": "isle:root_sprite",
+      "count": 2,
+      "every_seconds": 12,
+      "below_health": 0.5,
+      "max_alive": 6
+    },
+    "drops": [
+      {
+        "item": "isle:root_sigil",
+        "count": 1
+      },
+      {
+        "item": "isle:heartwood",
+        "count": 3
+      }
+    ]
+  },
+  "look": {
+    "body": "treant",
+    "color": "#5C4630",
+    "accent": "#3E7A34"
+  }
+}

@@ -6,6 +6,44 @@
 ## Header
 
 - Last updated: **2026-10-10**
+- **2026-10-10 — Boss bar + new creature bodies (with T-203).** `PrototypeHud.Boss.cs` (boss HP bar on a shared
+  floor within 16 tiles; orange overheated, grey shelled; one call added in `PrototypeHud.OnGUI`); `CreatureFigure`
+  bodies `treant`, `spider`, `wisp`, `automaton` used by Elder Heartwood, root sprite, web spider, clockwork beetle,
+  spark wisp, Sentinel. Test robustness: the cloak-wear check moved right after the hit (a wild animal could land a
+  second blow during the harvests that followed — failed once at 57 vs 59). **Verified:** EditMode 703/703, PlayMode
+  4/4; the lineup rendered (treant, root sprite, spider, automaton, beetle, Mire Mother, brood, drowned). Not verified
+  visually: the IMGUI boss bar; the reworked wisp (hidden behind a tree in the last render).
+- **2026-10-10 — Dungeon save state (with T-203).** A slain boss came back after a reload (sigils farmable) — dungeon
+  progress wasn't saved at all. `DungeonDirector.SiteState/FloorState`, `Snapshot()`, `Restore()` (pending state applied
+  when entrances are placed and as each floor is built); save version 7 (`SaveData.Dungeons`). **Verified:** the
+  round trip now also slays the Rootwood boss, takes a key and burns the gate, and checks all three after Continue
+  (boss stays dead, its exit portal is open, key taken, door open, gate burned) — EditMode 703/703, PlayMode 4/4.
+- **2026-10-10 — T-203 Clockwork Ruin (part 3, T-203 complete).** Developer decisions: Sentinel HP 1300 / strike 22, charges → overheat after 3 (4 s, ×1.5 damage),
+  beetles below 50%; gear doors in two groups swapping every 30 s, exit always reachable. Built:
+  `World/Generation/ClockworkDoors` (loops within lock regions, greedy gear assignment with a both-phases validity
+  check), `DungeonDef.Clockwork`, gear doors as barriers (`Barrier.Gear`, not E targets) with `TickGears` (phase,
+  blink, clearance), `gear_door` shape, `BossSpec.Overheat` + `Creature.Charges/OverheatUntil` (stands, glows, ×1.5),
+  Sentinel / clockwork beetle / spark wisp, clockwork gear + ruin sigil. Test fix: the dungeon steps now reset hunger,
+  thirst and temperature too (a long run starved the player and failed the antidote check by 1.25 HP). **Verified:**
+  EditMode 703/703 (+3 `ClockworkDoorsTests`: 1,000 seeds valid with gears on >90% and both groups on >50%; loops never
+  around a lock nor into boss/vault over 500 seeds; same seed same doors), PlayMode 4/4 (doors follow the phase and
+  block while shut, a door holds open on the player and shuts once they leave, the Sentinel really overheats after its
+  charges, ×1.5 exactly, beetles below half); rendered both phases.
+- **2026-10-10 — T-203 Drowned Temple (part 2 of T-203).** Developer decisions: Mire Mother HP 1100 / strike 20, toxic spit + brood below 60%, fog in 1/3 of rooms at 2/s,
+  antidote = new bitter herb boiled. Built: `DungeonDef.Miasma`, `Tides.PickRooms` (salted; tides unchanged),
+  fog rooms + haze + 1 s exposure tick (`Vitals.TakeExposure`: no armor, no wear, no flash, poison builds), bitter herb
+  item + marsh patch, antidote buff (toxic resist 1.0, 360 min) via boil's `antidote` tag reaction, Mire Mother, bog
+  brood, bog drowned, temple jade, mire sigil. **Verified:** EditMode 700/700 (+3 `DrownedTempleTests`: boiled herb
+  grants the antidote, antidote = full toxic resist for 5 real minutes, fog picks ⌊eligible/3⌋ rooms never
+  entrance/rest/boss over 50 seeds), PlayMode 4/4 (fog hurts and poisons, antidote keeps it out, Mire Mother HP 1100
+  calls 3 broods at 50%, herbs on the island); rendered a fog room (green haze, poisoned figure).
+- **2026-10-10 — T-203 Rootwood Hollow (part 1 of T-203).** Branch `feature/T-203-dungeons`, stacked on
+  `feature/T-150-save-roundtrip` (the whole of T-203 and its follow-ups below). Developer decisions: Heartwood HP 800 / strike 18,
+  root slam + summons below 50% (not while burning), burning calls 2 creatures. Built: regrowing root walls (300 s,
+  waits for clearance), torch burning (permanent, 2 root sprites, wakes the room, "Burn" prompt), boss summons, root
+  sprite / web spider / Elder Heartwood, heartwood and root sigil. **Verified:** EditMode 697/697, PlayMode 4/4 (cut →
+  set to regrow in 5 min → waits for the player → regrows; torch burns it for good with +2 sprites; Heartwood HP 800
+  calls sprites at 40% HP within the cap). Not rendered: the new creatures (existing bodies stand in).
 - **2026-10-10 — T-150 save/load round trip.** Branch `feature/T-150-save-roundtrip`, stacked on
   `feature/T-091-forging`. Built a PlayMode
   round trip (`SaveRoundTripTests`: skills, vitals, timed buff + expiry, wetness, satiety, worn/quality gear, carried
@@ -2020,6 +2058,21 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-10 — T-203 Clockwork Ruin values
+  Developer-decided: Sentinel HP 1300 / strike 22, overheat after 3 charges for 4 s at ×1.5, beetles below 50%, gear
+  doors swap every 30 s with the exit always reachable. [invented]: the [invented] list in SYS-DUNG-01
+  §Implementation (T-203 Clockwork Ruin).
+
+- ### 2026-10-10 — T-203 Drowned Temple values
+  Developer-decided: Mire Mother HP 1100 / strike 20, toxic spit + brood below 60%, fog 1/3 of rooms at 2 toxic/s,
+  bitter herb boiled → antidote. [invented]: the [invented] list in SYS-DUNG-01 §Implementation (T-203 Drowned
+  Temple) — resists, cadence and cap, both new creatures, herb numbers and spawn, haze opacity, stand-in bodies.
+
+- ### 2026-10-10 — T-203 Rootwood Hollow values
+  Developer-decided: Heartwood HP 800 / strike 18, root slam + summons below 50%, not while burning, burning calls 2.
+  [invented]: everything in SYS-DUNG-01 §Implementation (T-203) [invented] list — resists, sweep 2.2, summon 2 / 12 s /
+  max 6, both new creatures' stats, regrow clearance 1.6 tiles, fibre/wood yields, the stand-in bodies.
+
 - ### 2026-10-10 — T-150 save choices
   [invented]: a save underground resumes at that dungeon's entrance (dungeons are rebuilt on entry); food freshness is
   keyed by the carried container's index (bag, then equipped bags in slot order); carcasses inside dungeons aren't

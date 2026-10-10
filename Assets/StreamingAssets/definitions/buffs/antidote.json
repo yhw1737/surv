@@ -1,0 +1,12 @@
+{
+  "id": "isle:antidote",
+  "name": "@buff.antidote",
+  "duration_min": 360,
+  "effects": [
+    {
+      "type": "damage_resist",
+      "value": 1.0,
+      "damage_type": "toxic"
+    }
+  ]
+}

@@ -116,6 +116,21 @@ namespace Isle.Tests.PlayMode
             var markerAt = (Vector2)player.transform.position + new Vector2(30f, 12f);
             MapState.Instance.Markers.Add(markerAt, 2);
 
+            // A dungeon's progress: a key taken (its door open), the soft gate burned, the boss slain.
+            var dungeons = Isle.Gameplay.Dungeons.DungeonDirector.Instance;
+            var site = dungeons.Sites.First(s => s.Def.Id.Value == "isle:rootwood_hollow");
+            var first = dungeons.EnsureFloor(site, 0);
+            var key = first.Keys.First();
+            key.Taken = true;
+            foreach (var door in first.Barriers.Where(b => b.LockId == key.LockId)) door.Open = true;
+            var lockEdge = first.Barriers.First(b => b.LockId == key.LockId).Edge;
+            var softGate = first.Barriers.Single(b => b.LockId == -1);
+            softGate.Open = true;
+            softGate.Burned = true;
+            dungeons.EnsureFloor(site, site.Def.Floors - 1);
+            CreatureDirector.Instance.Damage(site.Boss, 1e6f, new System.Collections.Generic.List<(NamespacedId, int)>());
+            yield return WaitUntil(() => site.BossDefeated, 3f, "test setup: boss never fell");
+
             yield return null;
             GameSession.BackToMenu();
             yield return WaitUntil(() => Object.FindFirstObjectByType<MainMenu>() != null && IslandWorld.Instance == null, 10f, "never got back to the menu");
@@ -171,6 +186,18 @@ namespace Isle.Tests.PlayMode
             Assert.IsTrue(LootPiles.All.Any(p => Vector2.Distance(p.Position, pileAt) < 0.1f && p.Items.Any(i => i.Item.Id.Value == "isle:stone" && i.Count == 5)), "loot pile lost");
             Assert.IsTrue(MapState.Instance.Markers.All.Any(m => Vector2.Distance(m.Position, markerAt) < 0.1f && m.Colour == 2), "map marker lost");
 
+            // The dungeon remembers.
+            var dungeonsAfter = Isle.Gameplay.Dungeons.DungeonDirector.Instance;
+            var siteAfter = dungeonsAfter.Sites.First(s => s.Def.Id.Value == "isle:rootwood_hollow");
+            Assert.IsTrue(siteAfter.BossDefeated, "a slain boss came back after a reload");
+            var lastAfter = dungeonsAfter.EnsureFloor(siteAfter, siteAfter.Def.Floors - 1);
+            Assert.IsNull(siteAfter.Boss, "the boss respawned on its floor");
+            Assert.IsTrue(lastAfter.Portals.Any(p => p.Kind == Isle.Gameplay.Dungeons.DungeonDirector.DoorKind.Exit), "the boss room's way out isn't open");
+            var firstAfter = dungeonsAfter.EnsureFloor(siteAfter, 0);
+            Assert.IsTrue(firstAfter.Keys.First(k => k.LockId == key.LockId).Taken, "a taken key is back");
+            Assert.IsTrue(firstAfter.Barriers.First(b => b.Edge == lockEdge).Open, "an unlocked door locked again");
+            var gateAfter = firstAfter.Barriers.Single(b => b.LockId == -1);
+            Assert.IsTrue(gateAfter.Open && gateAfter.Burned, "the burned gate is back");
         }
 
         static IEnumerator WaitUntil(System.Func<bool> condition, float timeoutSeconds, string failure)

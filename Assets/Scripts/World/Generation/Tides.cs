@@ -18,12 +18,16 @@ namespace Isle.World.Generation
 
         /// <summary>Rooms that flood at high tide: <paramref name="share"/> of the rooms that may (never the entrance, rest
         /// or boss room — there is always somewhere dry to stand).</summary>
-        public static HashSet<int> FloodedRooms(DungeonFloor floor, float share, int seed)
+        public static HashSet<int> FloodedRooms(DungeonFloor floor, float share, int seed) => PickRooms(floor, share, seed, 7331);
+
+        /// <summary>A seed-fixed ⌊eligible × share⌋ of a floor's rooms, never the entrance, rest or boss room. Each
+        /// mechanic passes its own <paramref name="salt"/> so they pick independently (tides 7331, miasma 7349).</summary>
+        public static HashSet<int> PickRooms(DungeonFloor floor, float share, int seed, int salt)
         {
             var eligible = new List<int>();
             foreach (var room in floor.Rooms)
                 if (room.Kind is not (RoomKind.Entrance or RoomKind.Rest or RoomKind.Boss)) eligible.Add(room.Index);
-            var rng = new Random(unchecked((int)IslandGenerator.Hash(seed, 7331, floor.Rooms.Count)));
+            var rng = new Random(unchecked((int)IslandGenerator.Hash(seed, salt, floor.Rooms.Count)));
             for (var i = eligible.Count - 1; i > 0; i--)
             {
                 var j = rng.Next(i + 1);

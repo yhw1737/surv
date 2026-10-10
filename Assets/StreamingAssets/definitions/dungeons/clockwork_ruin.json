@@ -11,9 +11,9 @@
   "floor_color": "#8E8678",
   "wall_color": "#3A342E",
   "creatures": [
-    "isle:wolf",
-    "isle:crab",
-    "isle:boar"
+    "isle:clockwork_beetle",
+    "isle:spark_wisp",
+    "isle:wolf"
   ],
   "gate": {
     "name": "@gate.rune_door",
@@ -24,5 +24,13 @@
   "veins": [
     "isle:iron_vein",
     "isle:coal_seam"
-  ]
+  ],
+  "boss": "isle:sentinel",
+  "clockwork": {
+    "period_seconds": 30,
+    "share": 0.4,
+    "loop_chance": 0.6,
+    "warn_seconds": 3,
+    "color": "#B08D3C"
+  }
 }

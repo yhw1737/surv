@@ -435,7 +435,11 @@ Stage 4. Nothing here is a prerequisite for anything above it; that is the whole
   > **2026-10-07**: done — generator, 10 room templates, 4 dungeon defs with island entrances, underground region, stairs, keys/locks, soft gates, placeholder creatures. No bosses, loot or dungeon save yet. See SYS-DUNG-01 §Implementation.
 - [x] **T-202** Tidal Grotto (first dungeon: tides by clock, soft gates, Hermit Colossus)
   > **2026-10-07**: done — tides twice a day flood half the rooms (swim ×0.6, wet, no two-handed), low-tide pearl cache, cave crab swarms, moray eels, Hermit Colossus (sweep, shell phase, sigil + pearls). Angler's line across the channel not built (generic soft gate). See SYS-DUNG-01 §Implementation (T-202).
-- [ ] **T-203** Rootwood Hollow, Drowned Temple, Clockwork Ruin
+- [x] **T-203** Rootwood Hollow, Drowned Temple, Clockwork Ruin
+  > **2026-10-10**: Rootwood Hollow done — regrowing root walls (5 min), torch burning (calls 2 root sprites), Elder Heartwood (HP 800, root slam, summons below 50%, not while burning), root sprite and web spider, heartwood + root sigil. SYS-DUNG-01 §Implementation (T-203). Drowned Temple and Clockwork Ruin still to do.
+  > **2026-10-10**: Drowned Temple done — poison fog in a third of the rooms (2 toxic/s), bitter herb (marsh) boiled → antidote (5 min), Mire Mother (HP 1100, toxic spit, brood below 60%), bog brood and bog drowned, temple jade + mire sigil. Floodgate plates not yet. Clockwork Ruin still to do.
+  > **2026-10-10**: Clockwork Ruin done — loops + gear doors swapping every 30 s (exit always reachable, never shut on anyone, warning blink), Sentinel (HP 1300, charges, overheats after 3 for 4 s at ×1.5 damage, beetles below 50%), clockwork beetle, spark wisp, clockwork gear + ruin sigil. All three T-203 dungeons built; leftovers (Temple floodgates, rune-door puzzle, creature figures) in SYS-DUNG-01.
+  > **2026-10-10**: dungeon save state — slain bosses stay slain, keys/doors/gates/cache/veins remembered (save v7, SYS-DUNG-01 §Save state).
 - [ ] **T-204** The Abyss (sigils, curses, three floors, Abyss Warden)
 - [ ] **T-205** Fill SYS-ART-02 numbers → artifact acquisition (pools, caches, drops, attunement; duplicates allowed)
 - [ ] **T-206** Artifact catalog build-out after G3 — one weapon per profession, then gear
