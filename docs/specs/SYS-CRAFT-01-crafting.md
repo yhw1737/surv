@@ -84,6 +84,15 @@ Example: a Crafting 20 player attempting a Lv 40 recipe. A Lv 40 neighbor gives 
 
 Set `allow_adjacent_assist: false` on top-tier recipes to disable this.
 
+### Implementation (T-092, 2026-10-10)
+- `Gameplay/Crafting/AdjacentAssist` — the formula and constants verbatim; the worked example above is a test.
+- "Nearby" = another living player within 3.0 tiles; their level in the same skill counts (the best one).
+- Applies to every skill gate on a recipe **and** to the level its material asks (SYS-CRAFT-02 `craft_level`) — both
+  are skill requirements; used for crafting and for repairing. Quality keeps your own level (unchanged).
+- `allow_adjacent_assist` is **on by default** (the sentence above reads it as an opt-out); no recipe opts out yet.
+- The craft window says "Ready — with an ally's help" and marks the level line when only the assist clears it.
+- **Not yet verified with two players** (co-op is stage 3); EditMode covers the maths.
+
 ## Enchanting (Core: slots only)
 ```
 successRate = EnchantBaseRate(0.60) + enchantingLevel * EnchantSkillRate(0.008)
@@ -120,6 +129,13 @@ enchanter's minigame; co-op.
 
 ## Crafter mark
 `ItemStack.CrafterName` set on creation, shown in tooltips. Master tier gets a distinguishing visual effect.
+
+### Implementation (T-093, 2026-10-10)
+- The mark rides on the item's wear record (`ItemWear.Crafter`), so only crafted **gear** carries it — stackables
+  (arrows, food) have no per-unit record. The name is the survivor's name (a Steam name once co-op lands).
+- Tooltip: "Made by {name}". Master: the tooltip name is gold, and its bag/slot tile gets a gold frame and a gold
+  diamond in the corner [invented presentation; real VFX is stage 4].
+- Kept through repairs; saved (version 9). The repair half of T-093 was built by T-166.
 
 ## Repair
 ```

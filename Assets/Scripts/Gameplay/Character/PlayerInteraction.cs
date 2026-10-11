@@ -1205,7 +1205,7 @@ namespace Isle.Gameplay.Character
             }
             var station = StuffCrafting.StationFor(recipe, material);
             if (station.IsValid && !WorldObjectRegistry.IsActiveNear(transform.position, station, ReachTiles)) return null;
-            if (!MeetsSkills(recipe.Skills) || (material != null && LevelOf(PrimarySkill(recipe)) < material.CraftLevel))
+            if (!MeetsRecipe(recipe, material))
             {
                 if (notify) GameFeed.RaiseNotice("@ui.skill_too_low");
                 return null;
@@ -1237,7 +1237,7 @@ namespace Isle.Gameplay.Character
                 stationTier, minigameScore));
             var max = QualityCalculator.MaxDurability(outputDef.Durability.Value, tier);
             for (var i = 0; i < Math.Max(1, recipe.Output.Count); i++)
-                GiveItem(inventory, outputDef, 1, new ItemWear(max, max) { Quality = tier });
+                GiveItem(inventory, outputDef, 1, new ItemWear(max, max) { Quality = tier, Crafter = CrafterName });
             GameFeed.RaiseNotice($"@ui.crafted_quality|@quality.{tier.ToString().ToLowerInvariant()}");
         }
 
@@ -1283,6 +1283,9 @@ namespace Isle.Gameplay.Character
         }
 
         static NamespacedId PrimarySkill(CraftRecipeDef recipe) => StuffCrafting.PrimarySkill(recipe);
+
+        /// <summary>SYS-CRAFT-01 §Crafter mark: the name gear made by this player carries.</summary>
+        string CrafterName => string.IsNullOrEmpty(Survivor?.Name) ? null : Survivor.Name;
 
         // ------------------------------------------------------------------ enchanting (SYS-CRAFT-01 §Enchanting)
 
@@ -1405,7 +1408,7 @@ namespace Isle.Gameplay.Character
                 GameFeed.RaiseNotice("@ui.repair_station");
                 return false;
             }
-            if (!MeetsSkills(recipe.Skills) || LevelOf(PrimarySkill(recipe)) < StuffCrafting.LevelFor(recipe, material))
+            if (!MeetsRecipe(recipe, material))
             {
                 GameFeed.RaiseNotice("@ui.skill_too_low");
                 return false;
@@ -1470,6 +1473,33 @@ namespace Isle.Gameplay.Character
         /// <summary>Every <c>skills</c> requirement on a recipe met (SCHEMA §Craft recipes).</summary>
         public bool MeetsSkills(SkillRequirement[] requirements) =>
             requirements == null || requirements.All(r => LevelOf(r.Skill) >= r.Level);
+
+        /// <summary>SYS-CRAFT-01 §Adjacent assist: a recipe's skill gates — and the level its material asks (SYS-CRAFT-02) —
+        /// with the best living ally within <see cref="AdjacentAssist.RadiusTiles"/> lending a share, unless the recipe
+        /// turns assist off. Quality still uses your own level.</summary>
+        public bool MeetsRecipe(CraftRecipeDef recipe, MaterialDef material = null, bool assisted = true)
+        {
+            var allowed = assisted && recipe.AllowAdjacentAssist;
+            bool Meets(NamespacedId skill, int required) =>
+                AdjacentAssist.Meets(LevelOf(skill), allowed ? BestNearbyLevel(skill) : 0, required, allowed);
+            if (recipe.Skills != null && !recipe.Skills.All(r => Meets(r.Skill, r.Level))) return false;
+            return Meets(PrimarySkill(recipe), StuffCrafting.LevelFor(recipe, material));
+        }
+
+        /// <summary>True when only an ally's help gets you over the recipe's gates (the craft window says so).</summary>
+        public bool NeedsAssist(CraftRecipeDef recipe, MaterialDef material = null) =>
+            !MeetsRecipe(recipe, material, assisted: false) && MeetsRecipe(recipe, material);
+
+        /// <summary>The highest level in <paramref name="skill"/> among other living players within the assist radius; 0 for none.</summary>
+        public int BestNearbyLevel(NamespacedId skill)
+        {
+            if (!skill.IsValid) return 0;
+            var best = 0;
+            foreach (var other in All)
+                if (other != this && !other.IsDead && Vector2.Distance(other.transform.position, transform.position) <= AdjacentAssist.RadiusTiles)
+                    best = Math.Max(best, other.LevelOf(skill));
+            return best;
+        }
 
         public void RequestCook(string methodId, IEnumerable<string> ingredientIds) => CmdCook(methodId, string.Join(",", ingredientIds));
 

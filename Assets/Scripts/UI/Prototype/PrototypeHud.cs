@@ -413,10 +413,12 @@ namespace Isle.UI.Prototype
         /// for gear its armor / warmth / bag size.</summary>
         void DrawTooltip(ItemDef item, GridInventory container, ItemWear wear = null)
         {
-            var lines = new List<string> { Lang.Get(item.Name) };
+            // SYS-CRAFT-01 §Crafter mark: a Master piece's name is gilded.
+            var lines = new List<string> { wear?.Quality == QualityTier.Master ? UiTheme.Colour(Lang.Get(item.Name), UiTheme.MasterGold) : Lang.Get(item.Name) };
             // SYS-CRAFT-01 §Quality: the tier a piece was crafted at, and what it does.
             if (wear?.Quality is { } quality)
                 lines.Add($"{Lang.Get("@ui.quality")}: {Lang.Get("@quality." + quality.ToString().ToLowerInvariant())} (×{Isle.Gameplay.Crafting.QualityCalculator.PowerMult(quality):0.##})");
+            if (!string.IsNullOrEmpty(wear?.Crafter)) lines.Add(string.Format(Lang.Get("@ui.crafted_by"), wear.Crafter));
             if (wear != null && wear.Carcass == null) lines.Add($"{Lang.Get("@ui.durability")}: {wear.Current} / {wear.Max}");
             // SYS-CRAFT-01 §Enchanting: what's set, and how many slots its quality leaves.
             if (item.Durability is > 0 && QualityCalculator.EnchantSlots(wear?.Quality) > 0)

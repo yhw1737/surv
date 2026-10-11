@@ -204,6 +204,7 @@ namespace Isle.UI.Inventory
         /// is washed red.</summary>
         internal static void WearBar(RectTransform parent, ItemWear wear)
         {
+            if (wear?.Quality == Isle.Gameplay.Crafting.QualityTier.Master) MasterFrame(parent);
             // SYS-HUNT-01: a carried carcass shows how fresh it is instead — green, then amber going off, red rotten.
             if (wear?.Carcass is { } body)
             {
@@ -227,6 +228,33 @@ namespace Isle.UI.Inventory
                 image.raycastTarget = false;
             }
             Bar(parent, wear.Fraction, wear.Fraction > 0.5f ? Isle.UI.Prototype.UiTheme.Good : wear.Fraction > 0.2f ? Isle.UI.Prototype.UiTheme.Accent : Isle.UI.Prototype.UiTheme.Bad);
+        }
+
+        /// <summary>SYS-CRAFT-01 §Crafter mark: a Master piece's tile wears a gold frame and a gold diamond in its corner.</summary>
+        static void MasterFrame(RectTransform parent)
+        {
+            var frame = new GameObject("Master", typeof(RectTransform), typeof(Image));
+            var frameRect = (RectTransform)frame.transform;
+            frameRect.SetParent(parent, false);
+            frameRect.anchorMin = Vector2.zero;
+            frameRect.anchorMax = Vector2.one;
+            frameRect.offsetMin = frameRect.offsetMax = Vector2.zero;
+            var image = frame.GetComponent<Image>();
+            image.sprite = Isle.UI.Prototype.UiTheme.Sprite(Color.clear, Isle.UI.Prototype.UiTheme.MasterGold, 6, 2);
+            image.type = Image.Type.Sliced;
+            image.raycastTarget = false;
+
+            // A gold diamond in the top-right corner (a turned square — no font glyph needed).
+            var gem = new GameObject("MasterGem", typeof(RectTransform), typeof(Image));
+            var gemRect = (RectTransform)gem.transform;
+            gemRect.SetParent(parent, false);
+            gemRect.anchorMin = gemRect.anchorMax = Vector2.one;
+            gemRect.sizeDelta = new Vector2(7f, 7f);
+            gemRect.anchoredPosition = new Vector2(-7f, -7f);
+            gemRect.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            var gemImage = gem.GetComponent<Image>();
+            gemImage.color = Isle.UI.Prototype.UiTheme.MasterGold;
+            gemImage.raycastTarget = false;
         }
 
         static void Bar(RectTransform parent, float fraction, Color colour)
