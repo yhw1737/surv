@@ -601,5 +601,16 @@
   "creature.spark_wisp": "불꽃 도깨비",
   "creature.sentinel": "파수꾼",
   "item.clockwork_gear": "태엽 톱니",
-  "item.ruin_sigil": "폐허 인장"
+  "item.ruin_sigil": "폐허 인장",
+  "dungeon.abyss": "심연",
+  "gate.dark_shaft": "칠흑의 갱도",
+  "creature.lantern_angler": "초롱 아귀",
+  "creature.abyss_eel": "심연 장어",
+  "creature.hollow_knight": "텅 빈 기사",
+  "creature.abyss_warden": "심연의 파수자",
+  "item.abyssal_ore": "심연 광석",
+  "world_object.abyssal_vein": "심연 광맥",
+  "ui.abyss_enter": "내려가기 — {0} · 인장 {1}/{2}",
+  "ui.abyss_sigils_set": "봉인에 끼운 인장: {0}/{1}",
+  "ui.abyss_cursed": "저주 {0}개가 내려가는 길을 짓누른다"
 }

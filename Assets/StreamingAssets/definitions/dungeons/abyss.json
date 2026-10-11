@@ -1,0 +1,44 @@
+{
+  "id": "isle:abyss",
+  "name": "@dungeon.abyss",
+  "danger": 4,
+  "floors": 3,
+  "entrance": {
+    "near": "isle:clockwork_ruin",
+    "shape": "sinkhole",
+    "color": "#1E1A2A",
+    "size": 2.8
+  },
+  "floor_color": "#3A3646",
+  "wall_color": "#100D16",
+  "creatures": [
+    "isle:lantern_angler",
+    "isle:abyss_eel",
+    "isle:hollow_knight"
+  ],
+  "gate": {
+    "name": "@gate.dark_shaft",
+    "fast_with_light": true,
+    "shape": "sinkhole",
+    "color": "#0C0A12"
+  },
+  "boss": "isle:abyss_warden",
+  "seal": {
+    "sigils": [
+      "isle:tide_sigil",
+      "isle:root_sigil",
+      "isle:mire_sigil",
+      "isle:ruin_sigil"
+    ],
+    "enemies_per_missing": 0.25,
+    "light_per_missing": 0.15
+  },
+  "pressure": {
+    "stamina_regen_per_floor": 0.15
+  },
+  "darkness": 0.08,
+  "veins": [
+    "isle:abyssal_vein",
+    "isle:iron_vein"
+  ]
+}

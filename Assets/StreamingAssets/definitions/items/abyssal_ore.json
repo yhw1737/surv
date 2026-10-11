@@ -1,0 +1,20 @@
+{
+  "id": "isle:abyssal_ore",
+  "name": "@item.abyssal_ore",
+  "tags": [
+    "ore",
+    "abyssal",
+    "dungeon_material"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 1.2,
+  "stack": 20,
+  "icon_style": {
+    "shape": "pearl",
+    "color": "#4A3A70",
+    "accent": "#C0A8FF"
+  }
+}

@@ -237,3 +237,34 @@ was cut but is still due to regrow is saved closed; creatures, carcasses and loo
   the wind-up and slam on the strike, glowing eyes), `spider` (web spider, clockwork beetle), `wisp` (spark wisp —
   a floating flicker), `automaton` (Sentinel — gear spins, visor runs hot while overheated). Placeholder shapes until
   stage 4; the stand-ins listed above are replaced for these creatures (the Temple's still use frog/reptile).
+
+## Implementation (T-204, 2026-10-10) — the Abyss
+
+Built without a Q&A (developer: "decide yourself, report after"). The decided values are used verbatim: **+25% enemies
+and −15% light per missing sigil** (all four: ×2, 40%), **stamina regen −15% per floor** (55% on floor 3), **3 floors**,
+**Lv 30** gates.
+
+| Piece | Where | Notes |
+|---|---|---|
+| Curse and pressure math | `World/Generation/AbyssCalculator` | `Missing`, `EnemyMult`, `LightMult`, `StaminaRegenMult`, `CursedCount` (whole part + a seed-fixed roll for the fraction) |
+| Data | `dungeons/abyss.json`: `entrance.near`, `seal {sigils, enemies_per_missing, light_per_missing}`, `pressure {stamina_regen_per_floor}`, `darkness`, `gate.fast_with_light` | the seal takes the four bosses' sigils (tide, root, mire, ruin) |
+| Entrance | `DungeonDirector.PlaceEntrances/PickTileBeside` | entrances with `near` are placed after the others, 6–12 tiles from that dungeon's entrance, on dry land |
+| Seal | `DungeonDirector.SetSigils/CarriedSigils`, `Site.SigilsPlaced/Curses` | E at the entrance sets every carried sigil the seal lacks (used up) and goes down; it opens with any number; the prompt shows "sigils n/4" (set + carried); notices say how many are set and how many curses remain. Saved (`SiteState.Sigils`) |
+| More enemies | `SpawnCreatures` | each spawn mark's group × EnemyMult, rounded by a seed-fixed roll — four curses put exactly two where one would be |
+| Less light | `DungeonDirector.LightMultAt` → `LightRig` | the player's carried light radius × LightMult on Abyss floors |
+| Darkness | `DungeonDef.darkness`, `DungeonDirector.DarknessAt` → `DayNightLight` | the global light drops to 0.08 on Abyss floors |
+| Pressure | `Vitals.StaminaRegenModifier` ← `DungeonDirector.StaminaRegenMultAt` | stamina regen × (1 − 0.15 × floor number) |
+| Dark shaft | `DungeonGate.fast_with_light` | the soft gate's fast path is holding any `light` tool (the spec's "pitch-dark shaft: anyone with a strong light") |
+| Glowing creatures | `CreatureDef.light_radius` → `LightRig` | a cold-blue point light on the lantern angler's lure and the Warden |
+| Creatures / boss / items | `lantern_angler`, `abyss_eel`, `hollow_knight`, `abyss_warden`; `abyssal_ore`, `world_objects/abyssal_vein` | new `angler` figure body |
+
+**[invented]**: darkness 0.08; entrance 6–12 tiles from the Ruin; sigils are used up when set; the curse is fixed when a
+floor is first built (adding sigils later doesn't thin a floor already populated); lure light 2.5 tiles, Warden 3.
+Abyss Warden HP 2000 (1000 kg × 2), strike 26 blunt, sweep 2.6, summons 2 hollow knights every 16 s below 60% (max 4),
+an abyssal ward below 35% (every 18 s for 6 s, ×0.25, broken by a stun), resist slash/pierce ×0.8, heat ×1.3, toxic
+×0, drops 5 abyssal ore. Lantern angler 15 kg × 3, strike 9 pierce; abyss eel 10 kg × 4, strike 11 pierce, chase 4.2,
+long lunges; hollow knight 40 kg × 3, strike 14 slash, slash ×0.5 / pierce ×0.6 / blunt ×1.5. Abyssal vein: 2 ore × 3
+uses, tier 3 (iron pickaxe or better), 14 s. Hollow knight and Warden use the `automaton` body, the eel `snake`.
+
+**Not yet (other systems):** the Heart and the Keeper / Crown of the Deep endings (SYS-END-01) — the Warden drops
+ore only; "less loot" as a curse (the spec lists it with a ❓; not built); abyss creatures as artifact sources.

@@ -60,6 +60,12 @@ namespace Isle.Gameplay.Dungeons
 
             /// <summary>Tidal dungeons: is the water up right now?</summary>
             public bool TideHigh;
+
+            /// <summary>The Abyss: sigils set into its seal (item ids). Each one missing is a curse.</summary>
+            public readonly HashSet<string> SigilsPlaced = new();
+
+            /// <summary>Curses on the descent: seal sigils not yet set (0 for a dungeon without a seal).</summary>
+            public int Curses => Def.Seal?.Sigils == null ? 0 : AbyssCalculator.Missing(SigilsPlaced.Count, Def.Seal.Sigils.Length);
         }
 
         /// <summary>SYS-CRAFT-02: an ore vein on a dungeon floor, mined like the island's (pickaxe tier, harvest time).</summary>
@@ -156,12 +162,14 @@ namespace Isle.Gameplay.Dungeons
             CreatureDirector.IsWater = IsWater;
             PlayerInteraction.IsSwimmingAt = IsWater;
             PlayerMovement.TerrainSpeed = TerrainSpeed;
+            Vitals.StaminaRegenModifier = StaminaRegenMultAt;
         }
 
         void OnDestroy()
         {
             if (Instance == this) Instance = null;
             if (IslandWorld.ExtraWalkable == (System.Func<Vector2, bool?>)Walkable) IslandWorld.ExtraWalkable = null;
+            if (Vitals.StaminaRegenModifier == (System.Func<Vector2, float>)StaminaRegenMultAt) Vitals.StaminaRegenModifier = null;
             if (CreatureDirector.IsWater == (System.Func<Vector2, bool>)IsWater) CreatureDirector.IsWater = null;
             if (PlayerInteraction.IsSwimmingAt == (System.Func<Vector2, bool>)IsWater) PlayerInteraction.IsSwimmingAt = null;
             if (PlayerMovement.TerrainSpeed == (System.Func<Vector2, float>)TerrainSpeed) PlayerMovement.TerrainSpeed = null;
@@ -193,6 +201,7 @@ namespace Isle.Gameplay.Dungeons
         {
             public string Dungeon;
             public bool BossDefeated;
+            public List<string> Sigils = new();  // the Abyss: sigils set into its seal
             public List<FloorState> Floors = new();
         }
 
@@ -214,7 +223,7 @@ namespace Isle.Gameplay.Dungeons
             var states = new List<SiteState>();
             foreach (var site in _sites)
             {
-                var state = new SiteState { Dungeon = site.Def.Id.Value, BossDefeated = site.BossDefeated };
+                var state = new SiteState { Dungeon = site.Def.Id.Value, BossDefeated = site.BossDefeated, Sigils = site.SigilsPlaced.ToList() };
                 foreach (var ((siteIndex, index), floor) in _floors)
                 {
                     if (siteIndex != site.Index) continue;
@@ -251,7 +260,11 @@ namespace Isle.Gameplay.Dungeons
         void ApplyPendingSites()
         {
             foreach (var site in _sites)
-                if (_pendingState.TryGetValue(site.Def.Id.Value, out var state) && state.BossDefeated) site.BossDefeated = true;
+            {
+                if (!_pendingState.TryGetValue(site.Def.Id.Value, out var state)) continue;
+                if (state.BossDefeated) site.BossDefeated = true;
+                foreach (var sigil in state.Sigils ?? new List<string>()) site.SigilsPlaced.Add(sigil);
+            }
         }
 
         void ApplyPending(Floor floor)
@@ -290,12 +303,14 @@ namespace Isle.Gameplay.Dungeons
 
         void PlaceEntrances(IslandWorld world)
         {
-            var defs = DefRegistry.All<DungeonDef>().OrderBy(d => d.Id.Value).ToList();
+            // Entrances placed beside another dungeon's (the Abyss under the Ruin) go after the ones they stand by.
+            var defs = DefRegistry.All<DungeonDef>().OrderBy(d => d.Entrance?.Near.IsValid == true ? 1 : 0).ThenBy(d => d.Id.Value).ToList();
             var placed = new List<Vec2Int>();
             for (var i = 0; i < defs.Count; i++)
             {
                 var def = defs[i];
-                var tile = PickEntranceTile(world, def, placed, i);
+                var near = def.Entrance?.Near.IsValid == true ? _sites.FirstOrDefault(s => s.Def.Id == def.Entrance.Near) : null;
+                var tile = near != null ? PickTileBeside(world, IslandWorld.WorldToTile(near.Entrance), placed, i) : PickEntranceTile(world, def, placed, i);
                 if (tile == null) continue;
                 placed.Add(tile.Value);
                 var site = new Site { Def = def, Index = i, Entrance = IslandWorld.TileToWorld(tile.Value) };
@@ -304,6 +319,29 @@ namespace Isle.Gameplay.Dungeons
             }
             ApplyPendingSites();
         }
+
+        /// <summary>A walkable land tile 6–12 tiles from <paramref name="centre"/>, away from water, picked by the island's
+        /// hash. Null if none.</summary>
+        static Vec2Int? PickTileBeside(IslandWorld world, Vec2Int centre, List<Vec2Int> placed, int salt)
+        {
+            Vec2Int? best = null;
+            var bestScore = double.MinValue;
+            for (var dx = -12; dx <= 12; dx++)
+            for (var dy = -12; dy <= 12; dy++)
+            {
+                var distance = Mathf.Sqrt(dx * dx + dy * dy);
+                if (distance < BesideMinTiles || distance > BesideMaxTiles) continue;
+                var tile = new Vec2Int(centre.X + dx, centre.Y + dy);
+                if (!world.IsWalkable(IslandWorld.TileToWorld(tile)) || world.NearestWater(IslandWorld.TileToWorld(tile), 2f) != null) continue;
+                if (placed.Any(p => (p.X - tile.X) * (p.X - tile.X) + (p.Y - tile.Y) * (p.Y - tile.Y) < BesideMinTiles * BesideMinTiles)) continue;
+                var score = Hash(world.Seed, tile.X * 7 + salt, tile.Y) / (double)uint.MaxValue;
+                if (score > bestScore) (bestScore, best) = (score, tile);
+            }
+            return best;
+        }
+
+        /// <summary>How far a "beside" entrance stands from the one it's beside, in tiles. [invented]</summary>
+        const float BesideMinTiles = 6f, BesideMaxTiles = 12f;
 
         /// <summary>A walkable tile in the def's biome, as far as possible from the entrances already placed (spread over
         /// the island like the landmarks). Seed-deterministic through the island's hash.</summary>
@@ -487,6 +525,10 @@ namespace Isle.Gameplay.Dungeons
                 var def = pool == water ? water[nextWater++ % water.Count] : land[nextLand++ % land.Count];
                 var at = floor.TileToWorld(tile);
                 var group = Mathf.Max(1, def.GroupSize);
+                // The Abyss's curse: more of them for every sigil missing from the seal.
+                if (floor.Site.Def.Seal != null)
+                    group = AbyssCalculator.CursedCount(group, AbyssCalculator.EnemyMult(floor.Site.Curses, floor.Site.Def.Seal.EnemiesPerMissing),
+                        Hash(floor.Seed, tile.X, tile.Y) / (double)uint.MaxValue);
                 for (var g = 0; g < group; g++)
                 {
                     // A swarm fans out around the mark on whatever floor is free.
@@ -918,6 +960,8 @@ namespace Isle.Gameplay.Dungeons
             var target = Nearest(at);
             return target switch
             {
+                Site site when site.Def.Seal?.Sigils != null => (site.Entrance + Vector2.up * 2.4f, string.Format(Lang("@ui.abyss_enter"), Lang(site.Def.Name),
+                    site.SigilsPlaced.Count + CarriedSigils(player, site).Count(), site.Def.Seal.Sigils.Length)),
                 Site site => (site.Entrance + Vector2.up * 2.4f, string.Format(Lang("@ui.dungeon_enter"), Lang(site.Def.Name))),
                 (Floor f, Portal portal) => (portal.Position + Vector2.up * 1.4f, Lang(portal.Kind switch { DoorKind.Down => "@ui.dungeon_down", DoorKind.Up => "@ui.dungeon_up", _ => "@ui.dungeon_exit" })),
                 (Floor f, Key key) => (key.Position + Vector2.up * 0.8f, Lang("@ui.dungeon_key")),
@@ -938,6 +982,7 @@ namespace Isle.Gameplay.Dungeons
             switch (Nearest(at))
             {
                 case Site site:
+                    if (site.Def.Seal != null) SetSigils(player, site);
                     Arrive(player, EnsureFloor(site, 0), atExit: false);
                     return true;
                 case (Floor floor, Portal portal):
@@ -1035,7 +1080,8 @@ namespace Isle.Gameplay.Dungeons
         void StartClearing(PlayerInteraction player, Floor floor, Barrier gate)
         {
             var skill = floor.Site.Def.Gate?.Skill ?? default;
-            var specialist = skill.IsValid && player.LevelOf(skill) >= GateLevel(floor);
+            var specialist = (skill.IsValid && player.LevelOf(skill) >= GateLevel(floor))
+                             || (floor.Site.Def.Gate?.FastWithLight == true && HoldsTagged(player, LightTag));
             var seconds = specialist ? SpecialistGateSeconds : AnyoneGateSeconds;
             _clearing[player] = (gate, floor, Time.time, seconds, player.transform.position);
             if (!specialist) WakeNear(gate.Position);
@@ -1104,10 +1150,67 @@ namespace Isle.Gameplay.Dungeons
         public bool CanBurn(PlayerInteraction player, Floor floor)
         {
             var tag = floor.Site.Def.Gate?.Burn?.ToolTag;
-            if (string.IsNullOrEmpty(tag) || !player.TryGetComponent<InventoryNetwork>(out var inventory)) return false;
+            return !string.IsNullOrEmpty(tag) && HoldsTagged(player, tag);
+        }
+
+        /// <summary>Whether the player holds a working tool with this tag in either hand.</summary>
+        static bool HoldsTagged(PlayerInteraction player, string tag)
+        {
+            if (!player.TryGetComponent<InventoryNetwork>(out var inventory)) return false;
             foreach (var slot in new[] { "main_hand", "off_hand" })
                 if (inventory.Slots.Working(slot)?.Tags is { } tags && System.Array.IndexOf(tags, tag) >= 0) return true;
             return false;
+        }
+
+        /// <summary>Item tag of anything that gives light (a torch).</summary>
+        const string LightTag = "light";
+
+        // ------------------------------------------------------------------ the Abyss (seal, curses, pressure, darkness)
+
+        /// <summary>The seal's sigils the player carries that aren't set yet.</summary>
+        IEnumerable<NamespacedId> CarriedSigils(PlayerInteraction player, Site site)
+        {
+            if (site.Def.Seal?.Sigils == null || !player.TryGetComponent<InventoryNetwork>(out var inventory)) yield break;
+            foreach (var sigil in site.Def.Seal.Sigils)
+                if (!site.SigilsPlaced.Contains(sigil.Value) && InventoryOps.Count(inventory.Containers(), sigil) > 0) yield return sigil;
+        }
+
+        /// <summary>SYS-DUNG-01: entering, every carried sigil the seal lacks is set into it (used up); the gate opens with
+        /// any number, and the rest weigh on the descent as curses.</summary>
+        void SetSigils(PlayerInteraction player, Site site)
+        {
+            if (!player.TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            var set = 0;
+            foreach (var sigil in CarriedSigils(player, site).ToList())
+                if (InventoryOps.TakeOne(inventory.Containers(), sigil) != null)
+                {
+                    site.SigilsPlaced.Add(sigil.Value);
+                    set++;
+                }
+            if (set > 0) GameFeed.RaiseNotice($"@ui.abyss_sigils_set|{site.SigilsPlaced.Count}|{site.Def.Seal.Sigils.Length}");
+            if (site.Curses > 0) GameFeed.RaiseNotice($"@ui.abyss_cursed|{site.Curses}");
+        }
+
+        /// <summary>The Abyss's curse on light: carried light radius multiplier at a point (1 elsewhere).</summary>
+        public float LightMultAt(Vector2 p)
+        {
+            var site = FloorAt(p)?.Site;
+            return site?.Def.Seal == null ? 1f : AbyssCalculator.LightMult(site.Curses, site.Def.Seal.LightPerMissing);
+        }
+
+        /// <summary>The global light a dungeon floor keeps (0..1), or -1 where the surface's light applies.</summary>
+        public float DarknessAt(Vector2 p)
+        {
+            var def = FloorAt(p)?.Site.Def;
+            return def != null && def.Darkness > 0f ? def.Darkness : -1f;
+        }
+
+        /// <summary>The Abyss's pressure on stamina regeneration at a point (1 elsewhere).</summary>
+        public float StaminaRegenMultAt(Vector2 p)
+        {
+            var floor = FloorAt(p);
+            var pressure = floor?.Site.Def.Pressure;
+            return pressure == null ? 1f : AbyssCalculator.StaminaRegenMult(floor.Index, pressure.StaminaRegenPerFloor);
         }
 
         /// <summary>Fire clears a root wall at once and for good — and enrages the Hollow: its spawn comes out of the

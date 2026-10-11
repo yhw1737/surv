@@ -1,0 +1,31 @@
+{
+  "id": "isle:abyssal_vein",
+  "name": "@world_object.abyssal_vein",
+  "tags": [
+    "node/rock",
+    "node/vein",
+    "stone"
+  ],
+  "gather": {
+    "item": "isle:abyssal_ore",
+    "count": 2,
+    "uses": 3,
+    "respawn_minutes": 7200,
+    "stamina_cost": 8,
+    "tool_tag": "tool/pickaxe",
+    "tool_bonus": 1,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 60,
+      "per_unit": 0
+    },
+    "time_sec": 14,
+    "tool_tier": 3
+  },
+  "visual": {
+    "shape": "ore_vein",
+    "depleted": "rubble",
+    "color": "#4A3A70",
+    "size": 1.15
+  }
+}

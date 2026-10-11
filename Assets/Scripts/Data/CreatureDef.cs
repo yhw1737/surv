@@ -45,6 +45,9 @@ namespace Isle.Data
 
         /// <summary>Boss behaviour (SYS-DUNG-01); null for ordinary creatures.</summary>
         public BossSpec Boss { get; init; }
+
+        /// <summary>Tiles of light it gives off (a lantern angler's lure, the Abyss Warden). 0 = none.</summary>
+        public float LightRadius { get; init; }
     }
 
     /// <summary>A creature's cartoon look: a body plan the figure painter knows (<c>quadruped reptile snake crab bird

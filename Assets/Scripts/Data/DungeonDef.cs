@@ -29,6 +29,15 @@ namespace Isle.Data
         /// <summary>The creature waiting in the last floor's boss room; it never returns once killed.</summary>
         public NamespacedId Boss { get; init; }
 
+        /// <summary>The Abyss's seal (SYS-DUNG-01, T-204): sigils set into it lift curses; null = no seal.</summary>
+        public DungeonSeal Seal { get; init; }
+
+        /// <summary>The Abyss's pressure: stamina regenerates slower on every floor down; null = none.</summary>
+        public DungeonPressure Pressure { get; init; }
+
+        /// <summary>Global light underground, 0..1 (the Abyss is nearly black: light is life). 0 = the surface's light.</summary>
+        public float Darkness { get; init; }
+
         /// <summary>Clockwork Ruin's gear doors (SYS-DUNG-01, T-203); null = none.</summary>
         public DungeonClockwork Clockwork { get; init; }
 
@@ -75,6 +84,9 @@ namespace Isle.Data
         public string Shape { get; init; }
         public string Color { get; init; }
         public float Size { get; init; } = 2f;
+
+        /// <summary>Placed beside this dungeon's entrance instead of by biome (the Abyss lies beneath the Ruin).</summary>
+        public NamespacedId Near { get; init; }
     }
 
     /// <summary>SYS-DUNG-01 §Soft gates: a specialist with <see cref="Skill"/> clears it fast, anyone slowly and loudly.</summary>
@@ -88,8 +100,25 @@ namespace Isle.Data
         /// <summary>Seconds after it's cleared that it closes again (Rootwood Hollow's regrowing roots). 0 = stays open.</summary>
         public float RegrowSeconds { get; init; }
 
+        /// <summary>Anyone holding a light clears it at the specialist's speed (the Abyss's pitch-dark shaft).</summary>
+        public bool FastWithLight { get; init; }
+
         /// <summary>Holding a tool with this tag, E burns the gate away for good — and wakes something. Null = can't.</summary>
         public DungeonGateBurn Burn { get; init; }
+    }
+
+    /// <summary>SYS-DUNG-01 the Abyss: the gate opens with any number of <see cref="Sigils"/>; each missing one is a curse
+    /// — <see cref="EnemiesPerMissing"/> more enemies and <see cref="LightPerMissing"/> less light radius.</summary>
+    public sealed class DungeonSeal
+    {
+        public NamespacedId[] Sigils { get; init; }
+        public float EnemiesPerMissing { get; init; }
+        public float LightPerMissing { get; init; }
+    }
+
+    public sealed class DungeonPressure
+    {
+        public float StaminaRegenPerFloor { get; init; }
     }
 
     /// <summary>SYS-DUNG-01 Clockwork Ruin: extra doorways make loops, then a share of the plain doors split into two

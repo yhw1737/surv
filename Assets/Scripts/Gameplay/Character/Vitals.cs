@@ -222,6 +222,9 @@ namespace Isle.Gameplay.Character
         /// <summary>Active buffs (SYS-BUFF-01), keyed by def, with expiry on the world clock.</summary>
         public BuffSet Buffs { get; } = new();
 
+        /// <summary>Where the place itself slows stamina regeneration (the Abyss's pressure); set by the dungeons.</summary>
+        public static System.Func<Vector2, float> StaminaRegenModifier { get; set; }
+
         /// <summary>SYS-COOK-01 §Satiety fatigue, per player.</summary>
         public SatietyTracker Satiety { get; } = new();
 
@@ -300,7 +303,8 @@ namespace Isle.Gameplay.Character
                 // SYS-INV-01 §Weight: "stamina regen halted" when overloaded.
                 var overweightFactor = WeightCalculator.IsOverloaded(CarriedWeightKg()) ? 0f : 1f;
                 var regen = VitalsCalculator.StaminaRegenPerSecondAt(overweightFactor, Hunger, Thirst) * TickIntervalSeconds
-                    * BuffEffects.Mult(buffs, "stamina_regen_mult");
+                    * BuffEffects.Mult(buffs, "stamina_regen_mult")
+                    * (StaminaRegenModifier?.Invoke(transform.position) ?? 1f); // the Abyss's pressure (SYS-DUNG-01)
                 var maxStamina = VitalsCalculator.GaugeMax * VitalsCalculator.MaxStaminaFactor(Hunger, Thirst)
                     * BuffEffects.Mult(buffs, "stamina_max_mult");
                 Stamina = Mathf.Clamp(Stamina + regen, 0f, maxStamina);
