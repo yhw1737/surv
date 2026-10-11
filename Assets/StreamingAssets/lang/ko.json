@@ -237,6 +237,7 @@
   "ui.cook_preview": "완성 미리보기",
   "ui.cook_add_food": "재료를 넣으면 요리 효과가 미리 보입니다",
   "ui.craft_ready": "제작 가능",
+  "ui.debug_copied": "디버그 정보를 클립보드에 복사했습니다",
   "ui.craft_ready_assisted": "제작 가능 — 동료 도움",
   "ui.craft_assisted": "(동료 도움)",
   "ui.crafted_by": "제작: {0}",

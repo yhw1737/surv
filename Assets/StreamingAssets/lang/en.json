@@ -237,6 +237,7 @@
   "ui.cook_preview": "Result preview",
   "ui.cook_add_food": "Add ingredients to see what the dish will do",
   "ui.craft_ready": "Ready to craft",
+  "ui.debug_copied": "Debug info copied to the clipboard",
   "ui.craft_ready_assisted": "Ready — with an ally's help",
   "ui.craft_assisted": "(ally's help)",
   "ui.crafted_by": "Made by {0}",

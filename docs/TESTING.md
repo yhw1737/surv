@@ -73,6 +73,16 @@ This requires formulas to be **static pure functions** (ARCHITECTURE §Patterns)
 
 Ask: is it fun, what is irritating, what do I want to do next?
 
+### Debug screen (T-303)
+In game, **F3 or F12** toggles a developer screen (left: build, fps/frame ms, memory, network role/tick/RTT, seed,
+save slot, clock, weather, position/tile/chunk/biome or the dungeon floor underfoot with its light/darkness/stamina/
+curse numbers, movement, mouse point, vitals, buffs, traits, skills; right: def counts, live counts, worn gear with
+wear/quality/enchants/crafter, current activity, nearby creatures with state/HP/weight, nearby nodes, every dungeon's
+boss state). **Ctrl/Cmd+F3/F12** adds world gizmos: interaction reach (green) and adjacent-assist radius (cyan),
+creature hitbox / attack range / vision rings coloured by AI state with labels, node crosses with uses left, structure
+ids, chunk borders. **Shift+F3/F12** copies the text to the clipboard — paste it into a bug report. Each section is
+guarded: a broken read shows as a `[section: error]` line, which the smoke test fails on.
+
 ### Gate playtests
 
 | Gate | Participants | Question |

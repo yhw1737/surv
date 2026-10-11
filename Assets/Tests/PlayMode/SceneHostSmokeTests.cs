@@ -88,6 +88,9 @@ namespace Isle.Tests.PlayMode
             Assert.IsTrue(map.IsExplored(FindLocalPlayer().transform.position), "spawn never revealed");
             Assert.IsFalse(map.IsExplored(FindLocalPlayer().transform.position + new Vector3(400f, 400f)), "fog revealed too far");
 
+            // T-303: the debug screen reads every system without an error line, on the surface.
+            AssertDebugScreen("surface", "Tile:", "Biome:");
+
             // Same session: FishNet can't re-initialise SampleScene's placed Campfire on a second load, so the
             // gameplay flow runs here rather than in its own test.
             yield return GatherCraftDrinkHunt();
@@ -163,6 +166,7 @@ namespace Isle.Tests.PlayMode
             Assert.AreEqual(0.4f, dungeons.LightMultAt(player.transform.position), 1e-4f, "light under four curses");
             Assert.AreEqual(0.08f, dungeons.DarknessAt(player.transform.position), 1e-4f, "the Abyss isn't dark");
             Assert.AreEqual(0.85f, dungeons.StaminaRegenMultAt(player.transform.position), 1e-4f, "floor 1 pressure");
+            AssertDebugScreen("underground", "Underground: isle:abyss floor 1/3", "curses 4");
             var marks = floor.Tiles.Spawns.Count(s => floor.Layout.Rooms[s.Item2].Kind is not (Isle.World.Generation.RoomKind.Entrance
                 or Isle.World.Generation.RoomKind.Rest or Isle.World.Generation.RoomKind.Vault or Isle.World.Generation.RoomKind.Boss));
             var dwellers = CreatureDirector.Instance.Creatures.Count(c => c.InDungeon && dungeons.FloorAt(c.Position) == floor && c.Def.Boss == null);
@@ -915,6 +919,22 @@ namespace Isle.Tests.PlayMode
             foreach (var player in Object.FindObjectsByType<PlayerInteraction>(FindObjectsSortMode.None))
                 if (player.IsOwner) return player;
             return null;
+        }
+
+        /// <summary>T-303: the debug screen text builds with no section failing (IMGUI drawing needs graphics), and carries
+        /// <paramref name="expected"/>.</summary>
+        static void AssertDebugScreen(string where, params string[] expected)
+        {
+            var overlay = Isle.UI.Prototype.DebugOverlay.Instance;
+            Assert.IsNotNull(overlay, "DebugOverlay not installed");
+            var (left, right) = overlay.Lines();
+            var all = left.Concat(right).ToList();
+            var failed = all.Where(l => l.StartsWith("[")).ToList();
+            Assert.IsEmpty(failed, $"debug screen sections failed ({where}): {string.Join(" | ", failed)}");
+            foreach (var text in expected)
+                Assert.IsTrue(all.Any(l => l.Contains(text)), $"debug screen ({where}) lacks '{text}':\n{string.Join("\n", all)}");
+            Assert.IsTrue(all.Any(l => l.StartsWith("HP ")), $"debug screen ({where}) shows no vitals");
+            Assert.IsTrue(all.Any(l => l.StartsWith("Net: host")), $"debug screen ({where}) shows no network role");
         }
 
         static IEnumerator WaitUntil(System.Func<bool> condition, float timeoutSeconds, string failure)

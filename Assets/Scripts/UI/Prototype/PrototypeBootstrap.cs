@@ -68,6 +68,7 @@ namespace Isle.UI.Prototype
             root.AddComponent<LightRig>();
             root.AddComponent<WeatherOverlay>();
             root.AddComponent<PauseMenu>();
+            root.AddComponent<DebugOverlay>();
         }
     }
 }

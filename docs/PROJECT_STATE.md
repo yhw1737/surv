@@ -6,6 +6,13 @@
 ## Header
 
 - Last updated: **2026-10-10**
+- **2026-10-10 — T-303 developer debug screen.** Developer request ("F12 shows everything, like Minecraft"). Branch `feature/T-303-debug-screen`,
+  stacked on T-092/093 (files: `DebugOverlay` + `FrameStats` (new), `PrototypeBootstrap` installs it, `ui.debug_copied` lang key,
+  `DebugOverlayTests`, `AssertDebugScreen` in the smoke test). F3/F12 text screen, Ctrl/Cmd for world gizmos, Shift
+  copies to the clipboard (TESTING §Debug screen). **Verified:** EditMode 739/739 (+7: frame stats, clock text),
+  PlayMode 4/4 (screen text built on the surface and on Abyss floor 1 with no failed section; dumped and read). Not
+  verified on screen: the IMGUI drawing and gizmos (batch mode has no OnGUI). Seen in the dump: ~1,600 live creatures
+  island-wide and 15,318 nodes — worth a look in the bug pass (T-151).
 - **2026-10-10 — T-092 adjacent assist + T-093 crafter mark.** Branch `feature/T-092-093-assist-crafter-mark`, stacked on
   T-106 (files: `AdjacentAssist` (new), `CraftRecipeDef.AllowAdjacentAssist` default true, `PlayerInteraction` (`MeetsRecipe`,
   `NeedsAssist`, `BestNearbyLevel`, `CrafterName`; craft and repair gates), `PrototypeHud.Windows` (assist labels),
@@ -2092,6 +2099,10 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-10 — T-303 debug screen choices
+  F3 as well as F12 (a Mac's F12 is often a media key); available in every build, like the game it was modelled on;
+  English labels hardcoded (developer-facing, not player text) — only the "copied" notice is in the language files.
+
 - ### 2026-10-10 — T-092 / T-093 interpretations
   No Q&A (developer delegated). Assist also lifts the material's `craft_level` gate and repair gates (both are skill
   requirements); `allow_adjacent_assist` defaults true; "nearby" = living players within 3.0 tiles. Crafter mark only on
