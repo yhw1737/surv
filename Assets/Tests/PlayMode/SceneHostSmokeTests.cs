@@ -96,6 +96,47 @@ namespace Isle.Tests.PlayMode
             yield return DrownedTemple();
             yield return ClockworkRuin();
             yield return Abyss();
+            yield return Enchanting();
+        }
+
+        /// <summary>T-106 SYS-CRAFT-01 §Enchanting: at a table, a Fine sword takes two enchants (its quality's slots),
+        /// spends a catalyst each time, and refuses a third; a failure costs only the catalyst; enchants hold the damage
+        /// multiplier and survive in the wear record.</summary>
+        IEnumerator Enchanting()
+        {
+            var player = FindLocalPlayer();
+            var inventory = player.GetComponent<InventoryNetwork>();
+            Teleport(player, (Vector2)IslandWorld.Instance.ShoreStart(Isle.World.Chunks.Biome.Coast) + Vector2.zero);
+            var table = StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:enchanting_table")), (Vector2)player.transform.position + Vector2.right);
+            Assert.IsTrue(table.TryGetComponent<EnchantingTable>(out _), "the table isn't an enchanting station");
+            player.Skills.Restore(NamespacedId.Parse("isle:enchanting"), Isle.Gameplay.Skills.XpCurve.TotalXpTo(50));
+            inventory.Bag.Clear();
+            var sword = DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:sword__copper"));
+            Assert.IsTrue(InventoryOps.TryGive(inventory.Containers(), sword, 1, new ItemWear(150, 150) { Quality = Isle.Gameplay.Crafting.QualityTier.Fine }));
+            Give(inventory, "isle:tide_pearl", 4);
+            var placed = inventory.Bag.Placements.First(p => p.Item == sword);
+            var wear = placed.Wear;
+            var pearls = CountOf(inventory, "isle:tide_pearl"); // the Grotto's cache may have left some in a backpack
+
+            // A failure: the pearl is spent, the sword untouched.
+            Isle.Gameplay.Character.PlayerInteraction.EnchantRollOverride = () => 1.5f; // above any success rate
+            player.RequestEnchantPlaced(0, placed.Position, "isle:keen");
+            yield return WaitUntil(() => CountOf(inventory, "isle:tide_pearl") == pearls - 1, 2f, "a failed enchant didn't spend the catalyst");
+            Assert.AreEqual(0, wear.Enchants.Count, "a failed enchant changed the item");
+
+            // Two successes fill a Fine sword's two slots; a third is refused and costs nothing.
+            Isle.Gameplay.Character.PlayerInteraction.EnchantRollOverride = () => 0f;
+            player.RequestEnchantPlaced(0, placed.Position, "isle:keen");
+            yield return WaitUntil(() => wear.Enchants.Count == 1, 2f, "enchant never set");
+            player.RequestEnchantPlaced(0, placed.Position, "isle:keen");
+            yield return WaitUntil(() => wear.Enchants.Count == 2, 2f, "second enchant never set");
+            player.RequestEnchantPlaced(0, placed.Position, "isle:keen");
+            yield return new WaitForSeconds(0.3f);
+            Assert.AreEqual(2, wear.Enchants.Count, "a third enchant went past the slots");
+            Assert.AreEqual(pearls - 3, CountOf(inventory, "isle:tide_pearl"), "a refused enchant spent a pearl");
+            Assert.AreEqual(1.12f * 1.12f, Isle.Gameplay.Crafting.EnchantEffects.Mult(wear, Isle.Gameplay.Crafting.EnchantCalculator.DamageMult), 1e-4f);
+            Isle.Gameplay.Character.PlayerInteraction.EnchantRollOverride = null;
+            StructureFactory.Remove(table);
         }
 
         /// <summary>T-204 the Abyss: beside the Ruin, it opens with no sigils under four curses (double the enemies, 40%

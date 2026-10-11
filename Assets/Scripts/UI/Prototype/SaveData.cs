@@ -13,7 +13,7 @@ namespace Isle.UI.Prototype
     public sealed class SaveData
     {
         /// <summary>Bump when a field changes meaning; an older file is ignored rather than misread.</summary>
-        public const int CurrentVersion = 7;
+        public const int CurrentVersion = 8;
 
         /// <summary>Oldest version still readable. v3 only lacks <see cref="Skills"/>, which then start from zero.</summary>
         public const int MinReadableVersion = 3;
@@ -109,6 +109,9 @@ namespace Isle.UI.Prototype
 
         /// <summary>SYS-CRAFT-01 quality tier + 1; 0 = none (not crafted, or an old save).</summary>
         public int Quality;
+
+        /// <summary>Version 8: enchants set into the item's slots (enchant ids, repeats allowed).</summary>
+        public List<string> Enchants = new();
         public List<SavedStack> Contents = new();
     }
 
@@ -124,6 +127,9 @@ namespace Isle.UI.Prototype
 
         /// <summary>SYS-CRAFT-01 quality tier + 1; 0 = none (not crafted, or an old save).</summary>
         public int Quality;
+
+        /// <summary>Version 8: enchants set into the item's slots (enchant ids, repeats allowed).</summary>
+        public List<string> Enchants = new();
 
         /// <summary>SYS-HUNT-01: a carried carcass — which creature, and its body. Empty for anything else.</summary>
         public string CarcassOf;

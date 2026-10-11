@@ -1,0 +1,36 @@
+{
+  "id": "isle:craft_enchanting_table_kit",
+  "name": "@recipe.enchanting_table_kit",
+  "ingredients": [
+    {
+      "item": "isle:wood",
+      "count": 8
+    },
+    {
+      "item": "isle:copper_ingot",
+      "count": 2
+    },
+    {
+      "item": "isle:cloth",
+      "count": 2
+    }
+  ],
+  "output": {
+    "item": "isle:enchanting_table_kit",
+    "count": 1
+  },
+  "time_sec": 6,
+  "station": "isle:workbench",
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 15,
+    "per_unit": 6
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 5,
+      "primary": true
+    }
+  ]
+}

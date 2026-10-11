@@ -84,7 +84,7 @@ Hierarchical: `fish/saltwater` automatically implies `fish`. Max depth 3.
 | Material | `metal` `wood` `stone` `leather` `cloth` `bone` `gem` |
 | Habitat | `fish/saltwater` `fish/freshwater` `fish/deep` `fish/reef` |
 | Weapon | `weapon/blade` `weapon/bow` `weapon/artifact` |
-| Station | `station/campfire` `station/pot` `station/dryer` `station/forge` |
+| Station | `station/campfire` `station/pot` `station/dryer` `station/forge` `station/enchanting` |
 
 > Adding `["meat","fat"]` to a new ingredient makes **all 8 cook methods handle it immediately.** That's the payoff of tag architecture.
 
@@ -447,6 +447,9 @@ This document constrains us before it serves modders.
 | Dungeon gate | `regrow_seconds` | Seconds after clearing that a soft gate closes again (Rootwood Hollow 300); 0 stays open. 2026-10-10 |
 | Dungeon gate | `burn {tool_tag, spawn, count}` | Holding a tool with the tag, E burns the gate for good and spawns `count` × `spawn` nearby. 2026-10-10 |
 | Creature boss | `summon {creature, count, every_seconds, below_health, max_alive}` | Below the health share, calls helpers every few seconds (cap alive), not while burning. 2026-10-10 |
+| Enchant | `skill`, `xp` | The skill that applies it and gains XP (a failure grants half). 2026-10-10 |
+| Enchant effect | `armor_mult`, `tool_speed_mult`, `wear_skip_chance` | New effect types (each needs `value`) beside `damage_mult`. 2026-10-10 |
+| World object tag | `station/enchanting` | A station where enchants are set (E opens the window). 2026-10-10 |
 | Craft recipe | `forge_strikes` | SYS-CRAFT-01 §Forging: hammer strikes (3..8) when the recipe's `minigame` is `isle:forging` and it's made at a station tagged `forge`. 2026-10-10 |
 | World object tag | `forge` | A station where `isle:forging` recipes are hammered out (the anvil). 2026-10-10 |
 | Cook method | `time_mult` | SYS-COOK-01 §Cook time multiplier (grill 1, boil 1.5, dry 3, raw 0). Replaces the unused `duration_sec`. 2026-10-09 |

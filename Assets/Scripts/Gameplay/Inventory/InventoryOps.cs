@@ -101,9 +101,21 @@ namespace Isle.Gameplay.Inventory
                 container.Remove(placement);
                 container.TryPlace(placement.Item, placement.Position, placement.Rotated, placement.Count, wear);
             }
+            if (Crafting.EnchantEffects.SkipsWear(wear, UnityEngine.Random.value)) return false; // a sturdy enchant spared it
             var was = wear.Broken;
             wear.Use();
             return !was && wear.Broken;
+        }
+
+        /// <summary>A placement's wear record, swapping in one that carries a fresh record if it has none yet.</summary>
+        public static ItemWear EnsureWear(GridInventory container, Placement placement)
+        {
+            if (placement.Wear != null) return placement.Wear;
+            var wear = ItemWear.Fresh(placement.Item);
+            if (wear == null) return null;
+            container.Remove(placement);
+            container.TryPlace(placement.Item, placement.Position, placement.Rotated, placement.Count, wear);
+            return wear;
         }
 
         /// <summary>Swaps a stack for the same stack at a new count; zero removes it. Removing first frees its

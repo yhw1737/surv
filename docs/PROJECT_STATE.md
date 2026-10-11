@@ -6,6 +6,18 @@
 ## Header
 
 - Last updated: **2026-10-10**
+- **2026-10-10 — T-106 enchanting.** Branch `feature/T-106-enchanting`, stacked on T-204
+  (files: `EnchantCalculator`, `EnchantingTable`, `EnchantDef` (Skill, Xp), `SchemaValidator`, `ItemWear.Enchants`,
+  `EquipSlots`/`InventoryOps` (EnsureWear, wear skip), `CraftingCalculator.CountMatching`, `PlayerInteraction` (enchant
+  RPCs, damage/tool multipliers), `Vitals` (armor multiplier), `StructureFactory`, `GameFeed.EnchantOpened`,
+  `PrototypeHud(.Enchant)`, `SaveData/SaveGame` (v8), `ShapeLibrary` (`enchanting_table`), enchant/table/kit/recipe defs,
+  lang, `EnchantTests`, the `Enchanting` step + knife enchant in the round trip). Developer: "decide yourself". Built
+  the enchanting system on SYS-CRAFT-01's formula: four enchants catalysed by the dungeon materials, an enchanting
+  table + window, effects on damage, armor, tool speed and wear, saved. **Verified:** EditMode 722/722 (+8
+  `EnchantTests`: success rate, tag rule, slots from quality / max stack / skill / crude has none, effect maths, the
+  four enchants' data), PlayMode 4/4 (a failure spends only the pearl; a Fine sword takes two keens and refuses a third
+  at no cost; damage ×1.12²; an enchanted knife survives save/Continue); the table rendered. Test fix: pearls counted
+  relatively (the Grotto's cache can leave pearls in a backpack). Not verified visually: the IMGUI enchant window.
 - **2026-10-10 — T-204 the Abyss.** Branch `feature/T-204-abyss` off `main` (after PR #48). Developer: "decide
   yourself, report after" — no Q&A; SYS-DUNG-01's decided values used verbatim, everything else [invented] (below).
   Built: `World/Generation/AbyssCalculator` (curse/pressure math, seeded rounding); `DungeonDef.Seal/Pressure/Darkness`,
@@ -2072,6 +2084,12 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-10 — T-106 enchanting values
+  No Q&A (developer delegated). Verbatim: success 0.60 + 0.008 × level, catalyst lost on failure, never destroyed within
+  slots, slots from quality. [invented]: keen ×1.12 / sturdy 30% / warding ×1.15 / swift ×1.2, max stack 2 each, levels
+  10/10/20/20, catalysts tide pearl / heartwood / temple jade / clockwork gear, XP 25 (half on failure), the enchanting
+  table and its recipe, the tag-prefix applicability rule.
+
 - ### 2026-10-10 — T-204 Abyss values
   No Q&A (developer delegated). Verbatim from SYS-DUNG-01: +25% enemies / −15% light per missing sigil, −15% regen per
   floor, 3 floors, Lv 30 gates. [invented]: the [invented] list in SYS-DUNG-01 §Implementation (T-204) — darkness 0.08,

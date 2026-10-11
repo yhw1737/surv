@@ -513,7 +513,8 @@ namespace Isle.Gameplay.Character
 
             var power = PowerCalculator.FinalPower(weapon.BasePower, level, situationalMult: MeleeCombo.SituationalMult(target.IsStaggered))
                         * attack.PowerMult * Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "melee_power_mult")
-                        * QualityCalculator.PowerOf(inventory.Slots.WearOf(MainHandSlot)); // SYS-CRAFT-01 §Quality
+                        * QualityCalculator.PowerOf(inventory.Slots.WearOf(MainHandSlot)) // SYS-CRAFT-01 §Quality
+                        * EnchantEffects.Mult(inventory.Slots.WearOf(MainHandSlot), EnchantCalculator.DamageMult); // §Enchanting
             var loot = new List<(NamespacedId Item, int Count)>();
             float dealt;
             // SYS-HUNT-01: a knife kills cleanly (like a dagger), blunt trauma ruins the most, the rest is ordinary melee.
@@ -630,7 +631,8 @@ namespace Isle.Gameplay.Character
             // SYS-CRAFT-02: a better tool is faster.
             if (TryGetComponent<InventoryNetwork>(out var inventory) && MatchingTool(inventory, node.Def.Gather) is { } tool)
                 _gatherSeconds = ToolTiers.HarvestSeconds(_gatherSeconds,
-                    (tool.ToolPower > 0f ? tool.ToolPower : 1f) * QualityCalculator.PowerOf(inventory.Slots.WearOf(MainHandSlot))); // + §Quality
+                    (tool.ToolPower > 0f ? tool.ToolPower : 1f) * QualityCalculator.PowerOf(inventory.Slots.WearOf(MainHandSlot))
+                    * EnchantEffects.Mult(inventory.Slots.WearOf(MainHandSlot), EnchantCalculator.ToolSpeedMult)); // + §Quality, §Enchanting
             _gatherSeconds /= GatherSpeed();
         }
 
@@ -968,7 +970,8 @@ namespace Isle.Gameplay.Character
             var damage = PowerCalculator.FinalPower(weapon.BasePower, LevelOf(weapon.CombatSkill)) * RangedCalculator.ChargeMult(charge)
                          * Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "ranged_power_mult")
                          * (ammo.AmmoPower > 0f ? ammo.AmmoPower : 1f)
-                         * QualityCalculator.PowerOf(inventory.Slots.WearOf(MainHandSlot)); // SYS-CRAFT-01 §Quality
+                         * QualityCalculator.PowerOf(inventory.Slots.WearOf(MainHandSlot)) // SYS-CRAFT-01 §Quality
+                         * EnchantEffects.Mult(inventory.Slots.WearOf(MainHandSlot), EnchantCalculator.DamageMult); // §Enchanting
 
             Projectiles.Instance.Fire(origin + direction * MuzzleOffsetTiles, direction, weapon.ProjectileSpeed, damage, weapon.DamageType ?? DamageTypes.Pierce,
                 loot => { foreach (var (item, count) in loot) GiveItem(inventory, item, count); },
@@ -1280,6 +1283,73 @@ namespace Isle.Gameplay.Character
         }
 
         static NamespacedId PrimarySkill(CraftRecipeDef recipe) => StuffCrafting.PrimarySkill(recipe);
+
+        // ------------------------------------------------------------------ enchanting (SYS-CRAFT-01 §Enchanting)
+
+        /// <summary>Enchants the item in an equip slot.</summary>
+        public void RequestEnchantEquipped(string slot, string enchantId) => CmdEnchantEquipped(slot, enchantId);
+
+        /// <summary>Enchants the item at <paramref name="position"/> in container <paramref name="container"/>.</summary>
+        public void RequestEnchantPlaced(int container, Vec2Int position, string enchantId) => CmdEnchantPlaced(container, position.X, position.Y, enchantId);
+
+        /// <summary>Tests: a fixed success roll (0..1) instead of a random one; null = random.</summary>
+        public static System.Func<float> EnchantRollOverride { get; set; }
+
+        [ServerRpc]
+        void CmdEnchantEquipped(string slot, string enchantText)
+        {
+            if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            var item = inventory.Slots.Get(slot);
+            if (item == null) return;
+            TryEnchant(inventory, item, () => inventory.Slots.EnsureWear(slot), enchantText);
+        }
+
+        [ServerRpc]
+        void CmdEnchantPlaced(int container, int x, int y, string enchantText)
+        {
+            if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            var containers = inventory.Containers();
+            if (container < 0 || container >= containers.Count) return; // never trust client values
+            if (containers[container].PlacementAt(new Vec2Int(x, y)) is not { } placed) return;
+            TryEnchant(inventory, placed.Item, () => InventoryOps.EnsureWear(containers[container], placed), enchantText);
+        }
+
+        /// <summary>At an enchanting table, with the enchanter's level, a free slot (from the item's quality) and the
+        /// catalyst: the catalyst is spent either way; success sets the enchant, failure leaves the item as it was.</summary>
+        bool TryEnchant(InventoryNetwork inventory, ItemDef item, System.Func<ItemWear> wearFor, string enchantText)
+        {
+            if (!NamespacedId.TryParse(enchantText, out var enchantId, out _) || !DefRegistry.TryGet<EnchantDef>(enchantId, out var enchant)) return false;
+            if (!WorldObjectRegistry.All.Any(w => w != null && w.IsActive && w.HasTag(EnchantingTable.Tag)
+                                                  && Vector2.Distance(w.transform.position, transform.position) <= ReachTiles + 0.5f))
+            {
+                GameFeed.RaiseNotice("@ui.enchant_need_table");
+                return false;
+            }
+            if (item.Durability is not > 0) return false;
+            var wear = wearFor();
+            if (wear == null) return false;
+            var level = LevelOf(enchant.Skill);
+            switch (EnchantCalculator.Check(enchant, item.Tags, QualityCalculator.EnchantSlots(wear.Quality), wear.Enchants, level))
+            {
+                case EnchantRefusal.NotApplicable: return false;
+                case EnchantRefusal.NoFreeSlot: GameFeed.RaiseNotice("@ui.enchant_no_slot"); return false;
+                case EnchantRefusal.MaxStack: GameFeed.RaiseNotice("@ui.enchant_max"); return false;
+                case EnchantRefusal.SkillTooLow: GameFeed.RaiseNotice("@ui.skill_too_low"); return false;
+            }
+            var containers = inventory.Containers();
+            var catalyst = enchant.Catalyst ?? System.Array.Empty<IngredientRef>();
+            if (!CraftingCalculator.HasIngredients(catalyst, CraftingCalculator.StockOf(containers))) return false;
+            ConsumeIngredients(containers, catalyst);
+            var roll = EnchantRollOverride?.Invoke() ?? UnityEngine.Random.value;
+            var success = roll < EnchantCalculator.SuccessRate(level);
+            if (success) wear.Enchants.Add(enchant.Id);
+            if (enchant.Xp != null) AwardXp(enchant.Xp, success ? 1f : FailedEnchantXpShare);
+            GameFeed.RaiseNotice(success ? $"@ui.enchant_done|{enchant.Name}" : "@ui.enchant_failed");
+            return success;
+        }
+
+        /// <summary>Share of an enchant's XP a failed attempt still grants. [invented]</summary>
+        const float FailedEnchantXpShare = 0.5f;
 
         // ------------------------------------------------------------------ repair (SYS-CRAFT-02)
 

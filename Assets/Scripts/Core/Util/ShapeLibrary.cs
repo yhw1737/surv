@@ -33,7 +33,7 @@ namespace Isle.Core.Util
             "campfire", "crate", "warehouse", "workbench", "pot", "rack", "rain_catcher", "plot", "sack",
             "sea_cave", "giant_tree", "sinkhole", "ruin_gate", "stairs_down", "stairs_up", "key", "locked_door",
             "gate_water", "gate_roots", "gate_bars", "gate_runes", "chest", "ore_vein", "furnace", "anvil", "wreckage",
-            "stump", "rubble", "bush_bare", "stubble", "gear_door",
+            "stump", "rubble", "bush_bare", "stubble", "gear_door", "enchanting_table",
         };
 
         /// <summary>A sprite one world unit across at scale 1, cached per (shape, colour).</summary>
@@ -355,6 +355,19 @@ namespace Isle.Core.Util
                     canvas.Rect(0.05f, 0.5f, 0.95f, 0.64f, c);
                     canvas.Rect(0.3f, 0.64f, 0.5f, 0.7f, new Color(0.6f, 0.6f, 0.65f));
                     canvas.Line(0.6f, 0.66f, 0.8f, 0.84f, 0.03f, Bark);
+                    break;
+                case "enchanting_table":
+                    // A dark table with an open book and a glowing crystal on a stand.
+                    canvas.Rect(0.16f, 0.08f, 0.24f, 0.48f, Bark);
+                    canvas.Rect(0.76f, 0.08f, 0.84f, 0.48f, Bark);
+                    canvas.Rect(0.08f, 0.46f, 0.92f, 0.58f, c);
+                    canvas.Tri(0.22f, 0.58f, 0.46f, 0.58f, 0.34f, 0.66f, Ivory);
+                    canvas.Tri(0.34f, 0.66f, 0.46f, 0.58f, 0.5f, 0.66f, Color.Lerp(Ivory, Color.black, 0.1f));
+                    canvas.Rect(0.64f, 0.58f, 0.7f, 0.68f, Bark);
+                    canvas.Tri(0.58f, 0.7f, 0.76f, 0.7f, 0.67f, 0.92f, light);
+                    canvas.Inked = false;
+                    canvas.Circle(0.67f, 0.78f, 0.1f, new Color(light.r, light.g, light.b, 0.35f));
+                    canvas.Inked = true;
                     break;
                 case "pot":
                     canvas.Ellipse(0.5f, 0.38f, 0.36f, 0.3f, c);

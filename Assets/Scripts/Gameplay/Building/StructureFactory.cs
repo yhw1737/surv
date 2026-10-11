@@ -60,6 +60,7 @@ namespace Isle.Gameplay.Building
             // Awake hasn't run yet (the object is inactive), so read the def's tags directly.
             if (def.Tags != null && System.Array.IndexOf(def.Tags, CampfireTag) >= 0) go.AddComponent<CampfireInteraction>();
             if (def.Storage is { } grid) go.AddComponent<StorageBox>().Initialize(grid.W, grid.H);
+            if (def.Tags != null && System.Array.IndexOf(def.Tags, EnchantingTable.Tag) >= 0) go.AddComponent<EnchantingTable>();
             if (def.RainCatcher != null) go.AddComponent<RainCatcher>().Initialize(def.RainCatcher);
 
             go.SetActive(true);

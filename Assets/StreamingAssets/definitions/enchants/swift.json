@@ -1,0 +1,27 @@
+{
+  "id": "isle:swift",
+  "name": "@enchant.swift",
+  "applicable_tags": [
+    "tool"
+  ],
+  "max_stack": 2,
+  "effects": [
+    {
+      "type": "tool_speed_mult",
+      "value": 1.2
+    }
+  ],
+  "catalyst": [
+    {
+      "item": "isle:clockwork_gear",
+      "count": 1
+    }
+  ],
+  "enchanting_skill_required": 20,
+  "skill": "isle:enchanting",
+  "xp": {
+    "skill": "isle:enchanting",
+    "base": 25,
+    "per_unit": 0
+  }
+}

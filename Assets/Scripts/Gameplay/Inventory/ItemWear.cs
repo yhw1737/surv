@@ -20,6 +20,10 @@ namespace Isle.Gameplay.Inventory
         /// salvage), which count as Common. Kept through repairs.</summary>
         public Crafting.QualityTier? Quality { get; init; }
 
+        /// <summary>SYS-CRAFT-01 §Enchanting: enchants set into its slots (a slot each, repeats allowed up to the enchant's
+        /// max stack). Kept through repairs.</summary>
+        public System.Collections.Generic.List<Isle.Core.Ids.NamespacedId> Enchants { get; } = new();
+
         public bool Broken => Current <= 0;
         public bool NeedsRepair => Current < Max;
         public float Fraction => Max > 0 ? Current / (float)Max : 0f;

@@ -63,6 +63,14 @@ namespace Isle.Gameplay.Crafting
             return true;
         }
 
+        /// <summary>How many of one requirement the stock holds (for "have / need" labels).</summary>
+        public static int CountMatching(IngredientRef need, IReadOnlyList<Stock> stock)
+        {
+            var count = 0;
+            foreach (var line in stock) if (Matches(need, line)) count += line.Count;
+            return count;
+        }
+
         /// <summary>Whether one stock line can pay one requirement. Shared by the check above and the
         /// server-side consumption, so the two can never disagree about what counts.</summary>
         public static bool Matches(IngredientRef need, Stock line)
