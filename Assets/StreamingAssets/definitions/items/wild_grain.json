@@ -1,0 +1,30 @@
+{
+  "id": "isle:wild_grain",
+  "name": "@item.wild_grain",
+  "tags": [
+    "food",
+    "grain",
+    "raw"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.1,
+  "stack": 40,
+  "nutrition": {
+    "hunger": 6,
+    "thirst": 0,
+    "sanitation_risk": 0.0
+  },
+  "spoilage": {
+    "base_hours": 240,
+    "temp_factor": 0,
+    "result": "isle:rotten_food"
+  },
+  "icon_style": {
+    "shape": "seeds",
+    "color": "#D8B860",
+    "accent": "#A88A3A"
+  }
+}

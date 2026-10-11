@@ -84,7 +84,7 @@ Hierarchical: `fish/saltwater` automatically implies `fish`. Max depth 3.
 | Material | `metal` `wood` `stone` `leather` `cloth` `bone` `gem` |
 | Habitat | `fish/saltwater` `fish/freshwater` `fish/deep` `fish/reef` |
 | Weapon | `weapon/blade` `weapon/bow` `weapon/artifact` |
-| Station | `station/campfire` `station/pot` `station/dryer` `station/forge` `station/enchanting` |
+| Station | `station/campfire` `station/pot` `station/dryer` `station/forge` `station/cauldron` `station/smokehouse` `station/fermenter` `station/enchanting` |
 
 > Adding `["meat","fat"]` to a new ingredient makes **all 8 cook methods handle it immediately.** That's the payoff of tag architecture.
 

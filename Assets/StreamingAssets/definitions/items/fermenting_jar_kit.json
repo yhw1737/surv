@@ -1,0 +1,20 @@
+{
+  "id": "isle:fermenting_jar_kit",
+  "name": "@item.fermenting_jar_kit",
+  "tags": [
+    "placeable",
+    "stone"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 2
+  },
+  "weight": 3.0,
+  "stack": 1,
+  "places": "isle:fermenting_jar",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#9A6B42",
+    "accent": "#C08050"
+  }
+}

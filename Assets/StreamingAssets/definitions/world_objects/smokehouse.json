@@ -1,0 +1,13 @@
+{
+  "id": "isle:smokehouse",
+  "name": "@world_object.smokehouse",
+  "tags": [
+    "station/smokehouse",
+    "wood"
+  ],
+  "visual": {
+    "shape": "smokehouse",
+    "color": "#7A5534",
+    "size": 1.6
+  }
+}

@@ -33,7 +33,7 @@ namespace Isle.Core.Util
             "campfire", "crate", "warehouse", "workbench", "pot", "rack", "rain_catcher", "plot", "sack",
             "sea_cave", "giant_tree", "sinkhole", "ruin_gate", "stairs_down", "stairs_up", "key", "locked_door",
             "gate_water", "gate_roots", "gate_bars", "gate_runes", "chest", "ore_vein", "furnace", "anvil", "wreckage",
-            "stump", "rubble", "bush_bare", "stubble", "gear_door", "enchanting_table",
+            "stump", "rubble", "bush_bare", "stubble", "gear_door", "enchanting_table", "cauldron", "smokehouse", "jar",
         };
 
         /// <summary>A sprite one world unit across at scale 1, cached per (shape, colour).</summary>
@@ -373,6 +373,38 @@ namespace Isle.Core.Util
                     canvas.Ellipse(0.5f, 0.38f, 0.36f, 0.3f, c);
                     canvas.Ellipse(0.5f, 0.64f, 0.36f, 0.09f, light);
                     canvas.Ellipse(0.5f, 0.64f, 0.29f, 0.06f, Water);
+                    break;
+                case "cauldron":
+                    // A big iron pot on three legs over a small fire, a stew line inside.
+                    canvas.Rect(0.22f, 0.04f, 0.28f, 0.22f, dark);
+                    canvas.Rect(0.72f, 0.04f, 0.78f, 0.22f, dark);
+                    canvas.Rect(0.47f, 0.04f, 0.53f, 0.18f, dark);
+                    canvas.Ellipse(0.5f, 0.12f, 0.14f, 0.06f, new Color(1f, 0.55f, 0.15f));
+                    canvas.Ellipse(0.5f, 0.42f, 0.42f, 0.28f, c);
+                    canvas.Ellipse(0.5f, 0.66f, 0.42f, 0.09f, light);
+                    canvas.Ellipse(0.5f, 0.66f, 0.34f, 0.06f, new Color(0.62f, 0.4f, 0.22f));
+                    break;
+                case "smokehouse":
+                    // A plank shed with a pitched roof, a chimney and a curl of smoke.
+                    canvas.Rect(0.14f, 0.05f, 0.86f, 0.55f, c);
+                    foreach (var x in new[] { 0.32f, 0.5f, 0.68f }) canvas.Rect(x - 0.008f, 0.05f, x + 0.008f, 0.55f, dark);
+                    canvas.Rect(0.42f, 0.05f, 0.58f, 0.3f, dark);
+                    canvas.Tri(0.06f, 0.55f, 0.94f, 0.55f, 0.5f, 0.8f, Bark);
+                    canvas.Rect(0.66f, 0.62f, 0.76f, 0.86f, new Color(0.45f, 0.45f, 0.48f));
+                    canvas.Inked = false;
+                    canvas.Circle(0.72f, 0.9f, 0.05f, new Color(0.8f, 0.8f, 0.8f, 0.6f));
+                    canvas.Circle(0.78f, 0.96f, 0.035f, new Color(0.8f, 0.8f, 0.8f, 0.45f));
+                    canvas.Inked = true;
+                    break;
+                case "jar":
+                    // A round clay jar with a cloth tied over its mouth.
+                    canvas.Ellipse(0.5f, 0.36f, 0.3f, 0.3f, c);
+                    canvas.Rect(0.36f, 0.6f, 0.64f, 0.7f, c);
+                    canvas.Ellipse(0.5f, 0.72f, 0.18f, 0.06f, Ivory);
+                    canvas.Rect(0.34f, 0.64f, 0.66f, 0.67f, Bark);
+                    canvas.Inked = false;
+                    canvas.Rect(0.24f, 0.34f, 0.76f, 0.38f, light);
+                    canvas.Inked = true;
                     break;
                 case "rack":
                     canvas.Rect(0.12f, 0.05f, 0.18f, 0.9f, Bark);

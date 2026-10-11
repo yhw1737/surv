@@ -6,6 +6,13 @@
 ## Header
 
 - Last updated: **2026-10-10**
+- **2026-10-10 — T-102 all eight cook methods.** Branch `feature/T-102-cook-methods`, stacked on T-303 (files: cook_methods porridge/stew/smoke/ferment,
+  world_objects cauldron/smokehouse/fermenting_jar + wild_grain_patch/wild_onion_patch, their kits and recipes, items
+  wild_grain/wild_onion, `oily` on mackerel/sardine, `ShapeLibrary` (cauldron, smokehouse, jar), lang,
+  `CookMethodContentTests`, the `Stew` smoke step). Developer: "next development". **Verified:** EditMode 760/760
+  (+21: all eight methods against the spec tables, verification 3/4 on real items, ferment two buffs, every food ×
+  every method, spoiled poisons everywhere), PlayMode 4/4 (wild grain/onion on the island; a three-group stew at a
+  cauldron grants two buffs); the four stations rendered.
 - **2026-10-10 — T-303 developer debug screen.** Developer request ("F12 shows everything, like Minecraft"). Branch `feature/T-303-debug-screen`,
   stacked on T-092/093 (files: `DebugOverlay` + `FrameStats` (new), `PrototypeBootstrap` installs it, `ui.debug_copied` lang key,
   `DebugOverlayTests`, `AssertDebugScreen` in the smoke test). F3/F12 text screen, Ctrl/Cmd for world gizmos, Shift
@@ -2099,6 +2106,12 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-10 — T-102 cooking values
+  [invented]: time_mult porridge 1.5 / ferment 4; every reaction on porridge, stew, smoke, ferment (SYS-COOK-01
+  §Implementation T-102); cauldron / smokehouse / fermenting jar kits and their Crafting levels 10 / 8 / 12; wild grain
+  (hunger 6, 240 h, coast) and wild onion (hunger 5, thirst 3, 120 h, forest) and their patches (density 0.004, 2 per
+  gather, 1-day respawn); `oily` on mackerel and sardine. Water still not consumed by pot/cauldron methods.
+
 - ### 2026-10-10 — T-303 debug screen choices
   F3 as well as F12 (a Mac's F12 is often a media key); available in every build, like the game it was modelled on;
   English labels hardcoded (developer-facing, not player text) — only the "copied" notice is in the language files.

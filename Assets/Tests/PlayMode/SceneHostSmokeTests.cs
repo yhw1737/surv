@@ -100,6 +100,32 @@ namespace Isle.Tests.PlayMode
             yield return ClockworkRuin();
             yield return Abyss();
             yield return Enchanting();
+            yield return Stew();
+        }
+
+        /// <summary>T-102 SYS-COOK-01: wild grain and onion grow on the island; at a cauldron a meat + onion + grain stew
+        /// (three ingredient groups) grants two buffs.</summary>
+        IEnumerator Stew()
+        {
+            var player = FindLocalPlayer();
+            var inventory = player.GetComponent<InventoryNetwork>();
+            var world = IslandWorld.Instance;
+            Assert.IsTrue(world.Nodes.Any(n => n.Def.Id.Value == "isle:wild_grain_patch"), "no wild grain on the island");
+            Assert.IsTrue(world.Nodes.Any(n => n.Def.Id.Value == "isle:wild_onion_patch"), "no wild onion on the island");
+            Teleport(player, (Vector2)world.ShoreStart(Isle.World.Chunks.Biome.Coast) + Vector2.up);
+            var cauldron = StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:cauldron")), (Vector2)player.transform.position + Vector2.right);
+            player.Skills.Restore(NamespacedId.Parse("isle:cooking"), Isle.Gameplay.Skills.XpCurve.TotalXpTo(50));
+            inventory.Bag.Clear();
+            Give(inventory, "isle:raw_meat", 1);
+            Give(inventory, "isle:wild_onion", 1);
+            Give(inventory, "isle:wild_grain", 1);
+            player.RequestCook("isle:stew", new[] { "isle:raw_meat", "isle:wild_onion", "isle:wild_grain" });
+            yield return WaitUntil(() => player.Cooking != null, 2f, "the stew didn't start");
+            yield return WaitUntil(() => Dish(inventory) != null, 15f, "the stew never finished"); // (4 + 2×3) × 2 × 0.5 = 10 s
+            var stew = Dish(inventory);
+            Assert.AreEqual(2, stew.Buffs?.Length ?? 0, "a three-group stew didn't grant two buffs");
+            Assert.AreEqual(0, CountOf(inventory, "isle:wild_grain") + CountOf(inventory, "isle:wild_onion") + CountOf(inventory, "isle:raw_meat"), "ingredients not used");
+            StructureFactory.Remove(cauldron);
         }
 
         /// <summary>T-106 SYS-CRAFT-01 §Enchanting: at a table, a Fine sword takes two enchants (its quality's slots),

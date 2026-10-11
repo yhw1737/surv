@@ -1,0 +1,32 @@
+{
+  "id": "isle:craft_fermenting_jar_kit",
+  "name": "@recipe.fermenting_jar_kit",
+  "station": "isle:workbench",
+  "ingredients": [
+    {
+      "item": "isle:stone",
+      "count": 6
+    },
+    {
+      "item": "isle:cloth",
+      "count": 1
+    }
+  ],
+  "output": {
+    "item": "isle:fermenting_jar_kit",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 10,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 12,
+      "primary": true
+    }
+  ]
+}
