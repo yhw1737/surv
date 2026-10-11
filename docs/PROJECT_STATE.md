@@ -6,7 +6,7 @@
 ## Header
 
 - Last updated: **2026-10-10**
-- **2026-10-10 — T-102 all eight cook methods.** Branch `feature/T-102-cook-methods`, stacked on T-303 (files: cook_methods porridge/stew/smoke/ferment,
+- **2026-10-10 — T-102 all eight cook methods.** Branch `feature/T-102-cook-methods`, stacked on T-303 — [PR #53](https://github.com/yhw1737/surv/pull/53) (files: cook_methods porridge/stew/smoke/ferment,
   world_objects cauldron/smokehouse/fermenting_jar + wild_grain_patch/wild_onion_patch, their kits and recipes, items
   wild_grain/wild_onion, `oily` on mackerel/sardine, `ShapeLibrary` (cauldron, smokehouse, jar), lang,
   `CookMethodContentTests`, the `Stew` smoke step). Developer: "next development". **Verified:** EditMode 760/760
@@ -14,21 +14,21 @@
   every method, spoiled poisons everywhere), PlayMode 4/4 (wild grain/onion on the island; a three-group stew at a
   cauldron grants two buffs); the four stations rendered.
 - **2026-10-10 — T-303 developer debug screen.** Developer request ("F12 shows everything, like Minecraft"). Branch `feature/T-303-debug-screen`,
-  stacked on T-092/093 (files: `DebugOverlay` + `FrameStats` (new), `PrototypeBootstrap` installs it, `ui.debug_copied` lang key,
+  stacked on T-092/093 — [PR #52](https://github.com/yhw1737/surv/pull/52) (files: `DebugOverlay` + `FrameStats` (new), `PrototypeBootstrap` installs it, `ui.debug_copied` lang key,
   `DebugOverlayTests`, `AssertDebugScreen` in the smoke test). F3/F12 text screen, Ctrl/Cmd for world gizmos, Shift
   copies to the clipboard (TESTING §Debug screen). **Verified:** EditMode 739/739 (+7: frame stats, clock text),
   PlayMode 4/4 (screen text built on the surface and on Abyss floor 1 with no failed section; dumped and read). Not
   verified on screen: the IMGUI drawing and gizmos (batch mode has no OnGUI). Seen in the dump: ~1,600 live creatures
   island-wide and 15,318 nodes — worth a look in the bug pass (T-151).
 - **2026-10-10 — T-092 adjacent assist + T-093 crafter mark.** Branch `feature/T-092-093-assist-crafter-mark`, stacked on
-  T-106 (files: `AdjacentAssist` (new), `CraftRecipeDef.AllowAdjacentAssist` default true, `PlayerInteraction` (`MeetsRecipe`,
+  T-106 — [PR #51](https://github.com/yhw1737/surv/pull/51) (files: `AdjacentAssist` (new), `CraftRecipeDef.AllowAdjacentAssist` default true, `PlayerInteraction` (`MeetsRecipe`,
   `NeedsAssist`, `BestNearbyLevel`, `CrafterName`; craft and repair gates), `PrototypeHud.Windows` (assist labels),
   `ItemWear.Crafter`, `PrototypeHud` tooltip, `UiTheme.MasterGold`, `GridView` Master frame, `SaveData/SaveGame` v9,
   lang, `AdjacentAssistTests`, crafter checks in the smoke and round-trip tests). Developer: "decide yourself".
   **Verified:** EditMode 732/732 (+10 `AdjacentAssistTests`: formula, the spec's worked example, opt-out, default on),
   PlayMode 4/4 (a crafted spear carries the survivor's name; the mark survives save/Continue). Not verified: assist with
   a real second player (stage 3); the gold frame and the craft-window labels on screen.
-- **2026-10-10 — T-106 enchanting.** Branch `feature/T-106-enchanting`, stacked on T-204
+- **2026-10-10 — T-106 enchanting.** Branch `feature/T-106-enchanting`, stacked on T-204 — [PR #50](https://github.com/yhw1737/surv/pull/50)
   (files: `EnchantCalculator`, `EnchantingTable`, `EnchantDef` (Skill, Xp), `SchemaValidator`, `ItemWear.Enchants`,
   `EquipSlots`/`InventoryOps` (EnsureWear, wear skip), `CraftingCalculator.CountMatching`, `PlayerInteraction` (enchant
   RPCs, damage/tool multipliers), `Vitals` (armor multiplier), `StructureFactory`, `GameFeed.EnchantOpened`,
@@ -40,7 +40,7 @@
   four enchants' data), PlayMode 4/4 (a failure spends only the pearl; a Fine sword takes two keens and refuses a third
   at no cost; damage ×1.12²; an enchanted knife survives save/Continue); the table rendered. Test fix: pearls counted
   relatively (the Grotto's cache can leave pearls in a backpack). Not verified visually: the IMGUI enchant window.
-- **2026-10-10 — T-204 the Abyss.** Branch `feature/T-204-abyss` off `main` (after PR #48). Developer: "decide
+- **2026-10-10 — T-204 the Abyss.** Branch `feature/T-204-abyss` off `main` (after PR #48) — [PR #49](https://github.com/yhw1737/surv/pull/49). Developer: "decide
   yourself, report after" — no Q&A; SYS-DUNG-01's decided values used verbatim, everything else [invented] (below).
   Built: `World/Generation/AbyssCalculator` (curse/pressure math, seeded rounding); `DungeonDef.Seal/Pressure/Darkness`,
   `DungeonEntrance.Near`, `DungeonGate.FastWithLight`, `CreatureDef.LightRadius`; `DungeonDirector`: entrance beside
