@@ -149,7 +149,7 @@ vitals, wetness, timed buffs with their expiry, satiety memory, skills, survivor
 carried container (with each item's wear, quality and carried carcass), food freshness per carried container,
 depleted nodes, campfires, structures (contents, crop and planting time, water, lit), loot piles, carcasses on the
 ground, explored map and markers, and per dungeon: boss slain, keys taken, gates opened or burned, tide cache, veins
-mined (floors re-laid from the seed and the state applied when each is built). Re-rolled by design: live creatures, weather, dungeon layouts. The round trip is
+mined, sigils set into the Abyss seal (floors re-laid from the seed and the state applied when each is built). Re-rolled by design: live creatures, weather, dungeon layouts. The round trip is
 pinned by `SaveRoundTripTests` (T-150).
 
 ## Deferred simulation (performance core)

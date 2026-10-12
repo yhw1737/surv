@@ -146,7 +146,7 @@ namespace Isle.Tests.EditMode
                     var tag = kind.ToString().ToLowerInvariant();
                     Assert.IsTrue(templates.Any(t => t.Tags != null && t.Tags.Contains(tag)), $"no room template tagged '{tag}'");
                 }
-                Assert.AreEqual(4, DefRegistry.All<DungeonDef>().Count());
+                Assert.AreEqual(5, DefRegistry.All<DungeonDef>().Count()); // four biome/ruin dungeons + the Abyss (T-204)
             }
             finally { DefRegistry.Clear(); }
         }

@@ -1,0 +1,64 @@
+{
+  "id": "isle:hollow_knight",
+  "name": "@creature.hollow_knight",
+  "tags": [
+    "undead",
+    "construct",
+    "aggressive",
+    "dungeon",
+    "abyss"
+  ],
+  "weight_dist": {
+    "type": "lognormal",
+    "mean": 40.0,
+    "sigma": 0.1,
+    "min": 32.0,
+    "max": 50.0
+  },
+  "health_per_kg": 3.0,
+  "ai": "isle:territorial_charger",
+  "butcher": {
+    "edible_ratio": 0.3,
+    "condition_range": [
+      1.0,
+      1.0
+    ],
+    "yields": [
+      {
+        "item": "isle:abyssal_ore",
+        "share": 1.0,
+        "unit_kg": 20.0,
+        "min": 1
+      }
+    ]
+  },
+  "carry": {
+    "inventory_allowed": true,
+    "drag_speed_penalty": 0.0,
+    "coop_carry_penalty": 0.0
+  },
+  "combat": {
+    "vision_tiles": 7,
+    "move_speed": 0.6,
+    "chase_speed": 1.8,
+    "damage": 14,
+    "attack_range_tiles": 1.1,
+    "attack_interval_seconds": 2.0,
+    "body_radius_tiles": 0.45,
+    "windup_seconds": 0.7,
+    "lunge_tiles": 0.8,
+    "lunge_speed": 5.0,
+    "damage_type": "slash"
+  },
+  "resist": {
+    "slash": 0.5,
+    "pierce": 0.6,
+    "blunt": 1.5,
+    "toxic": 0.0
+  },
+  "look": {
+    "body": "automaton",
+    "color": "#2C2A34",
+    "accent": "#7A86C8"
+  }
+}

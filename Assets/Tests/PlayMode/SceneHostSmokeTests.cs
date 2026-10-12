@@ -95,6 +95,70 @@ namespace Isle.Tests.PlayMode
             yield return RootwoodHollow();
             yield return DrownedTemple();
             yield return ClockworkRuin();
+            yield return Abyss();
+        }
+
+        /// <summary>T-204 the Abyss: beside the Ruin, it opens with no sigils under four curses (double the enemies, 40%
+        /// light, near-black); sigils carried in are set into the seal and lift curses; every floor down presses on
+        /// stamina; a light gets you through the dark shaft fast; the Warden has HP 2000.</summary>
+        IEnumerator Abyss()
+        {
+            var player = FindLocalPlayer();
+            var inventory = player.GetComponent<InventoryNetwork>();
+            var dungeons = Isle.Gameplay.Dungeons.DungeonDirector.Instance;
+            var site = dungeons.Sites.FirstOrDefault(s => s.Def.Id.Value == "isle:abyss");
+            Assert.IsNotNull(site, "no Abyss on the island");
+            var ruin = dungeons.Sites.First(s => s.Def.Id.Value == "isle:clockwork_ruin");
+            Assert.That(Vector2.Distance(site.Entrance, ruin.Entrance), Is.InRange(5.5f, 12.5f), "the Abyss isn't beside the Ruin");
+
+            // In with no sigils: the gate opens, four curses.
+            foreach (var sigil in site.Def.Seal.Sigils)
+                while (InventoryOps.Count(inventory.Containers(), sigil) > 0) InventoryOps.TakeOne(inventory.Containers(), sigil);
+            Teleport(player, site.Entrance + Vector2.down);
+            player.RequestInteract();
+            yield return WaitUntil(() => dungeons.IsUnderground(player.transform.position), 3f, "the sealed Abyss didn't open without sigils");
+            var floor = dungeons.FloorAt(player.transform.position);
+            Assert.AreEqual(4, site.Curses);
+            Assert.AreEqual(0.4f, dungeons.LightMultAt(player.transform.position), 1e-4f, "light under four curses");
+            Assert.AreEqual(0.08f, dungeons.DarknessAt(player.transform.position), 1e-4f, "the Abyss isn't dark");
+            Assert.AreEqual(0.85f, dungeons.StaminaRegenMultAt(player.transform.position), 1e-4f, "floor 1 pressure");
+            var marks = floor.Tiles.Spawns.Count(s => floor.Layout.Rooms[s.Item2].Kind is not (Isle.World.Generation.RoomKind.Entrance
+                or Isle.World.Generation.RoomKind.Rest or Isle.World.Generation.RoomKind.Vault or Isle.World.Generation.RoomKind.Boss));
+            var dwellers = CreatureDirector.Instance.Creatures.Count(c => c.InDungeon && dungeons.FloorAt(c.Position) == floor && c.Def.Boss == null);
+            Assert.AreEqual(marks * 2, dwellers, "four curses didn't double the enemies");
+
+            // A light gets anyone through the dark shaft at the specialist's pace.
+            var torch = DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:torch"));
+            inventory.Slots.Unequip("off_hand", out _);
+            Assert.IsTrue(inventory.Slots.TryEquip("off_hand", torch));
+            var shaft = floor.Barriers.Single(b => b.LockId == -1);
+            var edge = floor.Layout.Edges[shaft.Edge];
+            var a = floor.Layout.Rooms[edge.A].Cell;
+            var b2 = floor.Layout.Rooms[edge.B].Cell;
+            var door = Isle.World.Generation.DungeonTiles.DoorwayCentre(a, b2);
+            Teleport(player, floor.TileToWorld(a.Y == b2.Y ? new Isle.Core.Vec2Int(door.X + 1, door.Y) : new Isle.Core.Vec2Int(door.X, door.Y + 1)));
+            foreach (var creature in CreatureDirector.Instance.Creatures.Where(c => c.InDungeon && dungeons.FloorAt(c.Position) == floor).ToList())
+                CreatureDirector.Instance.Damage(creature, 100000f, new System.Collections.Generic.List<(NamespacedId, int)>());
+            player.RequestInteract();
+            yield return WaitUntil(() => shaft.Open, 6f, "a torch didn't speed through the dark shaft");
+            inventory.Slots.Unequip("off_hand", out _);
+
+            // Back up; two sigils carried in are set into the seal.
+            Teleport(player, site.Entrance + Vector2.down);
+            Give(inventory, "isle:tide_sigil", 1);
+            Give(inventory, "isle:root_sigil", 1);
+            player.RequestInteract();
+            yield return WaitUntil(() => site.SigilsPlaced.Count == 2, 3f, "carried sigils weren't set into the seal");
+            Assert.AreEqual(2, site.Curses);
+            Assert.AreEqual(0, CountOf(inventory, "isle:tide_sigil") + CountOf(inventory, "isle:root_sigil"), "set sigils weren't used up");
+
+            // Floor 3: heavier pressure; the Warden waits.
+            var deepest = dungeons.EnsureFloor(site, site.Def.Floors - 1);
+            var deep = deepest.TileToWorld(deepest.Tiles.Features[deepest.Layout.Entrance]);
+            Assert.AreEqual(0.55f, dungeons.StaminaRegenMultAt(deep), 1e-4f, "floor 3 pressure");
+            Assert.IsNotNull(site.Boss, "the Abyss Warden never spawned");
+            Assert.AreEqual(2000f, site.Boss.MaxHealth, 0.01f, "Abyss Warden HP");
+            Teleport(player, site.Entrance + Vector2.down * 2f);
         }
 
         /// <summary>T-203 Clockwork Ruin: gear doors swap every period (never shutting on anyone); the Sentinel charges,

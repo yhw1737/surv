@@ -130,6 +130,8 @@ namespace Isle.Tests.PlayMode
             dungeons.EnsureFloor(site, site.Def.Floors - 1);
             CreatureDirector.Instance.Damage(site.Boss, 1e6f, new System.Collections.Generic.List<(NamespacedId, int)>());
             yield return WaitUntil(() => site.BossDefeated, 3f, "test setup: boss never fell");
+            var abyss = dungeons.Sites.First(s => s.Def.Id.Value == "isle:abyss");
+            abyss.SigilsPlaced.Add("isle:tide_sigil");
 
             yield return null;
             GameSession.BackToMenu();
@@ -198,6 +200,7 @@ namespace Isle.Tests.PlayMode
             Assert.IsTrue(firstAfter.Barriers.First(b => b.Edge == lockEdge).Open, "an unlocked door locked again");
             var gateAfter = firstAfter.Barriers.Single(b => b.LockId == -1);
             Assert.IsTrue(gateAfter.Open && gateAfter.Burned, "the burned gate is back");
+            Assert.IsTrue(dungeonsAfter.Sites.First(s => s.Def.Id.Value == "isle:abyss").SigilsPlaced.Contains("isle:tide_sigil"), "a sigil set into the Abyss seal came out again");
         }
 
         static IEnumerator WaitUntil(System.Func<bool> condition, float timeoutSeconds, string failure)

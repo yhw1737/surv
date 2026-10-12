@@ -21,7 +21,18 @@ namespace Isle.UI.Prototype
             if (_light == null || WorldTime.Instance == null) return;
 
             var target = BrightnessFor(WorldTime.Instance.Clock.Phase);
+            // Underground in a dark dungeon (the Abyss) the sky doesn't reach: only what you carry lights the way.
+            if (LocalPlayer() is { } player && Isle.Gameplay.Dungeons.DungeonDirector.Instance is { } dungeons
+                && dungeons.DarknessAt(player.transform.position) is var dark && dark >= 0f)
+                target = dark;
             _light.intensity = Mathf.MoveTowards(_light.intensity, target, Smoothing * Time.deltaTime);
+        }
+
+        static Isle.Gameplay.Character.PlayerInteraction LocalPlayer()
+        {
+            foreach (var player in Isle.Gameplay.Character.PlayerInteraction.All)
+                if (player.IsOwner) return player;
+            return null;
         }
 
         /// <summary>The scene's global light — not one of the point lights <see cref="LightRig"/> adds.</summary>

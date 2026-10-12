@@ -601,5 +601,16 @@
   "creature.spark_wisp": "Spark wisp",
   "creature.sentinel": "Sentinel",
   "item.clockwork_gear": "Clockwork gear",
-  "item.ruin_sigil": "Ruin sigil"
+  "item.ruin_sigil": "Ruin sigil",
+  "dungeon.abyss": "The Abyss",
+  "gate.dark_shaft": "Pitch-dark shaft",
+  "creature.lantern_angler": "Lantern angler",
+  "creature.abyss_eel": "Abyss eel",
+  "creature.hollow_knight": "Hollow knight",
+  "creature.abyss_warden": "Abyss Warden",
+  "item.abyssal_ore": "Abyssal ore",
+  "world_object.abyssal_vein": "Abyssal vein",
+  "ui.abyss_enter": "Descend — {0} · sigils {1}/{2}",
+  "ui.abyss_sigils_set": "Sigils set in the seal: {0}/{1}",
+  "ui.abyss_cursed": "{0} curses weigh on the descent"
 }

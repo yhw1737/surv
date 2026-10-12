@@ -8,13 +8,15 @@ using UnityEngine.Rendering.Universal;
 namespace Isle.UI.Prototype
 {
     /// <summary>
-    /// Point lights for things that glow: an active world object with <c>light_radius</c> (a lit campfire) and a
-    /// player holding an item with <c>light_radius</c> (a torch). The radius is def data; the colour and
-    /// flicker are presentation. Lights are created and removed as their sources come and go.
+    /// Point lights for things that glow: an active world object with <c>light_radius</c> (a lit campfire), a
+    /// player holding an item with <c>light_radius</c> (a torch) — weaker under the Abyss's curse — and a creature
+    /// with <c>light_radius</c> (a lantern angler's lure). The radius is def data; the colour and flicker are
+    /// presentation. Lights are created and removed as their sources come and go.
     /// </summary>
     public sealed class LightRig : MonoBehaviour
     {
         static readonly Color FireColour = new(1f, 0.72f, 0.4f);
+        static readonly Color LureColour = new(0.6f, 0.9f, 1f);
         const float Intensity = 1.1f;
         const float FlickerAmount = 0.08f;
         const float FlickerSpeed = 7f;
@@ -31,11 +33,18 @@ namespace Isle.UI.Prototype
                 if (instance.IsActive && instance.Def != null && instance.Def.LightRadius > 0f)
                     Show(instance.transform, instance.Def.LightRadius);
 
+            var dungeons = Isle.Gameplay.Dungeons.DungeonDirector.Instance;
             foreach (var player in PlayerInteraction.All)
             {
                 var radius = HeldLightRadius(player);
+                if (dungeons != null) radius *= dungeons.LightMultAt(player.transform.position);
                 if (radius > 0f) Show(player.transform, radius);
             }
+
+            if (Isle.Gameplay.Hunting.CreatureDirector.Instance is { } creatures)
+                foreach (var creature in creatures.Creatures)
+                    if (creature.Def.LightRadius > 0f && creature.View != null && creature.View.activeInHierarchy)
+                        Show(creature.View.transform, creature.Def.LightRadius, LureColour);
 
             _stale.Clear();
             foreach (var (source, light) in _lights)
@@ -55,7 +64,9 @@ namespace Isle.UI.Prototype
             return radius;
         }
 
-        void Show(Transform source, float radius)
+        void Show(Transform source, float radius) => Show(source, radius, FireColour);
+
+        void Show(Transform source, float radius, Color colour)
         {
             _seen.Add(source);
             if (!_lights.TryGetValue(source, out var light) || light == null)
@@ -64,7 +75,7 @@ namespace Isle.UI.Prototype
                 go.transform.SetParent(source, worldPositionStays: false);
                 light = go.AddComponent<Light2D>();
                 light.lightType = Light2D.LightType.Point;
-                light.color = FireColour;
+                light.color = colour;
                 _lights[source] = light;
             }
 

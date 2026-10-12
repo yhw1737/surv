@@ -440,7 +440,8 @@ Stage 4. Nothing here is a prerequisite for anything above it; that is the whole
   > **2026-10-10**: Drowned Temple done — poison fog in a third of the rooms (2 toxic/s), bitter herb (marsh) boiled → antidote (5 min), Mire Mother (HP 1100, toxic spit, brood below 60%), bog brood and bog drowned, temple jade + mire sigil. Floodgate plates not yet. Clockwork Ruin still to do.
   > **2026-10-10**: Clockwork Ruin done — loops + gear doors swapping every 30 s (exit always reachable, never shut on anyone, warning blink), Sentinel (HP 1300, charges, overheats after 3 for 4 s at ×1.5 damage, beetles below 50%), clockwork beetle, spark wisp, clockwork gear + ruin sigil. All three T-203 dungeons built; leftovers (Temple floodgates, rune-door puzzle, creature figures) in SYS-DUNG-01.
   > **2026-10-10**: dungeon save state — slain bosses stay slain, keys/doors/gates/cache/veins remembered (save v7, SYS-DUNG-01 §Save state).
-- [ ] **T-204** The Abyss (sigils, curses, three floors, Abyss Warden)
+- [x] **T-204** The Abyss (sigils, curses, three floors, Abyss Warden)
+  > **2026-10-10**: done — SYS-DUNG-01 §Implementation (T-204). Sealed entrance beside the Ruin; sigils set on entry; per missing sigil +25% enemies / −15% light; −15% stamina regen per floor; near-black floors; torch speeds the dark shaft; lantern angler (glowing lure), abyss eel, hollow knight, Abyss Warden (HP 2000); abyssal ore + vein. Endings (the Heart) are SYS-END-01's.
 - [ ] **T-205** Fill SYS-ART-02 numbers → artifact acquisition (pools, caches, drops, attunement; duplicates allowed)
 - [ ] **T-206** Artifact catalog build-out after G3 — one weapon per profession, then gear
 - [ ] **T-207** Fill SYS-END-01 numbers → journal pages, Unrest, ending defs, one-ending-per-island lock, shared credit, short sequence + summary text

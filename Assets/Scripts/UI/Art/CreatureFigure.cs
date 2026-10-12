@@ -106,6 +106,7 @@ namespace Isle.UI.Art
                 case "spider": Spider(r, body, moving); break;
                 case "wisp": Wisp(r, body); break;
                 case "automaton": Automaton(r, body, moving); break;
+                case "angler": Angler(r, body, moving); break;
                 default: Quadruped(look, r, body, moving); break;
             }
             DrawStatus(bodyStart, r, facing);
@@ -518,6 +519,43 @@ namespace Isle.UI.Art
             _mesh.Disk(c + V(0f, -0.02f * k), 0.08f * k, new Color(1f, 0.98f, 0.85f));
             Eye(c + V(-0.07f * k, 0.06f * k), 0.035f * k);
             Eye(c + V(0.09f * k, 0.06f * k), 0.035f * k);
+        }
+
+        /// <summary>A lantern angler: a round fish hauling itself along on its fins, a toothy gape, and a lure on a stalk
+        /// that glows and sways ahead of it (it gives off real light — see LightRig).</summary>
+        void Angler(float r, Color body, float moving)
+        {
+            var k = r * 2.2f;
+            var paddle = _phase * Tau * 2f;
+            var c = V(0f, 0.42f * k);
+            for (var i = 0; i < 2; i++)
+            {
+                var x = (i == 0 ? 0.18f : -0.22f) * k;
+                var swing = Mathf.Sin(paddle + i * Mathf.PI) * 0.08f * k * moving;
+                Poly(new List<Vector2> { c + V(x, -0.2f * k), c + V(x + 0.12f * k + swing, -0.4f * k), c + V(x - 0.12f * k + swing, -0.4f * k) }, Dark(body, 0.15f));
+            }
+            Poly(new List<Vector2> { c + V(-0.4f * k, 0.02f * k), c + V(-0.7f * k, 0.22f * k), c + V(-0.66f * k, -0.2f * k) }, Dark(body, 0.1f));
+            Ell(c, 0.48f * k, 0.38f * k, body);
+            _mesh.Ellipse(c + V(0.05f * k, -0.16f * k), 0.32f * k, 0.13f * k, _belly);
+            // The gape, with a fence of pale teeth.
+            var mouth = c + V(0.34f * k, -0.04f * k);
+            var gape = 0.1f * k + _crouch * 0.08f * k + _stretch * 0.06f * k;
+            Poly(new List<Vector2> { mouth + V(-0.12f * k, 0f), mouth + V(0.16f * k, gape), mouth + V(0.16f * k, -gape) }, Ink);
+            for (var i = 0; i < 3; i++)
+            {
+                var x = mouth.x + (-0.02f + i * 0.06f) * k;
+                _mesh.Polygon(new List<Vector2> { V(x, mouth.y + gape * 0.9f), V(x + 0.025f * k, mouth.y + gape * 0.3f), V(x + 0.05f * k, mouth.y + gape * 0.9f) }, Color.white);
+            }
+            Eye(c + V(0.18f * k, 0.16f * k), 0.045f * k);
+            // The lure: a curved stalk from the brow to a glowing bulb that bobs ahead.
+            var sway = Mathf.Sin(_time * 2.4f + _seed) * 0.08f * k;
+            var brow = c + V(0.1f * k, 0.34f * k);
+            var bend = brow + V(0.25f * k, 0.32f * k);
+            var bulb = bend + V(0.25f * k + sway, -0.12f * k);
+            Limb(brow, bend, 0.025f * k, Dark(body, 0.2f));
+            Limb(bend, bulb, 0.02f * k, Dark(body, 0.2f));
+            _mesh.Disk(bulb, 0.12f * k, new Color(_accent.r, _accent.g, _accent.b, 0.35f));
+            Ell(bulb, 0.06f * k, 0.06f * k, _accent);
         }
 
         /// <summary>A clockwork automaton (the Sentinel): piston legs, a riveted box body with a gear on the chest, a

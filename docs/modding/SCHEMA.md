@@ -435,6 +435,12 @@ This document constrains us before it serves modders.
 | World object | `visual.flat` | Lies on the ground instead of standing toward the camera (crop plot). 2026-10-09 |
 | World object | `block_radius` | Tiles around a standing node nothing walks through (tree 0.4, rock 0.45); felled nodes don't block. 2026-10-09 |
 | World object | `visual.depleted` | Shape drawn while a harvestable node is used up (`stump`, `rubble`, `bush_bare`, `stubble`); none fades it to a ghost. 2026-10-09 |
+| Dungeon | `seal {sigils, enemies_per_missing, light_per_missing}` | The Abyss: sigils set at the entrance lift curses (more enemies, less light per missing one). 2026-10-10 |
+| Dungeon | `pressure {stamina_regen_per_floor}` | Stamina regen × (1 − rate × floor number). 2026-10-10 |
+| Dungeon | `darkness` | Global light (0..1) on its floors; 0 = the surface's light. 2026-10-10 |
+| Dungeon entrance | `near` | Placed 6–12 tiles beside that dungeon's entrance instead of by biome. 2026-10-10 |
+| Dungeon gate | `fast_with_light` | Holding any `light` tool clears it at the specialist's speed. 2026-10-10 |
+| Creature | `light_radius` | Tiles of light it gives off (a lure). 2026-10-10 |
 | Dungeon | `clockwork {period_seconds, share, loop_chance, warn_seconds, color}` | Gear doors that swap every period (Clockwork Ruin 30 s, 40% of doors, loops 0.6). 2026-10-10 |
 | Creature boss | `overheat {charges, seconds, damage_mult}` | After N landed charges it stops for S seconds taking ×mult damage. 2026-10-10 |
 | Dungeon | `miasma {share, damage_per_second, damage_type, color}` | Poison-fog rooms (Drowned Temple: a third, 2/s toxic); food `damage_resist` for the type protects. 2026-10-10 |

@@ -6,6 +6,20 @@
 ## Header
 
 - Last updated: **2026-10-10**
+- **2026-10-10 — T-204 the Abyss.** Branch `feature/T-204-abyss` off `main` (after PR #48). Developer: "decide
+  yourself, report after" — no Q&A; SYS-DUNG-01's decided values used verbatim, everything else [invented] (below).
+  Built: `World/Generation/AbyssCalculator` (curse/pressure math, seeded rounding); `DungeonDef.Seal/Pressure/Darkness`,
+  `DungeonEntrance.Near`, `DungeonGate.FastWithLight`, `CreatureDef.LightRadius`; `DungeonDirector`: entrance beside
+  the Ruin, sealed entrance that sets carried sigils on entry (any number opens it), cursed spawn counts,
+  `LightMultAt`, `DarknessAt`, `StaminaRegenMultAt` (wired into `Vitals.StaminaRegenModifier`), light-holders' fast path
+  through the dark shaft, seal sigils saved; `LightRig` (cursed torch radius, glowing creatures), `DayNightLight`
+  (near-black Abyss floors); lantern angler (new `angler` body), abyss eel, hollow knight, Abyss Warden; abyssal ore,
+  abyssal vein; lang. Fixed a test pinned to "4 dungeons". **Verified:** EditMode 714/714 (+11 `AbyssTests`: missing
+  count, all-four ×2 / 40%, none = no curse, pressure 85/70/55%, cursed rounding, the data's seal/rates/sigil sources),
+  PlayMode 4/4 (beside the Ruin; opens with 0 sigils under 4 curses — exactly 2 creatures per mark, 40% light, darkness
+  0.08, 85% regen; a torch clears the shaft in seconds; 2 carried sigils set and used up → 2 curses; floor 3 at 55%;
+  Warden HP 2000; seal sigils survive save/Continue); rendered the dark floor with glowing lures. Not confirmed
+  visually: the torch's warm pool on the dark floor (it didn't show clearly in the batch render).
 - **2026-10-10 — Boss bar + new creature bodies (with T-203).** `PrototypeHud.Boss.cs` (boss HP bar on a shared
   floor within 16 tiles; orange overheated, grey shelled; one call added in `PrototypeHud.OnGUI`); `CreatureFigure`
   bodies `treant`, `spider`, `wisp`, `automaton` used by Elder Heartwood, root sprite, web spider, clockwork beetle,
@@ -2058,6 +2072,12 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-10 — T-204 Abyss values
+  No Q&A (developer delegated). Verbatim from SYS-DUNG-01: +25% enemies / −15% light per missing sigil, −15% regen per
+  floor, 3 floors, Lv 30 gates. [invented]: the [invented] list in SYS-DUNG-01 §Implementation (T-204) — darkness 0.08,
+  placement beside the Ruin, sigils used up, curse fixed at floor build, all four creatures' and the Warden's numbers,
+  the abyssal vein, lure light radii.
+
 - ### 2026-10-10 — T-203 Clockwork Ruin values
   Developer-decided: Sentinel HP 1300 / strike 22, overheat after 3 charges for 4 s at ×1.5, beetles below 50%, gear
   doors swap every 30 s with the exit always reachable. [invented]: the [invented] list in SYS-DUNG-01
