@@ -6,7 +6,7 @@
 ## Header
 
 - Last updated: **2026-10-12**
-- **2026-10-12 — T-107 brewing + T-117 magic (mana).** Same working tree (split when committed — T-107/T-117 files:
+- **2026-10-12 — T-107 brewing + T-117 magic (mana).** Branch `feature/T-107-117-brewing-magic`, stacked on T-028 — [PR #56](https://github.com/yhw1737/surv/pull/56) (files:
   SYS-BREW-01 + SYS-MAGIC-01 (new specs), `ManaCalculator` (new), `SkillDef` (mana growth), `WeaponDef.ManaCost`,
   `ItemDef.Consume`, `SchemaValidator` (consume, focus), `Vitals` (mana gauge, regen, heal/mana at once and over time),
   `PlayerInteraction` (brew drinking, `CastSpell`, no block with a focus), `Projectiles` (bolts: colour, no falloff),
@@ -18,7 +18,7 @@
   EditMode 784/784 (+7: mana formula at Lv 0/50, over-time spreading, validator, content), PlayMode 5/5 (a tonic brewed
   at a stand heals 30; a draught heals ~2/s; a mana tonic +50; a wand bolt costs 8 mana with FinalPower damage and
   hits; with 5 mana nothing fires); brewing stand, staff in hand and all new icons rendered.
-- **2026-10-12 — T-028 world difficulty.** Same working tree (split when committed — T-028 files: SYS-DIFF-01 (new spec),
+- **2026-10-12 — T-028 world difficulty.** Branch `feature/T-028-difficulty`, stacked on T-105/T-151 — [PR #55](https://github.com/yhw1737/surv/pull/55) (files: SYS-DIFF-01 (new spec),
   `Gameplay/World/Difficulty.cs`, `Vitals` (drains, Unlimited lock, no damage/stamina spend), `DeathHandler` (no death in
   Unlimited), `PlayerInteraction` (creature damage ×mult; `RequestCreativeTake`), `PrototypeHud(.Creative)` (I palette),
   `MainMenu` (tier picker, slot label), `PauseMenu`, `DebugOverlay`, `GameSession.StartNew(difficulty)`,
@@ -27,14 +27,14 @@
   Unlimited = creative. **Verified:** EditMode 777/777 (+12), PlayMode 5/5 (Hard ×1.25 and Easy ×0.5 of a Normal
   strike; Unlimited unhurt and not hungry after a day; palette gives in Unlimited only; difficulty survives
   save/Continue). Not seen on screen: the tier picker, the palette window.
-- **2026-10-12 — T-151 solo bug pass, automated half.** Same working tree as T-105 (split when committed — T-151 files:
+- **2026-10-12 — T-151 solo bug pass, automated half.** Same branch as T-105 — [PR #54](https://github.com/yhw1737/surv/pull/54) (T-151 files:
   `Tests/PlayMode/SoakTests.cs` (+ .meta), TESTING §Solo soak, BACKLOG note). A from-the-menu soak: 90 rounds of
   harvest / hunt / fish / craft / cook / sleep / eat / dungeon / a forced death. **Verified:** PlayMode 5/5 (the soak
   passes inside the full run too — it stops a leftover host and goes back to the menu if an earlier test left the
   session in game), EditMode 765/765. No game bug found; summary of the last run: harvests 15/15, casts 4 (3 caught),
   crafts 4, cooks 4, rests 2, 7 dungeon visits, 1 death, surface creatures 1006 → 1025, carcasses 1, managed 605 → 615
   MB. T-151 stays open for the developer's play sessions.
-- **2026-10-12 — T-105 ext gate passed.** Branch `feature/T-105-ext-gate` off main 5e0e061 (PRs #49–#53 merged; the
+- **2026-10-12 — T-105 ext gate passed.** Branch `feature/T-105-ext-gate` off main 5e0e061 — [PR #54](https://github.com/yhw1737/surv/pull/54) (PRs #49–#53 merged; the
   old working tree is kept in `git stash` as a backup, identical to main). Files: `Tests/EditMode/ExtGateTests.cs`
   (+ .meta), BACKLOG, SYS-COOK-01 §Extensibility gate. A temp copy of the definitions plus one new ingredient JSON →
   all eight methods resolve, react, name, rebuild from the save key, mix; no C#. **Verified:** EditMode 765/765 (+5),
