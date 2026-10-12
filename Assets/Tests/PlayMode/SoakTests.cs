@@ -61,6 +61,7 @@ namespace Isle.Tests.PlayMode
             LootPiles.Clear();
             StructureFactory.Clear();
             DefRegistry.Clear();
+            Isle.Gameplay.World.Difficulty.Current = Isle.Gameplay.World.DifficultyLevel.Normal;
         }
 
         [UnityTest, Timeout(900000)] // minutes of play: past the runner's 3-minute default

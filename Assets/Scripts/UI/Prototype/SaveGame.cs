@@ -93,7 +93,11 @@ namespace Isle.UI.Prototype
         {
             if (!File.Exists(FilePath)) return null;
             var save = SaveData.FromJson(File.ReadAllText(FilePath));
-            if (save != null) IslandWorld.NextSeed = save.Seed;
+            if (save != null)
+            {
+                IslandWorld.NextSeed = save.Seed;
+                Isle.Gameplay.World.Difficulty.Current = Isle.Gameplay.World.Difficulty.Parse(save.Difficulty); // SYS-DIFF-01
+            }
             return save;
         }
 
@@ -185,6 +189,7 @@ namespace Isle.UI.Prototype
             var save = new SaveData
             {
                 Seed = world.Seed,
+                Difficulty = Isle.Gameplay.World.Difficulty.IdOf(Isle.Gameplay.World.Difficulty.Current),
                 TotalMinutes = WorldTime.Instance != null ? WorldTime.Instance.Clock.TotalMinutes : 0,
                 PlayerX = at.x,
                 PlayerY = at.y,

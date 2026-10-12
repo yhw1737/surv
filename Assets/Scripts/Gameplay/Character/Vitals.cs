@@ -266,9 +266,10 @@ namespace Isle.Gameplay.Character
         {
             var buffs = ActiveBuffs();
             var heatstroke = VitalsCalculator.IsHeatstroke(Temperature);
-            var hungerDelta = VitalsCalculator.HungerDrainPerHour(CurrentActivity, Temperature) / 60f * BuffEffects.Mult(buffs, "hunger_drain_mult");
-            var thirstDelta = VitalsCalculator.ThirstDrainPerHour(CurrentActivity, AmbientTemp, MinutesSinceSaltyFood) / 60f
-                * (heatstroke ? 2f : 1f) * BuffEffects.Mult(buffs, "thirst_drain_mult");
+            // SYS-DIFF-01: the world's difficulty scales both drains (Unlimited: none).
+            var hungerDelta = World.Difficulty.NeedsDrain(VitalsCalculator.HungerDrainPerHour(CurrentActivity, Temperature) / 60f * BuffEffects.Mult(buffs, "hunger_drain_mult"));
+            var thirstDelta = World.Difficulty.NeedsDrain(VitalsCalculator.ThirstDrainPerHour(CurrentActivity, AmbientTemp, MinutesSinceSaltyFood) / 60f
+                * (heatstroke ? 2f : 1f) * BuffEffects.Mult(buffs, "thirst_drain_mult"));
             if (TryGetComponent<InventoryNetwork>(out var carried))
                 foreach (var container in carried.Containers()) SpoilageTracker.Live.Tick(container, inGameMinutes: 1f);
 
@@ -313,6 +314,14 @@ namespace Isle.Gameplay.Character
                 Stamina = Mathf.Clamp(Stamina + regen, 0f, maxStamina);
             }
 
+            // SYS-DIFF-01 Unlimited: nothing is needed and nothing hurts — every gauge stays full.
+            if (World.Difficulty.IsUnlimited)
+            {
+                Health = Hunger = Thirst = Stamina = VitalsCalculator.GaugeMax;
+                HypothermiaSeverity = 0f;
+                return;
+            }
+
             if (Health <= 0f && TryGetComponent<DeathHandler>(out var death)) death.Die();
         }
 
@@ -320,7 +329,7 @@ namespace Isle.Gameplay.Character
         /// combat/movement sprint aren't built). Resets the regen delay, same as any action would.</summary>
         public void SpendStamina(float amount)
         {
-            if (!IsServer) return;
+            if (!IsServer || World.Difficulty.IsUnlimited) return;
             Stamina = Mathf.Max(0f, Stamina - amount);
             _secondsSinceLastStaminaSpend = 0f;
         }
@@ -376,7 +385,7 @@ namespace Isle.Gameplay.Character
         /// (<c>damage_resist</c> buffs), then the type's damage over time.</summary>
         public void TakeDamage(float amount, string damageType)
         {
-            if (!IsServer || amount <= 0f) return;
+            if (!IsServer || amount <= 0f || World.Difficulty.IsUnlimited) return;
             if (_movement != null && _movement.IsInvulnerable) return; // dodge roll i-frames
             var armor = Combat.DamageTypes.ArmorAgainst(WornArmor(), WornArmorTypes(damageType), damageType);
             var taken = Combat.DamageTypes.Damage(amount, damageType, FoodResistMult(damageType), armor) * BuffEffects.Mult(ActiveBuffs(), "damage_taken_mult");
@@ -391,7 +400,7 @@ namespace Isle.Gameplay.Character
         /// flash; the damage type's status still builds (the body turns green).</summary>
         public void TakeExposure(float amount, string damageType)
         {
-            if (!IsServer || amount <= 0f) return;
+            if (!IsServer || amount <= 0f || World.Difficulty.IsUnlimited) return;
             var taken = Combat.DamageTypes.Damage(amount, damageType, FoodResistMult(damageType), 0f) * BuffEffects.Mult(ActiveBuffs(), "damage_taken_mult");
             if (taken <= 0f) return;
             Status.OnHit(damageType, taken, Time.time, out _);

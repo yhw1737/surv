@@ -164,7 +164,7 @@ namespace Isle.UI.Prototype
         {
             var world = IslandWorld.Instance;
             var clock = WorldTime.Instance != null ? WorldTime.Instance.Clock : null;
-            l.Add($"Island: seed {(world != null ? world.Seed : 0)} · save slot {SaveGame.Slot}"
+            l.Add($"Island: seed {(world != null ? world.Seed : 0)} · save slot {SaveGame.Slot} · difficulty {Isle.Gameplay.World.Difficulty.IdOf(Isle.Gameplay.World.Difficulty.Current)}"
                   + (clock != null ? $" · {ClockText(clock.TotalMinutes)} ({clock.Phase}) · t={clock.TotalMinutes} min" : ""));
             if (WeatherController.Instance is { } weather)
                 l.Add($"Weather: {weather.State} · {weather.Season} · event {weather.TempEvent} · ambient {weather.AmbientTemp:0.0}°");

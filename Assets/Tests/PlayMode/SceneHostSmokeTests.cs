@@ -57,6 +57,7 @@ namespace Isle.Tests.PlayMode
             LootPiles.Clear();
             StructureFactory.Clear();
             DefRegistry.Clear();
+            Isle.Gameplay.World.Difficulty.Current = Isle.Gameplay.World.DifficultyLevel.Normal;
         }
 
         [UnityTest]
@@ -101,6 +102,49 @@ namespace Isle.Tests.PlayMode
             yield return Abyss();
             yield return Enchanting();
             yield return Stew();
+            yield return DifficultyTiers();
+        }
+
+        /// <summary>T-028 SYS-DIFF-01: Hard creature strikes land ×1.25 of Normal; Unlimited can't be hurt, doesn't get
+        /// hungry and takes items from the palette, which is refused anywhere else.</summary>
+        IEnumerator DifficultyTiers()
+        {
+            var player = FindLocalPlayer();
+            var vitals = player.GetComponent<Vitals>();
+            var inventory = player.GetComponent<InventoryNetwork>();
+            var clock = Isle.World.Time.WorldTime.Instance.Clock;
+            Teleport(player, (Vector2)IslandWorld.Instance.ShoreStart(Isle.World.Chunks.Biome.Coast) + Vector2.up * 2f);
+            inventory.Slots.Clear(); // no armor in the way
+            float Hit(Isle.Gameplay.World.DifficultyLevel tier)
+            {
+                Isle.Gameplay.World.Difficulty.Current = tier;
+                vitals.Restore(100f, 100f, 100f, 100f, Vitals.ComfortableTemperature, 0f);
+                player.ReceiveCreatureStrike((Vector2)player.transform.position + Vector2.left, 10f);
+                return 100f - vitals.Health;
+            }
+            var normal = Hit(Isle.Gameplay.World.DifficultyLevel.Normal);
+            var hard = Hit(Isle.Gameplay.World.DifficultyLevel.Hard);
+            var easy = Hit(Isle.Gameplay.World.DifficultyLevel.Easy);
+            Assert.Greater(normal, 0f, "a Normal strike did nothing");
+            Assert.AreEqual(normal * 1.25f, hard, 0.05f, "Hard isn't ×1.25");
+            Assert.AreEqual(normal * 0.5f, easy, 0.05f, "Easy isn't ×0.5");
+            vitals.Restore(100f, 100f, 100f, 100f, Vitals.ComfortableTemperature, 0f);
+            yield return new WaitForSeconds(1.2f); // hit statuses (bleed) run out
+
+            // Unlimited: no damage, no hunger after a day, the palette gives.
+            Assert.AreEqual(0f, Hit(Isle.Gameplay.World.DifficultyLevel.Unlimited), "Unlimited took damage");
+            clock.SetTotalMinutes(clock.TotalMinutes + 24 * 60);
+            yield return new WaitForSeconds(1.5f);
+            Assert.AreEqual(100f, vitals.Hunger, 0.01f, "Unlimited got hungry");
+            Assert.AreEqual(100f, vitals.Health, 0.01f, "Unlimited lost health");
+            var wood = CountOf(inventory, "isle:wood");
+            player.RequestCreativeTake("isle:wood", 5);
+            yield return WaitUntil(() => CountOf(inventory, "isle:wood") == wood + 5, 2f, "the palette gave nothing");
+
+            Isle.Gameplay.World.Difficulty.Current = Isle.Gameplay.World.DifficultyLevel.Normal;
+            player.RequestCreativeTake("isle:wood", 5);
+            yield return new WaitForSeconds(0.5f);
+            Assert.AreEqual(wood + 5, CountOf(inventory, "isle:wood"), "the palette worked outside Unlimited");
         }
 
         /// <summary>T-102 SYS-COOK-01: wild grain and onion grow on the island; at a cauldron a meat + onion + grain stew

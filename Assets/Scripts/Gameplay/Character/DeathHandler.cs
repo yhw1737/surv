@@ -42,7 +42,7 @@ namespace Isle.Gameplay.Character
 
         public void Die()
         {
-            if (!IsServer || IsDead) return;
+            if (!IsServer || IsDead || Isle.Gameplay.World.Difficulty.IsUnlimited) return; // SYS-DIFF-01: nothing kills in Unlimited
             IsDead = true;
             if (TryGetComponent<PlayerMovement>(out var movement)) movement.Frozen = true;
 

@@ -6,6 +6,15 @@
 ## Header
 
 - Last updated: **2026-10-12**
+- **2026-10-12 — T-028 world difficulty.** Same working tree (split when committed — T-028 files: SYS-DIFF-01 (new spec),
+  `Gameplay/World/Difficulty.cs`, `Vitals` (drains, Unlimited lock, no damage/stamina spend), `DeathHandler` (no death in
+  Unlimited), `PlayerInteraction` (creature damage ×mult; `RequestCreativeTake`), `PrototypeHud(.Creative)` (I palette),
+  `MainMenu` (tier picker, slot label), `PauseMenu`, `DebugOverlay`, `GameSession.StartNew(difficulty)`,
+  `SaveData/SaveGame` v10, lang, `DifficultyTests`, the `DifficultyTiers` smoke step, the round trip's difficulty
+  check, test resets). Developer decisions 2026-10-12: 하/중/상/무제한 at 50%/100%/125% (the "00%" read as 100%),
+  Unlimited = creative. **Verified:** EditMode 777/777 (+12), PlayMode 5/5 (Hard ×1.25 and Easy ×0.5 of a Normal
+  strike; Unlimited unhurt and not hungry after a day; palette gives in Unlimited only; difficulty survives
+  save/Continue). Not seen on screen: the tier picker, the palette window.
 - **2026-10-12 — T-151 solo bug pass, automated half.** Same working tree as T-105 (split when committed — T-151 files:
   `Tests/PlayMode/SoakTests.cs` (+ .meta), TESTING §Solo soak, BACKLOG note). A from-the-menu soak: 90 rounds of
   harvest / hunt / fish / craft / cook / sleep / eat / dungeon / a forced death. **Verified:** PlayMode 5/5 (the soak
@@ -2119,6 +2128,12 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-12 — T-028 difficulty interpretations
+  What the multiplier touches follows the 2026-09-10 decision (hunger/thirst drain, creature damage; HP not); miasma and
+  temperature aren't scaled (not a creature's attack). Unlimited [invented details]: every gauge locked full, no damage,
+  no death, no stamina spend; item palette on I (one per click, a stack with Shift; carcass items left out); difficulty
+  fixed after creation; Normal is the default.
+
 - ### 2026-10-10 — T-102 cooking values
   [invented]: time_mult porridge 1.5 / ferment 4; every reaction on porridge, stew, smoke, ferment (SYS-COOK-01
   §Implementation T-102); cauldron / smokehouse / fermenting jar kits and their Crafting levels 10 / 8 / 12; wild grain

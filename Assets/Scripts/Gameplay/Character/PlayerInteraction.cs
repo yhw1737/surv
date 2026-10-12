@@ -287,6 +287,7 @@ namespace Isle.Gameplay.Character
         public BlockOutcome ReceiveCreatureStrike(Vector2 from, float damage, string damageType = DamageTypes.Blunt)
         {
             if (!IsServer || !TryGetComponent<Vitals>(out var vitals)) return BlockOutcome.None;
+            damage = World.Difficulty.CreatureDamage(damage); // SYS-DIFF-01, before block and armor
             var level = LevelOf(MeleeSkill());
             var angle = Vector2.Angle(BlockDirection, from - (Vector2)transform.position);
             var result = MeleeDefense.Resolve(Blocking && !IsDead, Time.time - BlockStartedAt, MeleeDefense.ParryWindow(level), angle, damage, vitals.Stamina);
@@ -1736,6 +1737,26 @@ namespace Isle.Gameplay.Character
         }
 
         /// <summary>Same, for an item that isn't a registered def (a dish).</summary>
+        /// <summary>SYS-DIFF-01 Unlimited: takes any item from the palette.</summary>
+        public void RequestCreativeTake(string itemId, int count) => CmdCreativeTake(itemId, count);
+
+        [ServerRpc]
+        void CmdCreativeTake(string itemText, int count)
+        {
+            if (!World.Difficulty.IsUnlimited)
+            {
+                GameFeed.RaiseNotice("@ui.creative_only");
+                return;
+            }
+            if (count < 1 || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            if (!NamespacedId.TryParse(itemText, out var id, out _) || !DefRegistry.TryGet<ItemDef>(id, out var item)) return;
+            count = Math.Min(count, Math.Max(1, item.Stack));
+            // Gear comes new, one per stack, like anything freshly made.
+            if (ItemWear.Fresh(item) is not null)
+                for (var i = 0; i < count; i++) GiveItem(inventory, item, 1, ItemWear.Fresh(item));
+            else GiveItem(inventory, item, count);
+        }
+
         void GiveItem(InventoryNetwork inventory, ItemDef item, int count, ItemWear wear = null)
         {
             if (InventoryOps.TryGive(inventory.Containers(), item, count, wear))

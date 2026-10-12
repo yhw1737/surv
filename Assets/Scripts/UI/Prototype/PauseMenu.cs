@@ -50,7 +50,10 @@ namespace Isle.UI.Prototype
             var x = (Screen.width - Width) * 0.5f;
             var y = Screen.height * 0.3f;
             GUI.Label(new Rect(x, y, Width, 40f), Lang.Get("@ui.paused"), _title);
-            y += 52f;
+            y += 44f;
+            GUI.Label(new Rect(x, y, Width, 22f), $"{Lang.Get("@ui.difficulty")}: {MainMenu.DifficultyName(Isle.Gameplay.World.Difficulty.Current)}",
+                new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, normal = { textColor = Color.white } });
+            y += 30f;
 
             if (GUI.Button(new Rect(x, y, Width, ButtonHeight), Lang.Get("@ui.resume"))) SetOpen(false);
             y += ButtonHeight + 8f;

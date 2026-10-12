@@ -28,6 +28,7 @@ namespace Isle.UI.Prototype
 
         Page _page = Page.Main;
         string _seedText;
+        Isle.Gameplay.World.DifficultyLevel _difficulty = Isle.Gameplay.World.DifficultyLevel.Normal;
         (SaveData Save, System.DateTime Written)?[] _slots = new (SaveData, System.DateTime)?[SaveGame.MaxSlots + 1];
         int _latest, _targetSlot = 1;
         GUIStyle _title, _subtitle;
@@ -195,8 +196,12 @@ namespace Isle.UI.Prototype
             var info = _slots[slot];
             if (info == null) return $"{slot}.  {Lang.Get("@ui.menu_slot_empty")}";
             var s = info.Value.Save;
-            return $"{slot}.  {string.Format(Lang.Get("@ui.menu_save_info"), s.TotalMinutes / 1440 + 1, s.Seed)}   ·   {info.Value.Written:yyyy-MM-dd HH:mm}";
+            return $"{slot}.  {string.Format(Lang.Get("@ui.menu_save_info"), s.TotalMinutes / 1440 + 1, s.Seed)}   ·   {DifficultyName(Isle.Gameplay.World.Difficulty.Parse(s.Difficulty))}   ·   {info.Value.Written:yyyy-MM-dd HH:mm}";
         }
+
+        /// <summary>SYS-DIFF-01 tier name, from the language files.</summary>
+        public static string DifficultyName(Isle.Gameplay.World.DifficultyLevel tier) =>
+            Lang.Get("@difficulty." + Isle.Gameplay.World.Difficulty.IdOf(tier));
 
         void MainPage(UiTheme.StyleSet st, float x, float y)
         {
@@ -234,7 +239,7 @@ namespace Isle.UI.Prototype
             const float width = 520f;
             var x = Mathf.Max(24f, Screen.width * 0.22f - width * 0.5f + 60f);
             y -= 60f;
-            var height = 170f + SaveGame.MaxSlots * SlotRow;
+            var height = 214f + SaveGame.MaxSlots * SlotRow;
             GUI.Box(new Rect(x - 20f, y - 20f, width + 40f, height), GUIContent.none, st.Window);
             GUI.Label(new Rect(x, y, width, 26f), Lang.Get("@ui.menu_new"), st.Title);
             y += 34f;
@@ -250,6 +255,14 @@ namespace Isle.UI.Prototype
             _seedText = GUI.TextField(new Rect(x + 70f, y, width - 70f - 110f, 30f), _seedText ?? "", 10);
             if (GUI.Button(new Rect(x + width - 100f, y, 100f, 30f), Lang.Get("@ui.menu_random"), st.Button)) _seedText = GameSession.RandomSeed().ToString();
             y += 40f;
+            // SYS-DIFF-01: the world's difficulty, picked here and kept for its life.
+            GUI.Label(new Rect(x, y + 4f, 80f, 30f), Lang.Get("@ui.difficulty"), st.Text);
+            var tiers = (Isle.Gameplay.World.DifficultyLevel[])System.Enum.GetValues(typeof(Isle.Gameplay.World.DifficultyLevel));
+            var tierWidth = (width - 80f - 6f * (tiers.Length - 1)) / tiers.Length;
+            for (var i = 0; i < tiers.Length; i++)
+                if (GUI.Button(new Rect(x + 80f + i * (tierWidth + 6f), y, tierWidth, 30f), DifficultyName(tiers[i]), tiers[i] == _difficulty ? st.ButtonOn : st.Button))
+                    _difficulty = tiers[i];
+            y += 44f;
             if (GUI.Button(new Rect(x, y, 140f, ButtonHeight), Lang.Get("@ui.menu_back"), st.Button)) _page = Page.Main;
             if (GUI.Button(new Rect(x + width - 200f, y, 200f, ButtonHeight), Lang.Get("@ui.menu_start"), st.ButtonOn))
             {
@@ -394,7 +407,8 @@ namespace Isle.UI.Prototype
         {
             var seed = int.TryParse(_seedText, out var s) && s > 0 ? s : Mathf.Abs((_seedText ?? "").GetHashCode()) % int.MaxValue + 1;
             var slot = _targetSlot;
-            StartLoading(() => GameSession.StartNew(seed, slot));
+            var difficulty = _difficulty;
+            StartLoading(() => GameSession.StartNew(seed, slot, difficulty));
         }
 
         void OptionsPage(UiTheme.StyleSet st, float y)
