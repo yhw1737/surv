@@ -26,6 +26,9 @@ namespace Isle.UI.Prototype
         public long TotalMinutes;
 
         public float Health, Hunger, Thirst, Stamina, Temperature, HypothermiaSeverity;
+
+        /// <summary>Version 10: SYS-MAGIC-01 mana; negative = none saved (older saves start full).</summary>
+        public float Mana = -1f;
         public float PlayerX, PlayerY, ShelterX, ShelterY;
 
         /// <summary>Everything worn or wielded, one entry per occupied slot.</summary>

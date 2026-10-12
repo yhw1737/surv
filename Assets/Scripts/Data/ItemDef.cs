@@ -83,6 +83,9 @@ namespace Isle.Data
         /// <summary>Dishes only: multiplier on those buffs' durations (method buff_duration, care tag).</summary>
         public float BuffDurationMult { get; init; } = 1f;
 
+        /// <summary>SYS-BREW-01: what drinking it does beyond nutrition and buffs — heal, mana, at once or over time.</summary>
+        public ConsumeEffect[] Consume { get; init; }
+
         /// <summary>Dishes only: SYS-COOK-01 dishSignature (method + main ingredient tag), for satiety fatigue.</summary>
         public string DishSignature { get; init; }
 
@@ -110,6 +113,16 @@ namespace Isle.Data
     }
 
     /// <summary>Spoilage inputs. Progress is computed in one elapsed-time pass (ARCHITECTURE §Deferred simulation).</summary>
+    /// <summary>SYS-BREW-01 consume effect: <c>heal</c>, <c>heal_over_time</c>, <c>mana</c> or <c>mana_over_time</c>.</summary>
+    public sealed class ConsumeEffect
+    {
+        public string Type { get; init; }
+        public float Amount { get; init; }
+
+        /// <summary>Over-time effects only: how long the amount is spread over.</summary>
+        public float Seconds { get; init; }
+    }
+
     public sealed class SpoilageSpec
     {
         public float BaseHours { get; init; }

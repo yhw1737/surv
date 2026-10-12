@@ -1,0 +1,36 @@
+{
+  "id": "isle:brew_stimulant",
+  "name": "@recipe.brew_stimulant",
+  "station": "isle:brewing_stand",
+  "ingredients": [
+    {
+      "item": "isle:glowcap",
+      "count": 1
+    },
+    {
+      "item": "isle:coconut",
+      "count": 1
+    },
+    {
+      "item": "isle:wild_grain",
+      "count": 2
+    }
+  ],
+  "output": {
+    "item": "isle:stimulant",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:enchanting",
+    "base": 20,
+    "per_unit": 10
+  },
+  "skills": [
+    {
+      "skill": "isle:enchanting",
+      "level": 25,
+      "primary": true
+    }
+  ]
+}

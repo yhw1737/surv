@@ -1,0 +1,41 @@
+{
+  "id": "isle:craft_venom_rod",
+  "name": "@recipe.venom_rod",
+  "station": "isle:enchanting_table",
+  "ingredients": [
+    {
+      "item": "isle:wood",
+      "count": 3
+    },
+    {
+      "item": "isle:glowcap",
+      "count": 3
+    },
+    {
+      "item": "isle:bitter_herb",
+      "count": 3
+    },
+    {
+      "item": "isle:temple_jade",
+      "count": 1
+    }
+  ],
+  "output": {
+    "item": "isle:venom_rod",
+    "count": 1,
+    "inherit_quality": true
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:enchanting",
+    "base": 30,
+    "per_unit": 10
+  },
+  "skills": [
+    {
+      "skill": "isle:enchanting",
+      "level": 25,
+      "primary": true
+    }
+  ]
+}

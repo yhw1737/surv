@@ -199,6 +199,10 @@ namespace Isle.UI.Prototype
             if (_vitals.Overloaded) staminaLabel += $"  {Lang.Get("@ui.overloaded")}";
             else if (_vitals.Exhausted) staminaLabel += $"  {Lang.Get("@ui.exhausted")}";
             DrawGauge(ref y, staminaLabel, _vitals.Stamina, _vitals.Exhausted || _vitals.Overloaded ? new Color(0.85f, 0.45f, 0.25f) : new Color(0.95f, 0.85f, 0.3f));
+            // SYS-MAGIC-01: mana, drawn on the same 0..100 bar as a share of its capacity.
+            var manaMax = Mathf.Max(1f, _vitals.ManaMax);
+            DrawGauge(ref y, $"{Lang.Get("@ui.mana")} {_vitals.Mana:0}/{manaMax:0}", _vitals.Mana / manaMax * VitalsCalculator.GaugeMax, new Color(0.4f, 0.55f, 1f));
+
             var warmth = Mathf.InverseLerp(TemperatureMin, TemperatureMax, _vitals.Temperature) * VitalsCalculator.GaugeMax;
             var temperature = $"{Lang.Get("@ui.temperature")} {_vitals.Temperature:0.0}°";
             if (_vitals.HypothermiaSeverity > 0.01f) temperature += $"  {Lang.Get("@ui.hypothermia")} {_vitals.HypothermiaSeverity * 100f:0}%";
@@ -444,7 +448,8 @@ namespace Isle.UI.Prototype
             {
                 float hunger = item.Nutrition.Hunger, thirst = item.Nutrition.Thirst, durationMult = item.BuffDurationMult;
                 var buffs = (IEnumerable<Isle.Core.Ids.NamespacedId>)(item.Buffs ?? new Isle.Core.Ids.NamespacedId[0]);
-                var raw = DishFactory.IsDish(item) ? null : DefRegistry.All<CookMethodDef>().FirstOrDefault(m => m.EatRaw);
+                // A brew is drunk as it is (SYS-BREW-01); anything else raw goes through the raw method.
+                var raw = DishFactory.IsDish(item) || item.Consume != null ? null : DefRegistry.All<CookMethodDef>().FirstOrDefault(m => m.EatRaw);
                 if (raw != null)
                 {
                     var result = CookingResolver.Resolve(raw, new[] { item }, cookingLevel: 1, failureRoll: 1f);
@@ -455,6 +460,12 @@ namespace Isle.UI.Prototype
                 var buffText = buffs.Select(id => DefRegistry.TryGet<BuffDef>(id, out var b) ? $"{Lang.Get(b.Name)} ({b.DurationMin * durationMult / 60f:0.#}{Lang.Get("@ui.tt_hours")})" : id.Value).ToList();
                 if (buffText.Count > 0) lines.Add($"{Lang.Get("@ui.tt_buffs")}: {string.Join(", ", buffText)}");
             }
+
+            // SYS-BREW-01 effects; SYS-MAGIC-01 a focus's mana per cast.
+            if (item.Consume is { Length: > 0 } effects)
+                lines.Add($"{Lang.Get("@ui.tt_effects")}: {string.Join(", ", effects.Select(e => string.Format(Lang.Get("@effect." + e.Type), e.Amount.ToString("0"), e.Seconds.ToString("0"))))}");
+            if (item.Weapon.IsValid && DefRegistry.TryGet<WeaponDef>(item.Weapon, out var focus) && focus.ManaCost > 0f)
+                lines.Add($"{Lang.Get("@ui.tt_mana_cost")}: {focus.ManaCost:0}");
 
             if (item.Spoilage != null && item.Spoilage.BaseHours > 0f && container != null)
             {

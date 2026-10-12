@@ -1,0 +1,28 @@
+{
+  "id": "isle:brew_berry_juice",
+  "name": "@recipe.brew_berry_juice",
+  "station": "isle:brewing_stand",
+  "ingredients": [
+    {
+      "item": "isle:berries",
+      "count": 3
+    }
+  ],
+  "output": {
+    "item": "isle:berry_juice",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:enchanting",
+    "base": 20,
+    "per_unit": 10
+  },
+  "skills": [
+    {
+      "skill": "isle:enchanting",
+      "level": 1,
+      "primary": true
+    }
+  ]
+}

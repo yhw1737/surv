@@ -319,7 +319,8 @@ stood up now so the solo beta is already a listen-server session with one client
   > **2026-10-12**: **passed** — `ExtGateTests`: a temp copy of the shipped definitions plus one new ingredient file (sea kelp: vegetable, high_water and an unknown `seaweed` tag) loads cleanly; all eight methods resolve it, fire their tag reactions (stew endurance, ferment iron_gut, boil thirst ×1.8), name a dish after it that rebuilds from its save key, and count it as a group in a three-group stew. No C# touched.
 - [x] **T-106** `EnchantSystem` on the **Enchanting** skill — slot application moves off Crafting (SYS-CRAFT-01 §Enchanting). Formula already exists, this is a skill-owner move, not new math
   > **2026-10-10**: done — SYS-CRAFT-01 §Enchanting Implementation (T-106). Four enchants (keen, sturdy, warding, swift) with dungeon-material catalysts, enchanting table, window, effects on damage/armor/tool speed/wear, saved (v8).
-- [ ] **T-107** ★ SYS-BREW-01 spec + `BrewDef` — brewing has **no existing spec or formula** anywhere; write the sheet before coding (workflow: spec exists before code)
+- [x] **T-107** ★ SYS-BREW-01 spec + `BrewDef` — brewing has **no existing spec or formula** anywhere; write the sheet before coding (workflow: spec exists before code)
+  > **2026-10-12**: done — `docs/specs/SYS-BREW-01-brewing.md` (developer: drinks, medicines and drugs; buffs or health/mana restore, instant or over time). Brews are craft recipes at a brewing stand on the Enchanting skill (no separate `BrewDef`); items carry `consume` effects. Seven brews, glowcap (marsh) as the arcane ingredient, `stimulated` buff. Numbers [proposed].
 
 ## Phase 8 · Combat ★
 
@@ -333,7 +334,8 @@ stood up now so the solo beta is already a listen-server session with one client
   > **2026-10-04 (prototype)**: Space roll with SYS-CHAR-01 timing/i-frames and 25 stamina; roll speed invented. Not synced beyond the host.
 - [ ] **T-115** `CreatureAI` 4-state machine + 3 creatures
   > **2026-10-03 (prototype)**: `CreatureBrain` presets + rabbit, boar, deer and crocodile defs done (all four from the spec table); Alert state in place (deer alerts on sight, flees after 2 s — noise trigger still open). Creatures repopulate every 30 s towards their starting count. Host-only.
-- [ ] **T-117** Magic combat — `isle:magic` weapon/focus category. `SYS-COMBAT-01`'s `PowerCalculator` is already skill-agnostic (`combat_skill` is just a `NamespacedId`), so this is mostly a new weapon type; a mana/resource cost, if any, is an **open question — ask, don't invent**
+- [x] **T-117** Magic combat — `isle:magic` weapon/focus category. `SYS-COMBAT-01`'s `PowerCalculator` is already skill-agnostic (`combat_skill` is just a `NamespacedId`), so this is mostly a new weapon type; a mana/resource cost, if any, is an **open question — ask, don't invent**
+  > **2026-10-12**: done — `docs/specs/SYS-MAGIC-01-magic.md` (developer: magic uses mana). Mana gauge (100 + Magic level, regen 0.5 + 0.02/level per s, growth on skill data), three foci (apprentice wand, ember staff, venom rod) cast bolts for mana with the existing power formula; made at the enchanting table. Numbers [proposed].
 
 ## Phase 9 · 🚩 Solo beta — the first release milestone
 

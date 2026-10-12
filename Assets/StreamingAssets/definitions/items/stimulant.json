@@ -1,0 +1,23 @@
+{
+  "id": "isle:stimulant",
+  "name": "@item.stimulant",
+  "tags": [
+    "brew",
+    "drug"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.3,
+  "stack": 5,
+  "buffs": [
+    "isle:stimulated"
+  ],
+  "consume": [],
+  "icon_style": {
+    "shape": "potion",
+    "color": "#E8C040",
+    "accent": "#E8E0D0"
+  }
+}

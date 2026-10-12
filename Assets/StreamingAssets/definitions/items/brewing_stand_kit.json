@@ -1,0 +1,20 @@
+{
+  "id": "isle:brewing_stand_kit",
+  "name": "@item.brewing_stand_kit",
+  "tags": [
+    "placeable",
+    "wood"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 4.0,
+  "stack": 1,
+  "places": "isle:brewing_stand",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#9A6B42",
+    "accent": "#8FD0E0"
+  }
+}

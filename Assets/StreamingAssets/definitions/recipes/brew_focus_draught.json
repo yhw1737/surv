@@ -1,0 +1,32 @@
+{
+  "id": "isle:brew_focus_draught",
+  "name": "@recipe.brew_focus_draught",
+  "station": "isle:brewing_stand",
+  "ingredients": [
+    {
+      "item": "isle:glowcap",
+      "count": 3
+    },
+    {
+      "item": "isle:bitter_herb",
+      "count": 1
+    }
+  ],
+  "output": {
+    "item": "isle:focus_draught",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:enchanting",
+    "base": 20,
+    "per_unit": 10
+  },
+  "skills": [
+    {
+      "skill": "isle:enchanting",
+      "level": 30,
+      "primary": true
+    }
+  ]
+}

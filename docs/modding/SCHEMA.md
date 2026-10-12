@@ -84,7 +84,7 @@ Hierarchical: `fish/saltwater` automatically implies `fish`. Max depth 3.
 | Material | `metal` `wood` `stone` `leather` `cloth` `bone` `gem` |
 | Habitat | `fish/saltwater` `fish/freshwater` `fish/deep` `fish/reef` |
 | Weapon | `weapon/blade` `weapon/bow` `weapon/artifact` |
-| Station | `station/campfire` `station/pot` `station/dryer` `station/forge` `station/cauldron` `station/smokehouse` `station/fermenter` `station/enchanting` |
+| Station | `station/campfire` `station/pot` `station/dryer` `station/forge` `station/cauldron` `station/smokehouse` `station/fermenter` `station/enchanting` `station/brewing` |
 
 > Adding `["meat","fat"]` to a new ingredient makes **all 8 cook methods handle it immediately.** That's the payoff of tag architecture.
 
@@ -449,6 +449,10 @@ This document constrains us before it serves modders.
 | Creature boss | `summon {creature, count, every_seconds, below_health, max_alive}` | Below the health share, calls helpers every few seconds (cap alive), not while burning. 2026-10-10 |
 | Enchant | `skill`, `xp` | The skill that applies it and gains XP (a failure grants half). 2026-10-10 |
 | Enchant effect | `armor_mult`, `tool_speed_mult`, `wear_skip_chance` | New effect types (each needs `value`) beside `damage_mult`. 2026-10-10 |
+| Item | `consume` | SYS-BREW-01: `[{type, amount, seconds?}]` — `heal`, `heal_over_time`, `mana`, `mana_over_time`. Its presence (even empty) marks a brew: drunk as it is, no raw method, no satiety. 2026-10-12 |
+| Weapon | `mana_cost` | SYS-MAGIC-01: a focus — mana per cast; needs `projectile_speed`. 2026-10-12 |
+| Skill | `mana_per_level`, `mana_regen_per_level` | SYS-MAGIC-01: mana capacity / regen per second each level adds (magic 1 / 0.02). 2026-10-12 |
+| World object tag | `station/brewing` | SYS-BREW-01: the brewing stand; brews are craft recipes made there. 2026-10-12 |
 | World object tag | `station/enchanting` | A station where enchants are set (E opens the window). 2026-10-10 |
 | Craft recipe | `forge_strikes` | SYS-CRAFT-01 §Forging: hammer strikes (3..8) when the recipe's `minigame` is `isle:forging` and it's made at a station tagged `forge`. 2026-10-10 |
 | World object tag | `forge` | A station where `isle:forging` recipes are hammered out (the anvil). 2026-10-10 |

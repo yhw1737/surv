@@ -1,0 +1,25 @@
+{
+  "id": "isle:health_tonic",
+  "name": "@item.health_tonic",
+  "tags": [
+    "brew",
+    "medicine"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.3,
+  "stack": 5,
+  "consume": [
+    {
+      "type": "heal",
+      "amount": 30
+    }
+  ],
+  "icon_style": {
+    "shape": "potion",
+    "color": "#E04848",
+    "accent": "#E8E0D0"
+  }
+}

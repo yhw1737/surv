@@ -1,0 +1,24 @@
+{
+  "id": "isle:venom_rod",
+  "name": "@weapon.venom_rod",
+  "tags": [
+    "weapon",
+    "weapon/focus"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 2
+  },
+  "weight": 0.6,
+  "combat_skill": "isle:magic",
+  "base_power": 16,
+  "attack_speed": 1.3,
+  "reach": 0,
+  "stamina_cost": 0,
+  "grip": "one_hand",
+  "quality_enabled": true,
+  "durability": 150,
+  "projectile_speed": 15,
+  "damage_type": "toxic",
+  "mana_cost": 12
+}

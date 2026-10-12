@@ -1,0 +1,14 @@
+{
+  "id": "isle:brewing_stand",
+  "name": "@world_object.brewing_stand",
+  "station_tier": 0.25,
+  "tags": [
+    "station/brewing",
+    "wood"
+  ],
+  "visual": {
+    "shape": "brewing_stand",
+    "color": "#7A5A3A",
+    "size": 1.0
+  }
+}

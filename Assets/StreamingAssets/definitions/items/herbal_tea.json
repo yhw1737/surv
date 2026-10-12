@@ -1,0 +1,28 @@
+{
+  "id": "isle:herbal_tea",
+  "name": "@item.herbal_tea",
+  "tags": [
+    "brew",
+    "drink"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.3,
+  "stack": 5,
+  "nutrition": {
+    "hunger": 0,
+    "thirst": 18,
+    "sanitation_risk": 0.0
+  },
+  "buffs": [
+    "isle:warm"
+  ],
+  "consume": [],
+  "icon_style": {
+    "shape": "potion",
+    "color": "#A8864A",
+    "accent": "#E8E0D0"
+  }
+}

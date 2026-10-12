@@ -1,0 +1,32 @@
+{
+  "id": "isle:brew_herbal_tea",
+  "name": "@recipe.brew_herbal_tea",
+  "station": "isle:brewing_stand",
+  "ingredients": [
+    {
+      "item": "isle:bitter_herb",
+      "count": 1
+    },
+    {
+      "item": "isle:berries",
+      "count": 1
+    }
+  ],
+  "output": {
+    "item": "isle:herbal_tea",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:enchanting",
+    "base": 20,
+    "per_unit": 10
+  },
+  "skills": [
+    {
+      "skill": "isle:enchanting",
+      "level": 5,
+      "primary": true
+    }
+  ]
+}
