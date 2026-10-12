@@ -41,8 +41,9 @@ namespace Isle.UI.Prototype
 
         /// <summary>A fresh island on <paramref name="seed"/> in <paramref name="slot"/>. Replaces that slot's save (the
         /// menu asks first).</summary>
-        public static void StartNew(int seed, int slot = 1)
+        public static void StartNew(int seed, int slot = 1, Isle.Gameplay.World.DifficultyLevel difficulty = Isle.Gameplay.World.DifficultyLevel.Normal)
         {
+            Isle.Gameplay.World.Difficulty.Current = difficulty; // SYS-DIFF-01: fixed for the world's life
             SaveGame.Slot = slot;
             SaveGame.DeleteFile(slot);
             IslandWorld.NextSeed = seed;

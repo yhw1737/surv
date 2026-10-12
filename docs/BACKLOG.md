@@ -118,14 +118,8 @@ stood up now so the solo beta is already a listen-server session with one client
 > EditMode **155/155**, no new tests added. Developer confirmed in a live Editor session: WASD
 > moves the rig smoothly, no console errors. **Phase 2 is fully done (2/2).**
 
-- [ ] **T-028** SYS-DIFF-01 spec sheet + world difficulty setting — host picks it when creating a
-      room: Peaceful / Easy / Normal / Hard. Normal = 100%, Easy = 50%, Hard = 200% on hunger/thirst
-      drain rate and enemy attack power; enemy HP is unaffected at every tier; bosses may get faster
-      patterns on top of that at higher tiers (developer decision, 2026-09-10). Peaceful matches
-      Minecraft's peaceful mode. No spec sheet yet — write it before coding (workflow: spec before
-      code). Touches `SYS-SURV-01` (T-050, now built — `VitalsCalculator.HungerBaseRate`/
-      `ThirstBaseRate` is where a difficulty multiplier would apply) and `SYS-COMBAT-01` (T-110,
-      not built yet), so this still isn't blocking anything today.
+- [x] **T-028** SYS-DIFF-01 spec sheet + world difficulty setting — picked on the New game page.
+  > **2026-10-12**: done — `docs/specs/SYS-DIFF-01-difficulty.md`. Developer 2026-10-12: Easy / Normal / Hard / Unlimited (하/중/상/무제한) at 50% / 100% / 125% (replacing the 2026-09-10 Peaceful / 200% set); scales hunger/thirst drain and creature damage to players (HP unchanged, per 2026-09-10). Unlimited = creative: no needs, no damage, no death, I opens an item palette. Saved (v10), shown on the load list, pause menu and debug screen. Faster boss patterns on higher tiers not built.
 
 ## Phase 3 · World
 

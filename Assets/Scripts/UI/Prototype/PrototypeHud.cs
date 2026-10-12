@@ -100,6 +100,7 @@ namespace Isle.UI.Prototype
             if (_player != null && _player.Forge != null) _craftOpen = _cookOpen = false;
 
             TickEnchantWindow();
+            TickCreativeWindow();
             UpdatePlacing();
             IsPlacing = _placing != null;
         }
@@ -158,6 +159,7 @@ namespace Isle.UI.Prototype
             DrawBuffs();
             if (_openBox != null) DrawBox();
             if (_enchantOpen) DrawEnchantWindow();
+            if (_creativeOpen) DrawCreativeWindow();
             if (_placing != null) DrawPlacementGhost();
             if (_player.DrawStartedAt >= 0f) DrawChargeBar();
             if (_player.Fight != null) DrawFight();
@@ -197,7 +199,6 @@ namespace Isle.UI.Prototype
             if (_vitals.Overloaded) staminaLabel += $"  {Lang.Get("@ui.overloaded")}";
             else if (_vitals.Exhausted) staminaLabel += $"  {Lang.Get("@ui.exhausted")}";
             DrawGauge(ref y, staminaLabel, _vitals.Stamina, _vitals.Exhausted || _vitals.Overloaded ? new Color(0.85f, 0.45f, 0.25f) : new Color(0.95f, 0.85f, 0.3f));
-
             var warmth = Mathf.InverseLerp(TemperatureMin, TemperatureMax, _vitals.Temperature) * VitalsCalculator.GaugeMax;
             var temperature = $"{Lang.Get("@ui.temperature")} {_vitals.Temperature:0.0}°";
             if (_vitals.HypothermiaSeverity > 0.01f) temperature += $"  {Lang.Get("@ui.hypothermia")} {_vitals.HypothermiaSeverity * 100f:0}%";

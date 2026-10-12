@@ -47,6 +47,7 @@ namespace Isle.Tests.PlayMode
             LootPiles.Clear();
             StructureFactory.Clear();
             DefRegistry.Clear();
+            Isle.Gameplay.World.Difficulty.Current = Isle.Gameplay.World.DifficultyLevel.Normal;
         }
 
         static void Delete()
@@ -135,11 +136,16 @@ namespace Isle.Tests.PlayMode
             var abyss = dungeons.Sites.First(s => s.Def.Id.Value == "isle:abyss");
             abyss.SigilsPlaced.Add("isle:tide_sigil");
 
+            // SYS-DIFF-01: the world's difficulty travels with the save.
+            Isle.Gameplay.World.Difficulty.Current = Isle.Gameplay.World.DifficultyLevel.Hard;
+
             yield return null;
             GameSession.BackToMenu();
             yield return WaitUntil(() => Object.FindFirstObjectByType<MainMenu>() != null && IslandWorld.Instance == null, 10f, "never got back to the menu");
             var saved = GameSession.PeekSave();
             Assert.IsNotNull(saved, "nothing saved");
+            Assert.AreEqual("hard", saved.Difficulty, "difficulty not saved");
+            Isle.Gameplay.World.Difficulty.Current = Isle.Gameplay.World.DifficultyLevel.Normal; // Continue must bring it back
 
             GameSession.Continue();
             yield return WaitUntil(() => PlayerInteraction.Local != null && IslandWorld.Instance != null, 15f, "player never spawned after Continue");
@@ -165,6 +171,7 @@ namespace Isle.Tests.PlayMode
             Assert.AreEqual(37, restoredKnife.Wear?.Current, "knife wear");
             Assert.AreEqual(150, restoredKnife.Wear?.Max, "knife max");
             Assert.AreEqual(QualityTier.Fine, restoredKnife.Wear?.Quality, "knife quality");
+            Assert.AreEqual(Isle.Gameplay.World.DifficultyLevel.Hard, Isle.Gameplay.World.Difficulty.Current, "difficulty not restored");
             CollectionAssert.AreEqual(new[] { "isle:keen" }, restoredKnife.Wear.Enchants.Select(e => e.Value), "knife enchant");
             Assert.AreEqual("Test Smith", restoredKnife.Wear.Crafter, "knife crafter mark");
             var restoredCarcass = inventory.Containers().SelectMany(c => c.Placements).FirstOrDefault(p => p.Item.Id == carcassItem.Id);

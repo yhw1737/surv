@@ -13,13 +13,16 @@ namespace Isle.UI.Prototype
     public sealed class SaveData
     {
         /// <summary>Bump when a field changes meaning; an older file is ignored rather than misread.</summary>
-        public const int CurrentVersion = 9;
+        public const int CurrentVersion = 10;
 
         /// <summary>Oldest version still readable. v3 only lacks <see cref="Skills"/>, which then start from zero.</summary>
         public const int MinReadableVersion = 3;
 
         public int Version = CurrentVersion;
         public int Seed;
+
+        /// <summary>Version 10: SYS-DIFF-01 tier id ("easy", "normal", "hard", "unlimited"); empty = Normal (older saves).</summary>
+        public string Difficulty;
         public long TotalMinutes;
 
         public float Health, Hunger, Thirst, Stamina, Temperature, HypothermiaSeverity;
