@@ -319,7 +319,8 @@ stood up now so the solo beta is already a listen-server session with one client
   > **2026-10-05 (prototype)**: buffs act in Vitals/bow sway, care tag in the resolver, satiety fatigue per player.
 - [ ] **T-104** `DishNamer` procedural naming + player registration
 - [ ] **T-105** 🚩 **Ext gate** — one new ingredient works across all 8 methods with zero C# edits
-- [ ] **T-106** `EnchantSystem` on the **Enchanting** skill — slot application moves off Crafting (SYS-CRAFT-01 §Enchanting). Formula already exists, this is a skill-owner move, not new math
+- [x] **T-106** `EnchantSystem` on the **Enchanting** skill — slot application moves off Crafting (SYS-CRAFT-01 §Enchanting). Formula already exists, this is a skill-owner move, not new math
+  > **2026-10-10**: done — SYS-CRAFT-01 §Enchanting Implementation (T-106). Four enchants (keen, sturdy, warding, swift) with dungeon-material catalysts, enchanting table, window, effects on damage/armor/tool speed/wear, saved (v8).
 - [ ] **T-107** ★ SYS-BREW-01 spec + `BrewDef` — brewing has **no existing spec or formula** anywhere; write the sheet before coding (workflow: spec exists before code)
 
 ## Phase 8 · Combat ★

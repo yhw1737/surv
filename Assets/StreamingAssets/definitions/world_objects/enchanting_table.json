@@ -1,0 +1,14 @@
+{
+  "id": "isle:enchanting_table",
+  "name": "@world_object.enchanting_table",
+  "station_tier": 0.25,
+  "tags": [
+    "station/enchanting",
+    "wood"
+  ],
+  "visual": {
+    "shape": "enchanting_table",
+    "color": "#5A4A78",
+    "size": 1.1
+  }
+}

@@ -100,6 +100,24 @@ system with 3–4 enchant types.
 loop must be completable on unenchanted Common gear. It is the payoff for reaching a smith who can
 build slots and an enchanter who can fill them, not a requirement to reach either.
 
+### Implementation (T-106, 2026-10-10)
+Built without a Q&A (developer: "decide yourself, report after"). The formula above is used verbatim.
+
+| Piece | Where | Notes |
+|---|---|---|
+| Rules | `Gameplay/Crafting/EnchantCalculator` | success rate; applies when an item tag equals or sits under an applicable tag (`tool` covers `tool/axe`); refusals: not applicable, no free slot (slots = the quality tier's), max stack, skill too low; effects multiply; wear skip combines as 1 − Π(1 − chance) |
+| The four enchants | `definitions/enchants/` | **keen** (weapon, damage ×1.12, Lv 10, tide pearl), **sturdy** (weapon/tool/armor, 30% a use or hit doesn't wear it, Lv 10, heartwood), **warding** (armor, ×1.15, Lv 20, temple jade), **swift** (tool, speed ×1.2, Lv 20, clockwork gear); each stacks twice and gives 25 Enchanting XP (half on a failure) |
+| Station | `world_objects/enchanting_table.json` (tag `station/enchanting`), kit + recipe (workbench, Crafting 5: wood 8, copper ingot 2, cloth 2), `EnchantingTable` | E at it opens the enchanting window |
+| Applying | `PlayerInteraction.RequestEnchantEquipped/RequestEnchantPlaced` → `TryEnchant` | server-side: within reach of a table, the enchanter's level, a free slot, the catalyst held; the catalyst is spent either way; success adds the enchant to the item's `ItemWear.Enchants` (a wear record is created for a never-used item) |
+| Effects | melee and bow damage, tool harvest speed (`PlayerInteraction`), armor flat and per type (`Vitals`), wear (`EquipSlots.Wear`, `InventoryOps.WearPlacement`) | multiplied in beside the quality multiplier |
+| UI | `PrototypeHud.Enchant.cs`; tooltip lines | the window lists gear with slots (used/total) and, for the picked item, each applicable enchant: effect, catalyst have/need, level, success %, and why it's refused |
+| Save | version 8: `Enchants` on every saved stack and equip | kept through repairs |
+
+**[invented]**: the four enchants and every number on them, their catalysts (the four dungeon materials — abyssal ore
+is left for later), the table and its recipe, XP 25 / half on failure, the tag-prefix rule.
+**Not yet:** overload enchanting (post-EA); conditional effects (the schema's `conditional` type isn't read); an
+enchanter's minigame; co-op.
+
 ## Crafter mark
 `ItemStack.CrafterName` set on creation, shown in tooltips. Master tier gets a distinguishing visual effect.
 
@@ -138,10 +156,10 @@ without a spec and can be changed in one place each.
   Items with no tier (start gear, salvage, anything crafted before T-090) count as Common.
 - With these defaults a new survivor makes Common gear by hand (score ≈ 0.33); Crude needs poor inputs. Lv 30 at an
   anvil makes Fine; Lv 50 makes Superior; Master needs the minigame or Master inputs.
-- Enchant slots follow the tier table but nothing fills them yet (T-106).
+- Enchant slots follow the tier table; T-106 fills them (§Enchanting Implementation).
 
 ## Open questions
 - ~~How `stationTier` is derived~~ — [invented] above
 - ~~How `materialPurity` is computed~~ — [invented] above
-- The Core enchant type list
-- Whether Enchanting gets its own adjacent-assist / minigame, or reuses this sheet's — not decided, tracked at BACKLOG T-106
+- ~~The Core enchant type list~~ — [invented] in §Enchanting Implementation (T-106)
+- Whether Enchanting gets its own adjacent-assist / minigame, or reuses this sheet's — not decided (T-106 shipped with neither)

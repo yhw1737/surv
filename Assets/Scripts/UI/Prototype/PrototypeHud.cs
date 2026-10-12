@@ -64,8 +64,17 @@ namespace Isle.UI.Prototype
 
         void Awake() => Instance = this;
 
-        void OnEnable() => GameFeed.StorageOpened += OnStorageOpened;
-        void OnDisable() => GameFeed.StorageOpened -= OnStorageOpened;
+        void OnEnable()
+        {
+            GameFeed.StorageOpened += OnStorageOpened;
+            GameFeed.EnchantOpened += OnEnchantOpened;
+        }
+
+        void OnDisable()
+        {
+            GameFeed.StorageOpened -= OnStorageOpened;
+            GameFeed.EnchantOpened -= OnEnchantOpened;
+        }
         void OnStorageOpened(object box) => _openBox = box as StorageBox;
 
         void Update()
@@ -90,6 +99,7 @@ namespace Isle.UI.Prototype
             // Forging takes the mouse (bellows, hammer): the craft and cook windows get out of the way.
             if (_player != null && _player.Forge != null) _craftOpen = _cookOpen = false;
 
+            TickEnchantWindow();
             UpdatePlacing();
             IsPlacing = _placing != null;
         }
@@ -147,6 +157,7 @@ namespace Isle.UI.Prototype
             if (_skillsOpen) DrawSkills();
             DrawBuffs();
             if (_openBox != null) DrawBox();
+            if (_enchantOpen) DrawEnchantWindow();
             if (_placing != null) DrawPlacementGhost();
             if (_player.DrawStartedAt >= 0f) DrawChargeBar();
             if (_player.Fight != null) DrawFight();
@@ -407,6 +418,13 @@ namespace Isle.UI.Prototype
             if (wear?.Quality is { } quality)
                 lines.Add($"{Lang.Get("@ui.quality")}: {Lang.Get("@quality." + quality.ToString().ToLowerInvariant())} (×{Isle.Gameplay.Crafting.QualityCalculator.PowerMult(quality):0.##})");
             if (wear != null && wear.Carcass == null) lines.Add($"{Lang.Get("@ui.durability")}: {wear.Current} / {wear.Max}");
+            // SYS-CRAFT-01 §Enchanting: what's set, and how many slots its quality leaves.
+            if (item.Durability is > 0 && QualityCalculator.EnchantSlots(wear?.Quality) > 0)
+            {
+                var set = wear?.Enchants ?? new List<Isle.Core.Ids.NamespacedId>();
+                var names = set.GroupBy(id => id).Select(g => (DefRegistry.TryGet<EnchantDef>(g.Key, out var e) ? Lang.Get(e.Name) : g.Key.Value) + (g.Count() > 1 ? $" ×{g.Count()}" : ""));
+                lines.Add($"{Lang.Get("@ui.enchants")}: {(set.Count > 0 ? string.Join(", ", names) + "  ·  " : "")}{string.Format(Lang.Get("@ui.enchant_slots"), set.Count, QualityCalculator.EnchantSlots(wear?.Quality))}");
+            }
             if (wear?.Carcass is { } body)
             {
                 lines.Add($"{Lang.Get("@ui.spoilage")}: {SpoilText(body.Spoilage)}");

@@ -1,0 +1,29 @@
+{
+  "id": "isle:sturdy",
+  "name": "@enchant.sturdy",
+  "applicable_tags": [
+    "weapon",
+    "tool",
+    "armor"
+  ],
+  "max_stack": 2,
+  "effects": [
+    {
+      "type": "wear_skip_chance",
+      "value": 0.3
+    }
+  ],
+  "catalyst": [
+    {
+      "item": "isle:heartwood",
+      "count": 1
+    }
+  ],
+  "enchanting_skill_required": 10,
+  "skill": "isle:enchanting",
+  "xp": {
+    "skill": "isle:enchanting",
+    "base": 25,
+    "per_unit": 0
+  }
+}

@@ -46,9 +46,21 @@ namespace Isle.Gameplay.Inventory
                 if (wear == null) return false;
                 _wear[slot] = wear;
             }
+            if (Crafting.EnchantEffects.SkipsWear(wear, UnityEngine.Random.value)) return false; // a sturdy enchant spared it
             var wasBroken = wear.Broken;
             wear.Use(amount);
             return !wasBroken && wear.Broken;
+        }
+
+        /// <summary>The slot's wear record, created now if the item has never been used (enchanting needs one).</summary>
+        public ItemWear EnsureWear(string slot)
+        {
+            var item = Get(slot);
+            if (item == null) return null;
+            if (_wear.TryGetValue(slot, out var wear)) return wear;
+            wear = ItemWear.Fresh(item);
+            if (wear != null) _wear[slot] = wear;
+            return wear;
         }
 
         /// <summary>The grid a bag opened, or null if nothing's equipped there or it isn't a bag.</summary>

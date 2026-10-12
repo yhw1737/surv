@@ -47,6 +47,10 @@ namespace Isle.Gameplay.Feedback
         public static void RaiseDefended(Vector2 at, Combat.BlockOutcome outcome) => Defended?.Invoke(at, outcome);
         public static void RaisePlayerHit(float damage) => PlayerHit?.Invoke(damage);
         public static void RaiseStorageOpened(object box) => StorageOpened?.Invoke(box);
+
+        /// <summary>E at an enchanting table: the HUD opens the enchanting window for it.</summary>
+        public static event Action<object> EnchantOpened;
+        public static void RaiseEnchantOpened(object table) => EnchantOpened?.Invoke(table);
         public static void RaiseXpGained(NamespacedId skill, float amount, int newLevel) => XpGained?.Invoke(skill, amount, newLevel);
         public static void RaiseNotice(string langKey) => Notice?.Invoke(langKey);
 

@@ -1,0 +1,19 @@
+{
+  "id": "isle:enchanting_table_kit",
+  "name": "@item.enchanting_table_kit",
+  "tags": [
+    "placeable"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 10.0,
+  "stack": 1,
+  "places": "isle:enchanting_table",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#5A4A78",
+    "accent": "#C0A8FF"
+  }
+}

@@ -76,8 +76,11 @@ namespace Isle.Modding.Defs
                 switch (effect.Type)
                 {
                     case "damage_mult":
+                    case "armor_mult":
+                    case "tool_speed_mult":
+                    case "wear_skip_chance":
                         if (effect.Value == null)
-                            errors.Add($"effects[{i}] (damage_mult): missing \"value\".");
+                            errors.Add($"effects[{i}] ({effect.Type}): missing \"value\".");
                         break;
                     case "conditional":
                         if (effect.When == null)

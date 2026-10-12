@@ -1,0 +1,27 @@
+{
+  "id": "isle:warding",
+  "name": "@enchant.warding",
+  "applicable_tags": [
+    "armor"
+  ],
+  "max_stack": 2,
+  "effects": [
+    {
+      "type": "armor_mult",
+      "value": 1.15
+    }
+  ],
+  "catalyst": [
+    {
+      "item": "isle:temple_jade",
+      "count": 1
+    }
+  ],
+  "enchanting_skill_required": 20,
+  "skill": "isle:enchanting",
+  "xp": {
+    "skill": "isle:enchanting",
+    "base": 25,
+    "per_unit": 0
+  }
+}

@@ -18,6 +18,12 @@ namespace Isle.Data
         public IngredientRef[] Catalyst { get; init; }
         /// <summary>Enchanting is the enchanter's skill, not the smith's — SYS-CRAFT-01 §Enchanting.</summary>
         public int EnchantingSkillRequired { get; init; }
+
+        /// <summary>The skill that applies it and gains XP from it (<c>isle:enchanting</c>).</summary>
+        public NamespacedId Skill { get; init; }
+
+        /// <summary>XP a success grants (a failure grants half). Null grants none.</summary>
+        public XpAward Xp { get; init; }
     }
 
     /// <summary>
