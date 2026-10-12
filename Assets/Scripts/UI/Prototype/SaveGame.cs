@@ -198,6 +198,7 @@ namespace Isle.UI.Prototype
             if (player.TryGetComponent<Vitals>(out var vitals))
             {
                 save.Health = vitals.Health;
+                save.Mana = vitals.Mana;
                 save.Hunger = vitals.Hunger;
                 save.Thirst = vitals.Thirst;
                 save.Stamina = vitals.Stamina;
@@ -343,6 +344,8 @@ namespace Isle.UI.Prototype
 
             foreach (var saved in save.Skills)
                 if (NamespacedId.TryParse(saved.Id, out var skillId, out _)) player.Skills.Restore(skillId, saved.Xp);
+            // Mana after the skills: its capacity depends on them (SYS-MAGIC-01).
+            if (vitals != null) vitals.SetMana(save.Mana >= 0f ? save.Mana : vitals.ManaMax);
 
             // T-150: what time-limited state the character carried (after Become, which sets up the traits).
             if (vitals != null)

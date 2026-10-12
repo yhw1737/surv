@@ -1,0 +1,24 @@
+{
+  "id": "isle:ember_staff",
+  "name": "@weapon.ember_staff",
+  "tags": [
+    "weapon",
+    "weapon/focus"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 3
+  },
+  "weight": 1.2,
+  "combat_skill": "isle:magic",
+  "base_power": 20,
+  "attack_speed": 1.1,
+  "reach": 0,
+  "stamina_cost": 0,
+  "grip": "two_hand",
+  "quality_enabled": true,
+  "durability": 150,
+  "projectile_speed": 14,
+  "damage_type": "heat",
+  "mana_cost": 14
+}

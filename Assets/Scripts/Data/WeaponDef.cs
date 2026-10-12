@@ -35,6 +35,9 @@ namespace Isle.Data
         /// <summary>SYS-COMBAT-02 damage type for a weapon without <see cref="Attacks"/>, and for its projectiles.</summary>
         public string DamageType { get; init; }
 
+        /// <summary>SYS-MAGIC-01: a focus — mana spent per cast. 0 for every other weapon.</summary>
+        public float ManaCost { get; init; }
+
         /// <summary>
         /// <c>one_hand</c> / <c>two_hand</c> / <c>tool</c>. Selects IK targets — and a <c>two_hand</c> weapon can't be used while swimming (SYS-DUNG-01). Swapping a
         /// weapon must never change gameplay through the rig (ARCHITECTURE §Presentation boundary).

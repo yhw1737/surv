@@ -1,0 +1,19 @@
+{
+  "id": "isle:glowcap",
+  "name": "@item.glowcap",
+  "tags": [
+    "herb",
+    "arcane"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.05,
+  "stack": 40,
+  "icon_style": {
+    "shape": "berries",
+    "color": "#9FD8E8",
+    "accent": "#E8FBFF"
+  }
+}

@@ -24,5 +24,11 @@ namespace Isle.Data
 
         /// <summary>Combat skills: XP per point of damage dealt (docs/content/xp_table.md). 0 for production skills.</summary>
         public float XpPerDamage { get; init; }
+
+        /// <summary>SYS-MAGIC-01: mana capacity each level of this skill adds (magic: 1). 0 for most skills.</summary>
+        public float ManaPerLevel { get; init; }
+
+        /// <summary>SYS-MAGIC-01: mana regenerated per second each level of this skill adds (magic: 0.02).</summary>
+        public float ManaRegenPerLevel { get; init; }
     }
 }

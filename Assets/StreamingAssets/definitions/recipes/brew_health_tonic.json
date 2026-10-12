@@ -1,0 +1,32 @@
+{
+  "id": "isle:brew_health_tonic",
+  "name": "@recipe.brew_health_tonic",
+  "station": "isle:brewing_stand",
+  "ingredients": [
+    {
+      "item": "isle:bitter_herb",
+      "count": 2
+    },
+    {
+      "item": "isle:berries",
+      "count": 2
+    }
+  ],
+  "output": {
+    "item": "isle:health_tonic",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:enchanting",
+    "base": 20,
+    "per_unit": 10
+  },
+  "skills": [
+    {
+      "skill": "isle:enchanting",
+      "level": 10,
+      "primary": true
+    }
+  ]
+}

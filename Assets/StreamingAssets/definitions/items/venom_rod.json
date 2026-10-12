@@ -1,0 +1,23 @@
+{
+  "id": "isle:venom_rod",
+  "name": "@item.venom_rod",
+  "tags": [
+    "weapon",
+    "weapon/focus"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 2
+  },
+  "weight": 0.6,
+  "stack": 1,
+  "durability": 150,
+  "equip_slot": "main_hand",
+  "weapon": "isle:venom_rod",
+  "hold": {
+    "style": "wand",
+    "length": 0.85,
+    "color": "#3A4A2A",
+    "tip": "#8AE04A"
+  }
+}

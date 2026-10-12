@@ -226,6 +226,14 @@ namespace Isle.UI.Art
                     p.Line(V(0.64f, 0.72f), V(0.76f, 0.72f), 0.035f, Color.white, false);
                     p.Line(V(0.7f, 0.66f), V(0.7f, 0.78f), 0.035f, Color.white, false);
                     break;
+                case "potion":
+                    // A round glass flask: the brew's colour inside, a cork, a highlight.
+                    p.Disk(V(0.5f, 0.4f), 0.26f, new Color(0.85f, 0.92f, 0.95f));
+                    p.Disk(V(0.5f, 0.38f), 0.2f, c, false);
+                    p.Box(V(0.5f, 0.7f), V(0.08f, 0.1f), 0.02f, 0f, new Color(0.85f, 0.92f, 0.95f));
+                    p.Box(V(0.5f, 0.83f), V(0.07f, 0.05f), 0.02f, 0f, new Color(0.62f, 0.45f, 0.3f));
+                    p.Disk(V(0.42f, 0.46f), 0.05f, new Color(1f, 1f, 1f, 0.7f), false);
+                    break;
                 default:
                     p.Box(V(0.5f, 0.5f), V(0.3f, 0.3f), 0.08f, 0f, c);
                     break;
@@ -276,6 +284,18 @@ namespace Isle.UI.Art
                     for (var i = 0; i < 10; i++) p.Line(pts[i], pts[i + 1], 0.06f, c, false);
                     break;
                 }
+                case "wand":
+                    p.Line(a + d * 0.1f, b - d * 0.1f, 0.05f, c);
+                    p.Disk(b - d * 0.08f, 0.09f, tip);
+                    p.Disk(b - d * 0.1f, 0.04f, Light(tip, 0.6f), false);
+                    break;
+                case "staff":
+                    p.Line(a, b - d * 0.12f, 0.06f, c);
+                    p.Line(b - d * 0.2f + n * 0.08f, b - d * 0.04f, 0.04f, Dark(c));
+                    p.Line(b - d * 0.2f - n * 0.08f, b - d * 0.04f, 0.04f, Dark(c));
+                    p.Disk(b - d * 0.06f, 0.11f, tip);
+                    p.Disk(b - d * 0.08f, 0.05f, Light(tip, 0.6f), false);
+                    break;
                 case "torch":
                     p.Line(a, b - d * 0.2f, 0.07f, c);
                     p.Line(b - d * 0.26f + n * 0.05f, b - d * 0.26f - n * 0.05f, 0.04f, Dark(c));

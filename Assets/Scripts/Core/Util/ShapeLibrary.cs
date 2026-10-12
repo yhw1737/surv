@@ -33,7 +33,7 @@ namespace Isle.Core.Util
             "campfire", "crate", "warehouse", "workbench", "pot", "rack", "rain_catcher", "plot", "sack",
             "sea_cave", "giant_tree", "sinkhole", "ruin_gate", "stairs_down", "stairs_up", "key", "locked_door",
             "gate_water", "gate_roots", "gate_bars", "gate_runes", "chest", "ore_vein", "furnace", "anvil", "wreckage",
-            "stump", "rubble", "bush_bare", "stubble", "gear_door", "enchanting_table", "cauldron", "smokehouse", "jar",
+            "stump", "rubble", "bush_bare", "stubble", "gear_door", "enchanting_table", "cauldron", "smokehouse", "jar", "brewing_stand",
         };
 
         /// <summary>A sprite one world unit across at scale 1, cached per (shape, colour).</summary>
@@ -394,6 +394,20 @@ namespace Isle.Core.Util
                     canvas.Inked = false;
                     canvas.Circle(0.72f, 0.9f, 0.05f, new Color(0.8f, 0.8f, 0.8f, 0.6f));
                     canvas.Circle(0.78f, 0.96f, 0.035f, new Color(0.8f, 0.8f, 0.8f, 0.45f));
+                    canvas.Inked = true;
+                    break;
+                case "brewing_stand":
+                    // A small wooden bench with a glass alembic: a round flask, a bent neck, a drip into a cup.
+                    canvas.Rect(0.14f, 0.06f, 0.22f, 0.42f, Bark);
+                    canvas.Rect(0.78f, 0.06f, 0.86f, 0.42f, Bark);
+                    canvas.Rect(0.08f, 0.4f, 0.92f, 0.5f, c);
+                    canvas.Circle(0.36f, 0.64f, 0.13f, new Color(0.62f, 0.85f, 0.92f));
+                    canvas.Rect(0.33f, 0.74f, 0.39f, 0.86f, new Color(0.62f, 0.85f, 0.92f));
+                    canvas.Line(0.36f, 0.86f, 0.66f, 0.7f, 0.025f, new Color(0.62f, 0.85f, 0.92f));
+                    canvas.Rect(0.6f, 0.5f, 0.74f, 0.62f, Ivory);
+                    canvas.Inked = false;
+                    canvas.Circle(0.36f, 0.6f, 0.08f, new Color(0.45f, 0.75f, 0.95f, 0.8f));
+                    canvas.Circle(0.33f, 0.68f, 0.03f, new Color(1f, 1f, 1f, 0.7f));
                     canvas.Inked = true;
                     break;
                 case "jar":

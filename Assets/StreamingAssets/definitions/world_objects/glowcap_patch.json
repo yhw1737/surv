@@ -1,0 +1,41 @@
+{
+  "id": "isle:glowcap_patch",
+  "name": "@world_object.glowcap_patch",
+  "tags": [
+    "node/herb",
+    "herb"
+  ],
+  "spawn": {
+    "biomes": [
+      "isle:marsh"
+    ],
+    "density": 0.003,
+    "cluster": {
+      "scale_tiles": 20,
+      "coverage": 0.2,
+      "inside": 3.5,
+      "outside": 0.1
+    },
+    "elsewhere": 0.0
+  },
+  "gather": {
+    "item": "isle:glowcap",
+    "count": 2,
+    "uses": 1,
+    "respawn_minutes": 1440,
+    "stamina_cost": 4,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 15,
+      "per_unit": 0
+    },
+    "time_sec": 3
+  },
+  "visual": {
+    "shape": "grass",
+    "depleted": "stubble",
+    "color": "#8FD0E0",
+    "size": 0.8,
+    "jitter": 0.1
+  }
+}

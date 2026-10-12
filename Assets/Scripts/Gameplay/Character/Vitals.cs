@@ -124,6 +124,8 @@ namespace Isle.Gameplay.Character
                 }
             }
 
+            UpdateMana(Time.deltaTime);
+
             _accumulatedSeconds += Time.deltaTime;
             while (_accumulatedSeconds >= TickIntervalSeconds)
             {
@@ -318,6 +320,7 @@ namespace Isle.Gameplay.Character
             if (World.Difficulty.IsUnlimited)
             {
                 Health = Hunger = Thirst = Stamina = VitalsCalculator.GaugeMax;
+                Mana = ManaMax;
                 HypothermiaSeverity = 0f;
                 return;
             }
@@ -434,6 +437,85 @@ namespace Isle.Gameplay.Character
             WetPenalty = 0f;
             HypothermiaSeverity = 0f;
             foreach (var id in new List<NamespacedId>(Buffs.ActiveBuffIds(NowMinutes))) Buffs.Clear(id);
+            _overTime.Clear();
+            Mana = ManaMax;
+        }
+
+        // ------------------------------------------------------------------ mana (SYS-MAGIC-01), drinks (SYS-BREW-01)
+
+        /// <summary>SYS-MAGIC-01: the mana gauge. Server state.</summary>
+        public float Mana { get; private set; } = Combat.ManaCalculator.ManaBase;
+
+        /// <summary>Capacity from every skill's <c>mana_per_level</c> (magic: +1 a level).</summary>
+        public float ManaMax => Combat.ManaCalculator.ManaMax(SkillGrowth(s => s.ManaPerLevel));
+
+        float ManaRegenPerSecond => Combat.ManaCalculator.ManaRegen(SkillGrowth(s => s.ManaRegenPerLevel));
+
+        IEnumerable<(float, int)> SkillGrowth(System.Func<SkillDef, float> perLevel)
+        {
+            if (!TryGetComponent<PlayerInteraction>(out var player)) yield break;
+            foreach (var skill in player.Skills.Skills)
+            {
+                var per = perLevel(skill);
+                if (per != 0f) yield return (per, player.Skills.Level(skill.Id));
+            }
+        }
+
+        sealed class OverTime
+        {
+            public string Type;
+            public float Amount, Seconds, Remaining;
+        }
+
+        readonly List<OverTime> _overTime = new();
+
+        /// <summary>Heal and mana effects still running (for the HUD and the debug screen).</summary>
+        public int EffectsRunning => _overTime.Count;
+
+        /// <summary>Server-side: spends <paramref name="amount"/> mana if there's that much; Unlimited casts for free.</summary>
+        public bool TrySpendMana(float amount)
+        {
+            if (!IsServer) return false;
+            if (World.Difficulty.IsUnlimited) return true;
+            if (Mana < amount) return false;
+            Mana -= amount;
+            return true;
+        }
+
+        public void RestoreMana(float amount) => Mana = Mathf.Clamp(Mana + amount, 0f, ManaMax);
+
+        /// <summary>A save's mana, clamped to what the survivor can hold now.</summary>
+        public void SetMana(float mana) => Mana = Mathf.Clamp(mana, 0f, ManaMax);
+
+        public void Heal(float amount) => Health = Mathf.Clamp(Health + amount, 0f, VitalsCalculator.GaugeMax);
+
+        /// <summary>SYS-BREW-01: one consume effect, at once or started over time (over-time effects stack).</summary>
+        public void ApplyConsume(ConsumeEffect effect)
+        {
+            if (!IsServer || effect == null) return;
+            switch (effect.Type)
+            {
+                case Combat.ManaCalculator.Heal: Heal(effect.Amount); break;
+                case Combat.ManaCalculator.Mana: RestoreMana(effect.Amount); break;
+                case Combat.ManaCalculator.HealOverTime:
+                case Combat.ManaCalculator.ManaOverTime:
+                    if (effect.Seconds > 0f) _overTime.Add(new OverTime { Type = effect.Type, Amount = effect.Amount, Seconds = effect.Seconds, Remaining = effect.Seconds });
+                    break;
+            }
+        }
+
+        void UpdateMana(float dt)
+        {
+            Mana = Mathf.Clamp(Mana + ManaRegenPerSecond * dt, 0f, ManaMax);
+            for (var i = _overTime.Count - 1; i >= 0; i--)
+            {
+                var effect = _overTime[i];
+                var step = Combat.ManaCalculator.OverTimeStep(effect.Amount, effect.Seconds, effect.Remaining, dt);
+                if (effect.Type == Combat.ManaCalculator.HealOverTime) Heal(step);
+                else RestoreMana(step);
+                effect.Remaining -= dt;
+                if (effect.Remaining <= 0f) _overTime.RemoveAt(i);
+            }
         }
     }
 }

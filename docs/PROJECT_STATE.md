@@ -6,6 +6,18 @@
 ## Header
 
 - Last updated: **2026-10-12**
+- **2026-10-12 — T-107 brewing + T-117 magic (mana).** Same working tree (split when committed — T-107/T-117 files:
+  SYS-BREW-01 + SYS-MAGIC-01 (new specs), `ManaCalculator` (new), `SkillDef` (mana growth), `WeaponDef.ManaCost`,
+  `ItemDef.Consume`, `SchemaValidator` (consume, focus), `Vitals` (mana gauge, regen, heal/mana at once and over time),
+  `PlayerInteraction` (brew drinking, `CastSpell`, no block with a focus), `Projectiles` (bolts: colour, no falloff),
+  `SaveData/SaveGame` (mana, v10), `PrototypeHud` (mana bar, tooltip effects / mana cost), `DebugOverlay`,
+  `ShapeLibrary` (brewing stand), `ItemIcons` (potion, wand, staff), `StickFigureDrawer` (wand/staff in hand),
+  definitions (magic skill growth, glowcap + patch, brewing stand + kit, 7 brews + recipes, `stimulated`, 3 foci weapons
+  + items + recipes), lang, `MagicBrewTests`, the `BrewAndCast` smoke step). Developer decisions 2026-10-12: brewing
+  makes drinks/medicines/drugs with buff or health/mana effects, instant or over time; magic uses mana. **Verified:**
+  EditMode 784/784 (+7: mana formula at Lv 0/50, over-time spreading, validator, content), PlayMode 5/5 (a tonic brewed
+  at a stand heals 30; a draught heals ~2/s; a mana tonic +50; a wand bolt costs 8 mana with FinalPower damage and
+  hits; with 5 mana nothing fires); brewing stand, staff in hand and all new icons rendered.
 - **2026-10-12 — T-028 world difficulty.** Same working tree (split when committed — T-028 files: SYS-DIFF-01 (new spec),
   `Gameplay/World/Difficulty.cs`, `Vitals` (drains, Unlimited lock, no damage/stamina spend), `DeathHandler` (no death in
   Unlimited), `PlayerInteraction` (creature damage ×mult; `RequestCreativeTake`), `PrototypeHud(.Creative)` (I palette),
@@ -2128,6 +2140,13 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-12 — T-107 / T-117 proposed values
+  All [proposed] in SYS-BREW-01 / SYS-MAGIC-01: ManaBase 100, ManaRegenBase 0.5/s, magic +1 mana and +0.02/s per level;
+  the three foci's stats and recipes; the seven brews' ingredients, levels and effects; glowcap (marsh, density 0.003);
+  the brewing stand recipe (Crafting 5: wood 6, copper ingot 2, stone 2); `stimulated` (30 min, stamina regen ×1.5,
+  hunger drain ×1.5). Interpretations: brews are craft recipes (no BrewDef); a `consume` block marks a brew (drunk as is,
+  no satiety); over-time effects stack, end on death, aren't saved; bolts have no range falloff and no stamina cost.
+
 - ### 2026-10-12 — T-028 difficulty interpretations
   What the multiplier touches follows the 2026-09-10 decision (hunger/thirst drain, creature damage; HP not); miasma and
   temperature aren't scaled (not a creature's attack). Unlimited [invented details]: every gauge locked full, no damage,

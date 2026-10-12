@@ -1,0 +1,23 @@
+{
+  "id": "isle:apprentice_wand",
+  "name": "@item.apprentice_wand",
+  "tags": [
+    "weapon",
+    "weapon/focus"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 2
+  },
+  "weight": 0.6,
+  "stack": 1,
+  "durability": 120,
+  "equip_slot": "main_hand",
+  "weapon": "isle:apprentice_wand",
+  "hold": {
+    "style": "wand",
+    "length": 0.75,
+    "color": "#7A5A3A",
+    "tip": "#9FC8FF"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "isle:stimulated",
+  "name": "@buff.stimulated",
+  "duration_min": 30,
+  "effects": [
+    {
+      "type": "stamina_regen_mult",
+      "value": 1.5
+    },
+    {
+      "type": "hunger_drain_mult",
+      "value": 1.5
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "isle:berry_juice",
+  "name": "@item.berry_juice",
+  "tags": [
+    "brew",
+    "drink"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.3,
+  "stack": 5,
+  "nutrition": {
+    "hunger": 4,
+    "thirst": 25,
+    "sanitation_risk": 0.0
+  },
+  "buffs": [
+    "isle:hydrated"
+  ],
+  "consume": [],
+  "icon_style": {
+    "shape": "potion",
+    "color": "#C0304A",
+    "accent": "#E8E0D0"
+  }
+}

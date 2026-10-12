@@ -395,6 +395,19 @@ namespace Isle.UI.Art
                     return;
                 }
 
+                case "wand":
+                case "staff":
+                {
+                    // A focus: a shaft with a softly pulsing orb of the bolt's colour at its end.
+                    Shaft(mesh, hand - d * (hold.Style == "staff" ? 0.35f : 0.06f), end, shaft);
+                    var pulse = 1f + 0.08f * Mathf.Sin(time * 5f);
+                    var orb = end + d * 0.06f;
+                    mesh.Disk(orb, (hold.Style == "staff" ? 0.17f : 0.12f) * pulse, new Color(tip.r, tip.g, tip.b, 0.3f));
+                    mesh.Disk(orb, (hold.Style == "staff" ? 0.1f : 0.075f) + Edge, Ink);
+                    mesh.Disk(orb, hold.Style == "staff" ? 0.1f : 0.075f, tip);
+                    return;
+                }
+
                 case "torch":
                 {
                     Shaft(mesh, hand - d * 0.1f, end, shaft);

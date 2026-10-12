@@ -26,6 +26,14 @@ namespace Isle.Modding.Defs
                     ValidateIngredients(enchant.Catalyst, "catalyst", errors);
                     ValidateEffects(enchant.Effects, errors);
                     break;
+                case ItemDef item:
+                    ValidateConsume(item.Consume, errors);
+                    break;
+                case WeaponDef weapon:
+                    if (weapon.ManaCost < 0f) errors.Add("\"mana_cost\" can't be negative.");
+                    if (weapon.ManaCost > 0f && weapon.ProjectileSpeed <= 0f)
+                        errors.Add("a focus (\"mana_cost\" > 0) needs \"projectile_speed\" — its bolt has to fly.");
+                    break;
                 case CreatureDef creature:
                     ValidateRange(creature.Butcher?.ConditionRange, "butcher.condition_range", errors);
                     break;
@@ -54,6 +62,31 @@ namespace Isle.Modding.Defs
                 var hasTag = !string.IsNullOrEmpty(refs[i].Tag);
                 if (hasItem == hasTag)
                     errors.Add($"{field}[{i}]: exactly one of \"item\" or \"tag\" must be set.");
+            }
+        }
+
+        // SYS-BREW-01 §Effects. Unlike enchant effects the list is closed: an unknown type would silently do nothing.
+        static void ValidateConsume(ConsumeEffect[] effects, List<string> errors)
+        {
+            if (effects == null) return;
+            for (var i = 0; i < effects.Length; i++)
+            {
+                var effect = effects[i];
+                switch (effect.Type)
+                {
+                    case "heal":
+                    case "mana":
+                        if (effect.Amount <= 0f) errors.Add($"consume[{i}] ({effect.Type}): \"amount\" must be above 0.");
+                        break;
+                    case "heal_over_time":
+                    case "mana_over_time":
+                        if (effect.Amount <= 0f) errors.Add($"consume[{i}] ({effect.Type}): \"amount\" must be above 0.");
+                        if (effect.Seconds <= 0f) errors.Add($"consume[{i}] ({effect.Type}): \"seconds\" must be above 0.");
+                        break;
+                    default:
+                        errors.Add($"consume[{i}]: unknown type \"{effect.Type}\" (heal, heal_over_time, mana, mana_over_time).");
+                        break;
+                }
             }
         }
 

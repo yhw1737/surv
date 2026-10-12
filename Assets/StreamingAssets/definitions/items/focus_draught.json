@@ -1,0 +1,31 @@
+{
+  "id": "isle:focus_draught",
+  "name": "@item.focus_draught",
+  "tags": [
+    "brew",
+    "drug"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.3,
+  "stack": 5,
+  "nutrition": {
+    "hunger": 0,
+    "thirst": -15,
+    "sanitation_risk": 0.0
+  },
+  "consume": [
+    {
+      "type": "mana_over_time",
+      "amount": 120,
+      "seconds": 60
+    }
+  ],
+  "icon_style": {
+    "shape": "potion",
+    "color": "#8A58D8",
+    "accent": "#E8E0D0"
+  }
+}

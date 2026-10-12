@@ -2,5 +2,7 @@
   "id": "isle:magic",
   "name": "@skill.magic",
   "pool": "combat",
-  "xp_per_damage": 1.0
+  "xp_per_damage": 1.0,
+  "mana_per_level": 1.0,
+  "mana_regen_per_level": 0.02
 }

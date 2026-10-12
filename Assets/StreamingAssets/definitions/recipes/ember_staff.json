@@ -1,0 +1,41 @@
+{
+  "id": "isle:craft_ember_staff",
+  "name": "@recipe.ember_staff",
+  "station": "isle:enchanting_table",
+  "ingredients": [
+    {
+      "item": "isle:wood",
+      "count": 4
+    },
+    {
+      "item": "isle:glowcap",
+      "count": 3
+    },
+    {
+      "item": "isle:coal",
+      "count": 2
+    },
+    {
+      "item": "isle:copper_ingot",
+      "count": 2
+    }
+  ],
+  "output": {
+    "item": "isle:ember_staff",
+    "count": 1,
+    "inherit_quality": true
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:enchanting",
+    "base": 30,
+    "per_unit": 10
+  },
+  "skills": [
+    {
+      "skill": "isle:enchanting",
+      "level": 15,
+      "primary": true
+    }
+  ]
+}

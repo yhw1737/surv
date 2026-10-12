@@ -1,0 +1,26 @@
+{
+  "id": "isle:mending_draught",
+  "name": "@item.mending_draught",
+  "tags": [
+    "brew",
+    "medicine"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.3,
+  "stack": 5,
+  "consume": [
+    {
+      "type": "heal_over_time",
+      "amount": 60,
+      "seconds": 30
+    }
+  ],
+  "icon_style": {
+    "shape": "potion",
+    "color": "#E07070",
+    "accent": "#E8E0D0"
+  }
+}

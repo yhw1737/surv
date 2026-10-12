@@ -1,0 +1,32 @@
+{
+  "id": "isle:brew_mana_tonic",
+  "name": "@recipe.brew_mana_tonic",
+  "station": "isle:brewing_stand",
+  "ingredients": [
+    {
+      "item": "isle:glowcap",
+      "count": 2
+    },
+    {
+      "item": "isle:berries",
+      "count": 1
+    }
+  ],
+  "output": {
+    "item": "isle:mana_tonic",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:enchanting",
+    "base": 20,
+    "per_unit": 10
+  },
+  "skills": [
+    {
+      "skill": "isle:enchanting",
+      "level": 10,
+      "primary": true
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "isle:apprentice_wand",
+  "name": "@weapon.apprentice_wand",
+  "tags": [
+    "weapon",
+    "weapon/focus"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 2
+  },
+  "weight": 0.6,
+  "combat_skill": "isle:magic",
+  "base_power": 12,
+  "attack_speed": 1.6,
+  "reach": 0,
+  "stamina_cost": 0,
+  "grip": "one_hand",
+  "quality_enabled": true,
+  "durability": 120,
+  "projectile_speed": 16,
+  "damage_type": "pierce",
+  "mana_cost": 8
+}

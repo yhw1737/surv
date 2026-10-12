@@ -103,6 +103,71 @@ namespace Isle.Tests.PlayMode
             yield return Enchanting();
             yield return Stew();
             yield return DifficultyTiers();
+            yield return BrewAndCast();
+        }
+
+        /// <summary>T-107 SYS-BREW-01 and T-117 SYS-MAGIC-01: a health tonic brewed at a stand heals 30 at once; a mending
+        /// draught heals over time; a mana tonic restores 50; an apprentice wand spends 8 mana per bolt and hurts what it
+        /// hits; with too little mana nothing fires.</summary>
+        IEnumerator BrewAndCast()
+        {
+            var player = FindLocalPlayer();
+            var vitals = player.GetComponent<Vitals>();
+            var inventory = player.GetComponent<InventoryNetwork>();
+            var (shore, _) = CoastSpot(IslandWorld.Instance);
+            Teleport(player, shore);
+            inventory.Bag.Clear();
+            inventory.Slots.Clear();
+            player.Skills.Restore(NamespacedId.Parse("isle:enchanting"), Isle.Gameplay.Skills.XpCurve.TotalXpTo(50));
+            var stand = StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:brewing_stand")), shore + Vector2.left * 1.2f);
+
+            // Brew and drink a health tonic: +30 at once.
+            Give(inventory, "isle:bitter_herb", 2);
+            Give(inventory, "isle:berries", 2);
+            player.RequestCraft("isle:brew_health_tonic");
+            yield return WaitUntil(() => CountOf(inventory, "isle:health_tonic") == 1, 3f, "the tonic was never brewed");
+            vitals.Restore(50f, 100f, 100f, 100f, Vitals.ComfortableTemperature, 0f);
+            player.RequestUse("isle:health_tonic");
+            yield return WaitUntil(() => CountOf(inventory, "isle:health_tonic") == 0, 2f, "the tonic wasn't drunk");
+            Assert.AreEqual(80f, vitals.Health, 0.5f, "a health tonic heals 30 at once");
+
+            // A mending draught heals over time.
+            vitals.Restore(20f, 100f, 100f, 100f, Vitals.ComfortableTemperature, 0f);
+            Give(inventory, "isle:mending_draught", 1);
+            player.RequestUse("isle:mending_draught");
+            yield return WaitUntil(() => vitals.EffectsRunning > 0, 2f, "the draught started nothing");
+            Assert.Less(vitals.Health, 30f, "a draught healed at once");
+            yield return new WaitForSeconds(2f);
+            Assert.That(vitals.Health, Is.InRange(22f, 30f), "about 2 HP a second");
+
+            // A mana tonic: +50.
+            vitals.SetMana(10f);
+            Give(inventory, "isle:mana_tonic", 1);
+            player.RequestUse("isle:mana_tonic");
+            yield return WaitUntil(() => vitals.Mana >= 59f, 2f, "the mana tonic restored nothing");
+            Assert.Less(vitals.Mana, 62f, "the mana tonic restored too much");
+
+            // An apprentice wand: a bolt costs 8 mana and hurts what it hits.
+            var wand = DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:apprentice_wand"));
+            Assert.IsTrue(inventory.Slots.TryEquip("main_hand", wand, ItemWear.Fresh(wand)));
+            var rabbitDef = DefRegistry.Get<CreatureDef>(NamespacedId.Parse("isle:rabbit"));
+            var target = CreatureDirector.Instance.SpawnAt(rabbitDef, shore + Vector2.left * 3f, false);
+            var targetHealth = target.Health;
+            vitals.SetMana(20f);
+            player.RequestAttack(target.Position - shore);
+            yield return WaitUntil(() => vitals.Mana < 14f, 2f, "the wand cast nothing");
+            Assert.AreEqual(12f, vitals.Mana, 0.6f, "a bolt costs 8 mana");
+            Assert.AreEqual(Isle.Gameplay.Combat.PowerCalculator.FinalPower(12f, player.LevelOf(NamespacedId.Parse("isle:magic"))), player.LastSpellDamage, 1e-3f, "bolt damage");
+            yield return WaitUntil(() => target.Dead || target.Health < targetHealth, 3f, "the bolt never hit");
+
+            // Too little mana: nothing fires.
+            yield return new WaitForSeconds(0.8f);
+            vitals.SetMana(5f);
+            player.RequestAttack(Vector2.left);
+            yield return new WaitForSeconds(0.4f);
+            Assert.GreaterOrEqual(vitals.Mana, 5f, "a cast went through without the mana");
+            inventory.Slots.Clear();
+            StructureFactory.Remove(stand);
         }
 
         /// <summary>T-028 SYS-DIFF-01: Hard creature strikes land ×1.25 of Normal; Unlimited can't be hurt, doesn't get

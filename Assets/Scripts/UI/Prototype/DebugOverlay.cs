@@ -225,7 +225,7 @@ namespace Isle.UI.Prototype
         static void Vitals(List<string> l, PlayerInteraction player)
         {
             if (player == null || !player.TryGetComponent<Vitals>(out var v)) return;
-            l.Add($"HP {v.Health:0.0} · hunger {v.Hunger:0.0} · thirst {v.Thirst:0.0} · stamina {v.Stamina:0.0}{(v.Exhausted ? " (exhausted)" : "")}");
+            l.Add($"HP {v.Health:0.0} · hunger {v.Hunger:0.0} · thirst {v.Thirst:0.0} · stamina {v.Stamina:0.0}{(v.Exhausted ? " (exhausted)" : "")} · mana {v.Mana:0.0}/{v.ManaMax:0}{(v.EffectsRunning > 0 ? $" · {v.EffectsRunning} over-time" : "")}");
             l.Add($"Body {v.Temperature:0.00}° · ambient {v.AmbientTemp:0.0}° · clothing +{v.ClothingBonus:0.0} · fire {(float.IsInfinity(v.NearestCampfireDistanceTiles) ? "-" : v.NearestCampfireDistanceTiles.ToString("0.0"))} t"
                   + $" · wet {v.WetPenalty:0.00} · hypothermia {v.HypothermiaSeverity:0.00}");
             var dots = string.Join(" ", new[] { DamageTypes.Toxic, DamageTypes.Slash, DamageTypes.Heat }.Select(t => (t, n: v.Status.Stacks(t))).Where(x => x.n > 0).Select(x => $"{x.t}×{x.n}"));

@@ -26,6 +26,7 @@ namespace Isle.Gameplay.Combat
             public System.Action<List<(NamespacedId, int)>> OnKill;
             public System.Action<float> OnDamage;
             public GameObject View;
+            public bool Falloff = true;
         }
 
         public static Projectiles Instance { get; private set; }
@@ -33,7 +34,7 @@ namespace Isle.Gameplay.Combat
         readonly List<Arrow> _arrows = new();
 
         public int InFlight => _arrows.Count;
-        Sprite _sprite;
+        Sprite _sprite, _boltSprite;
 
         void Awake() => Instance = this;
 
@@ -44,17 +45,22 @@ namespace Isle.Gameplay.Combat
 
         /// <param name="onKill">Called with the kill's loot, so the shooter gets it wherever they now stand.</param>
         /// <param name="onDamage">Called with the damage a hit actually dealt — the shooter's ranged XP.</param>
-        public void Fire(Vector2 from, Vector2 direction, float speed, float damage, string damageType, System.Action<List<(NamespacedId, int)>> onKill, System.Action<float> onDamage = null)
+        /// <param name="rangeFalloff">Arrows lose power with distance (SYS-COMBAT-01); spell bolts don't (SYS-MAGIC-01).</param>
+        /// <param name="bolt">A spell bolt's colour: drawn as a glowing ball instead of an arrow.</param>
+        public void Fire(Vector2 from, Vector2 direction, float speed, float damage, string damageType, System.Action<List<(NamespacedId, int)>> onKill,
+            System.Action<float> onDamage = null, bool rangeFalloff = true, Color? bolt = null)
         {
             _sprite ??= PlaceholderVisuals.AsSprite(PlaceholderVisuals.RoundedRect(16, 4, new Color(0.9f, 0.85f, 0.7f), cornerRadius: 1f));
-            var view = new GameObject("Arrow");
+            _boltSprite ??= PlaceholderVisuals.AsSprite(PlaceholderVisuals.RoundedRect(8, 8, Color.white, cornerRadius: 4f));
+            var view = new GameObject(bolt.HasValue ? "Bolt" : "Arrow");
             var renderer = view.AddComponent<SpriteRenderer>();
-            renderer.sprite = _sprite;
+            renderer.sprite = bolt.HasValue ? _boltSprite : _sprite;
+            if (bolt.HasValue) renderer.color = bolt.Value;
             renderer.sortingOrder = 8;
             view.transform.position = from;
             view.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
 
-            _arrows.Add(new Arrow { Position = from, Velocity = direction.normalized * speed, Damage = damage, Type = damageType ?? DamageTypes.Pierce, OnKill = onKill, OnDamage = onDamage, View = view });
+            _arrows.Add(new Arrow { Position = from, Velocity = direction.normalized * speed, Damage = damage, Type = damageType ?? DamageTypes.Pierce, OnKill = onKill, OnDamage = onDamage, View = view, Falloff = rangeFalloff });
         }
 
         void Update()
@@ -72,7 +78,7 @@ namespace Isle.Gameplay.Combat
                 if (hit != null)
                 {
                     var loot = new List<(NamespacedId, int)>();
-                    var dealt = director.DamageTyped(hit, arrow.Damage * RangedCalculator.RangeMult(arrow.Travelled), arrow.Type, loot, Hunting.KillMethod.Precise);
+                    var dealt = director.DamageTyped(hit, arrow.Damage * (arrow.Falloff ? RangedCalculator.RangeMult(arrow.Travelled) : 1f), arrow.Type, loot, Hunting.KillMethod.Precise);
                     arrow.OnDamage?.Invoke(dealt);
                     if (loot.Count > 0) arrow.OnKill?.Invoke(loot);
                 }

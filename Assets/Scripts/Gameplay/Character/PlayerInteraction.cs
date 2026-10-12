@@ -207,7 +207,7 @@ namespace Isle.Gameplay.Character
             else if (mouse != null)
             {
                 var ranged = HoldsRangedWeapon();
-                UpdateBlockInput(mouse, ranged);
+                UpdateBlockInput(mouse, ranged || HoldsFocus());
                 if (mouse.leftButton.wasPressedThisFrame && !PointerGate.Captured && !_sentBlocking)
                 {
                     if (!ranged)
@@ -485,6 +485,11 @@ namespace Isle.Gameplay.Character
 
             var weapon = EquippedWeapon(inventory);
             if (weapon == null || weapon.AttackSpeed <= 0f) return;
+            if (weapon.ManaCost > 0f)
+            {
+                CastSpell(vitals, inventory, weapon);
+                return;
+            }
             var level = LevelOf(weapon.CombatSkill);
             var length = MeleeCombo.Length(level);
 
@@ -979,6 +984,45 @@ namespace Isle.Gameplay.Character
                 dealt => AwardCombatXp(weapon, dealt));
         }
 
+        /// <summary>SYS-MAGIC-01 §Casting: a focus spends mana and sends a bolt toward the aim — no stamina, no charge, no
+        /// sway, no falloff. Damage is the focus's power at the caster's Magic level, its quality and enchants.</summary>
+        void CastSpell(Vitals vitals, InventoryNetwork inventory, WeaponDef focus)
+        {
+            if (Projectiles.Instance == null) return;
+            if (!vitals.TrySpendMana(focus.ManaCost))
+            {
+                GameFeed.RaiseNotice("@ui.no_mana");
+                return;
+            }
+            _nextAttackAt = Time.time + 1f / focus.AttackSpeed;
+            WearSlot(inventory, MainHandSlot); // each cast wears the focus
+            var direction = _attackAim.sqrMagnitude > 0.0001f ? _attackAim.normalized : Vector2.right;
+            var damage = PowerCalculator.FinalPower(focus.BasePower, LevelOf(focus.CombatSkill))
+                         * QualityCalculator.PowerOf(inventory.Slots.WearOf(MainHandSlot))
+                         * EnchantEffects.Mult(inventory.Slots.WearOf(MainHandSlot), EnchantCalculator.DamageMult);
+            LastSpellDamage = damage;
+            GameFeed.RaisePlayerSwing(transform.position, 0f);
+            Projectiles.Instance.Fire((Vector2)transform.position + direction * MuzzleOffsetTiles, direction, focus.ProjectileSpeed, damage,
+                focus.DamageType ?? DamageTypes.Pierce,
+                loot => { foreach (var (item, count) in loot) GiveItem(inventory, item, count); },
+                dealt => AwardCombatXp(focus, dealt), rangeFalloff: false, bolt: SpellColour(focus.DamageType));
+        }
+
+        /// <summary>The last bolt's damage before the target's armor (tests and the debug screen).</summary>
+        public float LastSpellDamage { get; private set; }
+
+        /// <summary>A bolt's colour by its damage type (presentation only).</summary>
+        static Color SpellColour(string damageType) => damageType switch
+        {
+            DamageTypes.Heat => new Color(1f, 0.55f, 0.2f),
+            DamageTypes.Toxic => new Color(0.55f, 0.9f, 0.3f),
+            _ => new Color(0.6f, 0.75f, 1f),
+        };
+
+        /// <summary>A focus in the main hand (no block on the right button with one).</summary>
+        public bool HoldsFocus() =>
+            TryGetComponent<InventoryNetwork>(out var inventory) && EquippedWeapon(inventory) is { ManaCost: > 0f };
+
         Stance CurrentStance()
         {
             if (!TryGetComponent<PlayerMovement>(out var movement)) return Stance.Standing;
@@ -1441,8 +1485,17 @@ namespace Isle.Gameplay.Character
 
             // Dishes aren't registered defs, so look in the bags rather than the registry.
             var containers = inventory.Containers();
-            var item = containers.SelectMany(c => c.Placements).Select(p => p.Item).FirstOrDefault(i => i.Id == itemId && i.Nutrition != null);
+            var item = containers.SelectMany(c => c.Placements).Select(p => p.Item).FirstOrDefault(i => i.Id == itemId && (i.Nutrition != null || i.Consume != null));
             if (item == null || InventoryOps.TakeOne(containers, itemId) == null) return;
+
+            // SYS-BREW-01: a brew is what it says — its nutrition, buffs and effects, no raw-eating method, no satiety.
+            if (item.Consume != null)
+            {
+                if (item.Nutrition != null) vitals.Eat(item.Nutrition.Hunger, item.Nutrition.Thirst);
+                foreach (var buff in item.Buffs ?? Array.Empty<NamespacedId>()) vitals.GrantBuff(buff, item.BuffDurationMult);
+                foreach (var effect in item.Consume) vitals.ApplyConsume(effect);
+                return;
+            }
 
             float hunger, thirst, durationMult;
             IEnumerable<NamespacedId> buffs;
