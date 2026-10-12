@@ -5,7 +5,20 @@
 
 ## Header
 
-- Last updated: **2026-10-10**
+- Last updated: **2026-10-12**
+- **2026-10-12 — T-151 solo bug pass, automated half.** Same working tree as T-105 (split when committed — T-151 files:
+  `Tests/PlayMode/SoakTests.cs` (+ .meta), TESTING §Solo soak, BACKLOG note). A from-the-menu soak: 90 rounds of
+  harvest / hunt / fish / craft / cook / sleep / eat / dungeon / a forced death. **Verified:** PlayMode 5/5 (the soak
+  passes inside the full run too — it stops a leftover host and goes back to the menu if an earlier test left the
+  session in game), EditMode 765/765. No game bug found; summary of the last run: harvests 15/15, casts 4 (3 caught),
+  crafts 4, cooks 4, rests 2, 7 dungeon visits, 1 death, surface creatures 1006 → 1025, carcasses 1, managed 605 → 615
+  MB. T-151 stays open for the developer's play sessions.
+- **2026-10-12 — T-105 ext gate passed.** Branch `feature/T-105-ext-gate` off main 5e0e061 (PRs #49–#53 merged; the
+  old working tree is kept in `git stash` as a backup, identical to main). Files: `Tests/EditMode/ExtGateTests.cs`
+  (+ .meta), BACKLOG, SYS-COOK-01 §Extensibility gate. A temp copy of the definitions plus one new ingredient JSON →
+  all eight methods resolve, react, name, rebuild from the save key, mix; no C#. **Verified:** EditMode 765/765 (+5),
+  PlayMode 4/4. Environment: the macOS 27.0.1 update had removed Rosetta 2, which the Unity batch run needs at start —
+  installed 2026-10-12 with the developer's OK; the scratchpad clone (`surv_63`) was rebuilt.
 - **2026-10-10 — T-102 all eight cook methods.** Branch `feature/T-102-cook-methods`, stacked on T-303 — [PR #53](https://github.com/yhw1737/surv/pull/53) (files: cook_methods porridge/stew/smoke/ferment,
   world_objects cauldron/smokehouse/fermenting_jar + wild_grain_patch/wild_onion_patch, their kits and recipes, items
   wild_grain/wild_onion, `oily` on mackerel/sardine, `ShapeLibrary` (cauldron, smokehouse, jar), lang,

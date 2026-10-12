@@ -183,6 +183,10 @@ Scripts/Gameplay/Cooking/
 **Adding one new ingredient to the definition files must make all 8 methods handle it with zero C# changes.**
 If this fails, the whole modding strategy fails. Use it as the completion criterion.
 
+**Passed 2026-10-12 (T-105)** — `Tests/EditMode/ExtGateTests.cs` adds one ingredient file to a temp copy of the
+definitions and runs it through all eight methods (resolve, reactions, dish name, save-key rebuild, mixing). Re-run it
+whenever the resolver or the method files change.
+
 ## Open questions
 - Failure output (burnt food? partial ingredient return?)
 - Whether water quantity affects results (currently only a gate)
