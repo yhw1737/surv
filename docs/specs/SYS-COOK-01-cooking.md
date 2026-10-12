@@ -143,6 +143,32 @@ count decays by 1 every 2 in-game days
 | 8 | same dish eaten 5× | 5th at 0.40× |
 | 9 | spoiled ingredient | `food_poisoning` applied |
 
+## Implementation (T-102, 2026-10-10)
+All eight methods ship as data (`definitions/cook_methods/`); no C# changed for them — the resolver already read
+`max_buffs` / `max_buffs_min_groups` and the cook time from the definitions.
+
+| Method | Station (new ones bold) | Kit recipe [invented] | Reactions [invented] |
+|---|---|---|---|
+| porridge | cooking pot | — | grain → endurance 1.0, fruit → hydrated 1.0, meat → warm 0.8 |
+| stew | **cauldron** (`station/cauldron`) | workbench, Crafting 10: copper ingot 3, stone 4 | meat → warm 1.0, fish → steady_hand 0.9, vegetable → endurance 1.1 and thirst ×1.3, fruit → hydrated 0.8; `max_buffs` 2 from 3 groups |
+| smoke | **smokehouse** (`station/smokehouse`) | workbench, Crafting 8: wood 10, stone 6, fiber 4 | meat → endurance 1.0, fish → steady_hand 1.0, fish + oily → cold_resist 1.4 |
+| ferment | **fermenting jar** (`station/fermenter`) | workbench, Crafting 12: stone 6, cloth 1 | vegetable → iron_gut 1.0, fruit → hydrated 1.0, grain → endurance 0.9, fish → cold_resist 0.9; `max_buffs` 2 always |
+
+Every method also keeps spoiled → food_poisoning 2.0. Unlock levels, input counts, modifiers and the time
+multipliers the spec names are verbatim. **[invented]:** time_mult porridge 1.5 and ferment 4 (the spec lists the
+others only); the reactions and kits above; XP as the other methods (40 + 15/unit).
+
+New ingredients so stew and porridge can be made at all — nothing on the island had the `grain` or `vegetable` tag:
+**wild grain** (grain; hunger 6; keeps 240 h; patches on the coast) and **wild onion** (vegetable; hunger 5, thirst 3;
+keeps 120 h; patches in the forest), gathered like bitter herb (2 per patch, back in a day) [invented]. Mackerel and
+sardine gained the `oily` tag (SCHEMA's own example), so smoking them gives cold_resist.
+
+- "pot + water" / "cauldron + water": water is still only a gate in name — `requires_water_ml` stays 0, as on boil
+  (open question below).
+- Verified: content test of all eight against the tables, verification 3 and 4 on real ingredients, ferment's two
+  buffs, every food × every method resolves, spoiled poisons in every method; in play, a meat + onion + grain stew at
+  a cauldron grants two buffs.
+
 ## Location
 ```
 Scripts/Gameplay/Cooking/

@@ -1,0 +1,30 @@
+{
+  "id": "isle:wild_onion",
+  "name": "@item.wild_onion",
+  "tags": [
+    "food",
+    "vegetable",
+    "raw"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.1,
+  "stack": 40,
+  "nutrition": {
+    "hunger": 5,
+    "thirst": 3,
+    "sanitation_risk": 0.0
+  },
+  "spoilage": {
+    "base_hours": 120,
+    "temp_factor": 0,
+    "result": "isle:rotten_food"
+  },
+  "icon_style": {
+    "shape": "berries",
+    "color": "#E8E0D0",
+    "accent": "#8AA850"
+  }
+}

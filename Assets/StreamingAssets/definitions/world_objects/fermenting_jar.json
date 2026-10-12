@@ -1,0 +1,13 @@
+{
+  "id": "isle:fermenting_jar",
+  "name": "@world_object.fermenting_jar",
+  "tags": [
+    "station/fermenter",
+    "stone"
+  ],
+  "visual": {
+    "shape": "jar",
+    "color": "#A0704A",
+    "size": 0.8
+  }
+}

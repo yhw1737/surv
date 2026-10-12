@@ -1,0 +1,20 @@
+{
+  "id": "isle:cauldron_kit",
+  "name": "@item.cauldron_kit",
+  "tags": [
+    "placeable",
+    "metal"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 6.0,
+  "stack": 1,
+  "places": "isle:cauldron",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#9A6B42",
+    "accent": "#4A4A4A"
+  }
+}

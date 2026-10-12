@@ -1,0 +1,64 @@
+{
+  "id": "isle:porridge",
+  "name": "@cook_method.porridge",
+  "unlock_skill": {
+    "skill": "isle:cooking",
+    "level": 8
+  },
+  "time_mult": 1.5,
+  "input": {
+    "min_items": 2,
+    "max_items": 3,
+    "requires_water_ml": 0
+  },
+  "modifiers": {
+    "hunger": 1.0,
+    "thirst": 1.4,
+    "preservation": 0.4,
+    "buff_power": 1.0,
+    "buff_duration": 1.2,
+    "nutrition_retention": 0.95
+  },
+  "tag_reactions": [
+    {
+      "when": [
+        "grain"
+      ],
+      "grant_buff": "isle:endurance",
+      "power": 1.0
+    },
+    {
+      "when": [
+        "fruit"
+      ],
+      "grant_buff": "isle:hydrated",
+      "power": 1.0
+    },
+    {
+      "when": [
+        "meat"
+      ],
+      "grant_buff": "isle:warm",
+      "power": 0.8
+    },
+    {
+      "when": [
+        "spoiled"
+      ],
+      "grant_buff": "isle:food_poisoning",
+      "power": 2.0
+    }
+  ],
+  "naming": "@pattern.porridge",
+  "station": "isle:cooking_pot",
+  "xp": {
+    "skill": "isle:cooking",
+    "base": 40,
+    "per_unit": 15
+  },
+  "icon_style": {
+    "shape": "bowl",
+    "color": "#8A6A48",
+    "accent": "#E9DDC8"
+  }
+}

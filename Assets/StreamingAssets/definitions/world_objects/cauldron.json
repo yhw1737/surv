@@ -1,0 +1,13 @@
+{
+  "id": "isle:cauldron",
+  "name": "@world_object.cauldron",
+  "tags": [
+    "station/cauldron",
+    "metal"
+  ],
+  "visual": {
+    "shape": "cauldron",
+    "color": "#3E3A38",
+    "size": 1.0
+  }
+}

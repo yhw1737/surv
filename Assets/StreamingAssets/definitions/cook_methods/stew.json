@@ -1,0 +1,81 @@
+{
+  "id": "isle:stew",
+  "name": "@cook_method.stew",
+  "unlock_skill": {
+    "skill": "isle:cooking",
+    "level": 20
+  },
+  "time_mult": 2,
+  "input": {
+    "min_items": 3,
+    "max_items": 5,
+    "requires_water_ml": 0
+  },
+  "modifiers": {
+    "hunger": 1.35,
+    "thirst": 1.3,
+    "preservation": 0.8,
+    "buff_power": 1.3,
+    "buff_duration": 1.4,
+    "nutrition_retention": 0.95
+  },
+  "tag_reactions": [
+    {
+      "when": [
+        "meat"
+      ],
+      "grant_buff": "isle:warm",
+      "power": 1.0
+    },
+    {
+      "when": [
+        "fish"
+      ],
+      "grant_buff": "isle:steady_hand",
+      "power": 0.9
+    },
+    {
+      "when": [
+        "vegetable"
+      ],
+      "grant_buff": "isle:endurance",
+      "power": 1.1
+    },
+    {
+      "when": [
+        "vegetable"
+      ],
+      "modifiers": {
+        "thirst": 1.3
+      }
+    },
+    {
+      "when": [
+        "fruit"
+      ],
+      "grant_buff": "isle:hydrated",
+      "power": 0.8
+    },
+    {
+      "when": [
+        "spoiled"
+      ],
+      "grant_buff": "isle:food_poisoning",
+      "power": 2.0
+    }
+  ],
+  "max_buffs": 2,
+  "max_buffs_min_groups": 3,
+  "naming": "@pattern.stewed",
+  "station": "isle:cauldron",
+  "xp": {
+    "skill": "isle:cooking",
+    "base": 40,
+    "per_unit": 15
+  },
+  "icon_style": {
+    "shape": "bowl",
+    "color": "#8A6A48",
+    "accent": "#E9DDC8"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "isle:smokehouse_kit",
+  "name": "@item.smokehouse_kit",
+  "tags": [
+    "placeable",
+    "wood"
+  ],
+  "grid": {
+    "w": 2,
+    "h": 2
+  },
+  "weight": 8.0,
+  "stack": 1,
+  "places": "isle:smokehouse",
+  "icon_style": {
+    "shape": "kit",
+    "color": "#9A6B42",
+    "accent": "#C9A35A"
+  }
+}

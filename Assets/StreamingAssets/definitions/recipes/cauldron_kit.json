@@ -1,0 +1,32 @@
+{
+  "id": "isle:craft_cauldron_kit",
+  "name": "@recipe.cauldron_kit",
+  "station": "isle:workbench",
+  "ingredients": [
+    {
+      "item": "isle:copper_ingot",
+      "count": 3
+    },
+    {
+      "item": "isle:stone",
+      "count": 4
+    }
+  ],
+  "output": {
+    "item": "isle:cauldron_kit",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:crafting",
+    "base": 10,
+    "per_unit": 8
+  },
+  "skills": [
+    {
+      "skill": "isle:crafting",
+      "level": 10,
+      "primary": true
+    }
+  ]
+}
