@@ -207,7 +207,7 @@ The engine applies SYS-HUNT-01's formula. Modders fill in `edible_ratio` and `yi
   "minigame": "isle:forging"
 }
 ```
-Ingredients accept `tag` instead of `item`, so new woods work automatically. `allow_adjacent_assist` enables SYS-CRAFT-01's nearby-ally rule; `inherit_quality` enables quality tiers and enchant slots.
+Ingredients accept `tag` instead of `item`, so new woods work automatically. `allow_adjacent_assist` enables SYS-CRAFT-01's nearby-ally rule (default `true`; set `false` to switch it off); `inherit_quality` enables quality tiers and enchant slots.
 
 ### Weapons
 ```json

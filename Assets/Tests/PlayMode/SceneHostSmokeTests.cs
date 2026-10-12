@@ -417,6 +417,8 @@ namespace Isle.Tests.PlayMode
             Assert.IsNotNull(spear.Wear?.Quality, "crafted spear has no quality");
             Assert.AreEqual(Isle.Gameplay.Crafting.QualityCalculator.MaxDurability(spear.Item.Durability.Value, spear.Wear.Quality.Value), spear.Wear.Max,
                 "durability not scaled by quality");
+            // SYS-CRAFT-01 §Crafter mark: it carries its maker's name.
+            Assert.AreEqual(player.Survivor.Name, spear.Wear.Crafter, "crafted spear has no crafter mark");
 
             // SYS-CRAFT-01 §Forging: a copper knife at an anvil is hammered out — bellows into the window, strike, three
             // times — and only then made, from the inputs still held.

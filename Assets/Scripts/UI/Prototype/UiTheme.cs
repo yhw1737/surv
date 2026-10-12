@@ -25,6 +25,9 @@ namespace Isle.UI.Prototype
         public static readonly Color Good = Hex("#9CCB6A");
         public static readonly Color Bad = Hex("#E2735E");
 
+        /// <summary>SYS-CRAFT-01 §Crafter mark: what marks a Master piece (its frame, its name).</summary>
+        public static readonly Color MasterGold = Hex("#F2C94C");
+
         static readonly Dictionary<string, Texture2D> Textures = new();
         static readonly Dictionary<string, Sprite> Sprites = new();
 

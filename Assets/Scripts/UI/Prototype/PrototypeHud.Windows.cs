@@ -229,8 +229,7 @@ namespace Isle.UI.Prototype
             int Have(IngredientRef need) => stock.Where(line => CraftingCalculator.Matches(need, line)).Sum(line => line.Count);
             // SYS-CRAFT-02: a template recipe is ready when some material it accepts is ready.
             bool ReadyWith(CraftRecipeDef r, MaterialDef m) =>
-                StationOkAt(StuffCrafting.StationFor(r, m)) && _player.MeetsSkills(r.Skills)
-                && _player.LevelOf(StuffCrafting.PrimarySkill(r)) >= StuffCrafting.LevelFor(r, m)
+                StationOkAt(StuffCrafting.StationFor(r, m)) && _player.MeetsRecipe(r, m)
                 && CraftingCalculator.HasIngredients(StuffCrafting.Needs(r, m), stock);
             bool Ready(CraftRecipeDef r) => r.Stuff == null ? ReadyWith(r, null) : StuffCrafting.MaterialsFor(r).Any(m => ReadyWith(r, m));
 
@@ -261,8 +260,8 @@ namespace Isle.UI.Prototype
                 if (GUI.Button(row, GUIContent.none, selected ? st.ButtonOn : st.Button)) _craftRecipe = recipe.Id.Value;
                 DrawIcon(new Rect(row.x + 4f, row.y + 3f, 44f, 44f), Isle.UI.Art.ItemIcons.Texture(output), !ready);
                 GUI.Label(new Rect(row.x + 48f, row.y + 5f, row.width - 52f, 20f), Lang.Get(recipe.Name), st.Text);
-                var status = ready ? UiTheme.Colour(Lang.Get("@ui.craft_ready"), UiTheme.Good)
-                    : !_player.MeetsSkills(recipe.Skills) ? UiTheme.Colour(Lang.Get("@ui.craft_locked"), UiTheme.Bad)
+                var status = ready ? UiTheme.Colour(Lang.Get(_player.NeedsAssist(recipe) ? "@ui.craft_ready_assisted" : "@ui.craft_ready"), UiTheme.Good)
+                    : !_player.MeetsRecipe(recipe) ? UiTheme.Colour(Lang.Get("@ui.craft_locked"), UiTheme.Bad)
                     : recipe.Stuff == null && !StationOk(recipe) ? UiTheme.Colour(string.Format(Lang.Get("@ui.needs_near"), StationName(recipe.Station)), UiTheme.Bad)
                     : UiTheme.Colour(Lang.Get(recipe.Stuff != null ? "@ui.craft_pick_material" : "@ui.craft_missing"), UiTheme.Muted);
                 GUI.Label(new Rect(row.x + 48f, row.y + 25f, row.width - 52f, 20f), status, st.Small);
@@ -342,8 +341,10 @@ namespace Isle.UI.Prototype
             var primary = StuffCrafting.PrimarySkill(chosen);
             if (level > 1)
             {
-                var ok = _player.LevelOf(primary) >= level;
-                GUI.Label(new Rect(right.x, y, right.width, 20f), $"{SkillName(primary)} Lv {UiTheme.Colour(level.ToString(), ok ? UiTheme.Good : UiTheme.Bad)}", st.Text);
+                var ok = _player.MeetsRecipe(chosen, material);
+                // SYS-CRAFT-01 §Adjacent assist: say so when an ally nearby is what clears the gate.
+                var helped = _player.NeedsAssist(chosen, material) ? "  " + UiTheme.Colour(Lang.Get("@ui.craft_assisted"), UiTheme.Accent) : "";
+                GUI.Label(new Rect(right.x, y, right.width, 20f), $"{SkillName(primary)} Lv {UiTheme.Colour(level.ToString(), ok ? UiTheme.Good : UiTheme.Bad)}{helped}", st.Text);
                 y += 22f;
             }
 
@@ -409,7 +410,7 @@ namespace Isle.UI.Prototype
                     });
                     status = string.Join("  ", parts);
                     if (!stationOk(station)) status += "  " + UiTheme.Colour(string.Format(Lang.Get("@ui.needs_near"), StationName(station)), UiTheme.Bad);
-                    ready = stationOk(station) && _player.MeetsSkills(recipe.Skills) && _player.LevelOf(StuffCrafting.PrimarySkill(recipe)) >= StuffCrafting.LevelFor(recipe, material)
+                    ready = stationOk(station) && _player.MeetsRecipe(recipe, material)
                             && CraftingCalculator.HasIngredients(cost, stock);
                     GUI.Label(new Rect(row.x + 60f, row.y + 42f, row.width - 200f, 20f),
                         $"{Lang.Get("@ui.repair_new_max")} {Isle.Gameplay.Crafting.RepairCalculator.NewMax(wear.Max)}", st.Small);

@@ -82,7 +82,7 @@ namespace Isle.Tests.PlayMode
             // Inventory: worn crafted gear, a carried carcass, food partway to spoiling.
             inventory.Bag.Clear();
             var knife = DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:knife__copper"));
-            var knifeWear = new ItemWear(37, 150) { Quality = QualityTier.Fine };
+            var knifeWear = new ItemWear(37, 150) { Quality = QualityTier.Fine, Crafter = "Test Smith" };
             knifeWear.Enchants.Add(NamespacedId.Parse("isle:keen"));
             Assert.IsTrue(InventoryOps.TryGive(inventory.Containers(), knife, 1, knifeWear));
             var rabbit = DefRegistry.Get<CreatureDef>(NamespacedId.Parse("isle:rabbit"));
@@ -166,6 +166,7 @@ namespace Isle.Tests.PlayMode
             Assert.AreEqual(150, restoredKnife.Wear?.Max, "knife max");
             Assert.AreEqual(QualityTier.Fine, restoredKnife.Wear?.Quality, "knife quality");
             CollectionAssert.AreEqual(new[] { "isle:keen" }, restoredKnife.Wear.Enchants.Select(e => e.Value), "knife enchant");
+            Assert.AreEqual("Test Smith", restoredKnife.Wear.Crafter, "knife crafter mark");
             var restoredCarcass = inventory.Containers().SelectMany(c => c.Placements).FirstOrDefault(p => p.Item.Id == carcassItem.Id);
             Assert.IsNotNull(restoredCarcass.Wear?.Carcass, "carried carcass lost");
             Assert.AreEqual(3.2f, restoredCarcass.Wear.Carcass.WeightKg, 1e-4f, "carried carcass weight");

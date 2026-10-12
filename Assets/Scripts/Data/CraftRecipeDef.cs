@@ -14,8 +14,8 @@ namespace Isle.Data
         /// <summary>One entry per gating skill; the <c>primary</c> one drives quality.</summary>
         public SkillRequirement[] Skills { get; init; }
 
-        /// <summary>Enables the nearby-ally rule (SYS-CRAFT-01, T-092).</summary>
-        public bool AllowAdjacentAssist { get; init; }
+        /// <summary>Enables the nearby-ally rule (SYS-CRAFT-01, T-092). On unless a recipe sets it false.</summary>
+        public bool AllowAdjacentAssist { get; init; } = true;
 
         public IngredientRef[] Ingredients { get; init; }
 

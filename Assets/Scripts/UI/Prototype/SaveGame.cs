@@ -212,16 +212,16 @@ namespace Isle.UI.Prototype
             if (player.TryGetComponent<InventoryNetwork>(out var inventory))
             {
                 foreach (var placed in inventory.Bag.Placements)
-                    save.Bag.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0, Quality = QualityRank(placed.Wear), Enchants = EnchantKeys(placed.Wear) }.WithCarcass(placed.Wear));
+                    save.Bag.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0, Quality = QualityRank(placed.Wear), Enchants = EnchantKeys(placed.Wear), Crafter = placed.Wear?.Crafter }.WithCarcass(placed.Wear));
                 foreach (var slot in EquipSlots.All)
                 {
                     var item = inventory.Slots.Get(slot);
                     if (item == null) continue;
                     var slotWear = inventory.Slots.WearOf(slot);
-                    var equip = new SavedEquip { Slot = slot, Item = KeyOf(item), Wear = slotWear?.Current ?? 0, WearMax = slotWear?.Max ?? 0, Quality = QualityRank(slotWear), Enchants = EnchantKeys(slotWear) };
+                    var equip = new SavedEquip { Slot = slot, Item = KeyOf(item), Wear = slotWear?.Current ?? 0, WearMax = slotWear?.Max ?? 0, Quality = QualityRank(slotWear), Enchants = EnchantKeys(slotWear), Crafter = slotWear?.Crafter };
                     if (inventory.Slots.BagFor(slot) is { } pack)
                         foreach (var placed in pack.Placements)
-                            equip.Contents.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0, Quality = QualityRank(placed.Wear), Enchants = EnchantKeys(placed.Wear) }.WithCarcass(placed.Wear));
+                            equip.Contents.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0, Quality = QualityRank(placed.Wear), Enchants = EnchantKeys(placed.Wear), Crafter = placed.Wear?.Crafter }.WithCarcass(placed.Wear));
                     save.Equipped.Add(equip);
                 }
                 // Food freshness per carried container, by its place in the container list (bag, then equipped bags).
@@ -279,7 +279,7 @@ namespace Isle.UI.Prototype
                 }
                 if (built.TryGetComponent<StorageBox>(out var box))
                     foreach (var placed in box.Contents.Placements)
-                        saved.Contents.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0, Quality = QualityRank(placed.Wear), Enchants = EnchantKeys(placed.Wear) }.WithCarcass(placed.Wear));
+                        saved.Contents.Add(new SavedStack { Item = KeyOf(placed.Item), X = placed.Position.X, Y = placed.Position.Y, Rotated = placed.Rotated, Count = placed.Count, Wear = placed.Wear?.Current ?? 0, WearMax = placed.Wear?.Max ?? 0, Quality = QualityRank(placed.Wear), Enchants = EnchantKeys(placed.Wear), Crafter = placed.Wear?.Crafter }.WithCarcass(placed.Wear));
                 save.Structures.Add(saved);
             }
 
@@ -287,7 +287,7 @@ namespace Isle.UI.Prototype
             {
                 var saved = new SavedPile { X = pile.Position.x, Y = pile.Position.y, Shape = pile.Shape };
                 foreach (var entry in pile.Items)
-                    saved.Items.Add(new SavedStack { Item = KeyOf(entry.Item), Count = entry.Count, Wear = entry.Wear?.Current ?? 0, WearMax = entry.Wear?.Max ?? 0, Quality = QualityRank(entry.Wear), Enchants = EnchantKeys(entry.Wear) }.WithCarcass(entry.Wear));
+                    saved.Items.Add(new SavedStack { Item = KeyOf(entry.Item), Count = entry.Count, Wear = entry.Wear?.Current ?? 0, WearMax = entry.Wear?.Max ?? 0, Quality = QualityRank(entry.Wear), Enchants = EnchantKeys(entry.Wear), Crafter = entry.Wear?.Crafter }.WithCarcass(entry.Wear));
                 save.Piles.Add(saved);
             }
             return save;
@@ -316,7 +316,7 @@ namespace Isle.UI.Prototype
                 inventory.Slots.Clear();
                 foreach (var equip in save.Equipped)
                 {
-                    if (!TryItem(equip.Item, out var item) || !inventory.Slots.TryEquip(equip.Slot, item, WearOf(equip.Wear, equip.WearMax, equip.Quality, equip.Enchants))) continue;
+                    if (!TryItem(equip.Item, out var item) || !inventory.Slots.TryEquip(equip.Slot, item, WearOf(equip.Wear, equip.WearMax, equip.Quality, equip.Enchants, equip.Crafter))) continue;
                     if (inventory.Slots.BagFor(equip.Slot) is not { } pack) continue;
                     foreach (var stack in equip.Contents)
                         if (TryItem(stack.Item, out var inner)) pack.TryPlace(inner, new Vec2Int(stack.X, stack.Y), stack.Rotated, stack.Count, WearOf(stack));
@@ -412,10 +412,10 @@ namespace Isle.UI.Prototype
 
         /// <summary>An item from the save that still resolves — a removed mod's item is skipped, not fatal.</summary>
         /// <summary>SYS-CRAFT-02: a saved wear, or null for none (old saves, items that don't wear).</summary>
-        static ItemWear WearOf(int current, int max, int quality, List<string> enchants = null)
+        static ItemWear WearOf(int current, int max, int quality, List<string> enchants = null, string crafter = null)
         {
             if (max <= 0) return null;
-            var wear = new ItemWear(current, max) { Quality = quality > 0 ? (QualityTier)(quality - 1) : null };
+            var wear = new ItemWear(current, max) { Quality = quality > 0 ? (QualityTier)(quality - 1) : null, Crafter = string.IsNullOrEmpty(crafter) ? null : crafter };
             foreach (var key in enchants ?? new List<string>())
                 if (NamespacedId.TryParse(key, out var id, out _) && DefRegistry.TryGet<EnchantDef>(id, out _)) wear.Enchants.Add(id);
             return wear;
@@ -438,7 +438,7 @@ namespace Isle.UI.Prototype
                         Def = def, WeightKg = stack.CarcassKg, Condition = stack.CarcassCondition, KillFactor = stack.CarcassKill, Spoilage = stack.CarcassSpoil,
                     },
                 };
-            return WearOf(stack.Wear, stack.WearMax, stack.Quality, stack.Enchants);
+            return WearOf(stack.Wear, stack.WearMax, stack.Quality, stack.Enchants, stack.Crafter);
         }
 
         static bool TryCreature(string key, out CreatureDef def)

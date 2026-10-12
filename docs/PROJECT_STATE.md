@@ -6,6 +6,14 @@
 ## Header
 
 - Last updated: **2026-10-10**
+- **2026-10-10 — T-092 adjacent assist + T-093 crafter mark.** Branch `feature/T-092-093-assist-crafter-mark`, stacked on
+  T-106 (files: `AdjacentAssist` (new), `CraftRecipeDef.AllowAdjacentAssist` default true, `PlayerInteraction` (`MeetsRecipe`,
+  `NeedsAssist`, `BestNearbyLevel`, `CrafterName`; craft and repair gates), `PrototypeHud.Windows` (assist labels),
+  `ItemWear.Crafter`, `PrototypeHud` tooltip, `UiTheme.MasterGold`, `GridView` Master frame, `SaveData/SaveGame` v9,
+  lang, `AdjacentAssistTests`, crafter checks in the smoke and round-trip tests). Developer: "decide yourself".
+  **Verified:** EditMode 732/732 (+10 `AdjacentAssistTests`: formula, the spec's worked example, opt-out, default on),
+  PlayMode 4/4 (a crafted spear carries the survivor's name; the mark survives save/Continue). Not verified: assist with
+  a real second player (stage 3); the gold frame and the craft-window labels on screen.
 - **2026-10-10 — T-106 enchanting.** Branch `feature/T-106-enchanting`, stacked on T-204
   (files: `EnchantCalculator`, `EnchantingTable`, `EnchantDef` (Skill, Xp), `SchemaValidator`, `ItemWear.Enchants`,
   `EquipSlots`/`InventoryOps` (EnsureWear, wear skip), `CraftingCalculator.CountMatching`, `PlayerInteraction` (enchant
@@ -2084,6 +2092,12 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-10 — T-092 / T-093 interpretations
+  No Q&A (developer delegated). Assist also lifts the material's `craft_level` gate and repair gates (both are skill
+  requirements); `allow_adjacent_assist` defaults true; "nearby" = living players within 3.0 tiles. Crafter mark only on
+  gear (stackables have no per-unit record); the name is the survivor's. Master look = gold tooltip name + gold tile
+  frame and diamond (placeholder presentation).
+
 - ### 2026-10-10 — T-106 enchanting values
   No Q&A (developer delegated). Verbatim: success 0.60 + 0.008 × level, catalyst lost on failure, never destroyed within
   slots, slots from quality. [invented]: keen ×1.12 / sturdy 30% / warding ×1.15 / swift ×1.2, max stack 2 each, levels

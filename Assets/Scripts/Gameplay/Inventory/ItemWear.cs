@@ -20,6 +20,10 @@ namespace Isle.Gameplay.Inventory
         /// salvage), which count as Common. Kept through repairs.</summary>
         public Crafting.QualityTier? Quality { get; init; }
 
+        /// <summary>SYS-CRAFT-01 §Crafter mark: who made it, shown in its tooltip; null for anything not crafted. Kept
+        /// through repairs.</summary>
+        public string Crafter { get; init; }
+
         /// <summary>SYS-CRAFT-01 §Enchanting: enchants set into its slots (a slot each, repeats allowed up to the enchant's
         /// max stack). Kept through repairs.</summary>
         public System.Collections.Generic.List<Isle.Core.Ids.NamespacedId> Enchants { get; } = new();
