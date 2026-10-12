@@ -67,6 +67,15 @@ This requires formulas to be **static pure functions** (ARCHITECTURE §Patterns)
 | 5 | Chunk unload then reload | state preserved |
 | 6 | Host quits | world saved |
 
+### Solo soak (T-151)
+`Tests/PlayMode/SoakTests.cs` starts a fresh game from the main menu and plays a restless survivor for 90 rounds
+(~6–8 minutes): harvest random nodes island-wide, hunt, eat while hours pass, fish, craft, cook, sleep at night, drop
+into a dungeon and out, one forced death and respawn. It collects every error/exception instead of stopping at the
+first, and fails on any; it also fails when a harvest misses for no reason (tool-gated misses are fine), when an
+activity never ran, when surface creatures drift outside ×0.5–×1.5 of the start, when carcasses pile up (≥ 60), or
+when managed memory grows ≥ 200 MB. The `[soak]` line in the log is the run's summary. Note: in the editor ~600 MB of
+the managed heap is the editor itself; the game adds ~35 MB at start.
+
 ## Manual play
 
 **Weekly, 30 minutes, from a fresh start.** A solo developer who stops playing their own game is the biggest risk. Put it on the calendar.

@@ -321,7 +321,8 @@ stood up now so the solo beta is already a listen-server session with one client
 - [ ] **T-103** Buffs + care tag + satiety fatigue
   > **2026-10-05 (prototype)**: buffs act in Vitals/bow sway, care tag in the resolver, satiety fatigue per player.
 - [ ] **T-104** `DishNamer` procedural naming + player registration
-- [ ] **T-105** 🚩 **Ext gate** — one new ingredient works across all 8 methods with zero C# edits
+- [x] **T-105** 🚩 **Ext gate** — one new ingredient works across all 8 methods with zero C# edits
+  > **2026-10-12**: **passed** — `ExtGateTests`: a temp copy of the shipped definitions plus one new ingredient file (sea kelp: vegetable, high_water and an unknown `seaweed` tag) loads cleanly; all eight methods resolve it, fire their tag reactions (stew endurance, ferment iron_gut, boil thirst ×1.8), name a dish after it that rebuilds from its save key, and count it as a group in a three-group stew. No C# touched.
 - [x] **T-106** `EnchantSystem` on the **Enchanting** skill — slot application moves off Crafting (SYS-CRAFT-01 §Enchanting). Formula already exists, this is a skill-owner move, not new math
   > **2026-10-10**: done — SYS-CRAFT-01 §Enchanting Implementation (T-106). Four enchants (keen, sturdy, warding, swift) with dungeon-material catalysts, enchanting table, window, effects on damage/armor/tool speed/wear, saved (v8).
 - [ ] **T-107** ★ SYS-BREW-01 spec + `BrewDef` — brewing has **no existing spec or formula** anywhere; write the sheet before coding (workflow: spec exists before code)
@@ -371,6 +372,7 @@ stood up now so the solo beta is already a listen-server session with one client
   > **2026-10-04 (prototype)**: JSON save in persistentDataPath — seed, clock, vitals, position, shelter, bag, hand, depleted nodes, campfires, loot piles. Autosave 60 s + on quit, F9 deletes. Skills aren't saved (no XP yet); creatures and weather re-roll. Not yet in SQLite, and the load path isn't covered by a PlayMode test.
   > **2026-10-10**: done — `SaveRoundTripTests` (PlayMode): rich state → back to menu → Continue → everything compared. The test found what was missing and it's now saved (version 6): timed buffs, wetness, food freshness (a reload made food fresh again), satiety memory, carcasses on the ground; a save made underground now resumes at that dungeon's entrance. Contents listed in ARCHITECTURE §Storage. Still JSON, not SQLite.
 - [ ] **T-151** Solo bug pass — play the full loop repeatedly, fix what blocks it
+  > **2026-10-12 (automated half)**: `SoakTests` (TESTING §Solo soak) plays the whole loop for ~90 rounds — harvest, hunt, fish, craft, cook, sleep, eat, dungeon, death/respawn — and passes with no errors; creatures (~1,000 surface), carcasses, piles and memory stay bounded. Found no game bug — every miss was the test's own timing (bare-hand trees take 10 s, a rest RPC lands a tick later) or design (veins need a better tool). The ~1,600 creatures / 15,000 nodes seen in the debug screen are fine: only creatures near a player think. **Still open: the developer's own play sessions** — use the F3/F12 debug screen and Shift+F12 to paste its text into bug reports.
 - [ ] **T-152** 🚩 **Solo beta gate** — gather → hunt → fish → cook → craft → fight → sleep, playable end to end by one player with no blocking bug. **Do not start Phase 10 until this passes**
 
 > Everything up to here is playable and shippable to a closed solo beta. That is the point of
