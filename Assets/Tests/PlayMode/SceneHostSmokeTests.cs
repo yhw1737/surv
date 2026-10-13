@@ -104,6 +104,215 @@ namespace Isle.Tests.PlayMode
             yield return Stew();
             yield return DifficultyTiers();
             yield return BrewAndCast();
+            yield return InventoryMenu();
+            yield return Forage();
+            yield return WoundsAndTending();
+            yield return StationsAndToolbar();
+        }
+
+        /// <summary>T-151 playtest: E at a workbench opens the craft window, at an unlit campfire lights it and at a lit one
+        /// opens the cook window; the toolbar's buttons open and close what their keys do.</summary>
+        IEnumerator StationsAndToolbar()
+        {
+            var player = FindLocalPlayer();
+            var hud = Isle.UI.Prototype.PrototypeHud.Instance;
+            var (shore, _) = CoastSpot(IslandWorld.Instance);
+            Teleport(player, shore);
+            ClearCreaturesNear(player.transform.position);
+            foreach (var tool in new[] { "craft", "cook", "status" }) if (hud.IsToolOpen(tool)) hud.ToggleTool(tool);
+
+            // Closer than the sea next to the shore spot, so E picks the station, not a drink.
+            var bench = StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:workbench")), shore + Vector2.left * 0.5f);
+            player.RequestInteract();
+            yield return WaitUntil(() => hud.IsToolOpen("craft"), 2f, "E at a workbench didn't open crafting");
+            hud.ToggleTool("craft");
+            StructureFactory.Remove(bench);
+            yield return null;
+
+            var fire = StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:campfire")), shore + Vector2.left * 0.5f);
+            var burner = fire.GetComponent<Isle.Gameplay.World.CampfireInteraction>();
+            Assert.IsFalse(fire.IsActive, "a built campfire starts lit");
+            // SYS-SURV-01 §Fire: no fuel, no fire; with wood in the bag, E feeds it one and lights it.
+            var inventory = player.GetComponent<InventoryNetwork>();
+            inventory.Bag.Clear();
+            player.RequestInteract();
+            yield return new WaitForSeconds(0.4f);
+            Assert.IsFalse(fire.IsActive, "a campfire lit without fuel");
+            Give(inventory, "isle:wood", 2);
+            player.RequestInteract();
+            yield return WaitUntil(() => fire.IsActive, 2f, "E didn't light the campfire");
+            Assert.AreEqual(1, CountOf(inventory, "isle:wood"), "lighting didn't burn one wood");
+            Assert.That(burner.Fuel, Is.InRange(110f, 120f), "one wood isn't two hours of fuel");
+            player.RequestAddFuel();
+            yield return WaitUntil(() => burner.Fuel > 200f, 2f, "Add fuel didn't feed the fire");
+            Assert.AreEqual(0, CountOf(inventory, "isle:wood"));
+            Assert.IsFalse(hud.IsToolOpen("cook"), "lighting it also opened cooking");
+            player.RequestInteract();
+            yield return WaitUntil(() => hud.IsToolOpen("cook"), 2f, "E at a lit campfire didn't open cooking");
+            player.RequestExtinguish();
+            yield return WaitUntil(() => !fire.IsActive, 2f, "the cook window's button didn't put the fire out");
+            // Fuel runs out: the fire goes out by itself.
+            burner.Fuel = 1f;
+            fire.IsActive = true;
+            yield return WaitUntil(() => !fire.IsActive, 4f, "a fire burned on with no fuel left");
+            hud.ToggleTool("cook");
+            StructureFactory.Remove(fire);
+
+            hud.ToggleTool("status");
+            Assert.IsTrue(hud.IsToolOpen("status"), "the status button didn't open the status window");
+            hud.ToggleTool("status");
+            Assert.IsFalse(hud.IsToolOpen("status"));
+        }
+
+        /// <summary>SYS-MED-01: a slash lands on a body part as a bleeding cut that caps health; a herbal poultice made at
+        /// the apothecary tends it (no more bleeding, quality 0.55); hemlock "tends" at 0 and poisons; with no wound left
+        /// to tend, nothing is spent.</summary>
+        IEnumerator WoundsAndTending()
+        {
+            var player = FindLocalPlayer();
+            var vitals = player.GetComponent<Vitals>();
+            var inventory = player.GetComponent<InventoryNetwork>();
+            var (shore, _) = CoastSpot(IslandWorld.Instance);
+            Teleport(player, shore);
+            ClearCreaturesNear(player.transform.position);
+            inventory.Bag.Clear();
+            inventory.Slots.Clear();
+            vitals.ResetOnRespawn();
+            Vitals.WoundRoll = () => 0.85f; // left leg
+            Vitals.TendRollOverride = () => 0f;
+            player.ReceiveCreatureStrike(shore + Vector2.left, 20f, Isle.Gameplay.Combat.DamageTypes.Slash);
+            Assert.AreEqual(1, vitals.Injuries.Wounds.Count, "a slash left no wound");
+            var cut = vitals.Injuries.Wounds[0];
+            Assert.AreEqual(BodyPart.LeftLeg, cut.Part);
+            Assert.AreEqual(WoundKind.Cut, cut.Kind);
+            Assert.IsTrue(cut.Bleeds);
+            Assert.AreEqual(100f - cut.Severity, vitals.MaxHealth, 0.01f, "the wound doesn't cap health");
+            var before = vitals.Health;
+            yield return new WaitForSeconds(1.5f);
+            Assert.Less(vitals.Health, before, "an untended cut doesn't bleed");
+
+            // A poultice from the apothecary tends it.
+            var table = StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:apothecary_table")), shore + Vector2.left * 1.2f);
+            player.Skills.Restore(NamespacedId.Parse("isle:medicine"), Isle.Gameplay.Skills.XpCurve.TotalXpTo(25)); // ×1.0
+            Give(inventory, "isle:healing_herb", 2);
+            Give(inventory, "isle:cloth", 1);
+            player.RequestCraft("isle:med_herbal_poultice");
+            yield return WaitUntil(() => CountOf(inventory, "isle:herbal_poultice") == 1, 10f, "no poultice made");
+            player.RequestTend("isle:herbal_poultice");
+            yield return WaitUntil(() => cut.Tended, 2f, "the poultice tended nothing");
+            Assert.AreEqual(0.55f, cut.Quality, 1e-3f, "tend quality");
+            Assert.IsFalse(vitals.Injuries.Bleeding, "still bleeding after tending");
+            Assert.AreEqual(0, CountOf(inventory, "isle:herbal_poultice"));
+
+            // Nothing left to tend: the item stays.
+            Give(inventory, "isle:herbal_poultice", 1);
+            player.RequestTend("isle:herbal_poultice");
+            yield return new WaitForSeconds(0.4f);
+            Assert.AreEqual(1, CountOf(inventory, "isle:herbal_poultice"), "medicine spent with no wound to tend");
+
+            // Hemlock: quality 0 and poisoned.
+            player.ReceiveCreatureStrike(shore + Vector2.left, 10f, Isle.Gameplay.Combat.DamageTypes.Pierce);
+            Give(inventory, "isle:hemlock", 1);
+            player.RequestTend("isle:hemlock");
+            yield return WaitUntil(() => vitals.ActiveBuffs().Any(b => b.Id.Value == "isle:toxin"), 2f, "hemlock didn't poison");
+
+            // Armor by part: a helmet stands in front of the head, not the torso.
+            vitals.ResetOnRespawn();
+            var helmet = DefRegistry.All<ItemDef>().First(i => i.EquipSlot == "head" && i.Armor > 0f);
+            Assert.IsTrue(inventory.Slots.TryEquip("head", helmet));
+            Vitals.WoundRoll = () => 0.05f; // torso
+            vitals.Restore(100f, 100f, 100f, 100f, Vitals.ComfortableTemperature, 0f);
+            player.ReceiveCreatureStrike(shore + Vector2.left, 20f, Isle.Gameplay.Combat.DamageTypes.Blunt);
+            var torsoLoss = 100f - vitals.Health;
+            vitals.ResetOnRespawn();
+            Vitals.WoundRoll = () => 0.45f; // head
+            player.ReceiveCreatureStrike(shore + Vector2.left, 20f, Isle.Gameplay.Combat.DamageTypes.Blunt);
+            var headLoss = 100f - vitals.Health;
+            Assert.Less(headLoss, torsoLoss, "the helmet didn't protect the head more than the bare torso");
+            inventory.Slots.Clear();
+
+            // A heavy blunt hit on a leg breaks it; a splint sets it.
+            vitals.ResetOnRespawn();
+            Vitals.WoundRoll = () => 0.85f;
+            Vitals.FractureRoll = () => 0f;
+            player.ReceiveCreatureStrike(shore + Vector2.left, 25f, Isle.Gameplay.Combat.DamageTypes.Blunt);
+            var broken = vitals.Injuries.Wounds.Single();
+            Assert.IsTrue(broken.Fracture, "no fracture");
+            Give(inventory, "isle:splint", 1);
+            player.RequestTend("isle:splint");
+            yield return WaitUntil(() => broken.Splinted, 2f, "the splint didn't set the leg");
+            Vitals.FractureRoll = null;
+            Vitals.WoundRoll = null;
+            Vitals.TendRollOverride = null;
+            vitals.ResetOnRespawn();
+            StructureFactory.Remove(table);
+        }
+
+        /// <summary>T-151 / SYS-FORAGE-01: every berry bush and mushroom patch grows on the island; a death cap eaten raw
+        /// poisons for its full time and drains health; at Gathering 0 a sunberry is an "unknown red berry", at 10 it's
+        /// itself.</summary>
+        IEnumerator Forage()
+        {
+            var player = FindLocalPlayer();
+            var vitals = player.GetComponent<Vitals>();
+            var inventory = player.GetComponent<InventoryNetwork>();
+            var world = IslandWorld.Instance;
+            foreach (var node in new[] { "sunberry_bush", "duskberry_bush", "frostberry_bush", "ghostberry_bush", "brown_cap_patch", "fools_cap_patch", "honey_cap_patch", "death_cap_patch" })
+                Assert.IsTrue(world.Nodes.Any(n => n.Def.Id.Value == "isle:" + node), $"no {node} on the island");
+
+            var gathering = NamespacedId.Parse("isle:gathering");
+            player.Skills.Restore(gathering, 0);
+            var sunberry = DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:sunberry"));
+            Assert.AreEqual(Isle.UI.Prototype.Lang.Get("@item.unknown_red_berry"), Isle.UI.Prototype.ItemText.Name(sunberry), "a novice can tell a sunberry");
+            player.Skills.Restore(gathering, Isle.Gameplay.Skills.XpCurve.TotalXpTo(10));
+            Assert.AreEqual(Isle.UI.Prototype.Lang.Get("@item.sunberry"), Isle.UI.Prototype.ItemText.Name(sunberry), "Gathering 10 still can't tell");
+
+            vitals.ResetOnRespawn(); // no heal-over-time left from an earlier step to hide the poison
+            inventory.Bag.Clear();
+            Give(inventory, "isle:death_cap", 1);
+            player.RequestUse("isle:death_cap");
+            yield return WaitUntil(() => vitals.ActiveBuffs().Any(b => b.Id.Value == "isle:toxin"), 3f, "a death cap eaten raw didn't poison");
+            var expires = vitals.Buffs.ExpiresAt(NamespacedId.Parse("isle:toxin")) ?? 0;
+            Assert.GreaterOrEqual(expires - Vitals.NowMinutes, 115, "raw eating cut the poison short");
+            var before = vitals.Health;
+            yield return new WaitForSeconds(2.5f);
+            Assert.Less(vitals.Health, before - 0.5f, "the poison doesn't drain health");
+            foreach (var id in vitals.ActiveBuffs().Select(b => b.Id).ToList()) vitals.Buffs.Clear(id);
+            vitals.Restore(100f, 100f, 100f, 100f, Vitals.ComfortableTemperature, 0f);
+        }
+
+        /// <summary>T-151 playtest round 1: right-clicking a bag item opens a menu of what it can do — berries can be eaten,
+        /// moved to the backpack or dropped; "drop" puts them on the ground.</summary>
+        IEnumerator InventoryMenu()
+        {
+            var player = FindLocalPlayer();
+            var inventory = player.GetComponent<InventoryNetwork>();
+            var (shore, _) = CoastSpot(IslandWorld.Instance);
+            Teleport(player, shore);
+            ClearCreaturesNear(player.transform.position);
+            ClearCreaturesNear(player.transform.position);
+            inventory.Bag.Clear();
+            inventory.Slots.Clear();
+            Give(inventory, "isle:straw_backpack", 1);
+            player.RequestEquipItem("isle:straw_backpack");
+            yield return WaitUntil(() => inventory.Slots.BagFor("back") != null, 3f, "backpack never worn");
+            Give(inventory, "isle:berries", 3);
+            var screen = Isle.UI.Inventory.InventoryScreen.Instance;
+            screen.Show();
+            for (var i = 0; i < 5; i++) yield return null;
+            var berries = inventory.Bag.Placements.First(p => p.Item.Id.Value == "isle:berries");
+            var labels = screen.OpenMenuFor(0, berries);
+            Assert.Contains(Isle.UI.Prototype.Lang.Get("@ui.ctx_eat"), labels, "no eat option for berries");
+            Assert.Contains(Isle.UI.Prototype.Lang.Get("@ui.ctx_drop"), labels, "no drop option");
+            Assert.IsTrue(labels.Any(l => l == string.Format(Isle.UI.Prototype.Lang.Get("@ui.ctx_move_to"), Isle.UI.Prototype.Lang.Get(inventory.Slots.Get("back").Name))),
+                $"no move-to-backpack option: {string.Join(" | ", labels)}");
+
+            var piles = LootPiles.All.Count;
+            Assert.IsTrue(screen.PressMenu(Isle.UI.Prototype.Lang.Get("@ui.ctx_drop")));
+            yield return WaitUntil(() => LootPiles.All.Count == piles + 1, 3f, "drop from the menu made no pile");
+            Assert.AreEqual(0, CountOf(inventory, "isle:berries"), "berries still in the bag");
+            screen.Close();
+            LootPiles.Clear();
         }
 
         /// <summary>T-107 SYS-BREW-01 and T-117 SYS-MAGIC-01: a health tonic brewed at a stand heals 30 at once; a mending
@@ -116,8 +325,10 @@ namespace Isle.Tests.PlayMode
             var inventory = player.GetComponent<InventoryNetwork>();
             var (shore, _) = CoastSpot(IslandWorld.Instance);
             Teleport(player, shore);
+            ClearCreaturesNear(player.transform.position);
             inventory.Bag.Clear();
             inventory.Slots.Clear();
+            vitals.ResetOnRespawn(); // no wounds from earlier steps capping the heals below
             player.Skills.Restore(NamespacedId.Parse("isle:enchanting"), Isle.Gameplay.Skills.XpCurve.TotalXpTo(50));
             var stand = StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:brewing_stand")), shore + Vector2.left * 1.2f);
 
@@ -125,7 +336,7 @@ namespace Isle.Tests.PlayMode
             Give(inventory, "isle:bitter_herb", 2);
             Give(inventory, "isle:berries", 2);
             player.RequestCraft("isle:brew_health_tonic");
-            yield return WaitUntil(() => CountOf(inventory, "isle:health_tonic") == 1, 3f, "the tonic was never brewed");
+            yield return WaitUntil(() => CountOf(inventory, "isle:health_tonic") == 1, 10f, "the tonic was never brewed");
             vitals.Restore(50f, 100f, 100f, 100f, Vitals.ComfortableTemperature, 0f);
             player.RequestUse("isle:health_tonic");
             yield return WaitUntil(() => CountOf(inventory, "isle:health_tonic") == 0, 2f, "the tonic wasn't drunk");
@@ -179,10 +390,12 @@ namespace Isle.Tests.PlayMode
             var inventory = player.GetComponent<InventoryNetwork>();
             var clock = Isle.World.Time.WorldTime.Instance.Clock;
             Teleport(player, (Vector2)IslandWorld.Instance.ShoreStart(Isle.World.Chunks.Biome.Coast) + Vector2.up * 2f);
+            ClearCreaturesNear(player.transform.position);
             inventory.Slots.Clear(); // no armor in the way
             float Hit(Isle.Gameplay.World.DifficultyLevel tier)
             {
                 Isle.Gameplay.World.Difficulty.Current = tier;
+                vitals.Injuries.Clear(); // a wound from the last hit would cap health below 100
                 vitals.Restore(100f, 100f, 100f, 100f, Vitals.ComfortableTemperature, 0f);
                 player.ReceiveCreatureStrike((Vector2)player.transform.position + Vector2.left, 10f);
                 return 100f - vitals.Health;
@@ -549,7 +762,11 @@ namespace Isle.Tests.PlayMode
             Assert.AreEqual(2, CountOf(inventory, "isle:stone"), "rock harvest");
 
             player.RequestCraft("isle:craft_spear", "isle:stone");
-            yield return WaitUntil(() => CountOf(inventory, "isle:spear__stone") == 1, 3f, "spear never crafted");
+            // T-151 playtest: crafting takes time now — under way, nothing made or spent yet.
+            yield return WaitUntil(() => player.Crafting != null, 2f, "crafting never started");
+            Assert.AreEqual(0, CountOf(inventory, "isle:spear__stone"), "crafted instantly");
+            Assert.AreEqual(4, CountOf(inventory, "isle:wood"), "inputs spent before the craft finished");
+            yield return WaitUntil(() => CountOf(inventory, "isle:spear__stone") == 1, 12f, "spear never crafted");
             Assert.AreEqual(2, CountOf(inventory, "isle:wood"), "wood not consumed");
             // SYS-CRAFT-01 §Quality: crafted gear carries its tier, and its durability is scaled by it.
             var spear = inventory.Bag.Placements.First(p => p.Item.Id.Value == "isle:spear__stone");
@@ -562,6 +779,7 @@ namespace Isle.Tests.PlayMode
             // SYS-CRAFT-01 §Forging: a copper knife at an anvil is hammered out — bellows into the window, strike, three
             // times — and only then made, from the inputs still held.
             player.Skills.Restore(NamespacedId.Parse("isle:crafting"), Isle.Gameplay.Skills.XpCurve.TotalXpTo(10));
+            ClearCreaturesNear(player.transform.position);
             var anvil = Isle.Gameplay.Building.StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:anvil")),
                 (Vector2)player.transform.position + Vector2.right * 1f);
             Give(inventory, "isle:copper_ingot", 2);
@@ -718,6 +936,7 @@ namespace Isle.Tests.PlayMode
 
             // Lit directly: walking up and pressing E could hit a tree first if one stands within reach.
             var fire = Object.FindObjectsByType<WorldObjectInstance>(FindObjectsSortMode.None).First(f => f.HasTag("station/campfire"));
+            fire.GetComponent<Isle.Gameplay.World.CampfireInteraction>().Fuel = 480f; // SYS-SURV-01 §Fire: a fire burns fuel
             fire.IsActive = true;
             Teleport(player, fire.transform.position + Vector3.down);
             var rawBefore = CountOf(inventory, "isle:raw_meat");
@@ -762,8 +981,11 @@ namespace Isle.Tests.PlayMode
             yield return WaitUntil(() => Mathf.Approximately(vitals.ClothingBonus, parka.Warmth), 3f, "parka warmth never applied");
 
             // Armor: the hit is blunt, so the parka's blunt armor applies (SYS-COMBAT-01 §Damage curve).
+            // SYS-MED-01: armor covers its parts — the parka covers the torso, so the hit lands there.
             var healthBefore = vitals.Health;
+            Vitals.WoundRoll = () => 0.05f;
             vitals.TakeDamage(10f);
+            Vitals.WoundRoll = null;
             var expectedHit = Isle.Gameplay.Combat.DamageTypes.Damage(10f, "blunt", 1f, parka.ArmorTypes["blunt"]);
             Assert.AreEqual(expectedHit, healthBefore - vitals.Health, 0.3f, "armor not applied");
             // SYS-CRAFT-02: the hit wore the cloak (checked now: a wild animal may land a blow during the harvests below).
@@ -822,7 +1044,7 @@ namespace Isle.Tests.PlayMode
             yield return WaitUntil(() => StructureFactory.Built.Any(b => b != null && b.Def != null && b.Def.Id.Value == "isle:furnace"), 3f, "furnace never placed");
             Give(inventory, "isle:coal", 1);
             player.RequestCraft("isle:craft_iron_ingot");
-            yield return WaitUntil(() => CountOf(inventory, "isle:iron_ingot") == 1, 3f, "no iron ingot smelted");
+            yield return WaitUntil(() => CountOf(inventory, "isle:iron_ingot") == 1, 12f, "no iron ingot smelted");
             Assert.AreEqual(1, CountOf(inventory, "isle:iron_ore"), "smelting took 2 ore");
 
             // Ranged: equip a bow, draw for a full charge, loose. Sway makes the hit itself random at level 0, so
@@ -1070,6 +1292,14 @@ namespace Isle.Tests.PlayMode
                 Assert.IsTrue(all.Any(l => l.Contains(text)), $"debug screen ({where}) lacks '{text}':\n{string.Join("\n", all)}");
             Assert.IsTrue(all.Any(l => l.StartsWith("HP ")), $"debug screen ({where}) shows no vitals");
             Assert.IsTrue(all.Any(l => l.StartsWith("Net: host")), $"debug screen ({where}) shows no network role");
+        }
+
+        /// <summary>Removes every creature near <paramref name="at"/> — steps that measure health exactly can't have a wild
+        /// boar landing a bleeding blow in the middle (SYS-MED-01 wounds make a stray hit matter).</summary>
+        static void ClearCreaturesNear(Vector2 at, float radius = 25f)
+        {
+            foreach (var creature in CreatureDirector.Instance.Creatures.Where(c => !c.Dead && Vector2.Distance(c.Position, at) <= radius).ToList())
+                CreatureDirector.Instance.Damage(creature, 1e6f, new System.Collections.Generic.List<(NamespacedId, int)>());
         }
 
         static IEnumerator WaitUntil(System.Func<bool> condition, float timeoutSeconds, string failure)

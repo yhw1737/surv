@@ -14,14 +14,16 @@ namespace Isle.UI.Inventory
     /// <summary>
     /// The full-screen inventory (Tab), in the extraction-shooter / Palworld layout: equipment and character stats on the
     /// left, every bag as a SYS-INV-01 grid in the middle, the ground on the right. Drag to move, R/Q/E rotates while
-    /// dragging, Shift+drag splits, Ctrl+click moves to the next bag, right-click uses (eat, wear, wield, place, plant)
-    /// or takes off, and letting go over the backdrop or the ground panel drops the item. Every change is a request to
+    /// dragging, Shift+drag splits, Ctrl+click moves to the next bag, right-click opens a menu of what the item can do
+    /// (eat, wear, wield, place, plant, move to another bag, drop) or takes off, and letting go outside the panels drops it. Every change is a request to
     /// <see cref="InventoryNetwork"/> (server authority); this screen only draws.
     /// </summary>
     public sealed class InventoryScreen : MonoBehaviour
     {
         // Layout in reference pixels (1920×1080, scaled to the screen) — presentation only.
-        const int CellPx = 52;
+        // T-151 playtest: bigger bag cells (items were hard to see), smaller equipment frames.
+        const int CellPx = 64;
+        const int EquipSlotPx = 84;
         const float Pad = 18f;
         const float SlotGap = 14f;
         const float LabelPx = 18f;
@@ -65,6 +67,7 @@ namespace Isle.UI.Inventory
             Instance = this;
             ItemTooltip.UseExternal = true;
             GridView.CellSizePx = CellPx;
+            EquipSlotView.SlotSizePx = EquipSlotPx;
             GridView.ItemActivated += OnItemActivated;
             EquipSlotView.SlotActivated += OnSlotActivated;
         }
@@ -80,6 +83,12 @@ namespace Isle.UI.Inventory
         /// <summary>Esc closes the inventory first (the pause menu checks this).</summary>
         public void Close() => Open = false;
 
+        /// <summary>Opens the screen without the Tab key (tests and tools).</summary>
+        public void Show() => Open = true;
+
+        /// <summary>The toolbar's equipment button.</summary>
+        public void Toggle() => Open = !Open;
+
         void Update()
         {
             var kb = Keyboard.current;
@@ -89,7 +98,11 @@ namespace Isle.UI.Inventory
             if (_network == null) return;
             if (_canvas.gameObject.activeSelf != Open) _canvas.gameObject.SetActive(Open);
             PointerOverUi = Open;
-            if (!Open) return;
+            if (!Open)
+            {
+                CloseMenu();
+                return;
+            }
 
             var containers = _network.Containers();
             if (containers.Count != _builtContainers || BagKeys() != _bagKeys || Screen.width != _builtWidth || Screen.height != _builtHeight)
@@ -150,6 +163,7 @@ namespace Isle.UI.Inventory
 
         void Rebuild(List<GridInventory> containers)
         {
+            _menu = null;
             foreach (Transform child in _root) Destroy(child.gameObject);
             _grids.Clear();
             _slots.Clear();
@@ -212,7 +226,7 @@ namespace Isle.UI.Inventory
             _weight = NewText("Weight", panel, "", 14, FontStyle.Normal, UiTheme.Muted, TextAnchor.MiddleRight);
             Place(_weight, Pad, -Pad, width - 2 * Pad, TitlePx);
 
-            var slotPx = CellPx * 2f;
+            var slotPx = (float)EquipSlotPx;
             var dollWidth = 3 * slotPx + 2 * SlotGap;
             var dollX = (width - dollWidth) * 0.5f;
             var top = -Pad - TitlePx - 12f;
@@ -284,20 +298,15 @@ namespace Isle.UI.Inventory
             var width = panel.sizeDelta.x;
             Heading(panel, Lang.Get("@ui.inventory_ground"), Pad, -Pad, width);
 
-            var zone = NewRect("DropArea", panel);
-            Place(zone, Pad, -Pad - TitlePx - 8f, width - 2 * Pad, 180f);
-            var image = zone.gameObject.AddComponent<Image>();
-            image.sprite = UiTheme.Sprite(new Color(0.12f, 0.1f, 0.08f, 0.9f), UiTheme.Accent, 10, 2);
-            image.type = Image.Type.Sliced;
-            zone.gameObject.AddComponent<DropZone>();
-            var label = NewText("Label", zone, Lang.Get("@ui.inventory_drop_here"), 16, FontStyle.Bold, UiTheme.Accent, TextAnchor.MiddleCenter);
-            label.rectTransform.anchorMin = Vector2.zero;
-            label.rectTransform.anchorMax = Vector2.one;
-            label.rectTransform.offsetMin = label.rectTransform.offsetMax = Vector2.zero;
-
+            // T-151 playtest: the whole ground panel takes drops (as does everything outside the panels), and lists the pile
+            // at your feet — right-click or drag an item from it into a bag.
+            panel.gameObject.AddComponent<DropZone>();
             _ground = NewText("Nearby", panel, "", 14, FontStyle.Normal, UiTheme.Text, TextAnchor.UpperLeft);
             _ground.supportRichText = true;
-            Place(_ground, Pad, -Pad - TitlePx - 200f, width - 2 * Pad, 500f);
+            Place(_ground, Pad, -Pad - TitlePx - 8f, width - 2 * Pad, 24f);
+            _groundList = NewRect("GroundList", panel);
+            Place(_groundList, Pad, -Pad - TitlePx - 40f, width - 2 * Pad, 760f);
+            _groundKey = null;
         }
 
         // ------------------------------------------------------------------ live text
@@ -320,15 +329,94 @@ namespace Isle.UI.Inventory
                 Bar("@ui.hunger", _vitals.Hunger, new Color(0.9f, 0.65f, 0.3f)),
                 Bar("@ui.thirst", _vitals.Thirst, new Color(0.4f, 0.65f, 0.95f)),
                 Bar("@ui.stamina", _vitals.Stamina, new Color(0.6f, 0.85f, 0.4f)),
-                $"{Lang.Get("@ui.temperature")}  {_vitals.Temperature:0.0}°   {Lang.Get("@ui.armor")} {_vitals.WornArmor():0}   {Lang.Get("@ui.tt_warmth")} +{_vitals.ClothingBonus:0}°");
+                $"{Lang.Get("@ui.temperature")}  {Lang.Get("@temp_state." + VitalsCalculator.ThermalState(_vitals.Temperature))} ({Lang.Get("@ui.ambient")} {_vitals.AmbientTemp:0}°)   {Lang.Get("@ui.armor")} {_vitals.WornArmor():0}   {Lang.Get("@ui.tt_warmth")} +{_vitals.ClothingBonus:0}°");
         }
 
         string GroundText()
         {
             var pile = LootPiles.Nearest(_player.transform.position, PlayerInteraction.ReachTiles);
-            if (pile == null) return UiTheme.Colour(Lang.Get("@ui.inventory_ground_empty"), UiTheme.Muted);
-            var lines = pile.Items.Select(i => $"• {Lang.Get(i.Item.Name)} ×{i.Count}");
-            return $"{UiTheme.Colour(Lang.Get("@ui.inventory_ground_pile"), UiTheme.Accent)}\n{string.Join("\n", lines)}";
+            RefreshGroundList(pile);
+            return pile == null
+                ? UiTheme.Colour(Lang.Get("@ui.inventory_ground_empty"), UiTheme.Muted)
+                : UiTheme.Colour(Lang.Get("@ui.inventory_ground_pile"), UiTheme.Accent);
+        }
+
+        // ------------------------------------------------------------------ ground list (T-151 playtest)
+
+        const float GroundRowPx = 56f;
+        RectTransform _groundList;
+        string _groundKey;
+
+        /// <summary>Rows in the ground list right now (tests).</summary>
+        public int GroundRowCount => _groundList == null ? 0 : _groundList.GetComponentsInChildren<GroundItemView>().Length;
+
+        void RefreshGroundList(LootPile pile)
+        {
+            if (_groundList == null || GridView.Dragging) return; // rows rebuilt mid-drag would drop the drag
+            var key = pile == null ? "" : $"{pile.GetHashCode()}:{string.Join(",", pile.Items.Select(i => i.Item.Id.Value + "×" + i.Count))}";
+            if (key == _groundKey) return;
+            _groundKey = key;
+            foreach (Transform child in _groundList) Destroy(child.gameObject);
+            if (pile == null) return;
+            var width = _groundList.sizeDelta.x;
+            for (var i = 0; i < pile.Items.Count; i++)
+            {
+                var entry = pile.Items[i];
+                var row = new GameObject($"Ground_{i}", typeof(RectTransform), typeof(Image), typeof(GroundItemView));
+                var rect = (RectTransform)row.transform;
+                rect.SetParent(_groundList, false);
+                Place(rect, 0f, -i * GroundRowPx, width, GroundRowPx - 4f);
+                var image = row.GetComponent<Image>();
+                image.sprite = UiTheme.Sprite(UiTheme.Inset, UiTheme.InsetEdge, 8);
+                image.type = Image.Type.Sliced;
+                row.GetComponent<GroundItemView>().Bind(this, i, entry);
+
+                var icon = NewRect("Icon", rect);
+                Place(icon, 4f, -4f, GroundRowPx - 12f, GroundRowPx - 12f);
+                var art = icon.gameObject.AddComponent<Image>();
+                art.sprite = Isle.UI.Art.ItemIcons.Sprite(entry.Item);
+                art.preserveAspect = true;
+                art.raycastTarget = false;
+                var label = NewText("Name", rect, $"{ItemText.Name(entry.Item)}{(entry.Count > 1 ? $"  ×{entry.Count}" : "")}", 15, FontStyle.Normal, UiTheme.Text, TextAnchor.MiddleLeft);
+                Place(label, GroundRowPx, 0f, width - GroundRowPx - 6f, GroundRowPx - 4f);
+            }
+        }
+
+        /// <summary>Right-click on a ground item: pick it up (wherever it fits), or into a chosen bag.</summary>
+        public void OpenGroundMenu(int index, LootEntry entry)
+        {
+            CloseMenu();
+            var options = new List<(string Label, System.Action Act)>
+            {
+                (Lang.Get("@ui.ctx_pick_up"), () => TakeGround(index, entry, -1, default)),
+            };
+            foreach (var grid in _grids)
+            {
+                var target = grid;
+                var spot = target.Inventory.FindPlacementSpot(entry.Item, false);
+                if (spot == null) continue;
+                options.Add((string.Format(Lang.Get("@ui.ctx_move_to"), Lang.Get(target.ContainerIndex == 0 ? "@ui.bag" : BagName(target.Inventory))),
+                    () => TakeGround(index, entry, target.ContainerIndex, spot.Value.position, spot.Value.rotated)));
+            }
+            OpenMenu(options);
+        }
+
+        /// <summary>Asks the server for one ground item — into a container at a cell, or anywhere (container &lt; 0).</summary>
+        public void TakeGround(int index, LootEntry entry, int container, Isle.Core.Vec2Int cell, bool rotated = false)
+        {
+            _network.RequestTakeFromGround(index, entry.Item.Id.Value, container, cell, rotated, _ =>
+            {
+                _groundKey = null;
+                foreach (var grid in _grids) grid.Redraw();
+            });
+        }
+
+        /// <summary>Test hook: opens the ground menu for row <paramref name="index"/> and returns its labels.</summary>
+        public List<string> OpenGroundMenuFor(int index)
+        {
+            var row = _groundList.GetComponentsInChildren<GroundItemView>().First(r => r.Index == index);
+            OpenGroundMenu(row.Index, row.Entry);
+            return _menu == null ? new List<string>() : _menu.GetComponentsInChildren<Text>().Select(t => t.text).ToList();
         }
 
         // ------------------------------------------------------------------ helpers
@@ -358,11 +446,122 @@ namespace Isle.UI.Inventory
             return "@ui.bag";
         }
 
+        // ------------------------------------------------------------------ right-click menu (T-151 playtest)
+
+        GameObject _menu;
+
+        /// <summary>Right-click on a bag item: a small menu of what it can do — eat/drink, wear, wield, place or plant; move
+        /// to each other bag; drop. Clicking anywhere else closes it.</summary>
         void OnItemActivated(GridView view, Placement placement)
         {
             if (view.Network != _network || PrototypeHud.Instance == null) return;
-            PrototypeHud.Instance.Use(placement.Item);
-            if (placement.Item.Places.IsValid) Open = false; // placing happens in the world
+            CloseMenu();
+            var options = new List<(string Label, System.Action Act)>();
+            var item = placement.Item;
+            var use = UseLabel(item);
+            if (use != null)
+                options.Add((Lang.Get(use), () =>
+                {
+                    PrototypeHud.Instance.Use(item);
+                    if (item.Places.IsValid) Open = false; // placing happens in the world
+                }));
+            foreach (var other in _grids)
+            {
+                if (other == view) continue;
+                var target = other;
+                options.Add((string.Format(Lang.Get("@ui.ctx_move_to"), Lang.Get(target.ContainerIndex == 0 ? "@ui.bag" : BagName(target.Inventory))), () =>
+                    _network.RequestQuickMove(view.ContainerIndex, placement.Position, target.ContainerIndex, _ =>
+                    {
+                        view.Redraw();
+                        target.Redraw();
+                    })));
+            }
+            options.Add((Lang.Get("@ui.ctx_drop"), () => _network.RequestDrop(view.ContainerIndex, placement.Position, placement.Count, _ => view.Redraw())));
+            OpenMenu(options);
+        }
+
+        /// <summary>The verb for using an item, or null when it has none (materials).</summary>
+        public static string UseLabel(Isle.Data.ItemDef item)
+        {
+            if (item.Medicine != null) return "@ui.ctx_tend";
+            if (item.Plants.IsValid) return "@ui.ctx_plant";
+            if (item.Places.IsValid) return "@ui.ctx_place";
+            if (!string.IsNullOrEmpty(item.EquipSlot))
+                return item.EquipSlot is "main_hand" or "off_hand" ? "@ui.ctx_wield" : "@ui.ctx_wear";
+            if (item.Consume != null || (item.Tags != null && System.Array.IndexOf(item.Tags, "drink") >= 0)) return "@ui.ctx_drink";
+            if (item.Nutrition != null) return "@ui.ctx_eat";
+            return null;
+        }
+
+        void OpenMenu(List<(string Label, System.Action Act)> options)
+        {
+            const float width = 200f, row = 34f;
+            _menu = NewRect("ItemMenu", _root).gameObject;
+            var blockerRect = (RectTransform)_menu.transform;
+            blockerRect.anchorMin = Vector2.zero;
+            blockerRect.anchorMax = Vector2.one;
+            blockerRect.offsetMin = blockerRect.offsetMax = Vector2.zero;
+            _menu.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.001f); // catches the click that closes the menu
+            _menu.AddComponent<Button>().onClick.AddListener(CloseMenu);
+
+            var panel = NewRect("Panel", blockerRect);
+            var height = options.Count * row + 12f;
+            var mouse = Mouse.current != null ? Mouse.current.position.ReadValue() : new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(blockerRect, mouse, null, out var local);
+            var half = blockerRect.rect.size * 0.5f;
+            local.x = Mathf.Min(local.x + 4f, half.x - width - 4f);
+            local.y = Mathf.Max(local.y - 4f, -half.y + height + 4f);
+            panel.anchorMin = panel.anchorMax = new Vector2(0.5f, 0.5f);
+            panel.pivot = new Vector2(0f, 1f);
+            panel.anchoredPosition = local;
+            panel.sizeDelta = new Vector2(width, height);
+            var image = panel.gameObject.AddComponent<Image>();
+            image.sprite = UiTheme.Sprite(UiTheme.Panel, UiTheme.Accent, 8, 2);
+            image.type = Image.Type.Sliced;
+
+            for (var i = 0; i < options.Count; i++)
+            {
+                var (label, act) = options[i];
+                var button = NewRect($"Option_{i}", panel);
+                Place(button, 6f, -6f - i * row, width - 12f, row - 2f);
+                var buttonImage = button.gameObject.AddComponent<Image>();
+                buttonImage.sprite = UiTheme.Sprite(UiTheme.Inset, UiTheme.InsetEdge, 6);
+                buttonImage.type = Image.Type.Sliced;
+                button.gameObject.AddComponent<Button>().onClick.AddListener(() =>
+                {
+                    CloseMenu();
+                    act();
+                });
+                var text = NewText("Label", button, label, 15, FontStyle.Normal, UiTheme.Text, TextAnchor.MiddleLeft);
+                text.rectTransform.anchorMin = Vector2.zero;
+                text.rectTransform.anchorMax = Vector2.one;
+                text.rectTransform.offsetMin = new Vector2(12f, 0f);
+                text.rectTransform.offsetMax = Vector2.zero;
+            }
+        }
+
+        void CloseMenu()
+        {
+            if (_menu != null) Destroy(_menu);
+            _menu = null;
+        }
+
+        /// <summary>Test hook: the labels the menu would show for <paramref name="placement"/> in container
+        /// <paramref name="container"/>, after opening it.</summary>
+        public List<string> OpenMenuFor(int container, Placement placement)
+        {
+            OnItemActivated(_grids[container], placement);
+            return _menu == null ? new List<string>() : _menu.GetComponentsInChildren<Text>().Select(t => t.text).ToList();
+        }
+
+        /// <summary>Test hook: presses the menu option whose label is <paramref name="label"/>.</summary>
+        public bool PressMenu(string label)
+        {
+            if (_menu == null) return false;
+            var text = _menu.GetComponentsInChildren<Text>().FirstOrDefault(t => t.text == label);
+            if (text == null) return false;
+            text.GetComponentInParent<Button>().onClick.Invoke();
+            return true;
         }
 
         void OnSlotActivated(EquipSlotView view)

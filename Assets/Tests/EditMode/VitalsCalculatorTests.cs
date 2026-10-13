@@ -211,5 +211,17 @@ namespace Isle.Tests.EditMode
         {
             Assert.AreEqual(expected, TemperatureHpDrainPerSecond(temperature: 20f, hypothermiaSeverity: severity), Tolerance);
         }
+    
+        // T-151 playtest: the HUD names the temperature band instead of showing body degrees.
+        [TestCase(26f, "freezing")]
+        [TestCase(30f, "cold")]
+        [TestCase(34.5f, "cool")]
+        [TestCase(37f, "comfortable")]
+        [TestCase(38f, "comfortable")]
+        [TestCase(40f, "warm")]
+        [TestCase(42.7f, "hot")]
+        [TestCase(45f, "heatstroke")]
+        public void ThermalState_Temperature_NamesTheSpecBand(float temperature, string expected) =>
+            Assert.AreEqual(expected, VitalsCalculator.ThermalState(temperature));
     }
 }

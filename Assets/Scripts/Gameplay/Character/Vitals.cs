@@ -114,6 +114,14 @@ namespace Isle.Gameplay.Character
         {
             if (!IsServer) return;
             UpdateMovementRules();
+            // SYS-DIFF-01 Unlimited: nothing lingers and nothing drains, every frame — not just on the minute tick.
+            if (World.Difficulty.IsUnlimited)
+            {
+                Status.Clear();
+                Injuries.Clear(scars: false);
+                Health = Hunger = Thirst = Stamina = VitalsCalculator.GaugeMax;
+                Mana = ManaMax;
+            }
             if (Status.Any)
             {
                 var dot = Status.Tick(Time.time, Time.deltaTime);
@@ -125,6 +133,7 @@ namespace Isle.Gameplay.Character
             }
 
             UpdateMana(Time.deltaTime);
+            UpdateInjuries(Time.deltaTime);
 
             _accumulatedSeconds += Time.deltaTime;
             while (_accumulatedSeconds >= TickIntervalSeconds)
@@ -145,7 +154,8 @@ namespace Isle.Gameplay.Character
             var buffs = ActiveBuffs();
             var weight = CarriedWeightKg() / Mathf.Max(0.1f, BuffEffects.Mult(buffs, "carry_capacity_mult"));
             var hauling = TryGetComponent<PlayerInteraction>(out var hauler) ? hauler.HaulSpeed : 1f;
-            _movement.WeightMultiplier = WeightCalculator.SpeedMultiplier(weight) * BuffEffects.Mult(buffs, "move_speed_mult") * hauling;
+            _movement.WeightMultiplier = WeightCalculator.SpeedMultiplier(weight) * BuffEffects.Mult(buffs, "move_speed_mult") * hauling
+                                         * Injuries.LegMult; // SYS-MED-01: hurt legs slow you
             Overloaded = WeightCalculator.IsOverloaded(weight);
             if (Stamina <= 0f) Exhausted = true;
             else if (Exhausted && Stamina >= ExhaustionRecoverStamina) Exhausted = false;
@@ -167,23 +177,24 @@ namespace Isle.Gameplay.Character
 
         /// <summary>SYS-COMBAT-01 §Damage <c>totalArmor</c>: every worn item's <c>armor</c>.</summary>
         /// <summary>The worn items' per-type armor for one type (summed), or null when none lists it.</summary>
-        System.Collections.Generic.Dictionary<string, float> WornArmorTypes(string damageType)
+        System.Collections.Generic.Dictionary<string, float> WornArmorTypes(string damageType, BodyPart? part = null)
         {
             if (!TryGetComponent<InventoryNetwork>(out var inventory)) return null;
             float? total = null;
             foreach (var slot in EquipSlots.All)
-                if (inventory.Slots.Working(slot)?.ArmorTypes is { } byType && byType.TryGetValue(damageType, out var value))
+                if ((part == null || System.Array.IndexOf(Injuries.Covers(slot), part.Value) >= 0) && inventory.Slots.Working(slot)?.ArmorTypes is { } byType && byType.TryGetValue(damageType, out var value))
                     total = (total ?? 0f) + value * Crafting.QualityCalculator.PowerOf(inventory.Slots.WearOf(slot)) // SYS-CRAFT-01 §Quality
                             * Crafting.EnchantEffects.Mult(inventory.Slots.WearOf(slot), Crafting.EnchantCalculator.ArmorMult); // §Enchanting
             return total.HasValue ? new System.Collections.Generic.Dictionary<string, float> { [damageType] = total.Value } : null;
         }
 
         /// <summary>SYS-CRAFT-02: every worn armor piece loses 1 per hit taken.</summary>
-        void WearArmor()
+        void WearArmor(BodyPart part)
         {
             if (!TryGetComponent<InventoryNetwork>(out var inventory)) return;
             foreach (var slot in EquipSlots.All)
             {
+                if (System.Array.IndexOf(Injuries.Covers(slot), part) < 0) continue; // only what was hit wears
                 var item = inventory.Slots.Get(slot);
                 if (item == null || (item.Armor <= 0f && item.ArmorTypes == null)) continue;
                 if (inventory.Slots.Wear(slot, 1)) Feedback.GameFeed.RaiseNotice($"@ui.item_broke|{item.Name}");
@@ -198,6 +209,18 @@ namespace Isle.Gameplay.Character
             foreach (var effect in buff.Effects ?? System.Array.Empty<BuffEffect>())
                 if (effect.Type == "damage_resist" && effect.DamageType == damageType && effect.Value is { } v) mult *= Mathf.Clamp01(1f - v);
             return mult;
+        }
+
+        /// <summary>SYS-MED-01: the armor of the pieces covering <paramref name="part"/>.</summary>
+        public float WornArmorFor(BodyPart part)
+        {
+            if (!TryGetComponent<InventoryNetwork>(out var inventory)) return 0f;
+            var total = 0f;
+            foreach (var slot in EquipSlots.All)
+                if (System.Array.IndexOf(Injuries.Covers(slot), part) >= 0)
+                    total += (inventory.Slots.Working(slot)?.Armor ?? 0f) * Crafting.QualityCalculator.PowerOf(inventory.Slots.WearOf(slot))
+                             * Crafting.EnchantEffects.Mult(inventory.Slots.WearOf(slot), Crafting.EnchantCalculator.ArmorMult);
+            return total;
         }
 
         public float WornArmor()
@@ -261,6 +284,7 @@ namespace Isle.Gameplay.Character
             if (!IsServer || !DefRegistry.TryGet<BuffDef>(buffId, out var buff)) return;
             // buff_duration_mult (traits): a gourmand savours a meal's effects longer, an ascetic shorter.
             durationMult *= BuffEffects.Mult(_traitEffects, "buff_duration_mult");
+            if (buff.FixedDuration) durationMult = 1f; // SYS-FORAGE-01: a poison lasts its own time
             Buffs.Grant(new BuffDef { Id = buff.Id, Name = buff.Name, Effects = buff.Effects, DurationMin = (long)(buff.DurationMin * durationMult) }, NowMinutes);
         }
 
@@ -316,6 +340,8 @@ namespace Isle.Gameplay.Character
                 Stamina = Mathf.Clamp(Stamina + regen, 0f, maxStamina);
             }
 
+            Injuries.Heal(1f, () => InfectionRoll?.Invoke() ?? Random.value); // SYS-MED-01: a minute's mending
+
             // SYS-DIFF-01 Unlimited: nothing is needed and nothing hurts — every gauge stays full.
             if (World.Difficulty.IsUnlimited)
             {
@@ -364,6 +390,8 @@ namespace Isle.Gameplay.Character
         /// <summary>Server-side: loading a save puts every gauge back as recorded.</summary>
         public void Restore(float health, float hunger, float thirst, float stamina, float temperature, float hypothermiaSeverity)
         {
+            // Wounds are put back separately after this (SaveGame restores them next); a bare restore starts clean.
+            Injuries.Clear(scars: false);
             if (!IsServer) return;
             Health = health;
             Hunger = hunger;
@@ -390,12 +418,17 @@ namespace Isle.Gameplay.Character
         {
             if (!IsServer || amount <= 0f || World.Difficulty.IsUnlimited) return;
             if (_movement != null && _movement.IsInvulnerable) return; // dodge roll i-frames
-            var armor = Combat.DamageTypes.ArmorAgainst(WornArmor(), WornArmorTypes(damageType), damageType);
+            // SYS-MED-01: the hit lands on one part, and only armor covering that part stands in its way.
+            var part = Injuries.PartFor(WoundRoll?.Invoke() ?? Random.value);
+            var armor = Combat.DamageTypes.ArmorAgainst(WornArmorFor(part), WornArmorTypes(damageType, part), damageType);
             var taken = Combat.DamageTypes.Damage(amount, damageType, FoodResistMult(damageType), armor) * BuffEffects.Mult(ActiveBuffs(), "damage_taken_mult");
             Status.OnHit(damageType, taken, Time.time, out _);
             Health = Mathf.Clamp(Health - taken, 0f, VitalsCalculator.GaugeMax);
+            // SYS-MED-01: the hit is a wound on that part; until it closes, health can't climb past it.
+            Injuries.AddHit(damageType, taken, part, FractureRoll?.Invoke() ?? Random.value);
+            Health = Mathf.Min(Health, MaxHealth);
             LastHitAt = Time.time;
-            WearArmor();
+            WearArmor(part);
             Feedback.GameFeed.RaisePlayerHit(taken);
         }
 
@@ -438,6 +471,7 @@ namespace Isle.Gameplay.Character
             HypothermiaSeverity = 0f;
             foreach (var id in new List<NamespacedId>(Buffs.ActiveBuffIds(NowMinutes))) Buffs.Clear(id);
             _overTime.Clear();
+            Injuries.Clear();
             Mana = ManaMax;
         }
 
@@ -487,7 +521,52 @@ namespace Isle.Gameplay.Character
         /// <summary>A save's mana, clamped to what the survivor can hold now.</summary>
         public void SetMana(float mana) => Mana = Mathf.Clamp(mana, 0f, ManaMax);
 
-        public void Heal(float amount) => Health = Mathf.Clamp(Health + amount, 0f, VitalsCalculator.GaugeMax);
+        /// <summary>A healing effect restores lost health, up to what the open wounds allow — it doesn't close them
+        /// (SYS-MED-01, developer 2026-10-13: wounds need tending and time).</summary>
+        public void Heal(float amount) => Health = Mathf.Clamp(Health + amount, 0f, MaxHealth);
+
+        // ------------------------------------------------------------------ wounds (SYS-MED-01)
+
+        /// <summary>This body's wounds. Server state.</summary>
+        public Injuries Injuries { get; } = new();
+
+        /// <summary>Health can't exceed 100 minus the open wounds.</summary>
+        public float MaxHealth => Injuries.MaxHealth(VitalsCalculator.GaugeMax);
+
+        /// <summary>Test hook: the [0,1) roll that picks the part a hit lands on.</summary>
+        public static System.Func<float> WoundRoll { get; set; }
+
+        /// <summary>Test hook: the ±0.1 tend roll.</summary>
+        public static System.Func<float> TendRollOverride { get; set; }
+
+        /// <summary>Test hooks: the fracture roll on a heavy blunt hit, the infection roll an hour into a wound.</summary>
+        public static System.Func<float> FractureRoll { get; set; }
+        public static System.Func<float> InfectionRoll { get; set; }
+
+        void UpdateInjuries(float dt)
+        {
+            if (World.Difficulty.IsUnlimited) { Injuries.Clear(); return; }
+            var bleed = (Injuries.BleedPerSecond + Injuries.InfectionDrainPerSecond) * dt;
+            if (bleed > 0f)
+            {
+                Health = Mathf.Max(0f, Health - bleed);
+                if (Health <= 0f && TryGetComponent<DeathHandler>(out var dying)) dying.Die();
+            }
+            // Fed, the body mends — up to what the wounds allow.
+            if (Hunger >= VitalsCalculator.LowGaugeThreshold && Thirst >= VitalsCalculator.LowGaugeThreshold && Health > 0f)
+                Health = Mathf.Min(MaxHealth, Health + Injuries.RegenPerSecond * dt);
+            Health = Mathf.Min(Health, Mathf.Max(MaxHealth, 0f));
+        }
+
+        /// <summary>SYS-MED-01 §Tending: one wound tended with <paramref name="medicine"/>; null when none needed it.</summary>
+        public Wound Tend(MedicineSpec medicine, int skillLevel = 25)
+        {
+            if (!IsServer || medicine == null) return null;
+            var roll = TendRollOverride?.Invoke() ?? Random.Range(-Injuries.TendRoll, Injuries.TendRoll);
+            var wound = Injuries.Tend(Injuries.TendQuality(medicine.Quality, skillLevel), roll, medicine.Splint);
+            if (wound != null && medicine.HarmBuff.IsValid) GrantBuff(medicine.HarmBuff, 1f);
+            return wound;
+        }
 
         /// <summary>SYS-BREW-01: one consume effect, at once or started over time (over-time effects stack).</summary>
         public void ApplyConsume(ConsumeEffect effect)

@@ -17,6 +17,10 @@ namespace Isle.Data
         /// <summary>In-game minutes (GLOSSARY §Units). 0 = until cleared some other way, not time.</summary>
         public long DurationMin { get; init; }
 
+        /// <summary>SYS-FORAGE-01: poisons last their own time — a cook method's buff_duration (raw 0, stew 1.4) and
+        /// traits don't stretch or cut them.</summary>
+        public bool FixedDuration { get; init; }
+
         public BuffEffect[] Effects { get; init; }
     }
 

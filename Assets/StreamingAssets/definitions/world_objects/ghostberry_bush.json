@@ -1,0 +1,41 @@
+{
+  "id": "isle:ghostberry_bush",
+  "name": "@world_object.blue_berry_bush",
+  "tags": [
+    "node/berry",
+    "berry"
+  ],
+  "spawn": {
+    "biomes": [
+      "isle:marsh"
+    ],
+    "density": 0.0015,
+    "cluster": {
+      "scale_tiles": 20,
+      "coverage": 0.2,
+      "inside": 3.5,
+      "outside": 0.1
+    },
+    "elsewhere": 0.0
+  },
+  "gather": {
+    "item": "isle:ghostberry",
+    "count": 6,
+    "uses": 1,
+    "respawn_minutes": 1440,
+    "stamina_cost": 4,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 18,
+      "per_unit": 0
+    },
+    "time_sec": 3
+  },
+  "visual": {
+    "shape": "bush",
+    "depleted": "bush_bare",
+    "color": "#4A6AB8",
+    "size": 1.0,
+    "jitter": 0.1
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "isle:refined_medicine",
+  "name": "@item.refined_medicine",
+  "tags": [
+    "medical"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.1,
+  "stack": 10,
+  "medicine": {
+    "quality": 1.0,
+    "skill": "isle:medicine",
+    "xp": {
+      "skill": "isle:medicine",
+      "base": 20,
+      "per_unit": 0
+    }
+  },
+  "icon_style": {
+    "shape": "potion",
+    "color": "#E8F0F8",
+    "accent": "#4A90D0"
+  }
+}

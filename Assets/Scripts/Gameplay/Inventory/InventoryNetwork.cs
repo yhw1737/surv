@@ -63,6 +63,9 @@ namespace Isle.Gameplay.Inventory
         // breaks (e.g. real internet play added later).
         Action<bool> _pendingCallback;
 
+        /// <summary>A request sent and not yet answered (tests wait on it).</summary>
+        public bool RequestPending => _pendingCallback != null;
+
         void Awake()
         {
             Bag = new GridInventory(BagWidth, BagHeight);
@@ -153,6 +156,34 @@ namespace Isle.Gameplay.Inventory
         }
 
         /// <summary>Drops <paramref name="count"/> of a stack (all of it by default) on the ground at the player's feet.</summary>
+        /// <summary>T-151 playtest: takes one entry of the nearest loot pile — into a container at a cell, or anywhere it
+        /// fits when <paramref name="container"/> is negative. Server-side: piles are server state.</summary>
+        public void RequestTakeFromGround(int entry, string itemId, int container, Vec2Int cell, bool rotated, Action<bool> onResult)
+        {
+            _pendingCallback = onResult;
+            CmdTakeFromGround(entry, itemId, container, cell.X, cell.Y, rotated);
+        }
+
+        [ServerRpc]
+        void CmdTakeFromGround(int entry, string itemId, int container, int x, int y, bool rotated) =>
+            TargetResult(Owner, ApplyTakeFromGround(entry, itemId, container, new Vec2Int(x, y), rotated));
+
+        bool ApplyTakeFromGround(int entry, string itemId, int container, Vec2Int cell, bool rotated)
+        {
+            if (!Isle.Core.Ids.NamespacedId.TryParse(itemId, out var id, out _)) return false;
+            var pile = LootPiles.Nearest(transform.position, Character.PlayerInteraction.ReachTiles);
+            var count = 0;
+            var taken = LootPiles.Take(pile, entry, id, e =>
+            {
+                count = e.Count;
+                return container < 0
+                    ? InventoryOps.TryGive(Containers(), e.Item, e.Count, e.Wear)
+                    : ContainerAt(container)?.TryPlace(e.Item, cell, rotated, e.Count, e.Wear) == true;
+            });
+            if (taken) Feedback.GameFeed.RaiseItemGained(id, count);
+            return taken;
+        }
+
         public void RequestDrop(int container, Vec2Int pos, int count, Action<bool> onResult)
         {
             _pendingCallback = ok =>

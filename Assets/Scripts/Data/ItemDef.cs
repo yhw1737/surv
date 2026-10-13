@@ -83,6 +83,15 @@ namespace Isle.Data
         /// <summary>Dishes only: multiplier on those buffs' durations (method buff_duration, care tag).</summary>
         public float BuffDurationMult { get; init; } = 1f;
 
+        /// <summary>SYS-SURV-01 §Fire: in-game minutes this keeps a campfire burning; 0 = not fuel.</summary>
+        public float FuelMinutes { get; init; }
+
+        /// <summary>SYS-MED-01: tends a wound when used. Null for anything that isn't medical.</summary>
+        public MedicineSpec Medicine { get; init; }
+
+        /// <summary>SYS-FORAGE-01: who can tell what this is. Null = anyone.</summary>
+        public IdentifySpec Identify { get; init; }
+
         /// <summary>SYS-BREW-01: what drinking it does beyond nutrition and buffs — heal, mana, at once or over time.</summary>
         public ConsumeEffect[] Consume { get; init; }
 
@@ -113,6 +122,31 @@ namespace Isle.Data
     }
 
     /// <summary>Spoilage inputs. Progress is computed in one elapsed-time pass (ARCHITECTURE §Deferred simulation).</summary>
+    /// <summary>SYS-MED-01: how well it tends (0..1) and, for a poisonous look-alike, what it does to you.</summary>
+    public sealed class MedicineSpec
+    {
+        public float Quality { get; init; }
+        public Isle.Core.Ids.NamespacedId HarmBuff { get; init; }
+
+        /// <summary>A splint: goes to a broken limb first and lets it heal at the normal rate.</summary>
+        public bool Splint { get; init; }
+
+        /// <summary>The skill that scales the tending and earns <see cref="Xp"/> (Medicine).</summary>
+        public Isle.Core.Ids.NamespacedId Skill { get; init; }
+        public XpAward Xp { get; init; }
+    }
+
+    /// <summary>SYS-FORAGE-01: below <see cref="Level"/> in <see cref="Skill"/> the item shows as <see cref="UnknownName"/>
+    /// and hides what it does (display only).</summary>
+    public sealed class IdentifySpec
+    {
+        public Isle.Core.Ids.NamespacedId Skill { get; init; }
+        public int Level { get; init; }
+
+        /// <summary>Language key, e.g. <c>"@item.unknown_red_berry"</c>.</summary>
+        public string UnknownName { get; init; }
+    }
+
     /// <summary>SYS-BREW-01 consume effect: <c>heal</c>, <c>heal_over_time</c>, <c>mana</c> or <c>mana_over_time</c>.</summary>
     public sealed class ConsumeEffect
     {

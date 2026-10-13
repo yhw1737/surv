@@ -126,7 +126,7 @@ namespace Isle.Gameplay.Character
         float XpMult() => TryGetComponent<Vitals>(out var vitals) ? Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "xp_mult") : 1f;
 
         /// <summary>gather_speed_mult: nimble hands harvest faster. Other systems (dungeon veins) divide by it too.</summary>
-        public float GatherSpeed() => TryGetComponent<Vitals>(out var vitals) ? Mathf.Max(0.1f, Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "gather_speed_mult")) : 1f;
+        public float GatherSpeed() => TryGetComponent<Vitals>(out var vitals) ? Mathf.Max(0.1f, vitals.Injuries.ArmMult * Buffs.BuffEffects.Mult(vitals.ActiveBuffs(), "gather_speed_mult")) : 1f;
 
         void AwardCombatXp(WeaponDef weapon, float damageDealt)
         {
@@ -372,13 +372,14 @@ namespace Isle.Gameplay.Character
                 return;
             }
 
-            // Pressing E again while gathering, butchering, cooking or forging stops it.
-            if (Gathering != null || Butchering != null || Cooking != null || Forge != null)
+            // Pressing E again while gathering, butchering, cooking, crafting or forging stops it.
+            if (Gathering != null || Butchering != null || Cooking != null || Crafting != null || Forge != null)
             {
                 if (Forge != null) GameFeed.RaiseNotice("@ui.forge_cancelled");
                 CancelGather();
                 Butchering = null;
                 Cooking = null;
+                Crafting = null;
                 Forge = null;
                 return;
             }
@@ -507,7 +508,7 @@ namespace Isle.Gameplay.Character
             _combo.Advance(_nextAttackAt, Time.time, length);
             ComboStep = step;
             ComboLength = length;
-            _nextAttackAt = Time.time + 1f / weapon.AttackSpeed;
+            _nextAttackAt = Time.time + 1f / (weapon.AttackSpeed * vitals.Injuries.ArmMult); // hurt arms swing slower (SYS-MED-01)
             vitals.SpendStamina(cost);
             GameFeed.RaisePlayerSwing(transform.position, weapon.Reach);
 
@@ -629,6 +630,7 @@ namespace Isle.Gameplay.Character
         void StartGather(ResourceNode node)
         {
             Cooking = null;
+            Crafting = null;
             Gathering = node;
             _gatherFrom = transform.position;
             _gatherStartedAt = Time.time;
@@ -775,6 +777,7 @@ namespace Isle.Gameplay.Character
             // People butchering the same carcass together split the time (up to 3).
             var together = 1 + All.Count(p => p != this && p.Butchering == carcass);
             Cooking = null;
+            Crafting = null;
             Butchering = carcass;
             _butcherFrom = transform.position;
             _butcherStartedAt = Time.time;
@@ -879,6 +882,7 @@ namespace Isle.Gameplay.Character
             UpdateButcher();
             UpdateHaul();
             UpdateCook();
+            UpdateCraft();
             UpdateForge();
             UpdateCast();
             if (Fight == null) return;
@@ -994,7 +998,7 @@ namespace Isle.Gameplay.Character
                 GameFeed.RaiseNotice("@ui.no_mana");
                 return;
             }
-            _nextAttackAt = Time.time + 1f / focus.AttackSpeed;
+            _nextAttackAt = Time.time + 1f / (focus.AttackSpeed * vitals.Injuries.ArmMult);
             WearSlot(inventory, MainHandSlot); // each cast wears the focus
             var direction = _attackAim.sqrMagnitude > 0.0001f ? _attackAim.normalized : Vector2.right;
             var damage = PowerCalculator.FinalPower(focus.BasePower, LevelOf(focus.CombatSkill))
@@ -1213,13 +1217,55 @@ namespace Isle.Gameplay.Character
                 CancelGather();
                 Butchering = null;
                 Cooking = null;
+                Crafting = null;
                 Forge = new ForgingMinigame(recipe.ForgeStrikes, LevelOf(PrimarySkill(recipe)));
                 _forgeCraft = (recipe, material);
                 _forgeFrom = transform.position;
                 _bellows = false;
                 return;
             }
-            CompleteCraft(inventory, recipe, craft, QualityCalculator.NoMinigameScore);
+
+            // T-151 playtest: crafting takes time, standing still, like cooking; the inputs go only when it's done.
+            var seconds = CraftTimeCalculator.Seconds(recipe.TimeSec, LevelOf(PrimarySkill(recipe)));
+            if (seconds <= 0f)
+            {
+                CompleteCraft(inventory, recipe, craft, QualityCalculator.NoMinigameScore);
+                return;
+            }
+            CancelGather();
+            Butchering = null;
+            Cooking = null;
+            Crafting = recipe;
+            _craftingMaterial = material;
+            _craftFrom = transform.position;
+            _craftStartedAt = Time.time;
+            _craftSeconds = seconds;
+        }
+
+        /// <summary>The recipe being made right now (a timed craft), or null. Server state the HUD reads.</summary>
+        public CraftRecipeDef Crafting { get; private set; }
+
+        public float CraftProgress => Crafting == null || _craftSeconds <= 0f ? 0f : Mathf.Clamp01((Time.time - _craftStartedAt) / _craftSeconds);
+
+        MaterialDef _craftingMaterial;
+        Vector2 _craftFrom;
+        float _craftStartedAt, _craftSeconds;
+
+        void UpdateCraft()
+        {
+            if (Crafting == null) return;
+            if (IsDead || Vector2.Distance(transform.position, _craftFrom) > GatherLeashTiles)
+            {
+                if (!IsDead) GameFeed.RaiseNotice("@ui.craft_cancelled");
+                Crafting = null;
+                return;
+            }
+            if (Time.time - _craftStartedAt < _craftSeconds) return;
+            var recipe = Crafting;
+            Crafting = null;
+            // Checked again: the inputs or the station may have gone while it was being made.
+            if (TryGetComponent<InventoryNetwork>(out var inventory) && PrepareCraft(inventory, recipe, _craftingMaterial, notify: true) is { } craft)
+                CompleteCraft(inventory, recipe, craft, QualityCalculator.NoMinigameScore);
         }
 
         /// <summary>World-object tag of a station where gear is forged (the anvil).</summary>
@@ -1581,6 +1627,7 @@ namespace Isle.Gameplay.Character
             }
             CancelGather();
             Butchering = null;
+            Crafting = null;
             Cooking = method;
             _cookIngredients = parsed;
             _cookFrom = transform.position;
@@ -1790,6 +1837,57 @@ namespace Isle.Gameplay.Character
         }
 
         /// <summary>Same, for an item that isn't a registered def (a dish).</summary>
+        /// <summary>Feeds the nearest campfire within reach one fuel item (the cook window's button).</summary>
+        public void RequestAddFuel() => CmdAddFuel();
+
+        [ServerRpc]
+        void CmdAddFuel()
+        {
+            var fire = NearestCampfire();
+            if (fire == null || !fire.TryGetComponent<World.CampfireInteraction>(out var burner)) return;
+            if (!burner.AddFuel(gameObject)) GameFeed.RaiseNotice("@ui.fire_no_fuel_item");
+        }
+
+        /// <summary>The nearest campfire within reach, lit or not.</summary>
+        public WorldObjectInstance NearestCampfire()
+        {
+            var fire = WorldObjectRegistry.All.Where(o => o != null && o.HasTag(CampfireTag))
+                .OrderBy(o => Vector2.Distance(o.transform.position, transform.position)).FirstOrDefault();
+            return fire != null && Vector2.Distance(fire.transform.position, transform.position) <= ReachTiles ? fire : null;
+        }
+
+        /// <summary>Puts out the nearest lit campfire within reach (the cook window's button).</summary>
+        public void RequestExtinguish() => CmdExtinguish();
+
+        [ServerRpc]
+        void CmdExtinguish()
+        {
+            var fire = WorldObjectRegistry.All.Where(o => o != null && o.IsActive && o.HasTag(CampfireTag))
+                .OrderBy(o => Vector2.Distance(o.transform.position, transform.position)).FirstOrDefault();
+            if (fire != null && Vector2.Distance(fire.transform.position, transform.position) <= ReachTiles) fire.IsActive = false;
+        }
+
+        /// <summary>SYS-MED-01: tends a wound with a medical item from the bag.</summary>
+        public void RequestTend(string itemId) => CmdTend(itemId);
+
+        [ServerRpc]
+        void CmdTend(string itemText)
+        {
+            if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory) || !TryGetComponent<Vitals>(out var vitals)) return;
+            if (!NamespacedId.TryParse(itemText, out var id, out _) || !DefRegistry.TryGet<ItemDef>(id, out var item) || item.Medicine == null) return;
+            if (!vitals.Injuries.NeedsTending(item.Medicine.Splint))
+            {
+                GameFeed.RaiseNotice("@ui.tend_nothing");
+                return;
+            }
+            if (InventoryOps.TakeOne(inventory.Containers(), id) == null) return;
+            if (vitals.Tend(item.Medicine, item.Medicine.Skill.IsValid ? LevelOf(item.Medicine.Skill) : 25) is { } wound)
+            {
+                AwardXp(item.Medicine.Xp, 1); // SYS-MED-01: tending trains Medicine
+                GameFeed.RaiseNotice($"@ui.tended|@body.{wound.Part.ToString().ToLowerInvariant()}|{Mathf.RoundToInt(wound.Quality * 100f)}");
+            }
+        }
+
         /// <summary>SYS-DIFF-01 Unlimited: takes any item from the palette.</summary>
         public void RequestCreativeTake(string itemId, int count) => CmdCreativeTake(itemId, count);
 

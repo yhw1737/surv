@@ -226,6 +226,13 @@ namespace Isle.UI.Art
                     p.Line(V(0.64f, 0.72f), V(0.76f, 0.72f), 0.035f, Color.white, false);
                     p.Line(V(0.7f, 0.66f), V(0.7f, 0.78f), 0.035f, Color.white, false);
                     break;
+                case "mushroom":
+                    p.Box(V(0.5f, 0.32f), V(0.09f, 0.18f), 0.04f, 0f, new Color(0.93f, 0.9f, 0.82f));
+                    p.Polygon(Arc(V(0.5f, 0.5f), 0.32f, 0f, 180f, 14), c, true, 0.02f);
+                    p.Line(V(0.18f, 0.5f), V(0.82f, 0.5f), 0.03f, Dark(c), false);
+                    p.Disk(V(0.4f, 0.62f), 0.045f, a, false);
+                    p.Disk(V(0.6f, 0.68f), 0.035f, a, false);
+                    break;
                 case "potion":
                     // A round glass flask: the brew's colour inside, a cork, a highlight.
                     p.Disk(V(0.5f, 0.4f), 0.26f, new Color(0.85f, 0.92f, 0.95f));

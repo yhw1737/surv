@@ -1,0 +1,6 @@
+{
+  "id": "isle:medicine",
+  "name": "@skill.medicine",
+  "pool": "production",
+  "xp_per_damage": 0
+}

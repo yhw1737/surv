@@ -33,7 +33,7 @@ namespace Isle.Core.Util
             "campfire", "crate", "warehouse", "workbench", "pot", "rack", "rain_catcher", "plot", "sack",
             "sea_cave", "giant_tree", "sinkhole", "ruin_gate", "stairs_down", "stairs_up", "key", "locked_door",
             "gate_water", "gate_roots", "gate_bars", "gate_runes", "chest", "ore_vein", "furnace", "anvil", "wreckage",
-            "stump", "rubble", "bush_bare", "stubble", "gear_door", "enchanting_table", "cauldron", "smokehouse", "jar", "brewing_stand",
+            "stump", "rubble", "bush_bare", "stubble", "gear_door", "enchanting_table", "cauldron", "smokehouse", "jar", "brewing_stand", "mushroom", "apothecary",
         };
 
         /// <summary>A sprite one world unit across at scale 1, cached per (shape, colour).</summary>
@@ -394,6 +394,32 @@ namespace Isle.Core.Util
                     canvas.Inked = false;
                     canvas.Circle(0.72f, 0.9f, 0.05f, new Color(0.8f, 0.8f, 0.8f, 0.6f));
                     canvas.Circle(0.78f, 0.96f, 0.035f, new Color(0.8f, 0.8f, 0.8f, 0.45f));
+                    canvas.Inked = true;
+                    break;
+                case "apothecary":
+                    // A table with a mortar and pestle, a row of jars and a hanging bundle of herbs.
+                    canvas.Rect(0.12f, 0.06f, 0.2f, 0.46f, Bark);
+                    canvas.Rect(0.8f, 0.06f, 0.88f, 0.46f, Bark);
+                    canvas.Rect(0.06f, 0.44f, 0.94f, 0.55f, c);
+                    canvas.Ellipse(0.28f, 0.6f, 0.12f, 0.07f, new Color(0.62f, 0.6f, 0.58f));
+                    canvas.Line(0.3f, 0.6f, 0.4f, 0.76f, 0.025f, Bark);
+                    canvas.Rect(0.5f, 0.55f, 0.58f, 0.68f, new Color(0.55f, 0.75f, 0.5f));
+                    canvas.Rect(0.62f, 0.55f, 0.7f, 0.72f, new Color(0.75f, 0.45f, 0.4f));
+                    canvas.Rect(0.74f, 0.55f, 0.82f, 0.66f, Ivory);
+                    canvas.Line(0.5f, 0.92f, 0.5f, 0.82f, 0.015f, Bark);
+                    canvas.Tri(0.42f, 0.84f, 0.58f, 0.84f, 0.5f, 0.74f, new Color(0.35f, 0.6f, 0.3f));
+                    break;
+                case "mushroom":
+                    // A little cluster: one big cap and two small ones, pale stems.
+                    canvas.Rect(0.44f, 0.05f, 0.56f, 0.32f, Ivory);
+                    canvas.Ellipse(0.5f, 0.36f, 0.26f, 0.14f, c);
+                    canvas.Rect(0.22f, 0.05f, 0.29f, 0.18f, Ivory);
+                    canvas.Ellipse(0.255f, 0.2f, 0.12f, 0.07f, dark);
+                    canvas.Rect(0.72f, 0.05f, 0.78f, 0.15f, Ivory);
+                    canvas.Ellipse(0.75f, 0.17f, 0.1f, 0.06f, c);
+                    canvas.Inked = false;
+                    canvas.Circle(0.42f, 0.4f, 0.035f, light);
+                    canvas.Circle(0.58f, 0.38f, 0.03f, light);
                     canvas.Inked = true;
                     break;
                 case "brewing_stand":

@@ -121,17 +121,21 @@ this spec's original "no third state" framing.
 
 | | Duration (in-game minutes) | Real-time equivalent |
 |---|---|---|
-| Clear | 180–480, uniform | 2.5–6.7 min |
-| Rain | 20–60, uniform | 16.7–50 s |
-| Snow | 20–60, uniform (same range as Rain) | 16.7–50 s |
+| Clear | 360–960, uniform | 5–13.3 min |
+| Rain | 120–360, uniform | 1.7–5 min |
+| Snow | 120–360, uniform (same range as Rain) | 1.7–5 min |
+
+> **2026-10-12 (developer playtest: "weather is too short, no fade in/out"):** ranges lengthened from Clear 180–480 /
+> Rain·Snow 20–60. The new numbers are [proposed]. Rain and snow now also fade in and out on screen over
+> `WeatherFadeSeconds` (6 real s, presentation only — the state itself still switches at once).
 
 ```
 NextState(current, season) =
   current != Clear → Clear
   current == Clear → (season == Winter ? Snow : Rain)
 NextDurationMinutes(state, t) =                         // t: caller-supplied [0,1) sample
-  Clear        → lerp(180, 480, t)
-  Rain or Snow → lerp(20, 60, t)
+  Clear        → lerp(360, 960, t)
+  Rain or Snow → lerp(120, 360, t)
 ```
 
 `season` defaults to `Spring` on `NextState`'s signature, so every pre-Snow call site still
@@ -207,15 +211,15 @@ left untouched (still resolves `SeasonTempOffset`'s fixed constant internally, h
 | 4 | `AmbientTemp(Day, isRaining: true)` | 32 |
 | 5 | `AmbientTemp(Night, isRaining: false)` | 24 |
 | 6 | `NextState(Clear)`, `NextState(Rain)` | Rain, Clear |
-| 7 | `NextDurationMinutes(Clear, t=0)`, `(Clear, t=1)` | 180, 480 |
-| 8 | `NextDurationMinutes(Rain, t=0)`, `(Rain, t=1)` | 20, 60 |
+| 7 | `NextDurationMinutes(Clear, t=0)`, `(Clear, t=1)` | 360, 960 |
+| 8 | `NextDurationMinutes(Rain, t=0)`, `(Rain, t=1)` | 120, 360 |
 | 9 | `SeasonAt` at day 0, 15, 30, 45, 60 | Spring, Summer, Autumn, Winter, Spring (wraps) |
 | 10 | `AmbientTemp(Day, false, Summer)` | 42 |
 | 11 | `AmbientTemp(Night, true, Winter)` | 11 |
 | 12 | `RollSeasonTempOffset(Summer, t=0)`, `(Summer, t=1)` | 5, 10 |
 | 13 | `RollSeasonTempOffset(Winter, t=0)`, `(Winter, t=1)` | −12, −8 |
 | 14 | `NextState(Clear, Winter)`, `NextState(Snow, Winter)` | Snow, Clear |
-| 15 | `NextDurationMinutes(Snow, t=0)`, `(Snow, t=1)` | 20, 60 |
+| 15 | `NextDurationMinutes(Snow, t=0)`, `(Snow, t=1)` | 120, 360 |
 | 16 | `NextTemperatureEvent(None, Summer)`, `(None, Winter)` | HeatWave, ColdSnap |
 | 17 | `NextTemperatureEventDurationMinutes(None, t=0)`, `(None, t=1)` | 720, 2160 |
 | 18 | `NextTemperatureEventDurationMinutes(HeatWave, t=0)`, `(HeatWave, t=1)` | 120, 300 |

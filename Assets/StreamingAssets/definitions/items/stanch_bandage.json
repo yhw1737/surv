@@ -1,0 +1,27 @@
+{
+  "id": "isle:stanch_bandage",
+  "name": "@item.stanch_bandage",
+  "tags": [
+    "medical"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.1,
+  "stack": 10,
+  "medicine": {
+    "quality": 0.5,
+    "skill": "isle:medicine",
+    "xp": {
+      "skill": "isle:medicine",
+      "base": 20,
+      "per_unit": 0
+    }
+  },
+  "icon_style": {
+    "shape": "kit",
+    "color": "#E8E0D0",
+    "accent": "#A84A3A"
+  }
+}

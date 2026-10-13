@@ -77,8 +77,17 @@ namespace Isle.UI.Inventory
             _owner.PairedView.Redraw();
         }
 
+        /// <summary>The icon went away mid-drag (the screen closed or rebuilt): don't leave redraws waiting forever.</summary>
+        void OnDisable()
+        {
+            if (!_dragging) return;
+            _dragging = false;
+            GridView.EndDragging();
+        }
+
         public void OnBeginDrag(PointerEventData eventData)
         {
+            GridView.BeginDragging();
             _dragStartPosition = _rect.anchoredPosition;
             _dragStartParent = _rect.parent;
             _dragRotated = _placement.Rotated;
@@ -135,6 +144,7 @@ namespace Isle.UI.Inventory
         public void OnEndDrag(PointerEventData eventData)
         {
             _dragging = false;
+            GridView.EndDragging();
 
             if (_splitGhost != null)
             {
@@ -147,6 +157,7 @@ namespace Isle.UI.Inventory
 
             // T-044: equip slots are a second kind of drop target, separate from a GridView's cells.
             var slotTarget = FindInHovered<EquipSlotView>(eventData);
+            if (slotTarget != null && TryIntoWornBag(slotTarget)) return;
             if (slotTarget != null && TryEquip(slotTarget)) return;
 
             // Let go over the backdrop or the ground panel: drop it on the ground (server-side).
@@ -176,6 +187,26 @@ namespace Isle.UI.Inventory
                 if (component != null) return component;
             }
             return null;
+        }
+
+        /// <summary>T-151 playtest: let go over a worn bag (the backpack in its slot) and the item goes into that bag —
+        /// unless it's something that slot takes (then it's a swap, handled by <see cref="TryEquip"/>).</summary>
+        bool TryIntoWornBag(EquipSlotView slotTarget)
+        {
+            if (_owner.Network == null || _placement.Item.EquipSlot == slotTarget.SlotName) return false;
+            var bag = slotTarget.Slots.BagFor(slotTarget.SlotName);
+            if (bag == null) return false;
+            GridView bagView = null;
+            foreach (var view in FindObjectsByType<GridView>(FindObjectsSortMode.None))
+                if (view.Inventory == bag && view.Network == _owner.Network) bagView = view;
+            if (bagView == null || bagView == _owner) return false;
+            var owner = _owner;
+            owner.Network.RequestQuickMove(owner.ContainerIndex, _placement.Position, bagView.ContainerIndex, _ =>
+            {
+                owner.Redraw();
+                bagView.Redraw();
+            });
+            return true;
         }
 
         /// <summary>Ignores Shift/split state — equip items are single units, there's no "equip half a stack".</summary>
@@ -211,7 +242,7 @@ namespace Isle.UI.Inventory
             // not the raw pointer position — the pointer can be grabbed anywhere over the icon, but
             // what the player sees snapping into a cell is the icon itself.
             var screenPosition = RectTransformUtility.WorldToScreenPoint(camera, _rect.position);
-            var cell = target.ScreenToCell(screenPosition, camera);
+            var cell = target.DropCell(screenPosition, camera, _placement.Item, _dragRotated, target == _owner ? _placement : null);
 
             // T-045: only bag-internal moves are networked — a crate/warehouse has no server
             // authority yet (InventoryNetwork's class remarks), so reject rather than let a
@@ -238,7 +269,7 @@ namespace Isle.UI.Inventory
         bool TryDropNetworked(GridView target, Vec2Int cell)
         {
             var owner = _owner;
-            owner.Network.RequestMove(owner.ContainerIndex, _placement.Position, target.ContainerIndex, cell, _dragRotated, _dragCount, _ =>
+            owner.Network.RequestMove(owner.ContainerIndex, _placement.Position, target.ContainerIndex, cell, _dragRotated, _dragCount, _ok =>
             {
                 owner.Redraw();
                 if (target != owner) target.Redraw();

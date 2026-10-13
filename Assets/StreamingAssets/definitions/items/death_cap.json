@@ -1,0 +1,37 @@
+{
+  "id": "isle:death_cap",
+  "name": "@item.death_cap",
+  "tags": [
+    "food",
+    "mushroom",
+    "vegetable",
+    "toxin/deadly",
+    "raw"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.1,
+  "stack": 40,
+  "nutrition": {
+    "hunger": 6,
+    "thirst": 0,
+    "sanitation_risk": 0.0
+  },
+  "spoilage": {
+    "base_hours": 72,
+    "temp_factor": 0,
+    "result": "isle:rotten_food"
+  },
+  "identify": {
+    "skill": "isle:gathering",
+    "level": 25,
+    "unknown_name": "@item.unknown_golden_mushroom"
+  },
+  "icon_style": {
+    "shape": "mushroom",
+    "color": "#D8A830",
+    "accent": "#F8E8B0"
+  }
+}

@@ -52,18 +52,18 @@ namespace Isle.World.Weather.Tests
 
         // §Verification case 7: Clear duration range endpoints.
         [Test]
-        public void NextDurationMinutes_Case7_ClearEndpoints_Returns180To480()
+        public void NextDurationMinutes_Case7_ClearEndpoints_Returns360To960()
         {
-            Assert.AreEqual(180f, NextDurationMinutes(WeatherState.Clear, t: 0f), Tolerance);
-            Assert.AreEqual(480f, NextDurationMinutes(WeatherState.Clear, t: 1f), Tolerance);
+            Assert.AreEqual(360f, NextDurationMinutes(WeatherState.Clear, t: 0f), Tolerance);
+            Assert.AreEqual(960f, NextDurationMinutes(WeatherState.Clear, t: 1f), Tolerance);
         }
 
         // §Verification case 8: Rain duration range endpoints.
         [Test]
-        public void NextDurationMinutes_Case8_RainEndpoints_Returns20To60()
+        public void NextDurationMinutes_Case8_RainEndpoints_Returns120To360()
         {
-            Assert.AreEqual(20f, NextDurationMinutes(WeatherState.Rain, t: 0f), Tolerance);
-            Assert.AreEqual(60f, NextDurationMinutes(WeatherState.Rain, t: 1f), Tolerance);
+            Assert.AreEqual(120f, NextDurationMinutes(WeatherState.Rain, t: 0f), Tolerance);
+            Assert.AreEqual(360f, NextDurationMinutes(WeatherState.Rain, t: 1f), Tolerance);
         }
 
         // Supporting cases beyond the spec's numbered table: rain's effect on dawn/dusk/night,
@@ -77,8 +77,8 @@ namespace Isle.World.Weather.Tests
             Assert.AreEqual(expected, AmbientTemp(phase, isRaining: true), Tolerance);
         }
 
-        [TestCase(0.25f, 255f)]
-        [TestCase(0.75f, 405f)]
+        [TestCase(0.25f, 510f)]
+        [TestCase(0.75f, 810f)]
         public void NextDurationMinutes_Clear_LerpsBetweenEndpoints(float t, float expected)
         {
             Assert.AreEqual(expected, NextDurationMinutes(WeatherState.Clear, t), Tolerance);
@@ -166,8 +166,8 @@ namespace Isle.World.Weather.Tests
         [Test]
         public void NextDurationMinutes_Snow_SameRangeAsRain()
         {
-            Assert.AreEqual(20f, NextDurationMinutes(WeatherState.Snow, t: 0f), Tolerance);
-            Assert.AreEqual(60f, NextDurationMinutes(WeatherState.Snow, t: 1f), Tolerance);
+            Assert.AreEqual(120f, NextDurationMinutes(WeatherState.Snow, t: 0f), Tolerance);
+            Assert.AreEqual(360f, NextDurationMinutes(WeatherState.Snow, t: 1f), Tolerance);
         }
 
         // §Temperature events — cold snap/heat wave, an independent axis from Clear/Rain/Snow.

@@ -26,6 +26,8 @@ namespace Isle.UI.Prototype
         string _craftRecipe;
         string _craftMaterial;
         bool _repairTab;
+        string _craftTab = Isle.Gameplay.Crafting.CraftCategories.All;
+        string _craftSearch = "";
         Vector2 _repairScroll;
         Vector2 _cookListScroll, _craftListScroll, _pantryScroll;
 
@@ -71,10 +73,25 @@ namespace Isle.UI.Prototype
         void DrawCookWindow()
         {
             var st = UiTheme.Styles;
-            var methods = DefRegistry.All<CookMethodDef>().Where(m => !m.EatRaw).ToList();
+            var position = _player.transform.position;
+            // T-151 playtest: only the methods whose station is near (and lit) show.
+            var methods = DefRegistry.All<CookMethodDef>().Where(m => !m.EatRaw
+                && (!m.Station.IsValid || WorldObjectRegistry.IsActiveNear(position, m.Station, PlayerInteraction.ReachTiles))).ToList();
             var cooking = NamespacedId.Parse("isle:cooking");
             var rect = Window(720f, 470f, -140f, Lang.Get("@ui.cook_title"), $"{SkillName(cooking)} Lv {_player.LevelOf(cooking)}", ref _cookOpen);
-            var position = _player.transform.position;
+            // The campfire in reach: its fuel, a button to feed it, and one to put it out (E at a lit fire opens this window).
+            if (_player.NearestCampfire() is { } fire && fire.TryGetComponent<Isle.Gameplay.World.CampfireInteraction>(out var burner))
+            {
+                var fuel = Mathf.CeilToInt(burner.Fuel);
+                GUI.Label(new Rect(rect.xMax - 520f, rect.y + 13f, 200f, 22f), string.Format(Lang.Get("@ui.fire_fuel"), fuel / 60, fuel % 60), st.Small);
+                if (GUI.Button(new Rect(rect.xMax - 310f, rect.y + 10f, 100f, 26f), Lang.Get("@ui.fire_add_fuel"), st.Button)) _player.RequestAddFuel();
+                if (fire.IsActive && GUI.Button(new Rect(rect.xMax - 204f, rect.y + 10f, 100f, 26f), Lang.Get("@ui.extinguish"), st.Button)) _player.RequestExtinguish();
+            }
+            if (methods.Count == 0)
+            {
+                GUI.Label(new Rect(rect.x + 20f, rect.y + WindowHeaderPx + 30f, rect.width - 40f, 60f), Lang.Get("@ui.cook_no_station"), new GUIStyle(st.Muted) { wordWrap = true });
+                return;
+            }
 
             // Method list.
             var list = new Rect(rect.x + 12f, rect.y + WindowHeaderPx + 8f, ListWidthPx, rect.height - WindowHeaderPx - 20f);
@@ -135,7 +152,7 @@ namespace Isle.UI.Prototype
                         break;
                     }
                     DrawIcon(new Rect(slot.x + 12f, slot.y + 2f, 40f, 40f), Isle.UI.Art.ItemIcons.Texture(item));
-                    GUI.Label(new Rect(slot.x + 2f, slot.y + 40f, slot.width - 4f, 22f), item != null ? Lang.Get(item.Name) : _cookPicks[i], new GUIStyle(st.Small) { alignment = TextAnchor.UpperCenter, wordWrap = false, clipping = TextClipping.Clip });
+                    GUI.Label(new Rect(slot.x + 2f, slot.y + 40f, slot.width - 4f, 22f), item != null ? ItemText.Name(item) : _cookPicks[i], new GUIStyle(st.Small) { alignment = TextAnchor.UpperCenter, wordWrap = false, clipping = TextClipping.Clip });
                 }
                 else
                 {
@@ -164,7 +181,7 @@ namespace Isle.UI.Prototype
                 if (tile.Contains(Event.current.mousePosition)) _hover = item;
                 GUI.enabled = true;
                 DrawIcon(new Rect(tile.x + 2f, tile.y + 4f, 32f, 32f), Isle.UI.Art.ItemIcons.Texture(item));
-                GUI.Label(new Rect(tile.x + 34f, tile.y + 3f, tile.width - 36f, 18f), Lang.Get(item.Name), new GUIStyle(st.Small) { normal = { textColor = UiTheme.Text }, wordWrap = false, clipping = TextClipping.Clip });
+                GUI.Label(new Rect(tile.x + 34f, tile.y + 3f, tile.width - 36f, 18f), ItemText.Name(item), new GUIStyle(st.Small) { normal = { textColor = UiTheme.Text }, wordWrap = false, clipping = TextClipping.Clip });
                 GUI.Label(new Rect(tile.x + 34f, tile.y + 20f, tile.width - 36f, 18f), $"×{available}", st.Small);
             }
             GUI.EndScrollView();
@@ -180,9 +197,11 @@ namespace Isle.UI.Prototype
             {
                 var result = CookingResolver.Resolve(chosen, items, level2, failureRoll: 1f);
                 var buffs = result.Buffs.Select(b => DefRegistry.TryGet<BuffDef>(b.Buff, out var def) ? Lang.Get(def.Name) : b.Buff.Value).ToList();
-                var line1 = $"{Lang.Get("@ui.hunger")} {UiTheme.Colour($"+{result.Hunger:0.#}", UiTheme.Good)}   {Lang.Get("@ui.thirst")} {UiTheme.Colour($"{(result.Thirst >= 0 ? "+" : "")}{result.Thirst:0.#}", result.Thirst >= 0 ? UiTheme.Good : UiTheme.Bad)}";
+                // SYS-FORAGE-01: an unidentified ingredient hides the outcome (its numbers or a poison would give it away).
+                var unknown = items.Any(i => !ItemText.Known(i));
+                var line1 = unknown ? Lang.Get("@ui.cook_unknown") : $"{Lang.Get("@ui.hunger")} {UiTheme.Colour($"+{result.Hunger:0.#}", UiTheme.Good)}   {Lang.Get("@ui.thirst")} {UiTheme.Colour($"{(result.Thirst >= 0 ? "+" : "")}{result.Thirst:0.#}", result.Thirst >= 0 ? UiTheme.Good : UiTheme.Bad)}";
                 if (chosen.Modifiers != null && chosen.Modifiers.Preservation > 1f) line1 += $"   {Lang.Get("@ui.cook_keeps")} ×{chosen.Modifiers.Preservation:0.#}";
-                var line2 = buffs.Count > 0 ? $"{Lang.Get("@ui.tt_buffs")}: {UiTheme.Colour(string.Join(", ", buffs), UiTheme.Accent)}" : Lang.Get("@ui.cook_no_buff");
+                var line2 = unknown ? "" : buffs.Count > 0 ? $"{Lang.Get("@ui.tt_buffs")}: {UiTheme.Colour(string.Join(", ", buffs), UiTheme.Accent)}" : Lang.Get("@ui.cook_no_buff");
                 var fail = chosen.Failure != null ? Mathf.Clamp01(chosen.Failure.BaseRate - level2 * chosen.Failure.SkillReduction) : 0f;
                 if (fail > 0f) line2 += $"   {UiTheme.Colour(string.Format(Lang.Get("@ui.cook_fail_chance"), Mathf.RoundToInt(fail * 100f)), UiTheme.Bad)}";
                 // The dish as it will come out, then what it does.
@@ -220,7 +239,7 @@ namespace Isle.UI.Prototype
             var st = UiTheme.Styles;
             var recipes = DefRegistry.All<CraftRecipeDef>();
             var crafting = NamespacedId.Parse("isle:crafting");
-            var rect = Window(640f, 470f, -160f, Lang.Get("@ui.craft_title"), $"{SkillName(crafting)} Lv {_player.LevelOf(crafting)}", ref _craftOpen);
+            var rect = Window(720f, 540f, -160f, Lang.Get("@ui.craft_title"), $"{SkillName(crafting)} Lv {_player.LevelOf(crafting)}", ref _craftOpen);
             var stock = CraftingCalculator.StockOf(_inventory.Containers());
             var position = _player.transform.position;
 
@@ -244,9 +263,27 @@ namespace Isle.UI.Prototype
                 return;
             }
 
+            // T-151 playtest: a search box and tabs by what the recipe makes, so a long list stays findable.
+            var filterY = body.y + WindowHeaderPx + 8f;
+            GUI.Label(new Rect(body.x + 14f, filterY + 4f, 50f, 22f), Lang.Get("@ui.craft_search"), st.Small);
+            _craftSearch = GUI.TextField(new Rect(body.x + 62f, filterY, ListWidthPx - 50f, 26f), _craftSearch ?? "", 30);
+            var tabX = body.x + ListWidthPx + 26f;
+            foreach (var tab in Isle.Gameplay.Crafting.CraftCategories.Tabs)
+            {
+                var label = Lang.Get("@craft_cat." + tab);
+                var tabWidth = Mathf.Max(44f, st.Small.CalcSize(new GUIContent(label)).x + 16f);
+                if (GUI.Button(new Rect(tabX, filterY, tabWidth, 26f), label, tab == _craftTab ? st.ButtonOn : st.Button)) _craftTab = tab;
+                tabX += tabWidth + 4f;
+            }
+            ItemDef OutputOf(CraftRecipeDef r) => DefRegistry.TryGet<ItemDef>(r.Output.Item, out var made) ? made : null;
+            // T-151 playtest: what needs a station shows only near one (hand recipes always).
+            bool Reachable(CraftRecipeDef r) => r.Stuff == null ? StationOkAt(r.Station) : StuffCrafting.MaterialsFor(r).Any(m => StationOkAt(StuffCrafting.StationFor(r, m)));
+            var shown = recipes.Where(r => Reachable(r) && Isle.Gameplay.Crafting.CraftCategories.InTab(_craftTab, OutputOf(r))
+                                           && Isle.Gameplay.Crafting.CraftCategories.MatchesSearch(_craftSearch, Lang.Get(r.Name), r.Id.Value));
+
             // Recipe list: craftable ones first.
-            var ordered = recipes.OrderByDescending(Ready).ThenBy(r => Lang.Get(r.Name)).ToList();
-            var list = new Rect(body.x + 12f, body.y + WindowHeaderPx + 8f, ListWidthPx, body.height - WindowHeaderPx - 20f);
+            var ordered = shown.OrderByDescending(Ready).ThenBy(r => Lang.Get(r.Name)).ToList();
+            var list = new Rect(body.x + 12f, filterY + 34f, ListWidthPx, body.height - WindowHeaderPx - 54f);
             GUI.Box(list, GUIContent.none, st.Inset);
             var view = new Rect(0, 0, list.width - 20f, ordered.Count * (ListRowPx + 4f));
             _craftListScroll = GUI.BeginScrollView(new Rect(list.x + 6f, list.y + 6f, list.width - 8f, list.height - 12f), _craftListScroll, view, false, false, GUIStyle.none, GUI.skin.verticalScrollbar);

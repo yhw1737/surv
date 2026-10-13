@@ -1,0 +1,36 @@
+{
+  "id": "isle:honey_cap",
+  "name": "@item.honey_cap",
+  "tags": [
+    "food",
+    "mushroom",
+    "vegetable",
+    "raw"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.1,
+  "stack": 40,
+  "nutrition": {
+    "hunger": 12,
+    "thirst": 1,
+    "sanitation_risk": 0.0
+  },
+  "spoilage": {
+    "base_hours": 72,
+    "temp_factor": 0,
+    "result": "isle:rotten_food"
+  },
+  "identify": {
+    "skill": "isle:gathering",
+    "level": 25,
+    "unknown_name": "@item.unknown_golden_mushroom"
+  },
+  "icon_style": {
+    "shape": "mushroom",
+    "color": "#D8A830",
+    "accent": "#F8E8B0"
+  }
+}

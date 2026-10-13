@@ -1,0 +1,41 @@
+{
+  "id": "isle:stanchweed_patch",
+  "name": "@world_object.red_herb",
+  "tags": [
+    "node/herb",
+    "herb"
+  ],
+  "spawn": {
+    "biomes": [
+      "isle:coast"
+    ],
+    "density": 0.0025,
+    "cluster": {
+      "scale_tiles": 20,
+      "coverage": 0.2,
+      "inside": 3.5,
+      "outside": 0.1
+    },
+    "elsewhere": 0.0
+  },
+  "gather": {
+    "item": "isle:stanchweed",
+    "count": 2,
+    "uses": 1,
+    "respawn_minutes": 1440,
+    "stamina_cost": 4,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 15,
+      "per_unit": 0
+    },
+    "time_sec": 3
+  },
+  "visual": {
+    "shape": "grass",
+    "depleted": "stubble",
+    "color": "#A84A3A",
+    "size": 0.85,
+    "jitter": 0.1
+  }
+}

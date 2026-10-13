@@ -92,7 +92,7 @@ namespace Isle.UI.Prototype
         void OnPlayerSwing(Vector2 at, float reach) => _swing = (at, reach, Time.time);
 
         static string ItemName(NamespacedId item) =>
-            DefRegistry.TryGet<ItemDef>(item, out var def) ? Lang.Get(def.Name) : item.Value;
+            DefRegistry.TryGet<ItemDef>(item, out var def) ? ItemText.Name(def) : item.Value;
 
         void Toast(string text)
         {
@@ -108,7 +108,9 @@ namespace Isle.UI.Prototype
             var camera = Camera.main;
 
             DrawVignette();
-            if (camera != null)
+            // The full-screen inventory covers the world: nothing pinned to the world draws over it (T-151 playtest).
+            var inventoryOpen = Isle.UI.Inventory.InventoryScreen.Instance is { Open: true };
+            if (camera != null && !inventoryOpen)
             {
                 DrawLabels(camera);
                 DrawPlayerActions(camera);
@@ -172,16 +174,7 @@ namespace Isle.UI.Prototype
             {
                 if (!player.IsOwner) continue;
 
-                if (player.Gathering != null && ToGui(camera, (Vector2)player.transform.position + Vector2.up * 0.9f) is { } head)
-                {
-                    var bar = new Rect(head.x - 30f, head.y, 60f, 8f);
-                    GUI.color = Color.black;
-                    GUI.DrawTexture(bar, Texture2D.whiteTexture);
-                    GUI.color = new Color(0.95f, 0.85f, 0.3f);
-                    GUI.DrawTexture(new Rect(bar.x + 1f, bar.y + 1f, (bar.width - 2f) * player.GatherProgress, bar.height - 2f), Texture2D.whiteTexture);
-                    GUI.color = Color.white;
-                }
-
+                // Gathering's progress bar is the HUD's shared one (PrototypeHud.DrawPrompt) — not drawn twice.
                 if (player.Cast == null) continue;
                 var bob = Mathf.Sin(Time.time * 3f) * 0.05f;
                 if (ToGui(camera, player.CastPoint + Vector2.up * bob) is not { } point) continue;

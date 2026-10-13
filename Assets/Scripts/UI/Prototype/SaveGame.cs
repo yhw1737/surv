@@ -12,6 +12,7 @@ using Isle.Gameplay.Feedback;
 using Isle.Gameplay.Crafting;
 using Isle.Gameplay.Inventory;
 using Isle.Modding.Defs;
+using Isle.Gameplay.World;
 using Isle.World.Island;
 using Isle.World.Objects;
 using Isle.World.Time;
@@ -199,6 +200,13 @@ namespace Isle.UI.Prototype
             {
                 save.Health = vitals.Health;
                 save.Mana = vitals.Mana;
+                foreach (var w in vitals.Injuries.Wounds)
+                    save.Wounds.Add(new SavedWound
+                    {
+                        Part = (int)w.Part, Kind = (int)w.Kind, Severity = w.Severity, Quality = w.Quality, Tended = w.Tended, Peak = w.Peak,
+                        Age = w.Age, Infection = w.Infection, InfectionChecked = w.InfectionChecked, Fracture = w.Fracture, Splinted = w.Splinted,
+                    });
+                foreach (var scar in vitals.Injuries.Scars) save.Scars.Add((int)scar);
                 save.Hunger = vitals.Hunger;
                 save.Thirst = vitals.Thirst;
                 save.Stamina = vitals.Stamina;
@@ -270,7 +278,8 @@ namespace Isle.UI.Prototype
             foreach (var fire in WorldObjectRegistry.All)
             {
                 if (StructureFactory.Built.Contains(fire)) continue; // saved with its contents below
-                save.Fires.Add(new SavedFire { X = fire.transform.position.x, Y = fire.transform.position.y, Lit = fire.IsActive });
+                save.Fires.Add(new SavedFire { X = fire.transform.position.x, Y = fire.transform.position.y, Lit = fire.IsActive,
+                    Fuel = fire.TryGetComponent<CampfireInteraction>(out var burner) ? burner.Fuel : 0f });
             }
 
             foreach (var built in StructureFactory.Built)
@@ -278,6 +287,7 @@ namespace Isle.UI.Prototype
                 if (built == null || built.Def == null) continue;
                 var saved = new SavedStructure { Def = built.Def.Id.Value, X = built.transform.position.x, Y = built.transform.position.y, Lit = built.IsActive };
                 if (built.TryGetComponent<RainCatcher>(out var catcher)) saved.Water = catcher.Water;
+                if (built.TryGetComponent<CampfireInteraction>(out var builtFire)) saved.Fuel = builtFire.Fuel;
                 if (built.TryGetComponent<CropPlot>(out var plot) && plot.Crop != null)
                 {
                     saved.Crop = plot.Crop.Id.Value;
@@ -346,6 +356,17 @@ namespace Isle.UI.Prototype
                 if (NamespacedId.TryParse(saved.Id, out var skillId, out _)) player.Skills.Restore(skillId, saved.Xp);
             // Mana after the skills: its capacity depends on them (SYS-MAGIC-01).
             if (vitals != null) vitals.SetMana(save.Mana >= 0f ? save.Mana : vitals.ManaMax);
+            if (vitals != null)
+            {
+                vitals.Injuries.Clear();
+                foreach (var w in save.Wounds)
+                    vitals.Injuries.Restore(new Isle.Gameplay.Character.Wound
+                    {
+                        Part = (Isle.Gameplay.Character.BodyPart)w.Part, Kind = (Isle.Gameplay.Character.WoundKind)w.Kind, Severity = w.Severity, Quality = w.Quality,
+                        Tended = w.Tended, Peak = w.Peak, Age = w.Age, Infection = w.Infection, InfectionChecked = w.InfectionChecked, Fracture = w.Fracture, Splinted = w.Splinted,
+                    });
+                foreach (var scar in save.Scars) vitals.Injuries.RestoreScar((Isle.Gameplay.Character.BodyPart)scar);
+            }
 
             // T-150: what time-limited state the character carried (after Become, which sets up the traits).
             if (vitals != null)
@@ -384,7 +405,9 @@ namespace Isle.UI.Prototype
             foreach (var saved in save.Fires)
             {
                 var match = fires.FirstOrDefault(f => Vector2.Distance(f.transform.position, new Vector2(saved.X, saved.Y)) < FireMatchTiles);
-                if (match != null) match.IsActive = saved.Lit;
+                if (match == null) continue;
+                if (match.TryGetComponent<CampfireInteraction>(out var burner)) burner.Fuel = saved.Fuel;
+                match.IsActive = saved.Lit && (burner == null || saved.Fuel > 0f); // a save from before fuel: a lit fire without any goes out
             }
 
             foreach (var saved in save.Structures)
@@ -395,7 +418,8 @@ namespace Isle.UI.Prototype
                 var built = WorldObjectRegistry.All
                                 .FirstOrDefault(w => w.Def == def && Vector2.Distance(w.transform.position, at) < FireMatchTiles)
                             ?? StructureFactory.Build(def, at);
-                built.IsActive = saved.Lit;
+                if (built.TryGetComponent<CampfireInteraction>(out var builtFire)) builtFire.Fuel = saved.Fuel;
+                built.IsActive = saved.Lit && (builtFire == null || saved.Fuel > 0f);
                 if (built.TryGetComponent<RainCatcher>(out var catcher)) catcher.Water = saved.Water;
                 if (!string.IsNullOrEmpty(saved.Crop) && !built.TryGetComponent<CropPlot>(out _) &&
                     NamespacedId.TryParse(saved.Crop, out var cropId, out _) && DefRegistry.TryGet<CropDef>(cropId, out var crop))

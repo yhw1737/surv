@@ -1,0 +1,28 @@
+{
+  "id": "isle:splint",
+  "name": "@item.splint",
+  "tags": [
+    "medical"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 2
+  },
+  "weight": 0.4,
+  "stack": 5,
+  "medicine": {
+    "quality": 0.5,
+    "splint": true,
+    "skill": "isle:medicine",
+    "xp": {
+      "skill": "isle:medicine",
+      "base": 20,
+      "per_unit": 0
+    }
+  },
+  "icon_style": {
+    "shape": "log",
+    "color": "#B8905A",
+    "accent": "#E8E0D0"
+  }
+}

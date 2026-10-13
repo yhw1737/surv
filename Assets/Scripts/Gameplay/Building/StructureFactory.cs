@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using Isle.Core.Util;
 using Isle.Data;
@@ -62,12 +63,24 @@ namespace Isle.Gameplay.Building
             if (def.Storage is { } grid) go.AddComponent<StorageBox>().Initialize(grid.W, grid.H);
             if (def.Tags != null && System.Array.IndexOf(def.Tags, EnchantingTable.Tag) >= 0) go.AddComponent<EnchantingTable>();
             if (def.RainCatcher != null) go.AddComponent<RainCatcher>().Initialize(def.RainCatcher);
+            if (StationKindOf(def) is { } kind) go.AddComponent<StationInteraction>().Kind = kind;
 
             go.SetActive(true);
             // A campfire starts unlit and is lit by hand; every other station (a workbench) works as soon as it's built.
             instance.IsActive = !go.TryGetComponent<CampfireInteraction>(out _);
             _built.Add(instance);
             return instance;
+        }
+
+        /// <summary>The window E opens at this structure: cook for a station some cook method uses, craft for any other
+        /// <c>station/*</c>; null when it has its own interaction (campfire, enchanting table, storage, rain catcher) or
+        /// isn't a station.</summary>
+        public static string StationKindOf(WorldObjectDef def)
+        {
+            if (def?.Tags == null || def.Storage != null || def.RainCatcher != null) return null;
+            if (System.Array.IndexOf(def.Tags, CampfireTag) >= 0 || System.Array.IndexOf(def.Tags, EnchantingTable.Tag) >= 0) return null;
+            if (Isle.Modding.Defs.DefRegistry.All<CookMethodDef>().Any(m => m.Station == def.Id)) return StationInteraction.Cook;
+            return def.Tags.Any(t => t.StartsWith("station/")) ? StationInteraction.Craft : null;
         }
 
         /// <summary>Removes one structure (a harvested crop plot).</summary>

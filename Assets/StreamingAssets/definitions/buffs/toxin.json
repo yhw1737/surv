@@ -1,0 +1,16 @@
+{
+  "id": "isle:toxin",
+  "name": "@buff.toxin",
+  "duration_min": 120,
+  "fixed_duration": true,
+  "effects": [
+    {
+      "type": "hp_drain_per_sec",
+      "value": 0.4
+    },
+    {
+      "type": "stamina_max_mult",
+      "value": 0.8
+    }
+  ]
+}

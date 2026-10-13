@@ -54,6 +54,20 @@
       ],
       "grant_buff": "isle:antidote",
       "power": 1.0
+    },
+    {
+      "when": [
+        "toxin/deadly"
+      ],
+      "grant_buff": "isle:toxin",
+      "power": 5.0
+    },
+    {
+      "when": [
+        "toxin/nausea"
+      ],
+      "grant_buff": "isle:nausea",
+      "power": 5.0
     }
   ],
   "naming": "@pattern.boiled",

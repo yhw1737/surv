@@ -1,0 +1,14 @@
+{
+  "id": "isle:apothecary_table",
+  "name": "@world_object.apothecary_table",
+  "station_tier": 0.25,
+  "tags": [
+    "station/apothecary",
+    "wood"
+  ],
+  "visual": {
+    "shape": "apothecary",
+    "color": "#6E5236",
+    "size": 1.0
+  }
+}

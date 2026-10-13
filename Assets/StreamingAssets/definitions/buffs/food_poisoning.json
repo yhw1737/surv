@@ -11,5 +11,6 @@
       "type": "stamina_max_mult",
       "value": 0.7
     }
-  ]
+  ],
+  "fixed_duration": true
 }

@@ -1,0 +1,27 @@
+{
+  "id": "isle:herbal_poultice",
+  "name": "@item.herbal_poultice",
+  "tags": [
+    "medical"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.1,
+  "stack": 10,
+  "medicine": {
+    "quality": 0.55,
+    "skill": "isle:medicine",
+    "xp": {
+      "skill": "isle:medicine",
+      "base": 20,
+      "per_unit": 0
+    }
+  },
+  "icon_style": {
+    "shape": "kit",
+    "color": "#C8B890",
+    "accent": "#4E9A48"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "id": "isle:med_stanch_bandage",
+  "name": "@recipe.med_stanch_bandage",
+  "station": "isle:apothecary_table",
+  "ingredients": [
+    {
+      "item": "isle:stanchweed",
+      "count": 2
+    },
+    {
+      "item": "isle:cloth",
+      "count": 2
+    }
+  ],
+  "output": {
+    "item": "isle:stanch_bandage",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:medicine",
+    "base": 20,
+    "per_unit": 10
+  },
+  "skills": [
+    {
+      "skill": "isle:medicine",
+      "level": 5,
+      "primary": true
+    }
+  ]
+}

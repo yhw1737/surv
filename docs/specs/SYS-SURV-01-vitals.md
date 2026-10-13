@@ -33,7 +33,17 @@ thirstDrain = ThirstBaseRate * activityMult * heatMult * saltMult
 | `heatMult` | ambient > 28 °C | 1.6 |
 | `saltMult` | 30 min after salty food | 1.4 |
 
+## Fire (2026-10-13, developer request)
+A campfire burns fuel: in-game minutes added from items with `fuel_minutes` (wood 120, coal 360 [proposed]), at most 480.
+E at an unlit fire puts in the longest-burning fuel from the bag and lights it ("needs fuel" when there's none); E at a
+lit one opens the cook window, which shows the fuel left, adds one more fuel item, and puts the fire out. A lit fire
+loses one fuel a minute and goes out at zero. Fuel is saved (version 12).
+
 ## Temperature
+
+> **Display (2026-10-12, developer playtest):** the gauge's numbers read like body temperature ("42.7°" would already
+> be fatal), so the HUD shows the band as a word — freezing (<28), cold (<33), chilly (<36), comfortable (36–38), warm
+> (≤41), hot (≤44), heatstroke — and the **air** temperature in degrees. The formulas below are unchanged.
 ```
 targetTemp = ambientTemp + clothingBonus + fireBonus - wetPenalty
 Temperature approaches targetTemp at TempApproachRate = 2.0 per in-game minute

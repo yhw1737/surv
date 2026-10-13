@@ -5,7 +5,75 @@
 
 ## Header
 
-- Last updated: **2026-10-12**
+- Last updated: **2026-10-13**
+- **2026-10-13 — Test stability + an Unlimited fix.** `Vitals.Restore` starts with no wounds (SaveGame restores them right
+  after; tests that reset health no longer inherit wounds from wild animals); health-measuring smoke steps clear nearby
+  creatures first; Unlimited keeps every gauge full and statuses clear every frame (a lingering DoT showed 99.86 between
+  minute ticks). PlayMode 6/6 twice in a row, EditMode 856/856.
+- **2026-10-13 — Campfire fuel (developer request).** Same branch. `ItemDef.FuelMinutes` (wood 120, coal 360),
+  `CampfireInteraction.Fuel` burning one per in-game minute and going out at zero, E feeds + lights, cook window shows
+  fuel / "Add fuel" / "Put out" (`PlayerInteraction.RequestAddFuel`, `NearestCampfire`), saved (v12: `SavedFire.Fuel`,
+  `SavedStructure.Fuel`; a pre-fuel save's lit fire goes out). SYS-SURV-01 §Fire. Tests that light fires directly now
+  give them fuel; the armor check pins the hit to the torso (armor is by part). **Verified:** EditMode 856/856, PlayMode
+  6/6 (no fuel → no fire; wood lights it, one wood = ~120 min; Add fuel; fuel 1 → goes out).
+- **2026-10-13 — Medicine follow-up + toolbar + station windows (developer request).** Same branch/working tree.
+  Potions restore lost health only (no longer close wounds). New Medicine skill (`skills/medicine.json`) scales tending
+  (×0.6–1.4) and earns XP; apothecary recipes moved to it. Infection (hour-in roll, grows/fades by tend quality, HP
+  drain), fractures (heavy blunt on a limb; splint item/recipe), scars (−2 max HP), armor by part (`Injuries.Covers`,
+  `Vitals.WornArmorFor`, only covering armor wears); save keeps the new wound fields and scars. UI: left toolbar
+  (`PrototypeHud.Toolbar.cs`: status O, gear Tab, craft C, cook K, skills P, map M, help H — click to toggle;
+  `InventoryScreen.Toggle`, `Minimap.Large`), status window by body part, HUD wound summary line; craft/cook windows show
+  only what a nearby station allows; E at a crafting station opens crafting, at a cooking station cooking
+  (`StationInteraction`, `StructureFactory.StationKindOf`, `GameFeed.StationOpened`); campfire E lights it, E again opens
+  cooking, the cook window puts it out (`RequestExtinguish`). **Verified:** EditMode 856/856 (+10 injury cases),
+  PlayMode 6/6 (helmet guards head not torso; leg fracture splinted; E at workbench → craft; campfire E → lit → cook;
+  extinguish; toolbar toggles). Not seen on screen: toolbar, status window.
+- **2026-10-13 — Wounds, herbs and medicine (developer request).** Same branch/working tree. New spec SYS-MED-01.
+  `Injuries` (pure): six body parts, hits land by weight (torso 40 / head 10 / limbs 12.5 each) as cuts, punctures,
+  bruises or burns by damage type; severity caps health (maxHealth = 100 − Σ severity); untended cuts/punctures bleed;
+  wounds close over time, faster when tended (×(1 + 4 × quality)); legs slow movement, arms slow gathering and attacks.
+  `Vitals`: wound on every hit, bleeding, natural regen 0.05/s toward maxHealth while fed (health had no regen before),
+  `Heal` closes wounds first, `Tend(MedicineSpec)`, wounds cleared on respawn; `PlayerInteraction.RequestTend`;
+  `ItemDef.Medicine`; save v11 wounds; HUD wound list, tooltip tend quality, debug line, craft tab "Medical", right-click
+  "Tend wound". Content: healing herb / hemlock, stanchweed / thornweed (look-alikes, Gathering 8 / 12 to tell),
+  herbal poultice 0.55, stanch bandage 0.50, herbal medicine 0.80, refined medicine 1.00 at the new apothecary table.
+  **Verified:** EditMode 846/846 (+19: `InjuryTests`, `MedicineContentTests`), PlayMode 6/6 (slash → bleeding left-leg
+  cut capping health; poultice from the apothecary tends it at 0.55 and stops the bleeding; no wound → nothing spent;
+  hemlock poisons; a tended burn survives save/Continue); apothecary and icons rendered.
+- **2026-10-13 — Foraging: berries, mushrooms, poison (developer request).** Same branch/working tree. New spec
+  SYS-FORAGE-01. Four look-alike pairs (sunberry/duskberry, frostberry/ghostberry, brown cap/fool's cap, honey
+  cap/death cap) with bushes and mushroom patches; twins share icon, node drawing and node name. `ItemDef.Identify`
+  (skill, level, unknown name) + `Identification.Known` + `ItemText` (tooltip, tiles, ground list, crate, cook window,
+  toasts; the cook preview hides results when an ingredient is unidentified). Poison tags `toxin/deadly`, `toxin/nausea`
+  react in all 8 cook methods (power 5); buffs `isle:toxin`, `isle:nausea`; `BuffDef.FixedDuration` (also on
+  food_poisoning — raw eating used to cut its duration to 0). Basic berries hunger 3 / thirst 1; berry bush density
+  0.003, 8 per bush. Mushroom world shape + icon. **Verified:** EditMode 827/827 (+16 `ForageTests`), PlayMode 6/6 (all
+  8 nodes on the island; death cap raw → Poisoned for 120 min, health falls; sunberry unknown at Gathering 0, named at
+  10); nodes and icons rendered.
+- **2026-10-13 — T-151 playtest round 2 (drag still failing; ground list).** Same branch/working tree as round 1. Found
+  with a real virtual-mouse test (`InventoryDragTests`, input through the event system — request-level tests had passed
+  while hands failed): (a) dropping on the ground panel did nothing after round 1 removed the drop box → the whole
+  ground panel is a `DropZone`; (b) dropping on the worn backpack tried to equip it → `DragHandler.TryIntoWornBag` moves
+  the item into that bag; (c) a grid redraw mid-drag (a request's answer, any change) destroyed the dragged icon and the
+  drag silently vanished → `GridView.BeginDragging/EndDragging` defer redraws until the drop (safety on `OnDisable`).
+  New: ground panel lists the pile at your feet (`GroundItemView`) — right-click (pick up / into a bag) or drag into a
+  bag cell; server `InventoryNetwork.RequestTakeFromGround` + `LootPiles.Take`; `InventoryNetwork.RequestPending`.
+  **Verified:** EditMode 811/811, PlayMode 6/6 (drag test passed 4/4 runs alone: bag→backpack, onto worn backpack,
+  onto ground panel, ground row→bag, ground menu pick up). Ground take is host-only (no client mirror yet).
+- **2026-10-12 — T-151 playtest round 1 (9 developer reports).** Branch `fix/T-151-playtest-round1` off main 73f09c5
+  (PRs #54–#56 merged), uncommitted. Fixes: (1) `FeedbackOverlay` and `WeatherOverlay` don't draw while the inventory is
+  open (IMGUI draws over uGUI); (2) bag cells 52→64 px, equip frames 104→84 px (`EquipSlotView.SlotSizePx`), tile names
+  only on 2+ cell items; (3) temperature shown as a band word (`VitalsCalculator.ThermalState`) + air temperature, HUD and
+  inventory; (4) the old gathering bar in `FeedbackOverlay` removed (the HUD's shared bar stays); (5) craft window: search
+  box + tabs (`CraftCategories`, from output tags), window 720×540; (6) timed crafting (`CraftTimeCalculator`,
+  `PlayerInteraction.Crafting/UpdateCraft`, work pose, HUD bar, E or moving cancels); (7) drops land where they fit
+  (`GridInventory.DropSpot`, `GridView.DropCell`) and quick moves try the item turned (`FindPlacementSpot`); right-click
+  menu in `InventoryScreen` (use verb, move to each bag, drop); (8) weather: Clear 360–960 / Rain·Snow 120–360 in-game
+  minutes (was 180–480 / 20–60; SYS-WORLD-02 updated, tests updated), 6 s fade in/out, drawn behind HUD windows;
+  (9) the "drag here to drop" box removed — letting go outside the panels drops. **Verified:** EditMode 811/811 (+DropSpot
+  ×5, ThermalState ×8, CraftWindowTests ×14 incl. craft time / tabs / search), PlayMode 5/5 (spear craft under way with
+  nothing spent, then made; right-click menu on berries has eat / move to backpack / drop, drop makes a pile); inventory
+  screen and menu rendered. Not seen on screen: the craft window tabs, HUD temperature line, weather fade (IMGUI).
 - **2026-10-12 — T-107 brewing + T-117 magic (mana).** Branch `feature/T-107-117-brewing-magic`, stacked on T-028 — [PR #56](https://github.com/yhw1737/surv/pull/56) (files:
   SYS-BREW-01 + SYS-MAGIC-01 (new specs), `ManaCalculator` (new), `SkillDef` (mana growth), `WeaponDef.ManaCost`,
   `ItemDef.Consume`, `SchemaValidator` (consume, focus), `Vitals` (mana gauge, regen, heal/mana at once and over time),
@@ -2140,6 +2208,34 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-13 — Fire fuel values
+  [proposed]: wood 120 / coal 360 fuel minutes, cap 480, 1 per in-game minute; E uses the longest-burning fuel.
+
+- ### 2026-10-13 — Medicine follow-up values
+  [proposed]: skill factor 0.6 + 0.8 × level/50; infection chance 0.25 × (1 − q) at 60 min, start 5%, growth
+  0.004 × (1 − q), immunity 0.003/min, drain 0.25 × infection HP/s; fracture at blunt ≥ 15 on a limb, 50%, ×2 limb
+  weight, ×0.25 healing until splinted, splint quality 0.5; scar at peak ≥ 15 with tend < 40%, −2 max HP, max 5; armor
+  coverage by slot; toolbar keys (O new for status); cook window lists only methods with a lit/near station.
+
+- ### 2026-10-13 — Wound and medicine values
+  All [proposed] (SYS-MED-01): part weights, bleed 0.008 / 0.010 per severity per s, heal 0.03 severity per in-game
+  minute (tended ×(1 + 4q)), regen 0.05 HP/s while hunger and thirst ≥ 25, limb penalty 0.4 at 30 severity, 12-wound
+  cap, tend roll ±0.1, medicine qualities 0.35 / 0.30 / 0.55 / 0.50 / 0.80 / 1.00, herb identify levels 8 / 12, patch
+  density 0.0025, apothecary recipe. Interpretations: tending ignores skill (no Medicine skill in Core); brewing's
+  Enchanting skill makes medicine; potions close wounds; armor still whole-body; no infection yet.
+
+- ### 2026-10-13 — Foraging values
+  All [proposed] (SYS-FORAGE-01): the eight varieties' nutrition, identify levels 5/10/20/25, spawn densities
+  (variety bushes 0.0015, patches 0.002), yields (6 per bush, 3 per patch), toxin HP −0.4/s for 120 min with stamina
+  max ×0.8, nausea stamina max ×0.6 / move ×0.85 / hunger drain ×1.5 for 180 min, poison reaction power 5; basic berry
+  bush density 0.003 and 8 berries (developer asked "rarer, more per bush"); food_poisoning made fixed-duration.
+
+- ### 2026-10-12 — T-151 playtest round 1 choices
+  [invented]: craft time = time_sec × (1 − 0.5 × level/50) on the primary skill; weather Clear 360–960 / Rain·Snow
+  120–360 in-game minutes and a 6 s screen fade ([proposed] — developer said only "too short"); band words and their
+  cut-offs follow SYS-SURV-01's bands (36–38 comfortable); bag cell 64 px, equip frame 84 px; craft tabs tool / weapon /
+  gear / build / material / brew decided from output tags; drops search 2 cells around for room.
+
 - ### 2026-10-12 — T-107 / T-117 proposed values
   All [proposed] in SYS-BREW-01 / SYS-MAGIC-01: ManaBase 100, ManaRegenBase 0.5/s, magic +1 mana and +0.02/s per level;
   the three foci's stats and recipes; the seven brews' ingredients, levels and effects; glowcap (marsh, density 0.003);
