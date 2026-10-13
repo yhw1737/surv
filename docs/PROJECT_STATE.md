@@ -6,6 +6,7 @@
 ## Header
 
 - Last updated: **2026-10-13**
+- **2026-10-13 — Everything on `fix/T-151-playtest-round1` (playtest rounds 1–2, foraging, wounds/medicine, toolbar, station windows, fire fuel) is [PR #57](https://github.com/yhw1737/surv/pull/57)** — one PR: the parts share PlayerInteraction, Vitals, PrototypeHud, lang and the smoke test.
 - **2026-10-13 — Test stability + an Unlimited fix.** `Vitals.Restore` starts with no wounds (SaveGame restores them right
   after; tests that reset health no longer inherit wounds from wild animals); health-measuring smoke steps clear nearby
   creatures first; Unlimited keeps every gauge full and statuses clear every frame (a lingering DoT showed 99.86 between
