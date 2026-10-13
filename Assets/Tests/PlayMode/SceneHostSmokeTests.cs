@@ -131,31 +131,40 @@ namespace Isle.Tests.PlayMode
 
             var fire = StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:campfire")), shore + Vector2.left * 0.5f);
             var burner = fire.GetComponent<Isle.Gameplay.World.CampfireInteraction>();
+            var screen = Isle.UI.Inventory.InventoryScreen.Instance;
             Assert.IsFalse(fire.IsActive, "a built campfire starts lit");
-            // SYS-SURV-01 §Fire: no fuel, no fire; with wood in the bag, E feeds it one and lights it.
+            // E opens the fire beside the bags (it doesn't light it).
             var inventory = player.GetComponent<InventoryNetwork>();
             inventory.Bag.Clear();
             player.RequestInteract();
+            yield return WaitUntil(() => screen.Open && screen.Campfire == burner, 2f, "E at a campfire didn't open it");
+            Assert.IsFalse(fire.IsActive, "E lit the fire");
+            // No fuel, no fire.
+            player.RequestLightFire();
             yield return new WaitForSeconds(0.4f);
             Assert.IsFalse(fire.IsActive, "a campfire lit without fuel");
+            // Wood onto the fire's grid, then light: one piece burns, the other waits.
             Give(inventory, "isle:wood", 2);
-            player.RequestInteract();
-            yield return WaitUntil(() => fire.IsActive, 2f, "E didn't light the campfire");
-            Assert.AreEqual(1, CountOf(inventory, "isle:wood"), "lighting didn't burn one wood");
-            Assert.That(burner.Fuel, Is.InRange(110f, 120f), "one wood isn't two hours of fuel");
-            player.RequestAddFuel();
-            yield return WaitUntil(() => burner.Fuel > 200f, 2f, "Add fuel didn't feed the fire");
+            player.RequestPutFuel(0, inventory.Bag.Placements.First(p => p.Item.Id.Value == "isle:wood").Position, 2);
+            yield return WaitUntil(() => burner.Grid.Placements.Sum(p => p.Count) == 2, 2f, "wood never reached the fire");
             Assert.AreEqual(0, CountOf(inventory, "isle:wood"));
-            Assert.IsFalse(hud.IsToolOpen("cook"), "lighting it also opened cooking");
-            player.RequestInteract();
-            yield return WaitUntil(() => hud.IsToolOpen("cook"), 2f, "E at a lit campfire didn't open cooking");
-            player.RequestExtinguish();
-            yield return WaitUntil(() => !fire.IsActive, 2f, "the cook window's button didn't put the fire out");
-            // Fuel runs out: the fire goes out by itself.
+            player.RequestLightFire();
+            yield return WaitUntil(() => fire.IsActive, 2f, "the light button didn't light it");
+            Assert.That(burner.Fuel, Is.InRange(110f, 120f), "one wood isn't two hours of fuel");
+            Assert.AreEqual(1, burner.Grid.Placements.Sum(p => p.Count), "lighting didn't take one piece");
+            // The burning piece runs out: the next one goes on; then nothing's left and it goes out.
             burner.Fuel = 1f;
-            fire.IsActive = true;
+            yield return WaitUntil(() => burner.Grid.Placements.Count == 0, 4f, "the next piece never went on");
+            Assert.IsTrue(fire.IsActive, "it went out with fuel still in the grid");
+            burner.Fuel = 1f;
             yield return WaitUntil(() => !fire.IsActive, 4f, "a fire burned on with no fuel left");
-            hud.ToggleTool("cook");
+            // The cook-here button and putting it out.
+            burner.Fuel = 100f;
+            player.RequestLightFire();
+            yield return WaitUntil(() => fire.IsActive, 2f, "relight failed");
+            player.RequestExtinguish();
+            yield return WaitUntil(() => !fire.IsActive, 2f, "put out failed");
+            screen.Close();
             StructureFactory.Remove(fire);
 
             hud.ToggleTool("status");

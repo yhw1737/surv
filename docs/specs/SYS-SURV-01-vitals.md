@@ -34,10 +34,12 @@ thirstDrain = ThirstBaseRate * activityMult * heatMult * saltMult
 | `saltMult` | 30 min after salty food | 1.4 |
 
 ## Fire (2026-10-13, developer request)
-A campfire burns fuel: in-game minutes added from items with `fuel_minutes` (wood 120, coal 360 [proposed]), at most 480.
-E at an unlit fire puts in the longest-burning fuel from the bag and lights it ("needs fuel" when there's none); E at a
-lit one opens the cook window, which shows the fuel left, adds one more fuel item, and puts the fire out. A lit fire
-loses one fuel a minute and goes out at zero. Fuel is saved (version 12).
+A campfire holds fuel in a 3×2 grid: anything with `fuel_minutes` (wood 120, coal 360 [proposed]). Lit, it burns the
+grid one piece at a time, one fuel minute per in-game minute, and goes out when nothing is left. **E opens the fire**:
+the inventory screen shows its fuel grid on the left (with what's burning and how long it'll last) and the bags and
+equipment on the right; drag fuel in or out, or right-click a fuel item → "Put on the fire" / a grid item → "Take out";
+buttons light it (needs fuel) or put it out, and "Cook here" opens the cook window. Walking away closes it. A clock jump
+(resting) burns the skipped hours too. The burning piece and the grid are saved (version 12).
 
 ## Temperature
 

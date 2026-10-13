@@ -171,9 +171,11 @@ namespace Isle.Tests.PlayMode
                                 if (inventory.Containers().SelectMany(c => c.Placements).Count(p => p.Item.Tags.Contains("dish")) > dishes) cooks++;
                                 break;
                             case 3:
-                                Campfire(shore);
+                                // Night first, then the fire: a clock jump burns the fuel for the hours skipped.
                                 clock.SetTotalMinutes(clock.TotalMinutes / 1440 * 1440 + 22 * 60);
                                 for (var f = 0; f < 5; f++) yield return null;
+                                Campfire(shore);
+                                for (var f = 0; f < 3; f++) yield return null;
                                 notices.Clear();
                                 player.RequestRest();
                                 var restUntil = Time.time + 2f;

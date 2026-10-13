@@ -69,25 +69,129 @@ namespace Isle.UI.Inventory
             GridView.CellSizePx = CellPx;
             EquipSlotView.SlotSizePx = EquipSlotPx;
             GridView.ItemActivated += OnItemActivated;
+            Isle.Gameplay.Feedback.GameFeed.CampfireOpened += OnCampfireOpened;
             EquipSlotView.SlotActivated += OnSlotActivated;
         }
 
         void OnDestroy()
         {
             GridView.ItemActivated -= OnItemActivated;
+            Isle.Gameplay.Feedback.GameFeed.CampfireOpened -= OnCampfireOpened;
             EquipSlotView.SlotActivated -= OnSlotActivated;
             if (Instance == this) Instance = null;
             if (_canvas != null) Destroy(_canvas.gameObject);
         }
 
         /// <summary>Esc closes the inventory first (the pause menu checks this).</summary>
-        public void Close() => Open = false;
+        public void Close()
+        {
+            Open = false;
+            Campfire = null;
+        }
 
         /// <summary>Opens the screen without the Tab key (tests and tools).</summary>
         public void Show() => Open = true;
 
         /// <summary>The toolbar's equipment button.</summary>
-        public void Toggle() => Open = !Open;
+        public void Toggle()
+        {
+            Open = !Open;
+            if (!Open) Campfire = null;
+        }
+
+        // ------------------------------------------------------------------ campfire (T-151 playtest)
+
+        /// <summary>The fire this screen is showing beside the bags, or null for the plain inventory.</summary>
+        public Isle.Gameplay.World.CampfireInteraction Campfire { get; private set; }
+
+        Text _fireStatus;
+        Text _fireButtonLabel;
+
+        void OnCampfireOpened(object fire) => OpenCampfire(fire as Isle.Gameplay.World.CampfireInteraction);
+
+        /// <summary>E at a campfire: the inventory opens with the fire's fuel grid on the left.</summary>
+        public void OpenCampfire(Isle.Gameplay.World.CampfireInteraction fire)
+        {
+            if (fire == null) return;
+            Campfire = fire;
+            Open = true;
+            _builtContainers = -1; // rebuild with the fire panel
+        }
+
+        void BuildCampfire(RectTransform panel)
+        {
+            var width = panel.sizeDelta.x;
+            Heading(panel, Lang.Get("@world_object.campfire"), Pad, -Pad, width);
+            _fireStatus = NewText("FireStatus", panel, "", 15, FontStyle.Normal, UiTheme.Text, TextAnchor.UpperLeft);
+            _fireStatus.supportRichText = true;
+            Place(_fireStatus, Pad, -Pad - TitlePx - 4f, width - 2 * Pad, 48f);
+
+            var grid = Campfire.Grid;
+            var gridWidth = grid.Width * CellPx;
+            var gridHeight = grid.Height * CellPx;
+            var left = (width - gridWidth) * 0.5f;
+            var top = -Pad - TitlePx - 60f;
+            var frame = NewRect("FireFrame", panel);
+            Place(frame, left - 6f, top + 6f, gridWidth + 12f, gridHeight + 12f);
+            var frameImage = frame.gameObject.AddComponent<Image>();
+            frameImage.sprite = UiTheme.Sprite(UiTheme.Inset, UiTheme.Accent, 8, 2);
+            frameImage.type = Image.Type.Sliced;
+            var go = new GameObject("Grid_Fire", typeof(RectTransform), typeof(Image), typeof(GridView));
+            var rect = (RectTransform)go.transform;
+            rect.SetParent(panel, false);
+            Place(rect, left, top, gridWidth, gridHeight);
+            go.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
+            var view = go.GetComponent<GridView>();
+            view.Campfire = Campfire;
+            view.ContainerIndex = -1;
+            view.Bind(grid);
+            _fireGrid = view;
+
+            var hint = NewText("FireHint", panel, Lang.Get("@ui.fire_hint"), 13, FontStyle.Normal, UiTheme.Muted, TextAnchor.UpperLeft);
+            Place(hint, Pad, top - gridHeight - 18f, width - 2 * Pad, 40f);
+
+            var buttonTop = top - gridHeight - 64f;
+            _fireButtonLabel = Button(panel, "FireToggle", Pad, buttonTop, width - 2 * Pad, () =>
+            {
+                if (PlayerInteraction.Local is not { } player || Campfire == null) return;
+                if (Campfire.Lit) player.RequestExtinguish();
+                else player.RequestLightFire();
+            });
+            Button(panel, "FireCook", Pad, buttonTop - 48f, width - 2 * Pad, () =>
+            {
+                Close();
+                if (PrototypeHud.Instance != null && !PrototypeHud.Instance.IsToolOpen("cook")) PrototypeHud.Instance.ToggleTool("cook");
+            }).text = Lang.Get("@ui.fire_cook");
+        }
+
+        GridView _fireGrid;
+
+        Text Button(RectTransform panel, string name, float x, float y, float width, System.Action onClick)
+        {
+            var rect = NewRect(name, panel);
+            Place(rect, x, y, width, 40f);
+            var image = rect.gameObject.AddComponent<Image>();
+            image.sprite = UiTheme.Sprite(UiTheme.Inset, UiTheme.Accent, 8, 2);
+            image.type = Image.Type.Sliced;
+            rect.gameObject.AddComponent<Button>().onClick.AddListener(() => onClick());
+            var label = NewText("Label", rect, "", 16, FontStyle.Bold, UiTheme.Text, TextAnchor.MiddleCenter);
+            label.rectTransform.anchorMin = Vector2.zero;
+            label.rectTransform.anchorMax = Vector2.one;
+            label.rectTransform.offsetMin = label.rectTransform.offsetMax = Vector2.zero;
+            return label;
+        }
+
+        void RefreshCampfire()
+        {
+            if (Campfire == null || _fireStatus == null) return;
+            var minutes = Mathf.CeilToInt(Campfire.TotalFuelMinutes);
+            var state = Campfire.Lit ? UiTheme.Colour(Lang.Get("@ui.fire_lit"), UiTheme.Accent) : UiTheme.Colour(Lang.Get("@ui.fire_out"), UiTheme.Muted);
+            _fireStatus.text = $"{state}\n{string.Format(Lang.Get("@ui.fire_fuel"), minutes / 60, minutes % 60)}";
+            _fireButtonLabel.text = Lang.Get(Campfire.Lit ? "@ui.extinguish" : "@ui.fire_light");
+        }
+
+        /// <summary>Test hook: presses the campfire panel's light / put-out button.</summary>
+        public void PressFireToggle() => _fireButtonLabel?.GetComponentInParent<Button>()?.onClick.Invoke();
 
         void Update()
         {
@@ -104,6 +208,13 @@ namespace Isle.UI.Inventory
                 return;
             }
 
+            // Walked away from the fire: back to the plain inventory.
+            if (Campfire != null && (Campfire == null || _player == null
+                || Vector2.Distance(Campfire.transform.position, _player.transform.position) > PlayerInteraction.ReachTiles + 0.5f))
+            {
+                Campfire = null;
+                _builtContainers = -1;
+            }
             var containers = _network.Containers();
             if (containers.Count != _builtContainers || BagKeys() != _bagKeys || Screen.width != _builtWidth || Screen.height != _builtHeight)
                 Rebuild(containers);
@@ -115,6 +226,7 @@ namespace Isle.UI.Inventory
                     _signature = signature;
                     foreach (var grid in _grids) grid.Redraw();
                     foreach (var slot in _slots) slot.Redraw();
+                    if (_fireGrid != null) _fireGrid.Redraw();
                 }
             }
             if (Time.unscaledTime >= _nextFreshnessAt)
@@ -122,6 +234,7 @@ namespace Isle.UI.Inventory
                 _nextFreshnessAt = Time.unscaledTime + FreshnessRefreshSeconds;
                 foreach (var grid in _grids) grid.RefreshFreshness();
             }
+            RefreshCampfire();
             _weight.text = WeightText(containers);
             _stats.text = StatsText();
             _ground.text = GroundText();
@@ -180,6 +293,8 @@ namespace Isle.UI.Inventory
             backdrop.gameObject.AddComponent<Image>().color = new Color(0.03f, 0.025f, 0.02f, 0.78f);
             backdrop.gameObject.AddComponent<DropZone>();
 
+            _fireGrid = null;
+            _fireStatus = null;
             var bagsWidth = Mathf.Max(420f, containers.Max(c => c.Width) * CellPx + 2 * Pad);
             var total = CharacterWidth + bagsWidth + GroundWidth + 2 * PanelGap;
             var x = -total * 0.5f;
@@ -190,6 +305,14 @@ namespace Isle.UI.Inventory
             var hint = NewText("Hint", _root, Lang.Get("@ui.inventory_hint"), 14, FontStyle.Normal, UiTheme.Muted, TextAnchor.MiddleRight);
             PlaceTop(hint, x + total - 1000f, -28f, 1000f, 40f);
 
+            // At a campfire the fire takes the ground panel's place, on the left: fuel in, bags and equipment to the right.
+            if (Campfire != null)
+            {
+                var fire = Panel("Campfire", x, GroundWidth);
+                BuildCampfire(fire);
+                x += GroundWidth + PanelGap;
+            }
+
             var character = Panel("Character", x, CharacterWidth);
             BuildCharacter(character);
             x += CharacterWidth + PanelGap;
@@ -198,8 +321,11 @@ namespace Isle.UI.Inventory
             BuildBags(bags, containers, bagsWidth);
             x += bagsWidth + PanelGap;
 
-            var ground = Panel("Ground", x, GroundWidth);
-            BuildGround(ground);
+            if (Campfire == null)
+            {
+                var ground = Panel("Ground", x, GroundWidth);
+                BuildGround(ground);
+            }
 
             for (var i = 0; i < _grids.Count; i++) _grids[i].PairedView = _grids.Count > 1 ? _grids[(i + 1) % _grids.Count] : null;
             foreach (var slot in _slots) slot.PairedView = _grids[0];
@@ -435,6 +561,8 @@ namespace Isle.UI.Inventory
                         h = h * 31 + (p.Item.Id.Value?.GetHashCode() ?? 0) + p.Position.X * 7 + p.Position.Y * 131 + p.Count * 1009 + (p.Rotated ? 1 : 0);
                 }
                 foreach (var slot in EquipSlots.All) h = h * 31 + (_network.Slots.Get(slot)?.Id.Value?.GetHashCode() ?? 0);
+                if (Campfire != null)
+                    foreach (var p in Campfire.Grid.Placements) h = h * 31 + (p.Item.Id.Value?.GetHashCode() ?? 0) + p.Position.X * 7 + p.Position.Y * 131 + p.Count * 1009;
                 return h;
             }
         }
@@ -454,10 +582,22 @@ namespace Isle.UI.Inventory
         /// to each other bag; drop. Clicking anywhere else closes it.</summary>
         void OnItemActivated(GridView view, Placement placement)
         {
-            if (view.Network != _network || PrototypeHud.Instance == null) return;
+            if (PrototypeHud.Instance == null) return;
+            if (view.Campfire != null)
+            {
+                CloseMenu();
+                OpenMenu(new List<(string Label, System.Action Act)>
+                {
+                    (Lang.Get("@ui.ctx_take_out"), () => PlayerInteraction.Local?.RequestTakeFuel(placement.Position, -1, default)),
+                });
+                return;
+            }
+            if (view.Network != _network) return;
             CloseMenu();
             var options = new List<(string Label, System.Action Act)>();
             var item = placement.Item;
+            if (Campfire != null && item.FuelMinutes > 0f)
+                options.Add((Lang.Get("@ui.ctx_put_on_fire"), () => PlayerInteraction.Local?.RequestPutFuel(view.ContainerIndex, placement.Position, placement.Count)));
             var use = UseLabel(item);
             if (use != null)
                 options.Add((Lang.Get(use), () =>

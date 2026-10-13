@@ -79,13 +79,11 @@ namespace Isle.UI.Prototype
                 && (!m.Station.IsValid || WorldObjectRegistry.IsActiveNear(position, m.Station, PlayerInteraction.ReachTiles))).ToList();
             var cooking = NamespacedId.Parse("isle:cooking");
             var rect = Window(720f, 470f, -140f, Lang.Get("@ui.cook_title"), $"{SkillName(cooking)} Lv {_player.LevelOf(cooking)}", ref _cookOpen);
-            // The campfire in reach: its fuel, a button to feed it, and one to put it out (E at a lit fire opens this window).
+            // The campfire in reach: how long it'll burn (its fuel and buttons live in its own screen, E at the fire).
             if (_player.NearestCampfire() is { } fire && fire.TryGetComponent<Isle.Gameplay.World.CampfireInteraction>(out var burner))
             {
-                var fuel = Mathf.CeilToInt(burner.Fuel);
-                GUI.Label(new Rect(rect.xMax - 520f, rect.y + 13f, 200f, 22f), string.Format(Lang.Get("@ui.fire_fuel"), fuel / 60, fuel % 60), st.Small);
-                if (GUI.Button(new Rect(rect.xMax - 310f, rect.y + 10f, 100f, 26f), Lang.Get("@ui.fire_add_fuel"), st.Button)) _player.RequestAddFuel();
-                if (fire.IsActive && GUI.Button(new Rect(rect.xMax - 204f, rect.y + 10f, 100f, 26f), Lang.Get("@ui.extinguish"), st.Button)) _player.RequestExtinguish();
+                var fuel = Mathf.CeilToInt(burner.TotalFuelMinutes);
+                GUI.Label(new Rect(rect.xMax - 360f, rect.y + 13f, 200f, 22f), string.Format(Lang.Get("@ui.fire_fuel"), fuel / 60, fuel % 60), st.Small);
             }
             if (methods.Count == 0)
             {

@@ -117,7 +117,18 @@ namespace Isle.Tests.PlayMode
             Assert.Contains(Lang.Get("@ui.ctx_pick_up"), labels);
             Assert.IsTrue(screen.PressMenu(Lang.Get("@ui.ctx_pick_up")));
             yield return WaitUntil(() => InventoryOps.Count(inventory.Containers(), NamespacedId.Parse("isle:fiber")) == 2, 3f, "pick up from the menu took nothing");
+            // 6. A campfire: drag wood from the bag onto its fuel grid.
+            var fire = StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:campfire")), (Vector2)player.transform.position + Vector2.right * 0.6f);
+            var burner = fire.GetComponent<Isle.Gameplay.World.CampfireInteraction>();
+            inventory.Bag.Clear();
+            Assert.IsTrue(inventory.Bag.TryPlace(Def("isle:wood"), new Isle.Core.Vec2Int(0, 0), false, 3));
+            screen.OpenCampfire(burner);
+            for (var i = 0; i < 10; i++) yield return null;
+            yield return Drag(() => Icon(0, "isle:wood"), () => Centre(Object.FindObjectsByType<GridView>(FindObjectsSortMode.None).First(g => g.Campfire != null)));
+            yield return WaitUntil(() => burner.Grid.Placements.Sum(p => p.Count) == 3, 3f, "dragging wood onto the fire's grid did nothing");
+            Assert.IsFalse(inventory.Bag.Placements.Any(p => p.Item.Id.Value == "isle:wood"), "the wood stayed in the bag"); // the backpack still holds step 2's
             screen.Close();
+            StructureFactory.Remove(fire);
         }
 
         static ItemDef Def(string id) => DefRegistry.Get<ItemDef>(NamespacedId.Parse(id));

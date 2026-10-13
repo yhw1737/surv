@@ -1837,16 +1837,58 @@ namespace Isle.Gameplay.Character
         }
 
         /// <summary>Same, for an item that isn't a registered def (a dish).</summary>
-        /// <summary>Feeds the nearest campfire within reach one fuel item (the cook window's button).</summary>
-        public void RequestAddFuel() => CmdAddFuel();
+        /// <summary>Puts <paramref name="count"/> of a bag item on the nearest campfire's fuel grid (fuel only).</summary>
+        public void RequestPutFuel(int container, Vec2Int position, int count) => CmdPutFuel(container, position.X, position.Y, count);
+
+        /// <summary>Takes a stack off the campfire's fuel grid into a bag — at a cell, or anywhere when
+        /// <paramref name="container"/> is negative.</summary>
+        public void RequestTakeFuel(Vec2Int from, int container, Vec2Int cell, bool rotated = false) =>
+            CmdTakeFuel(from.X, from.Y, container, cell.X, cell.Y, rotated);
+
+        /// <summary>Lights the nearest campfire within reach, if it has fuel.</summary>
+        public void RequestLightFire() => CmdLightFire();
 
         [ServerRpc]
-        void CmdAddFuel()
+        void CmdPutFuel(int container, int x, int y, int count)
         {
-            var fire = NearestCampfire();
-            if (fire == null || !fire.TryGetComponent<World.CampfireInteraction>(out var burner)) return;
-            if (!burner.AddFuel(gameObject)) GameFeed.RaiseNotice("@ui.fire_no_fuel_item");
+            if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory) || NearestBurner() is not { } fire) return;
+            var containers = inventory.Containers();
+            if (container < 0 || container >= containers.Count) return;
+            var source = containers[container];
+            var placement = source.PlacementAt(new Vec2Int(x, y));
+            if (placement is not { } p || p.Item.FuelMinutes <= 0f)
+            {
+                GameFeed.RaiseNotice("@ui.fire_not_fuel");
+                return;
+            }
+            count = Mathf.Clamp(count, 1, p.Count);
+            if (!InventoryOps.TryGive(new[] { fire.Grid }, p.Item, count)) return; // the grid is full
+            source.Remove(p);
+            if (count < p.Count) source.TryPlace(p.Item, p.Position, p.Rotated, p.Count - count, p.Wear);
         }
+
+        [ServerRpc]
+        void CmdTakeFuel(int x, int y, int container, int cx, int cy, bool rotated)
+        {
+            if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory) || NearestBurner() is not { } fire) return;
+            var placement = fire.Grid.PlacementAt(new Vec2Int(x, y));
+            if (placement is not { } p) return;
+            var containers = inventory.Containers();
+            var placed = container < 0
+                ? InventoryOps.TryGive(containers, p.Item, p.Count, p.Wear)
+                : container < containers.Count && containers[container].TryPlace(p.Item, new Vec2Int(cx, cy), rotated, p.Count, p.Wear);
+            if (placed) fire.Grid.Remove(p);
+        }
+
+        [ServerRpc]
+        void CmdLightFire()
+        {
+            if (IsDead || NearestBurner() is not { } fire) return;
+            if (!fire.TryLight()) GameFeed.RaiseNotice("@ui.fire_needs_fuel");
+        }
+
+        World.CampfireInteraction NearestBurner() =>
+            NearestCampfire() is { } fire && fire.TryGetComponent<World.CampfireInteraction>(out var burner) ? burner : null;
 
         /// <summary>The nearest campfire within reach, lit or not.</summary>
         public WorldObjectInstance NearestCampfire()
@@ -1862,9 +1904,7 @@ namespace Isle.Gameplay.Character
         [ServerRpc]
         void CmdExtinguish()
         {
-            var fire = WorldObjectRegistry.All.Where(o => o != null && o.IsActive && o.HasTag(CampfireTag))
-                .OrderBy(o => Vector2.Distance(o.transform.position, transform.position)).FirstOrDefault();
-            if (fire != null && Vector2.Distance(fire.transform.position, transform.position) <= ReachTiles) fire.IsActive = false;
+            if (NearestBurner() is { } fire) fire.PutOut();
         }
 
         /// <summary>SYS-MED-01: tends a wound with a medical item from the bag.</summary>

@@ -160,8 +160,8 @@ namespace Isle.UI.Inventory
             if (slotTarget != null && TryIntoWornBag(slotTarget)) return;
             if (slotTarget != null && TryEquip(slotTarget)) return;
 
-            // Let go over the backdrop or the ground panel: drop it on the ground (server-side).
-            if (slotTarget == null && gridTarget == null && _owner.Network != null && FindInHovered<DropZone>(eventData) != null)
+            // Let go over the backdrop or the ground panel: drop it on the ground (server-side). Not from a fire.
+            if (slotTarget == null && gridTarget == null && _owner.Network != null && _owner.Campfire == null && FindInHovered<DropZone>(eventData) != null)
             {
                 var owner = _owner;
                 owner.Network.RequestDrop(owner.ContainerIndex, _placement.Position, _dragCount, _ => owner.Redraw());
@@ -251,6 +251,19 @@ namespace Isle.UI.Inventory
             // fell through to the plain local branch below and placed the item straight into
             // target.Inventory (the server's Bag object) without ever asking the server, leaving
             // the client's copy holding an item the server never agreed to. Guard on either side.
+            // A campfire's fuel grid: bag → fire puts fuel on, fire → bag takes it off (server-side requests).
+            if (target.Campfire != null && _owner.Network != null && Isle.Gameplay.Character.PlayerInteraction.Local is { } feeder)
+            {
+                feeder.RequestPutFuel(_owner.ContainerIndex, _placement.Position, _dragCount);
+                return true;
+            }
+            if (_owner.Campfire != null && target.Network != null && Isle.Gameplay.Character.PlayerInteraction.Local is { } taker)
+            {
+                taker.RequestTakeFuel(_placement.Position, target.ContainerIndex, cell, _dragRotated);
+                return true;
+            }
+            if (_owner.Campfire != null || target.Campfire != null) return _owner == target && MoveWithinSameView(cell);
+
             if (_owner.Network != null || target.Network != null) return target.Network == _owner.Network && TryDropNetworked(target, cell);
 
             if (_dragCount < _placement.Count)

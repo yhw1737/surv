@@ -41,6 +41,9 @@ namespace Isle.UI.Inventory
         /// <see cref="Inventory"/> directly. Null for local-only views (warehouse, demo crates).</summary>
         public InventoryNetwork Network { get; set; }
 
+        /// <summary>Set when this grid is a campfire's fuel (T-151 playtest): moves in and out go through the fire's requests.</summary>
+        public Isle.Gameplay.World.CampfireInteraction Campfire { get; set; }
+
         /// <summary>With <see cref="Network"/>: this grid's index in <see cref="InventoryNetwork.Containers"/>.</summary>
         public int ContainerIndex { get; set; }
 

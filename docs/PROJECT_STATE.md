@@ -6,6 +6,14 @@
 ## Header
 
 - Last updated: **2026-10-13**
+- **2026-10-13 — Campfire screen (developer request, after PR #57 opened; same branch, uncommitted).** E at a campfire
+  no longer lights it: it opens the inventory in campfire mode — the fire's 3×2 fuel grid on the left (state, fuel
+  left, light / put-out button, "Cook here"), bags and equipment on the right; drag fuel in/out or right-click
+  ("Put on the fire" / "Take out"); closes when you walk away. `CampfireInteraction` holds a `Grid` and burns it piece by
+  piece; `PlayerInteraction.RequestPutFuel/RequestTakeFuel/RequestLightFire`; `GridView.Campfire`; `DragHandler` routes
+  fire↔bag; `GameFeed.CampfireOpened`; the cook window keeps only a fuel line; save keeps the fuel grid. SYS-SURV-01
+  §Fire rewritten. Tests: smoke (E opens it, no-fuel light fails, wood in → lit → burns piece by piece → out), real-mouse
+  drag bag → fire grid, save round trip keeps the grid; soak lights its fire after the night jump (a jump burns fuel).
 - **2026-10-13 — Everything on `fix/T-151-playtest-round1` (playtest rounds 1–2, foraging, wounds/medicine, toolbar, station windows, fire fuel) is [PR #57](https://github.com/yhw1737/surv/pull/57)** — one PR: the parts share PlayerInteraction, Vitals, PrototypeHud, lang and the smoke test.
 - **2026-10-13 — Test stability + an Unlimited fix.** `Vitals.Restore` starts with no wounds (SaveGame restores them right
   after; tests that reset health no longer inherit wounds from wild animals); health-measuring smoke steps clear nearby

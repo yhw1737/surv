@@ -4,24 +4,32 @@ using UnityEngine;
 
 namespace Isle.Gameplay.World
 {
-    /// <summary>A campfire (SYS-SURV-01 §Fire). It burns fuel — in-game minutes put in from items with
-    /// <c>fuel_minutes</c> (wood, charcoal, coal) — and goes out when that runs dry. E at an unlit fire feeds it one fuel
-    /// from the bag and lights it; E at a lit one opens the cook window, which shows the fuel left and adds more.</summary>
+    /// <summary>A campfire (SYS-SURV-01 §Fire). It holds fuel in a small grid — wood, coal, anything with
+    /// <c>fuel_minutes</c> — and, lit, burns it one piece at a time; with nothing left it goes out. E opens it (the fuel grid
+    /// beside your bags, a light / put-out button); the moves are <c>PlayerInteraction.Request*Fuel</c>, server-side.</summary>
     [RequireComponent(typeof(WorldObjectInstance))]
     public sealed class CampfireInteraction : MonoBehaviour, IInteractable
     {
-        /// <summary>The most a fire holds: a night's burning.</summary>
-        public const float MaxFuelMinutes = 480f;
+        public const int GridWidth = 3;
+        public const int GridHeight = 2;
 
         WorldObjectInstance _instance;
         SpriteRenderer _renderer;
         long _lastMinutes = -1;
 
-        /// <summary>In-game minutes of burning left. Server state.</summary>
-        public float Fuel { get; set; }
-
         /// <summary>Unlit fires are drawn dim; lit ones also cast light (LightRig), so the two read apart.</summary>
         static readonly Color UnlitTint = new(0.45f, 0.45f, 0.45f);
+
+        /// <summary>The fuel waiting to burn. Server state.</summary>
+        public Inventory.GridInventory Grid { get; } = new(GridWidth, GridHeight);
+
+        /// <summary>In-game minutes left of the piece burning now.</summary>
+        public float Fuel { get; set; }
+
+        public bool Lit => _instance != null && _instance.IsActive;
+
+        /// <summary>Everything left to burn: the current piece and the grid.</summary>
+        public float TotalFuelMinutes => Fuel + Grid.Placements.Sum(p => p.Item.FuelMinutes * p.Count);
 
         void Awake()
         {
@@ -29,9 +37,8 @@ namespace Isle.Gameplay.World
             _renderer = GetComponent<SpriteRenderer>();
         }
 
-        // Debug-only visual for manual testing (PROJECT_STATE.md §Decided without a spec) —
-        // IsActive has no client sync yet (WorldObjectInstance's own doc comment), so this only
-        // reads correctly where server and client are the same process (host mode).
+        // IsActive has no client sync yet (WorldObjectInstance's own doc comment), so this only reads correctly where
+        // server and client are the same process (host mode).
         void Update()
         {
             if (_renderer != null) _renderer.color = _instance.IsActive ? Color.white : UnlitTint;
@@ -41,41 +48,43 @@ namespace Isle.Gameplay.World
             if (_lastMinutes >= 0 && _instance.IsActive)
             {
                 Fuel -= Mathf.Max(0, now - _lastMinutes);
-                if (Fuel <= 0f)
+                while (Fuel <= 0f)
                 {
+                    if (BurnNext()) continue;
                     Fuel = 0f;
                     _instance.IsActive = false; // burned out
+                    break;
                 }
             }
             _lastMinutes = now;
         }
 
-        /// <summary>Puts one fuel item from <paramref name="user"/>'s bags on the fire — the one burning longest — up to
-        /// <see cref="MaxFuelMinutes"/>. False when they carry none or it's full.</summary>
-        public bool AddFuel(GameObject user)
+        /// <summary>Puts the next piece from the grid on the fire. False when the grid holds no fuel.</summary>
+        bool BurnNext()
         {
-            if (Fuel >= MaxFuelMinutes || user == null || !user.TryGetComponent<Inventory.InventoryNetwork>(out var inventory)) return false;
-            var fuel = inventory.Containers().SelectMany(c => c.Placements).Select(p => p.Item).Where(i => i.FuelMinutes > 0f)
-                .OrderByDescending(i => i.FuelMinutes).FirstOrDefault();
-            if (fuel == null || Inventory.InventoryOps.TakeOne(inventory.Containers(), fuel.Id) == null) return false;
-            Fuel = Mathf.Min(MaxFuelMinutes, Fuel + fuel.FuelMinutes);
+            foreach (var p in Grid.Placements)
+            {
+                if (p.Item.FuelMinutes <= 0f) continue;
+                Grid.Remove(p);
+                if (p.Count > 1) Grid.TryPlace(p.Item, p.Position, p.Rotated, p.Count - 1, p.Wear);
+                Fuel += p.Item.FuelMinutes;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Lights it if there's anything to burn. False when there isn't.</summary>
+        public bool TryLight()
+        {
+            if (_instance.IsActive) return true;
+            if (Fuel <= 0f && !BurnNext()) return false;
+            _instance.IsActive = true;
             return true;
         }
 
-        /// <summary>E lights an unlit fire; at a lit one it opens the cook window (T-151 playtest) — the cook window puts it out.</summary>
-        public void Interact(GameObject user)
-        {
-            if (_instance.IsActive)
-            {
-                Feedback.GameFeed.RaiseStationOpened(Building.StationInteraction.Cook);
-                return;
-            }
-            if (Fuel <= 0f && !AddFuel(user))
-            {
-                Feedback.GameFeed.RaiseNotice("@ui.fire_needs_fuel");
-                return;
-            }
-            _instance.IsActive = true;
-        }
+        public void PutOut() => _instance.IsActive = false;
+
+        /// <summary>E: open the fire (its fuel grid beside your bags).</summary>
+        public void Interact(GameObject user) => Feedback.GameFeed.RaiseCampfireOpened(this);
     }
 }

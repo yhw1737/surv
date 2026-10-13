@@ -187,8 +187,9 @@ namespace Isle.UI.Prototype
         public float X, Y;
         public bool Lit;
 
-        /// <summary>Version 12: in-game minutes of fuel left.</summary>
+        /// <summary>Version 12: in-game minutes left of the piece burning, and the fuel waiting in its grid.</summary>
         public float Fuel;
+        public List<SavedStack> Contents = new();
     }
 
     /// <summary>A player-built structure: what it is, where, and what it holds.</summary>
