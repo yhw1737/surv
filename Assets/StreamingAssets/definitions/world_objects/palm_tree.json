@@ -31,10 +31,25 @@
     },
     "time_sec": 6
   },
+  "fell": {
+    "item": "isle:wood",
+    "count": 2,
+    "respawn_minutes": 4320,
+    "stamina_cost": 6,
+    "tool_tag": "tool/axe",
+    "tool_bonus": 1,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 30,
+      "per_unit": 0
+    },
+    "time_sec": 8
+  },
   "block_radius": 0.3,
   "visual": {
     "shape": "palm",
     "depleted": "stump",
+    "picked": "palm_bare",
     "color": "#3E9B3A",
     "size": 3.4,
     "jitter": 0.12

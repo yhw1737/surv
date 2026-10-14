@@ -175,7 +175,8 @@ namespace Isle.Gameplay.Character
             if (!IsOwner) return;
 
             var kb = Keyboard.current;
-            if (kb != null && kb.eKey.wasPressedThisFrame) RequestInteract();
+            // T-307: Q / E turn the view, so interacting is F and casting is V.
+            if (kb != null && kb.fKey.wasPressedThisFrame) RequestInteract();
 
             var mouse = Mouse.current;
             if (Cast != null)
@@ -233,7 +234,7 @@ namespace Isle.Gameplay.Character
             // SYS-HUNT-01 §Carrying: G picks up a small carcass, drags a big one (or helps carry it), G again puts it down.
             if (kb != null && kb.gKey.wasPressedThisFrame) RequestHaul();
 
-            if (kb != null && kb.fKey.wasPressedThisFrame)
+            if (kb != null && kb.vKey.wasPressedThisFrame)
             {
                 if (Cast != null) CmdReelIn();
                 else if (MouseWorld() is { } aim) RequestCast(aim);
@@ -397,7 +398,8 @@ namespace Isle.Gameplay.Character
 
             // The nearest of: a harvestable node, a structure, a water tile — so a tree on a pond's shore can still be cut.
             var here = (Vector2)transform.position;
-            var harvest = world.NearestNode(here, ReachTiles, n => n.IsHarvestable);
+            // T-307: with the felling tool in hand, a fellable node (a palm) is cut down; otherwise its harvest is picked.
+            var harvest = world.NearestNode(here, ReachTiles, n => n.IsHarvestable || WouldFell(n));
             var nearStation = WorldObjectRegistry.NearestInteractable(here, ReachTiles);
             var waterTile = world.NearestWater(here, ReachTiles);
             var harvestDistance = harvest != null ? Vector2.Distance(here, harvest.Position) : float.MaxValue;
@@ -415,6 +417,16 @@ namespace Isle.Gameplay.Character
             if (harvest != null && harvestDistance <= stationDistance)
             {
                 if (!TryGetComponent<Vitals>(out var vitals)) return;
+                if (WouldFell(harvest))
+                {
+                    if (vitals.Stamina < harvest.Def.Fell.StaminaCost)
+                    {
+                        GameFeed.RaiseNotice("@ui.too_tired");
+                        return;
+                    }
+                    StartGather(harvest, felling: true);
+                    return;
+                }
                 if (vitals.Stamina < harvest.Def.Gather.StaminaCost)
                 {
                     GameFeed.RaiseNotice("@ui.too_tired");
@@ -628,17 +640,28 @@ namespace Isle.Gameplay.Character
         float _gatherSeconds;
         Vector2 _gatherFrom;
 
-        void StartGather(ResourceNode node)
+        /// <summary>T-307: E here would cut <paramref name="node"/> down — it can be felled and its tool is in hand.</summary>
+        public bool WouldFell(ResourceNode node) =>
+            node.IsFellable && TryGetComponent<InventoryNetwork>(out var inventory) && MatchingTool(inventory, node.Def.Fell) != null;
+
+        /// <summary>T-307: the harvest under way is a felling (<see cref="WorldObjectDef.Fell"/>), not a pick.</summary>
+        public bool GatherFelling { get; private set; }
+
+        GatherSpec GatherSpecOf(ResourceNode node) => GatherFelling ? node.Def.Fell : node.Def.Gather;
+
+        void StartGather(ResourceNode node, bool felling = false)
         {
             Cooking = null;
             Crafting = null;
             Gathering = node;
+            GatherFelling = felling;
             _gatherFrom = transform.position;
             _gatherStartedAt = Time.time;
-            var skill = node.Def.Gather.Xp?.Skill ?? default;
-            _gatherSeconds = node.Def.Gather.TimeSec <= 0f ? 0f : GatherCalculator.GatherSeconds(node.Def.Gather.TimeSec, LevelOf(skill));
+            var spec = GatherSpecOf(node);
+            var skill = spec.Xp?.Skill ?? default;
+            _gatherSeconds = spec.TimeSec <= 0f ? 0f : GatherCalculator.GatherSeconds(spec.TimeSec, LevelOf(skill));
             // SYS-CRAFT-02: a better tool is faster.
-            if (TryGetComponent<InventoryNetwork>(out var inventory) && MatchingTool(inventory, node.Def.Gather) is { } tool)
+            if (TryGetComponent<InventoryNetwork>(out var inventory) && MatchingTool(inventory, spec) is { } tool)
                 _gatherSeconds = ToolTiers.HarvestSeconds(_gatherSeconds,
                     (tool.ToolPower > 0f ? tool.ToolPower : 1f) * QualityCalculator.PowerOf(inventory.Slots.WearOf(MainHandSlot))
                     * EnchantEffects.Mult(inventory.Slots.WearOf(MainHandSlot), EnchantCalculator.ToolSpeedMult)); // + §Quality, §Enchanting
@@ -840,9 +863,10 @@ namespace Isle.Gameplay.Character
         void UpdateGather()
         {
             if (Gathering == null) return;
-            if (IsDead || Vector2.Distance(transform.position, _gatherFrom) > GatherLeashTiles || !Gathering.IsHarvestable)
+            var workable = GatherFelling ? Gathering.IsFellable : Gathering.IsHarvestable;
+            if (IsDead || Vector2.Distance(transform.position, _gatherFrom) > GatherLeashTiles || !workable)
             {
-                if (!IsDead && Gathering.IsHarvestable) GameFeed.RaiseNotice("@ui.gather_cancelled");
+                if (!IsDead && workable) GameFeed.RaiseNotice("@ui.gather_cancelled");
                 CancelGather();
                 return;
             }
@@ -852,12 +876,13 @@ namespace Isle.Gameplay.Character
             Gathering = null;
             var world = IslandWorld.Instance;
             if (world == null || !TryGetComponent<Vitals>(out var vitals) || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
-            if (!world.TryHarvest(node, out var item, out var count)) return;
-            vitals.SpendStamina(node.Def.Gather.StaminaCost);
-            AwardXp(node.Def.Gather.Xp, count);
-            if (MatchingTool(inventory, node.Def.Gather) != null)
+            var spec = GatherSpecOf(node);
+            if (!(GatherFelling ? world.TryFell(node, out var item, out var count) : world.TryHarvest(node, out item, out count))) return;
+            vitals.SpendStamina(spec.StaminaCost);
+            AwardXp(spec.Xp, count);
+            if (MatchingTool(inventory, spec) != null)
             {
-                count += node.Def.Gather.ToolBonus;
+                count += spec.ToolBonus;
                 WearSlot(inventory, MainHandSlot);
             }
             GiveItem(inventory, item, count);

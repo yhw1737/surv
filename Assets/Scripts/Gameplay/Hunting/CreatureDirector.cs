@@ -123,8 +123,12 @@ namespace Isle.Gameplay.Hunting
         /// [invented] — comfortably beyond the screen and the 7-tile label range.</summary>
         const float SimulationRadiusTiles = 60f;
 
-        /// <summary>A replacement never appears this close to a player, so nothing pops in on screen.</summary>
-        const float RepopulateMinDistanceTiles = 15f;
+        /// <summary>A replacement never appears this close to a player, so nothing pops in on screen. T-307: 15 was the
+        /// screen's edge on a wide screen (and inside it once the view turns) — now well beyond. [proposed]</summary>
+        const float RepopulateMinDistanceTiles = 25f;
+
+        /// <summary>T-307: a fresh start (and a respawn) is clear of creatures this far around. [proposed]</summary>
+        public const float StartClearRadiusTiles = 14f;
 
         public IReadOnlyList<Creature> Creatures => _creatures;
 
@@ -514,6 +518,23 @@ namespace Isle.Gameplay.Hunting
                 if (distance < RepopulateMinDistanceTiles) continue;
                 _creatures.Add(Create(def, position));
             }
+        }
+
+        /// <summary>T-307: removes the surface creatures (not bosses, not dungeon dwellers) within
+        /// <paramref name="radiusTiles"/> of <paramref name="at"/> — a new player doesn't wake up next to a wolf. They come
+        /// back later through repopulation, away from players. Server-side.</summary>
+        public int ClearAround(Vector2 at, float radiusTiles)
+        {
+            var removed = 0;
+            for (var i = _creatures.Count - 1; i >= 0; i--)
+            {
+                var creature = _creatures[i];
+                if (creature.InDungeon || creature.Def.Boss != null || Vector2.Distance(creature.Position, at) > radiusTiles) continue;
+                _creatures.RemoveAt(i);
+                if (creature.View != null) Destroy(creature.View);
+                removed++;
+            }
+            return removed;
         }
 
         int CountOf(CreatureDef def)

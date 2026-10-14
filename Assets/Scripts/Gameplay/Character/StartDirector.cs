@@ -47,8 +47,7 @@ namespace Isle.Gameplay.Character
             if (scenario == null || world == null) return;
 
             var rng = new System.Random(world.Seed ^ 0x5EA5);
-            var biome = scenario.StartBiome.IsValid && System.Enum.TryParse<Biome>(scenario.StartBiome.Name, true, out var b) ? b : Biome.Coast;
-            var at = world.ShoreStart(biome);
+            var at = StartPoint(world, scenario);
             player.transform.position = new Vector3(at.x, at.y, player.transform.position.z);
             if (player.TryGetComponent<DeathHandler>(out var death)) death.SetLastShelter(at);
 
@@ -65,8 +64,18 @@ namespace Isle.Gameplay.Character
             }
 
             ScatterWreckage(world, scenario.Debris, at, rng);
+            Hunting.CreatureDirector.Instance?.ClearAround(at, Hunting.CreatureDirector.StartClearRadiusTiles); // T-307
             GameFeed.RaiseNotice("@ui.start_awake");
             if (player.IsOwner) GameFeed.RaiseScenarioBegan(scenario);
+        }
+
+        /// <summary>Where a fresh island's players wake — seed-deterministic, so other systems can keep clear of it before
+        /// anyone arrives (T-307: dungeon entrances).</summary>
+        public static Vector2 StartPoint(IslandWorld world, ScenarioDef scenario = null)
+        {
+            scenario ??= Scenario;
+            var biome = scenario != null && scenario.StartBiome.IsValid && System.Enum.TryParse<Biome>(scenario.StartBiome.Name, true, out var b) ? b : Biome.Coast;
+            return world.ShoreStart(biome);
         }
 
         /// <summary>Weighted picks from the pool, each a different item.</summary>

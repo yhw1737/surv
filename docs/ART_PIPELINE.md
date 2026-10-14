@@ -161,11 +161,19 @@ Added the same day (developer request):
 | | |
 |---|---|
 | See-through occluders | a standing sprite nearer the camera than the local player that covers the player on screen fades to 35% alpha (`OcclusionFader`) |
-| Interact highlight | whatever E would act on gets an orange outline: sprites a ring-only `Isle/Outline` copy, vector figures eight flat-orange copies (`IsleVector` `_Silhouette`) — unlit, so readable at night (`InteractHighlight`) |
+| Interact highlight | whatever the interact key (F since T-307) would act on gets an orange outline: sprites a ring-only `Isle/Outline` copy, vector figures eight flat-orange copies (`IsleVector` `_Silhouette`) — unlit, so readable at night (`InteractHighlight`) |
 | Prompt bubbles | sit at the standing height above the object (`foot + up × h`), not h tiles north on the ground |
 | Work in progress | gathering, butchering, cooking, dungeon mining/clearing show **only a progress bar** over the work — no speech bubble or text (2026-10-09, developer: "과친절함") |
 | Remnants | used-up nodes draw `visual.depleted` (stump, rubble, bare bush, stubble) instead of fading |
 | Variety | trees draw one of 4 shapes (round, tall, spreading, conifer), palms 2; size ±jitter, 3 shades, mirrored — all from the tile's hash, so an island always looks the same |
+
+**Turning the view (T-307, 2026-10-14).** Q / E turn the camera 45° around the vertical, easing over 0.25 s
+[proposed]. `ViewTilt.YawDegrees` turns `ViewTilt.Standing`; every transform stood with `ViewTilt.Stand` is re-turned
+as the view swings. The sprite sort axis follows the screen's up direction (`ViewTilt.ScreenUp`, written into the 2D
+renderer's sort axis — URP reads it only from there — and put back to north when the camera goes away). Figures face
+left / right as seen on screen (`ViewTilt.ToScreen`). Movement input is screen-relative. The minimap and the map
+turn with the view (one quad with turned texture coordinates; dots and markers through the same turn). A new game
+starts facing north.
 
 ## Sound
 

@@ -114,6 +114,9 @@ namespace Isle.Data
         /// <summary>Shape key drawn while a harvestable node is used up (a tree's stump), until it grows back. Null
         /// fades the node to a faint ghost instead.</summary>
         public string Depleted { get; init; }
+        /// <summary>T-307: shape key while a node that can also be felled has had its harvest picked (a palm without
+        /// coconuts). Null draws it as usual.</summary>
+        public string Picked { get; init; }
     }
 
     /// <summary>XP an action grants (docs/content/xp_table.md): <c>base + per_unit × units</c> to <c>skill</c>, before

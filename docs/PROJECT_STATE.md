@@ -6,6 +6,22 @@
 ## Header
 
 - Last updated: **2026-10-13**
+- **2026-10-14 — T-307 playtest round 3 (developer request).** Branch `fix/T-307-playtest-round3` off main (PR #57 and
+  #58 merged), uncommitted. (1) `CreatureDirector.ClearAround` clears surface creatures within 14 tiles of the start
+  (`StartDirector.Begin`) and of a respawn (`DeathHandler`); repopulation distance 15 → 25 tiles. (2) The craft and cook
+  windows close when work starts. (3) Raw meat does spoil (24 h) — the list UI just didn't show it: rows of spoiling
+  food carry a freshness bar (green → red, shrinking right to left, %), updated in place. (4) No dungeon entrance within
+  40 tiles of `StartDirector.StartPoint` (new, seed-deterministic). (5) Nodes can carry `fell` (`WorldObjectDef.Fell`,
+  `ResourceNode.Felled/IsFellable/IsStanding`, `IslandWorld.TryFell`, `SavedNode.Felled`, `visual.picked`): palms give
+  coconuts by hand and stay standing (`palm_bare`), with an axe in hand they're felled for wood ×2 (+1). (6) Q/E turn the
+  view 45° (`ViewTilt` yaw + registry of stood transforms, `PlayerCamera` input/ease, 2D renderer sort axis via
+  reflection, screen-relative WASD and figure facing, minimap/map drawn as a turned quad); **interact E → F, cast F →
+  V** (lang, prompts, help). (7) The swing ring was the early prototype's reach indicator from before the swing
+  animation — removed from `FeedbackOverlay`. (8) Walking accelerates/brakes (`MovementCalculator.Accelerate`, velocity
+  in the reconcile data). (9) Goat, bear, monitor lizard, junglefowl (definitions only). (10) The toolbar stays drawn with
+  the inventory open (the gauges/clock still hide). Tests: `PlaytestRound3Tests` (7), smoke (start clear of creatures and
+  dungeons; palm felled vs picked), drag test (freshness bar on berries, none on stone). **Verified:** EditMode 883/883,
+  PlayMode 6/6; renders checked at 0°/45°/180° (upright standing things, sorting, see-through).
 - **2026-10-14 — T-304, T-305 and T-306 are [PR #58](https://github.com/yhw1737/surv/pull/58)** (branch `feature/T-304-306-sleep-list-inventory-intro`, stacked on PR #57 — merge #57 first). One PR: the three share PlayerInteraction, lang, the smoke test and state docs.
 - **2026-10-14 — T-306 cutscenes + start load (developer request).** Same branch, uncommitted. Start items didn't fit:
   belongings are light (1–3 picks, ≤ 0.5 kg each) but the wreckage was 4–6 piles of wood 1–3 (~20 kg) against 8 kg
@@ -2250,6 +2266,11 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-14 — Playtest round 3 values (T-307)
+  [proposed]: start/respawn creature clear 14 tiles, repopulate ≥ 25 tiles from players, dungeon entrances ≥ 40 tiles
+  from the start; accel 0.18 s / brake 0.12 s (sprint); view turn 45° per press over 0.25 s; palm fell: wood ×2, +1 axe,
+  8 s, stamina 6, 30 XP, back in 3 days; animals — goat 35 kg/1.4 HP·kg, bear 180 kg/1.0, 18 dmg, density 0.00006,
+  monitor lizard 20 kg/2.0, 7 dmg, junglefowl 1.2 kg (full table in SYS-HUNT-01); keys Q/E turn, F interact, V cast.
 - ### 2026-10-14 — Cutscene timing and start load (T-306)
   [proposed]: title 1.2 / 2.3 / 1.0 s; intro shots at 0 / 3.5 / 7 / 9 / 10.5 s, stand up 13 s, end 14 s, lightning
   4.2 / 5.6 / 6.6 / 7.8 s, wake fade 1.8 s; captions text; wreckage 3–4 piles (wood 1–2, cloth 0–1, fibre 0–2);

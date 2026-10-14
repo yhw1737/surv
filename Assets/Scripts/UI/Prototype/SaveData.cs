@@ -179,6 +179,8 @@ namespace Isle.UI.Prototype
     {
         public int X, Y, UsesLeft;
         public float RespawnInSeconds;
+        /// <summary>T-307: cut down (a palm's stump). Older saves read false.</summary>
+        public bool Felled;
     }
 
     [Serializable]

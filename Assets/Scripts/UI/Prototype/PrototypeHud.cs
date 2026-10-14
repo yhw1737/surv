@@ -148,12 +148,13 @@ namespace Isle.UI.Prototype
 
             if (_player.Sleeping) DrawSleep();
 
-            // The full-screen inventory covers the world; only windows and tooltips draw over it.
+            // The full-screen inventory covers the world; only the toolbar (it sits clear of the panels, T-307), windows
+            // and tooltips draw over it.
             var inventoryOpen = Isle.UI.Inventory.InventoryScreen.Instance is { Open: true };
+            DrawToolbar();
             if (!inventoryOpen)
             {
                 DrawGauges();
-                DrawToolbar();
                 DrawClock();
                 DrawPrompt();
                 DrawBossBar();
@@ -387,7 +388,7 @@ namespace Isle.UI.Prototype
             var dungeon = Isle.Gameplay.Dungeons.DungeonDirector.Instance?.Prompt(player);
             if (dungeon != null)
             {
-                prompts.Add((dungeon.Value.At, "E", dungeon.Value.Text));
+                prompts.Add((dungeon.Value.At, "F", dungeon.Value.Text));
                 return prompts;
             }
 
@@ -398,7 +399,7 @@ namespace Isle.UI.Prototype
                 var top = Above(carcass.Position, carcass.Radius * 2f + 0.4f);
                 Isle.UI.Art.InteractHighlight.Show(carcass.View);
                 var state = $"  ({Lang.Get("@ui.spoilage")} {SpoilText(carcass.Spoilage)})";
-                prompts.Add((top, "E", $"{Lang.Get("@ui.butcher")} — {Lang.Get(carcass.Def.Name)}{state}"));
+                prompts.Add((top, "F", $"{Lang.Get("@ui.butcher")} — {Lang.Get(carcass.Def.Name)}{state}"));
                 var light = Isle.Gameplay.Hunting.CarcassCalculator.ClassFor(carcass.Weight) != Isle.Gameplay.Hunting.CarryClass.WorldOnly;
                 prompts.Add((top + Up * 0.55f, "G", Lang.Get(light ? "@ui.haul_pick" : "@ui.haul_drag")));
                 return prompts;
@@ -407,11 +408,11 @@ namespace Isle.UI.Prototype
             var pile = LootPiles.Nearest(position, PlayerInteraction.ReachTiles);
             if (pile != null)
             {
-                prompts.Add((Above(pile.Position, 0.7f), "E", Lang.Get("@ui.pick_up")));
+                prompts.Add((Above(pile.Position, 0.7f), "F", Lang.Get("@ui.pick_up")));
                 Isle.UI.Art.InteractHighlight.Show(pile.View);
             }
 
-            var harvest = world.NearestNode(position, PlayerInteraction.ReachTiles, n => n.IsHarvestable);
+            var harvest = world.NearestNode(position, PlayerInteraction.ReachTiles, n => n.IsHarvestable || player.WouldFell(n));
             var nearStation = WorldObjectRegistry.NearestInteractable(position, PlayerInteraction.ReachTiles);
             var water = world.NearestWater(position, PlayerInteraction.ReachTiles);
             var harvestDistance = harvest != null ? Vector2.Distance(position, harvest.Position) : float.MaxValue;
@@ -421,10 +422,10 @@ namespace Isle.UI.Prototype
             if (pile == null)
             {
                 if (waterDistance < harvestDistance && waterDistance < stationDistance)
-                    prompts.Add((Above(IslandWorld.TileToWorld(water.Value), 0.5f), "E", $"{Lang.Get("@ui.drink")} — {Lang.Get(world.WaterAt(water.Value).Name)}"));
+                    prompts.Add((Above(IslandWorld.TileToWorld(water.Value), 0.5f), "F", $"{Lang.Get("@ui.drink")} — {Lang.Get(world.WaterAt(water.Value).Name)}"));
                 else if (harvest != null && harvestDistance <= stationDistance)
                 {
-                    prompts.Add((Above(harvest.Position, NodeHeight(harvest) + 0.3f), "E", $"{Lang.Get("@ui.harvest")} — {Lang.Get(harvest.Def.Name)}"));
+                    prompts.Add((Above(harvest.Position, NodeHeight(harvest) + 0.3f), "F", $"{Lang.Get(player.WouldFell(harvest) ? "@ui.fell" : "@ui.harvest")} — {Lang.Get(harvest.Def.Name)}"));
                     if (harvest.View != null) Isle.UI.Art.InteractHighlight.Show(harvest.View.gameObject);
                 }
                 else if (nearStation != null)
@@ -434,13 +435,13 @@ namespace Isle.UI.Prototype
                     if (nearStation.TryGetComponent<CropPlot>(out var plot) && plot.Crop != null) name = $"{Lang.Get(plot.Crop.Name)} {plot.Growth * 100f:0}%";
                     var flat = nearStation.Def?.Visual?.Flat == true;
                     var top = flat ? Above(nearStation.transform.position, 0.4f) : Above(nearStation.transform.position, (nearStation.Def?.Visual?.Size ?? 1f) * 0.95f + 0.2f);
-                    prompts.Add((top, "E", name));
+                    prompts.Add((top, "F", name));
                     Isle.UI.Art.InteractHighlight.Show(nearStation.gameObject);
                     if (IsNight() && nearStation.HasTag("station/campfire")) prompts.Add((top + Up * 0.7f, "R", Lang.Get("@ui.rest_short")));
                 }
             }
 
-            if (world.NearestWater(position, 8f) != null && prompts.Count == 0) prompts.Add((overHead, "F", Lang.Get("@ui.fish_short")));
+            if (world.NearestWater(position, 8f) != null && prompts.Count == 0) prompts.Add((overHead, "V", Lang.Get("@ui.fish_short")));
             return prompts;
         }
 

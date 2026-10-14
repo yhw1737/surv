@@ -33,6 +33,29 @@ namespace Isle.Networking
             return length < 1e-4f ? (inputX / inputLength, inputY / inputLength) : (x / length, y / length);
         }
 
+        /// <summary>T-307: seconds from standing to full speed, and from full speed to a stop — a short wind-up and a
+        /// slide instead of an instant start and stop. [proposed]</summary>
+        public const float AccelSeconds = 0.18f;
+        public const float DecelSeconds = 0.12f;
+
+        /// <summary>T-307: the velocity after one step of <paramref name="delta"/> seconds toward
+        /// <paramref name="targetX"/>/<paramref name="targetY"/> (tiles/s). Speeding up takes <see cref="AccelSeconds"/> to
+        /// reach the target's speed; letting go stops within <see cref="DecelSeconds"/>; turning is a blend of both.</summary>
+        public static (float X, float Y) Accelerate(float vx, float vy, float targetX, float targetY, float delta)
+        {
+            var target = (float)System.Math.Sqrt(targetX * targetX + targetY * targetY);
+            // Stopping brakes at the rate that halts a sprint in DecelSeconds, so anything slower stops sooner.
+            var rate = target > 1e-4f
+                ? System.Math.Max(target, BaseSpeed) / AccelSeconds
+                : BaseSpeed * SprintMult / DecelSeconds;
+            var dx = targetX - vx;
+            var dy = targetY - vy;
+            var gap = (float)System.Math.Sqrt(dx * dx + dy * dy);
+            var max = rate * delta;
+            if (gap <= max || gap < 1e-5f) return (targetX, targetY);
+            return (vx + dx / gap * max, vy + dy / gap * max);
+        }
+
         public static float Speed(float weightMult, bool sprinting) =>
             BaseSpeed * weightMult * (sprinting ? SprintMult : 1f);
 

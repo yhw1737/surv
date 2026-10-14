@@ -203,3 +203,17 @@ Revised 2026-10-09 (developer: a bagged frog couldn't be taken out, spoilage sho
   33%, rotten from 53%): a freshness bar on the carcass's bag tile, a line in its tooltip (with "G — put down"), and in
   the E prompt over a carcass on the ground.
 
+
+## More animals (T-307, 2026-10-14) [proposed]
+Four surface animals, definitions only (existing bodies, AI and drops):
+
+| Def | Biomes | Weight (mean, kg) | HP/kg | AI | Danger | Drops |
+|---|---|---|---|---|---|---|
+| `isle:goat` | coast | 35 (22–55) | 1.4 | alert then flee | — | meat, hide 0.1 |
+| `isle:bear` | forest, day–night, rare (0.00006) | 180 (110–280) | 1.0 | territorial charger | 18 slash, can't be bagged | meat 0.6, hide 0.1 |
+| `isle:monitor_lizard` | marsh, coast | 20 (10–40) | 2.0 | ambusher | 7 pierce | meat, hide 0.08 |
+| `isle:junglefowl` | forest | 1.2 (0.7–2) | 2.0 | skittish | — | meat |
+
+**Spawning near players (T-307).** A fresh start and a respawn clear surface creatures (not bosses or dungeon
+dwellers) within 14 tiles; repopulation never places one within 25 tiles of a player (was 15 — the edge of a wide
+screen). [proposed]

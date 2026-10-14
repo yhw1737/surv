@@ -33,7 +33,7 @@ namespace Isle.Core.Util
             "campfire", "crate", "warehouse", "workbench", "pot", "rack", "rain_catcher", "plot", "sack",
             "sea_cave", "giant_tree", "sinkhole", "ruin_gate", "stairs_down", "stairs_up", "key", "locked_door",
             "gate_water", "gate_roots", "gate_bars", "gate_runes", "chest", "ore_vein", "furnace", "anvil", "wreckage",
-            "stump", "rubble", "bush_bare", "stubble", "gear_door", "enchanting_table", "cauldron", "smokehouse", "jar", "brewing_stand", "mushroom", "apothecary",
+            "stump", "rubble", "bush_bare", "palm_bare", "stubble", "gear_door", "enchanting_table", "cauldron", "smokehouse", "jar", "brewing_stand", "mushroom", "apothecary",
         };
 
         /// <summary>A sprite one world unit across at scale 1, cached per (shape, colour).</summary>
@@ -61,7 +61,7 @@ namespace Isle.Core.Util
         public static int VariantCount(string shape) => shape switch
         {
             "tree" => 4,
-            "palm" => 2,
+            "palm" or "palm_bare" => 2,
             _ => 1,
         };
 
@@ -159,6 +159,7 @@ namespace Isle.Core.Util
                     break;
                 }
                 case "palm":
+                case "palm_bare": // T-307: picked clean — the same palm without its coconuts
                 {
                     // A leaning, segmented trunk under a burst of drooping fronds and two coconuts. Variant 1 is taller,
                     // straighter, with a fuller crown.
@@ -182,6 +183,7 @@ namespace Isle.Core.Util
                         canvas.Tri(crownX, crownY, midX, midY + 0.06f, tipX, tipY, colour);
                         canvas.Tri(crownX, crownY, midX, midY - 0.04f, tipX, tipY, colour);
                     }
+                    if (shape == "palm_bare") break;
                     canvas.Circle(crownX - 0.04f, crownY - 0.04f, 0.045f, Bark);
                     canvas.Circle(crownX + 0.05f, crownY - 0.05f, 0.045f, Bark);
                     break;

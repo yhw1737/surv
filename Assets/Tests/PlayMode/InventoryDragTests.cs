@@ -93,6 +93,10 @@ namespace Isle.Tests.PlayMode
             for (var i = 0; i < 10; i++) yield return null;
             var backpack = inventory.Slots.BagFor("back");
 
+            // T-307: food that spoils shows a freshness bar; a stone doesn't.
+            Assert.IsNotNull(Row(screen.LeftList, "isle:berries").Find("Freshness"), "no freshness bar on berries");
+            Assert.IsNull(Row(screen.LeftList, "isle:stone").Find("Freshness"), "a stone has a freshness bar");
+
             // 1. SYS-INV-02 #4: a pockets row onto the backpack's tab moves it.
             yield return Drag(() => Row(screen.LeftList, "isle:berries"), () => Centre(Tab(ListSource.Container, 1)));
             yield return WaitUntil(() => backpack.Placements.Any(p => p.Item.Id.Value == "isle:berries"), 3f, "a row dropped on the backpack tab didn't move");

@@ -62,7 +62,9 @@ namespace Isle.UI.Art
             _last = _creature.Position;
             var distance = moved.magnitude;
             Spring.Damp(ref _speed, ref _speedV, dt > 0f ? distance / dt : 0f, 10f, dt);
-            var heading = Mathf.Abs(moved.x) > 1e-4f ? moved.x : _creature.Heading.x;
+            // T-307: left/right as seen on screen, whichever way the view is turned.
+            var movedSide = Isle.Core.Util.ViewTilt.ToScreen(moved).x;
+            var heading = Mathf.Abs(movedSide) > 1e-4f ? movedSide : Isle.Core.Util.ViewTilt.ToScreen(_creature.Heading).x;
             if (Mathf.Abs(heading) > 1e-4f) Spring.Damp(ref _facing, ref _facingV, Mathf.Sign(heading), 18f, dt);
             Spring.Damp(ref _crouch, ref _crouchV, _creature.IsWindingUp ? 1f : 0f, 14f, dt);
             Spring.Damp(ref _stretch, ref _stretchV, _creature.IsLunging ? 1f : 0f, 25f, dt);

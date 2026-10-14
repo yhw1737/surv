@@ -67,7 +67,7 @@ namespace Isle.UI.Prototype
                 : new Rect(Margin, Screen.height - size - Margin, size, size);
             var span = Large ? MapSpans[_mapZoom] : MiniSpans[_miniZoom];
             Vector2 centre = me.transform.position;
-            var view = new View(rect, centre, span);
+            var view = new View(rect, centre, span, Isle.Core.Util.ViewTilt.YawDegrees);
 
             HandleInput(rect, view, state);
             if (Event.current.type != EventType.Repaint) return;
@@ -76,8 +76,9 @@ namespace Isle.UI.Prototype
             GUI.color = Color.black;
             GUI.DrawTexture(new Rect(rect.x - 2f, rect.y - 2f, rect.width + 4f, rect.height + 4f), Texture2D.whiteTexture);
             GUI.color = Color.white;
-            GUI.DrawTextureWithTexCoords(rect, world.Map, view.Uv);
-            GUI.DrawTextureWithTexCoords(rect, state.FogTexture, view.Uv);
+            // T-307: the map turns with the view (screen-up on the map is screen-up in the world).
+            DrawTurned(view, world.Map);
+            DrawTurned(view, state.FogTexture);
 
             foreach (var instance in WorldObjectRegistry.All)
                 if (instance.HasTag(CampfireTag) && state.IsExplored(instance.transform.position))
@@ -113,6 +114,32 @@ namespace Isle.UI.Prototype
             }
         }
 
+        static Material _quad;
+
+        /// <summary>The map window as one quad whose texture coordinates are turned — no corners poke out of the frame.</summary>
+        static void DrawTurned(View view, Texture texture)
+        {
+            if (texture == null) return;
+            if (_quad == null) _quad = new Material(Shader.Find("Sprites/Default")) { hideFlags = HideFlags.HideAndDontSave };
+            _quad.mainTexture = texture;
+            var r = view.Rect;
+            var corners = new[] { new Vector2(r.xMin, r.yMin), new Vector2(r.xMax, r.yMin), new Vector2(r.xMax, r.yMax), new Vector2(r.xMin, r.yMax) };
+            GL.PushMatrix();
+            GL.LoadPixelMatrix();
+            _quad.SetPass(0);
+            GL.Begin(GL.QUADS);
+            GL.Color(Color.white);
+            foreach (var corner in corners)
+            {
+                var uv = view.ToUv(corner);
+                var screen = GUIUtility.GUIToScreenPoint(corner);
+                GL.TexCoord2(uv.x, uv.y);
+                GL.Vertex3(screen.x, Screen.height - screen.y, 0f);
+            }
+            GL.End();
+            GL.PopMatrix();
+        }
+
         static void Dot(View view, Vector2 world, Color colour, float dot)
         {
             var p = view.ToGui(world);
@@ -131,39 +158,43 @@ namespace Isle.UI.Prototype
             return null;
         }
 
-        /// <summary>A square window of <see cref="Span"/> tiles centred on a world point, drawn into <see cref="Rect"/>.</summary>
+        /// <summary>A square window of <see cref="Span"/> tiles centred on a world point, drawn into <see cref="Rect"/>,
+        /// turned by <see cref="Yaw"/> degrees with the view (T-307).</summary>
         readonly struct View
         {
-            public View(Rect rect, Vector2 centre, int span)
+            public View(Rect rect, Vector2 centre, int span, float yaw)
             {
                 Rect = rect;
                 Span = span;
-                var size = IslandGenerator.Size;
-                // Bottom-left of the window in map-texture tiles (the map spans ±size/2 around the world origin).
-                _left = centre.x + size / 2f - span / 2f;
-                _bottom = centre.y + size / 2f - span / 2f;
-                Uv = new Rect(_left / size, _bottom / size, (float)span / size, (float)span / size);
+                Yaw = yaw;
+                _centre = centre;
             }
 
-            readonly float _left, _bottom;
+            readonly Vector2 _centre;
             public Rect Rect { get; }
             public int Span { get; }
-            public Rect Uv { get; }
+            public float Yaw { get; }
+
+            float TilesPerPixel => Span / Rect.width;
 
             public Vector2 ToGui(Vector2 world)
             {
-                var size = IslandGenerator.Size;
-                var u = (world.x + size / 2f - _left) / Span;
-                var v = (world.y + size / 2f - _bottom) / Span;
-                return new Vector2(Rect.x + u * Rect.width, Rect.y + (1f - v) * Rect.height);
+                var screen = (Vector2)(Quaternion.Euler(0f, 0f, -Yaw) * (world - _centre)) / TilesPerPixel;
+                return new Vector2(Rect.center.x + screen.x, Rect.center.y - screen.y);
             }
 
             public Vector2 ToWorld(Vector2 gui)
             {
+                var screen = new Vector2(gui.x - Rect.center.x, Rect.center.y - gui.y) * TilesPerPixel;
+                return _centre + (Vector2)(Quaternion.Euler(0f, 0f, Yaw) * screen);
+            }
+
+            /// <summary>Map-texture coordinates under a GUI point (the map spans ±size/2 around the world origin).</summary>
+            public Vector2 ToUv(Vector2 gui)
+            {
                 var size = IslandGenerator.Size;
-                var u = (gui.x - Rect.x) / Rect.width;
-                var v = 1f - (gui.y - Rect.y) / Rect.height;
-                return new Vector2(_left + u * Span - size / 2f, _bottom + v * Span - size / 2f);
+                var world = ToWorld(gui);
+                return new Vector2((world.x + size / 2f) / size, (world.y + size / 2f) / size);
             }
         }
     }

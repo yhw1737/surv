@@ -152,6 +152,8 @@ namespace Isle.UI.Inventory
                 _nextRefreshAt = Time.unscaledTime + RefreshSeconds;
                 _weight.text = WeightText(containers);
                 RefreshFire();
+                _leftList?.RefreshFreshness();
+                _rightList?.RefreshFreshness();
             }
         }
 
@@ -417,8 +419,8 @@ namespace Isle.UI.Inventory
         void RefreshLists(List<GridInventory> containers)
         {
             foreach (var slot in _slots) slot.Redraw();
-            if (_leftList != null && _leftSelected < containers.Count) _leftList.Refresh(Entries(containers[_leftSelected]));
-            if (_rightList != null) _rightList.Refresh(RightEntries());
+            if (_leftList != null && _leftSelected < containers.Count) _leftList.Refresh(Entries(containers[_leftSelected]), containers[_leftSelected]);
+            if (_rightList != null) _rightList.Refresh(RightEntries(), RightContainer());
             foreach (var (tab, sub) in _containerTabs)
                 if (tab != null && sub != null && tab.ContainerIndex < containers.Count) sub.text = CapacityText(containers[tab.ContainerIndex]);
             _weight.text = WeightText(containers);
@@ -427,6 +429,13 @@ namespace Isle.UI.Inventory
 
         static List<ListEntry> Entries(GridInventory container) =>
             container.Placements.Select(p => new ListEntry(p.Item, p.Count, p.Wear, p.Position, -1)).ToList();
+
+        GridInventory RightContainer() => _rightSelected switch
+        {
+            ListSource.Crate => NearbyCrate()?.Contents,
+            ListSource.Campfire => NearbyFire()?.Grid,
+            _ => null,
+        };
 
         List<ListEntry> RightEntries()
         {

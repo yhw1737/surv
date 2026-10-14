@@ -62,6 +62,7 @@ namespace Isle.UI.Prototype
         {
             InGame = true;
             Time.timeScale = 1f;
+            Isle.Core.Util.ViewTilt.ResetYaw(); // T-307: every game starts facing north
             // Statics from a previous session in this run must not leak into the new island.
             LootPiles.Clear();
             StructureFactory.Clear();

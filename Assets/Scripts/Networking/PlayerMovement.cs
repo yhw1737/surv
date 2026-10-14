@@ -52,11 +52,13 @@ namespace Isle.Networking
         struct ReconcileData : IReconcileData
         {
             public Vector3 Position;
+            public Vector2 Velocity;
             uint _tick;
 
-            public ReconcileData(Vector3 position)
+            public ReconcileData(Vector3 position, Vector2 velocity)
             {
                 Position = position;
+                Velocity = velocity;
                 _tick = 0;
             }
 
@@ -104,6 +106,7 @@ namespace Isle.Networking
         public event Action RollStarted;
 
         float _rollElapsed = -1f;
+        Vector2 _velocity; // T-307: walking speeds up and slows down instead of snapping
         Vector2 _rollDirection;
         Vector2 _lastDirection = Vector2.down;
 
@@ -138,12 +141,14 @@ namespace Isle.Networking
 
             float h = (kb.dKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed ? 1f : 0f);
             float v = (kb.wKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed ? 1f : 0f);
-            return new MoveData(new Vector2(h, v), kb.leftShiftKey.isPressed, kb.spaceKey.isPressed);
+            // T-307: W is "up the screen" whichever way the view is turned.
+            var input = (Vector2)(Quaternion.Euler(0f, 0f, Isle.Core.Util.ViewTilt.YawDegrees) * new Vector3(h, v, 0f));
+            return new MoveData(input, kb.leftShiftKey.isPressed, kb.spaceKey.isPressed);
         }
 
         public override void CreateReconcile()
         {
-            PerformReconcile(new ReconcileData(transform.position));
+            PerformReconcile(new ReconcileData(transform.position, _velocity));
         }
 
         [Replicate]
@@ -155,6 +160,7 @@ namespace Isle.Networking
             if (Frozen)
             {
                 _rollElapsed = -1f;
+                _velocity = Vector2.zero;
                 return;
             }
 
@@ -172,13 +178,18 @@ namespace Isle.Networking
                 _rollDirection = new Vector2(steered.X, steered.Y);
                 step = _rollDirection * (BaseSpeed * MovementCalculator.RollMult * delta);
                 _rollElapsed += delta;
-                if (_rollElapsed >= MovementCalculator.RollSeconds) _rollElapsed = -1f;
+                if (_rollElapsed >= MovementCalculator.RollSeconds)
+                {
+                    _rollElapsed = -1f;
+                    _velocity = _rollDirection * MovementCalculator.Speed(WeightMultiplier, false); // run on out of it
+                }
             }
             else if (md.Roll && RollAllowed)
             {
                 // SYS-CHAR-01: "Direction = movement input" — or the last direction faced when standing still.
                 _rollDirection = _lastDirection;
                 _rollElapsed = 0f;
+                _velocity = Vector2.zero;
                 RollStarted?.Invoke();
                 step = Vector2.zero;
             }
@@ -187,7 +198,10 @@ namespace Isle.Networking
                 IsMoving = input.sqrMagnitude > 0f;
                 IsSprinting = md.Sprint && SprintAllowed && IsMoving;
                 var terrain = TerrainSpeed?.Invoke(transform.position) ?? 1f;
-                step = input * (MovementCalculator.Speed(WeightMultiplier, IsSprinting) * terrain * delta);
+                var target = input * (MovementCalculator.Speed(WeightMultiplier, IsSprinting) * terrain);
+                var v = MovementCalculator.Accelerate(_velocity.x, _velocity.y, target.x, target.y, delta);
+                _velocity = new Vector2(v.X, v.Y);
+                step = _velocity * delta;
             }
 
             // Each axis is checked on its own, so walking diagonally into the shore slides along it.
@@ -195,7 +209,9 @@ namespace Isle.Networking
             // Somewhere you can't stand (a tree grew back on you, an old save): walk out freely.
             var free = !CanStand(position);
             if (free || CanStand(position + new Vector3(step.x, 0f))) position.x += step.x;
+            else _velocity.x = 0f; // a wall stops you, it doesn't store momentum
             if (free || CanStand(position + new Vector3(0f, step.y))) position.y += step.y;
+            else _velocity.y = 0f;
             transform.position = position;
         }
 
@@ -203,6 +219,7 @@ namespace Isle.Networking
         void PerformReconcile(ReconcileData rd, Channel channel = Channel.Unreliable)
         {
             transform.position = rd.Position;
+            _velocity = rd.Velocity;
         }
     }
 }

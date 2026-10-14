@@ -29,9 +29,6 @@ namespace Isle.UI.Prototype
         string _levelUp;
         float _levelUpAt = float.NegativeInfinity;
         const float LevelUpSeconds = 3f;
-        (Vector2 At, float Reach, float Time) _swing = (Vector2.zero, 0f, float.NegativeInfinity);
-        const float SwingSeconds = 0.18f;
-        const int SwingDots = 16;
         GUIStyle _toastStyle;
         GUIStyle _floatStyle;
         GUIStyle _labelStyle;
@@ -43,7 +40,6 @@ namespace Isle.UI.Prototype
             GameFeed.ItemDropped += OnItemDropped;
             GameFeed.CreatureHit += OnCreatureHit;
             GameFeed.PlayerHit += OnPlayerHit;
-            GameFeed.PlayerSwing += OnPlayerSwing;
             GameFeed.Notice += OnNotice;
             GameFeed.XpGained += OnXpGained;
             GameFeed.Defended += OnDefended;
@@ -55,7 +51,6 @@ namespace Isle.UI.Prototype
             GameFeed.ItemDropped -= OnItemDropped;
             GameFeed.CreatureHit -= OnCreatureHit;
             GameFeed.PlayerHit -= OnPlayerHit;
-            GameFeed.PlayerSwing -= OnPlayerSwing;
             GameFeed.Notice -= OnNotice;
             GameFeed.XpGained -= OnXpGained;
             GameFeed.Defended -= OnDefended;
@@ -89,7 +84,6 @@ namespace Isle.UI.Prototype
             };
             _floaters.Add((at + Vector2.up * 1.9f, Lang.Get(key), Time.time, colour));
         }
-        void OnPlayerSwing(Vector2 at, float reach) => _swing = (at, reach, Time.time);
 
         static string ItemName(NamespacedId item) =>
             DefRegistry.TryGet<ItemDef>(item, out var def) ? ItemText.Name(def) : item.Value;
@@ -115,7 +109,6 @@ namespace Isle.UI.Prototype
                 DrawLabels(camera);
                 DrawPlayerActions(camera);
                 DrawMarkers(camera);
-                DrawSwing(camera);
                 DrawCreatureMarks(camera);
                 DrawFloaters(camera);
             }
@@ -259,21 +252,6 @@ namespace Isle.UI.Prototype
             GUI.Label(new Rect(rect.x + 1f, rect.y + 1f, rect.width, rect.height), text, _labelStyle);
             GUI.color = Color.white;
             GUI.Label(rect, text, _labelStyle);
-        }
-
-        /// <summary>A ring of dots at the weapon's reach, fading out — shows the swing even on a miss.</summary>
-        void DrawSwing(Camera camera)
-        {
-            var age = Time.time - _swing.Time;
-            if (age > SwingSeconds) return;
-            GUI.color = new Color(1f, 1f, 1f, 0.8f * (1f - age / SwingSeconds));
-            for (var i = 0; i < SwingDots; i++)
-            {
-                var angle = i * Mathf.PI * 2f / SwingDots;
-                var screen = ToGui(camera, _swing.At + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * _swing.Reach);
-                if (screen != null) GUI.DrawTexture(new Rect(screen.Value.x - 3f, screen.Value.y - 3f, 6f, 6f), Texture2D.whiteTexture);
-            }
-            GUI.color = Color.white;
         }
 
         void DrawFloaters(Camera camera)
