@@ -6,6 +6,7 @@
 ## Header
 
 - Last updated: **2026-10-13**
+- **2026-10-14 — T-304, T-305 and T-306 are [PR #58](https://github.com/yhw1737/surv/pull/58)** (branch `feature/T-304-306-sleep-list-inventory-intro`, stacked on PR #57 — merge #57 first). One PR: the three share PlayerInteraction, lang, the smoke test and state docs.
 - **2026-10-14 — T-306 cutscenes + start load (developer request).** Same branch, uncommitted. Start items didn't fit:
   belongings are light (1–3 picks, ≤ 0.5 kg each) but the wreckage was 4–6 piles of wood 1–3 (~20 kg) against 8 kg
   pockets → now 3–4 piles of wood 1–2, cloth 0–1, fibre 0–2 (≤ ~10 kg). Capacities raised: pockets 12, pouch 3,
