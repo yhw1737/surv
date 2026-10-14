@@ -146,6 +146,8 @@ namespace Isle.UI.Prototype
             EnsureStyles();
             if (Event.current.type == EventType.Layout) _panels.Clear();
 
+            if (_player.Sleeping) DrawSleep();
+
             // The full-screen inventory covers the world; only windows and tooltips draw over it.
             var inventoryOpen = Isle.UI.Inventory.InventoryScreen.Instance is { Open: true };
             if (!inventoryOpen)
@@ -214,6 +216,29 @@ namespace Isle.UI.Prototype
             if (_vitals.HypothermiaSeverity > 0.01f) temperature += $"  {Lang.Get("@ui.hypothermia")} {_vitals.HypothermiaSeverity * 100f:0}%";
             DrawGauge(ref y, temperature, warmth, new Color(0.9f, 0.5f, 0.5f));
             DrawWoundSummary(ref y);
+        }
+
+        /// <summary>T-304: asleep, the screen goes dark, the clock runs through the night, then it lifts.</summary>
+        void DrawSleep()
+        {
+            var e = _player.SleepElapsed;
+            var fade = PlayerInteraction.SleepFadeSeconds;
+            var alpha = e < fade ? e / fade : e > PlayerInteraction.SleepTotalSeconds - fade ? (PlayerInteraction.SleepTotalSeconds - e) / fade : 1f;
+            alpha = Mathf.Clamp01(alpha);
+            GUI.color = new Color(0.02f, 0.02f, 0.05f, 0.94f * alpha);
+            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+            var clock = WorldTime.Instance != null ? WorldTime.Instance.Clock : null;
+            if (clock != null)
+            {
+                var minute = clock.MinuteOfDay;
+                GUI.color = new Color(1f, 1f, 1f, alpha);
+                GUI.Label(new Rect(0, Screen.height * 0.42f, Screen.width, 60f), $"{minute / 60:00}:{minute % 60:00}",
+                    new GUIStyle(_title) { fontSize = 46, alignment = TextAnchor.MiddleCenter });
+                var dots = new string('z', 1 + (int)(Time.time * 2f) % 3);
+                GUI.Label(new Rect(0, Screen.height * 0.42f + 60f, Screen.width, 30f), $"{Lang.Get("@ui.sleeping")} {dots}",
+                    new GUIStyle(_label) { alignment = TextAnchor.MiddleCenter });
+            }
+            GUI.color = Color.white;
         }
 
         void DrawGauge(ref float y, string text, float value, Color colour)
@@ -495,7 +520,8 @@ namespace Isle.UI.Prototype
             if (item.Medicine != null) lines.Add($"{Lang.Get("@ui.tt_tend_quality")}: {item.Medicine.Quality * 100f:0}%");
             if (item.Armor > 0f) lines.Add($"{Lang.Get("@ui.armor")}: {item.Armor:0}");
             if (item.Warmth > 0f) lines.Add($"{Lang.Get("@ui.tt_warmth")}: +{item.Warmth:0}°");
-            if (item.BagGrid is { } bagGrid) lines.Add($"{Lang.Get("@ui.tt_bag")}: {bagGrid.W}×{bagGrid.H}");
+            if (item.BagCapacityKg > 0f) lines.Add($"{Lang.Get("@ui.tt_bag")}: {item.BagCapacityKg:0.#} kg");
+            else if (item.BagGrid is { } bagGrid) lines.Add($"{Lang.Get("@ui.tt_bag")}: {bagGrid.W}×{bagGrid.H}");
             lines.Add($"{Lang.Get("@ui.tt_weight")}: {item.Weight:0.##} kg");
 
             DrawTooltipLines(lines);

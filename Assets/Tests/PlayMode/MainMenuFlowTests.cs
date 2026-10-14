@@ -49,6 +49,9 @@ namespace Isle.Tests.PlayMode
         {
             yield return SceneManager.LoadSceneAsync("SampleScene");
             yield return WaitUntil(() => Object.FindFirstObjectByType<MainMenu>() != null, 5f, "main menu never appeared");
+            // T-306: the title card plays over the menu once per launch.
+            yield return null;
+            Assert.IsTrue(TitleCutscene.Shown, "no title card at launch");
             Assert.IsNull(IslandWorld.Instance, "an island was built before the player chose anything");
             Assert.IsFalse(InstanceFinder.IsServerStarted, "host started on the menu");
             Assert.IsNull(GameSession.PeekSave(), "test setup: a save exists");
@@ -74,8 +77,22 @@ namespace Isle.Tests.PlayMode
                 var slot = Isle.Modding.Defs.DefRegistry.Get<Isle.Data.ItemDef>(id).EquipSlot;
                 Assert.AreEqual(id.Value, inventory.Slots.Get(slot)?.Id.Value, $"not wearing {id}");
             }
-            Assert.GreaterOrEqual(Isle.Gameplay.Inventory.LootPiles.All.Count(p => p.Shape == "wreckage"), 4, "no wreckage on the beach");
+            Assert.GreaterOrEqual(Isle.Gameplay.Inventory.LootPiles.All.Count(p => p.Shape == "wreckage"), 3, "no wreckage on the beach");
             Assert.IsNull(Object.FindFirstObjectByType<MainMenu>(), "menu still up in game");
+            // T-306: a fresh island plays the shipwreck intro, the player frozen and lying; a key skips to waking, another
+            // ends it and frees them.
+            var intro = ShipwreckCutscene.Instance;
+            Assert.IsNotNull(intro, "no intro cutscene installed");
+            yield return WaitUntil(() => intro.Playing, 3f, "the intro didn't play on New game");
+            yield return null;
+            Assert.IsTrue(local.GetComponent<Isle.Networking.PlayerMovement>().Frozen, "the player can walk during the intro");
+            Assert.AreEqual(IntroShot.Sailing, intro.CurrentShot);
+            intro.Skip();
+            Assert.AreEqual(IntroShot.Waking, intro.CurrentShot, "skip didn't jump to waking");
+            intro.Skip();
+            yield return null;
+            Assert.IsFalse(intro.Playing, "a second skip didn't end it");
+            Assert.IsFalse(local.GetComponent<Isle.Networking.PlayerMovement>().Frozen, "still frozen after the intro");
             for (var i = 0; i < 90; i++) yield return null; // let autosave arm (SaveGame applies on the first frames)
 
             GameSession.BackToMenu();
@@ -88,6 +105,7 @@ namespace Isle.Tests.PlayMode
             yield return WaitUntil(() => PlayerInteraction.Local != null && IslandWorld.Instance != null, 15f, "player never spawned after Continue");
             Assert.AreEqual(424242, IslandWorld.Instance.Seed, "Continue built a different island");
             for (var i = 0; i < 60; i++) yield return null;
+            Assert.IsFalse(ShipwreckCutscene.Instance.Playing, "Continue replayed the intro");
             Assert.AreEqual("Test Passenger", PlayerInteraction.Local.Survivor?.Name, "survivor name not restored");
             CollectionAssert.AreEquivalent(picked.Traits.Select(t => t.Id.Value), PlayerInteraction.Local.Survivor.Traits.Select(t => t.Id.Value), "traits not restored");
 

@@ -33,6 +33,9 @@ namespace Isle.Data
         /// <summary>A container's grid (SYS-INV-01 §Containers: wooden crate 10×6). Null for non-containers.</summary>
         public GridSize? Storage { get; init; }
 
+        /// <summary>SYS-INV-02: a storage container's weight capacity (kg). Preferred over <see cref="Storage"/>.</summary>
+        public float StorageCapacityKg { get; init; }
+
         /// <summary>Collects rain to drink (SYS-SURV-01 §Water sources: rain catcher). Null otherwise.</summary>
         public RainCatcherSpec RainCatcher { get; init; }
 

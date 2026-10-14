@@ -369,7 +369,8 @@ namespace Isle.Gameplay.Character
                 var taken = LootPiles.PickUp(pile, bagOwner.Slots, bagOwner.Containers);
                 foreach (var (item, count) in taken) GameFeed.RaiseItemGained(item.Id, count);
                 if (pile.Items.Count > 0) GameFeed.RaiseNotice("@ui.bag_full");
-                return;
+                // T-305: a pile too heavy to take doesn't block the station or water beside it.
+                if (taken.Count > 0) return;
             }
 
             // Pressing E again while gathering, butchering, cooking, crafting or forging stops it.
@@ -883,6 +884,7 @@ namespace Isle.Gameplay.Character
             UpdateHaul();
             UpdateCook();
             UpdateCraft();
+            UpdateSleep();
             UpdateForge();
             UpdateCast();
             if (Fight == null) return;
@@ -1190,10 +1192,65 @@ namespace Isle.Gameplay.Character
                 GameFeed.RaiseNotice("@ui.rest_need_fire");
                 return;
             }
-            if (!TryGetComponent<Vitals>(out var vitals)) return;
+            if (!TryGetComponent<Vitals>(out var vitals) || Sleeping) return;
 
-            clock.AdvanceToNextMinuteOfDay(WorldClock.RestWakeMinute);
-            vitals.Rest();
+            // T-304: lie down, the screen goes dark, the night runs by on the clock, then you wake — not a cut.
+            var delta = WorldClock.RestWakeMinute - clock.MinuteOfDay;
+            if (delta <= 0) delta += WorldClock.MinutesPerDay;
+            _sleepFrom = clock.TotalMinutes;
+            _sleepTo = clock.TotalMinutes + delta;
+            _sleepStartedAt = Time.time;
+            _sleepHitAt = vitals.LastHitAt;
+            CancelGather();
+            Butchering = null;
+            Cooking = null;
+            Crafting = null;
+            if (TryGetComponent<PlayerMovement>(out var movement)) movement.Frozen = true;
+        }
+
+        // ------------------------------------------------------------------ sleep (T-304)
+
+        /// <summary>Fading out, then the night running by, then fading back in (real seconds).</summary>
+        public const float SleepFadeSeconds = 1f;
+        public const float SleepPassSeconds = 3f;
+        public static float SleepTotalSeconds => SleepFadeSeconds * 2f + SleepPassSeconds;
+
+        long _sleepFrom, _sleepTo;
+        float _sleepStartedAt = -1f, _sleepHitAt;
+
+        /// <summary>Lying down asleep right now. Server state the HUD and the figure read.</summary>
+        public bool Sleeping => _sleepStartedAt >= 0f;
+
+        /// <summary>Real seconds since lying down (0 when awake).</summary>
+        public float SleepElapsed => Sleeping ? Time.time - _sleepStartedAt : 0f;
+
+        void UpdateSleep()
+        {
+            if (!Sleeping) return;
+            var clock = WorldTime.Instance != null ? WorldTime.Instance.Clock : null;
+            TryGetComponent<Vitals>(out var vitals);
+            // Something hit you, or you died: awake at once, the night stops where it was.
+            if (IsDead || clock == null || (vitals != null && vitals.LastHitAt > _sleepHitAt))
+            {
+                WakeUp(rested: false);
+                return;
+            }
+            var e = SleepElapsed;
+            var pass = Mathf.Clamp01((e - SleepFadeSeconds) / SleepPassSeconds);
+            clock.SetTotalMinutes(_sleepFrom + (long)Mathf.Round((_sleepTo - _sleepFrom) * pass));
+            if (e >= SleepTotalSeconds) WakeUp(rested: true);
+        }
+
+        void WakeUp(bool rested)
+        {
+            _sleepStartedAt = -1f;
+            if (!IsDead && TryGetComponent<PlayerMovement>(out var movement)) movement.Frozen = false;
+            if (!rested)
+            {
+                GameFeed.RaiseNotice("@ui.woke_up");
+                return;
+            }
+            if (TryGetComponent<Vitals>(out var vitals)) vitals.Rest();
             if (TryGetComponent<DeathHandler>(out var death)) death.SetLastShelter(transform.position);
             GameFeed.RaiseNotice("@ui.rested");
         }
@@ -1771,7 +1828,9 @@ namespace Isle.Gameplay.Character
             if (!DefRegistry.TryGet<WorldObjectDef>(kit.Places, out var def)) return;
             CropDef crop = null;
             if (kit.Plants.IsValid && !DefRegistry.TryGet(kit.Plants, out crop)) return;
-            if (InventoryOps.TakeOne(inventory.Containers(), itemId) == null) return;
+            // T-305: from the bags, or from the ground at your feet — the heaviest kits (anvil 16 kg) outweigh most bags.
+            if (InventoryOps.TakeOne(inventory.Containers(), itemId) == null
+                && !LootPiles.TakeOne(LootPiles.Nearest(transform.position, ReachTiles), itemId)) return;
             var built = StructureFactory.Build(def, at);
             if (crop != null) StructureFactory.Plant(built, crop, WorldTime.Instance != null ? WorldTime.Instance.Clock.TotalMinutes : 0);
         }
@@ -1783,13 +1842,14 @@ namespace Isle.Gameplay.Character
             if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
             var box = StructureFactory.NearestStorage(transform.position, ReachTiles);
             if (box == null) return;
+            // Every stack of it, wherever it's carried (T-305: lists keep one kind in each container).
             foreach (var container in inventory.Containers())
-            {
-                var held = container.Placements.FirstOrDefault(p => p.Item.Id.Value == itemText);
-                if (held.Item == null) continue;
-                if (!container.TryMoveTo(box.Contents, held)) GameFeed.RaiseNotice("@ui.box_full");
-                return;
-            }
+                foreach (var held in container.Placements.Where(p => p.Item.Id.Value == itemText).ToList())
+                    if (!container.TryMoveTo(box.Contents, held))
+                    {
+                        GameFeed.RaiseNotice("@ui.box_full");
+                        return;
+                    }
         }
 
         [ServerRpc]
@@ -1802,6 +1862,41 @@ namespace Isle.Gameplay.Character
             if (held.Item == null) return;
             if (InventoryOps.TryGive(inventory.Containers(), held.Item, held.Count)) box.Contents.Remove(held);
             else GameFeed.RaiseNotice("@ui.bag_full");
+        }
+
+        /// <summary>T-305: <paramref name="count"/> of one entry of a carried container into the nearest crate.</summary>
+        public void RequestCrateStore(int container, Vec2Int key, int count) => CmdCrateStore(container, key.X, key.Y, count);
+
+        /// <summary>T-305: <paramref name="count"/> of one crate entry into a carried container.</summary>
+        public void RequestCrateTake(Vec2Int key, int container, int count) => CmdCrateTake(key.X, key.Y, container, count);
+
+        [ServerRpc]
+        void CmdCrateStore(int container, int x, int y, int count)
+        {
+            if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            var box = StructureFactory.NearestStorage(transform.position, ReachTiles);
+            var containers = inventory.Containers();
+            if (box == null || container < 0 || container >= containers.Count) return;
+            if (!MoveEntry(containers[container], new Vec2Int(x, y), box.Contents, count)) GameFeed.RaiseNotice("@ui.box_full");
+        }
+
+        [ServerRpc]
+        void CmdCrateTake(int x, int y, int container, int count)
+        {
+            if (IsDead || !TryGetComponent<InventoryNetwork>(out var inventory)) return;
+            var box = StructureFactory.NearestStorage(transform.position, ReachTiles);
+            var containers = inventory.Containers();
+            if (box == null || container < 0 || container >= containers.Count) return;
+            if (!MoveEntry(box.Contents, new Vec2Int(x, y), containers[container], count)) GameFeed.RaiseNotice("@ui.bag_full");
+        }
+
+        /// <summary>Moves <paramref name="count"/> of the entry at <paramref name="key"/> into <paramref name="to"/>, all or
+        /// nothing.</summary>
+        static bool MoveEntry(GridInventory from, Vec2Int key, GridInventory to, int count)
+        {
+            if (from.PlacementAt(key) is not { } p || count <= 0) return false;
+            if (count < p.Count) return from.TrySplit(p, count, to, to.FindFreePosition(p.Item.Grid) ?? new Vec2Int(-1, 0), false);
+            return from.TryMoveTo(to, p);
         }
 
         /// <summary>Server-side: a harvest from something in the world (a ripe crop) lands in this player's bags.</summary>

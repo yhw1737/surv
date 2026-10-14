@@ -13,5 +13,6 @@
     "shape": "crate",
     "color": "#B0824E",
     "size": 0.95
-  }
+  },
+  "storage_capacity_kg": 50
 }

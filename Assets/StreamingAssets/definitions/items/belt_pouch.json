@@ -19,5 +19,6 @@
   "wear": {
     "style": "pouch",
     "color": "#8A5A36"
-  }
+  },
+  "bag_capacity_kg": 3
 }

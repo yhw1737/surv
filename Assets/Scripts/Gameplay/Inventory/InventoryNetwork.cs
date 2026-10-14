@@ -42,6 +42,9 @@ namespace Isle.Gameplay.Inventory
     {
         // SYS-INV-01 §Containers: "Base carry 6x3, always present". A bag-type equip item opens its
         // own separate GridInventory via EquipSlots.TryEquip, same as local (non-networked) play.
+        /// <summary>SYS-INV-02 §Containers: what you carry with no bag.</summary>
+        public const float PocketsCapacityKg = 12f;
+
         const int BagWidth = 6;
         const int BagHeight = 3;
 
@@ -68,7 +71,7 @@ namespace Isle.Gameplay.Inventory
 
         void Awake()
         {
-            Bag = new GridInventory(BagWidth, BagHeight);
+            Bag = new GridInventory(PocketsCapacityKg); // SYS-INV-02: pockets, a weight-capped list
             Slots = new EquipSlots();
         }
 
@@ -123,6 +126,11 @@ namespace Isle.Gameplay.Inventory
             };
             CmdMove(fromContainer, from.X, from.Y, toContainer, to.X, to.Y, toRotated, count);
         }
+
+        /// <summary>T-305 SYS-INV-02: <paramref name="count"/> of an entry into another list container — it merges into a
+        /// matching stack there or takes a fresh key, if the weight fits.</summary>
+        public void RequestTransfer(int fromContainer, Vec2Int key, int toContainer, int count, Action<bool> onResult) =>
+            RequestMove(fromContainer, key, toContainer, new Vec2Int(-1, 0), false, count, onResult);
 
         /// <summary>Ctrl+click: the whole stack into the first spot that fits in another container.</summary>
         public void RequestQuickMove(int fromContainer, Vec2Int from, int toContainer, Action<bool> onResult)

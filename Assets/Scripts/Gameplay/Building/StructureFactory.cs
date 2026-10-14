@@ -60,7 +60,8 @@ namespace Isle.Gameplay.Building
 
             // Awake hasn't run yet (the object is inactive), so read the def's tags directly.
             if (def.Tags != null && System.Array.IndexOf(def.Tags, CampfireTag) >= 0) go.AddComponent<CampfireInteraction>();
-            if (def.Storage is { } grid) go.AddComponent<StorageBox>().Initialize(grid.W, grid.H);
+            if (def.StorageCapacityKg > 0f) go.AddComponent<StorageBox>().Initialize(def.StorageCapacityKg);
+            else if (def.Storage is { } grid) go.AddComponent<StorageBox>().Initialize(grid.W, grid.H);
             if (def.Tags != null && System.Array.IndexOf(def.Tags, EnchantingTable.Tag) >= 0) go.AddComponent<EnchantingTable>();
             if (def.RainCatcher != null) go.AddComponent<RainCatcher>().Initialize(def.RainCatcher);
             if (StationKindOf(def) is { } kind) go.AddComponent<StationInteraction>().Kind = kind;
@@ -77,7 +78,7 @@ namespace Isle.Gameplay.Building
         /// isn't a station.</summary>
         public static string StationKindOf(WorldObjectDef def)
         {
-            if (def?.Tags == null || def.Storage != null || def.RainCatcher != null) return null;
+            if (def?.Tags == null || def.Storage != null || def.StorageCapacityKg > 0f || def.RainCatcher != null) return null;
             if (System.Array.IndexOf(def.Tags, CampfireTag) >= 0 || System.Array.IndexOf(def.Tags, EnchantingTable.Tag) >= 0) return null;
             if (Isle.Modding.Defs.DefRegistry.All<CookMethodDef>().Any(m => m.Station == def.Id)) return StationInteraction.Cook;
             return def.Tags.Any(t => t.StartsWith("station/")) ? StationInteraction.Craft : null;

@@ -60,6 +60,34 @@ namespace Isle.Gameplay.Inventory
             Height = height;
         }
 
+        /// <summary>T-305 SYS-INV-02: a list container — no shapes, a weight cap. Entries keep a key (first column) so
+        /// requests and saves can name them; it isn't a place.</summary>
+        public GridInventory(float capacityKg)
+        {
+            CapacityKg = capacityKg;
+        }
+
+        /// <summary>The weight cap of a list container; 0 for a grid.</summary>
+        public float CapacityKg { get; }
+
+        public bool IsList => CapacityKg > 0f;
+
+        /// <summary>An empty container of the same kind and size (scratch copies for room checks).</summary>
+        public GridInventory CloneEmpty() => IsList ? new GridInventory(CapacityKg) : new GridInventory(Width, Height);
+
+        static float UnitKg(ItemDef item, ItemWear wear) => wear?.Carcass?.WeightKg ?? item.Weight;
+
+        /// <summary>A list container has room for <paramref name="count"/> more of this (by weight).</summary>
+        public bool HasRoomFor(ItemDef item, int count, ItemWear wear = null) =>
+            !IsList || TotalWeightKg() + UnitKg(item, wear) * count <= CapacityKg + 1e-4f;
+
+        Vec2Int NextKey()
+        {
+            var x = 0;
+            while (_placements.Any(p => p.Position.X == x)) x++;
+            return new Vec2Int(x, 0);
+        }
+
         /// <summary>Places <paramref name="item"/> at <paramref name="position"/> if every cell it covers is
         /// in bounds and empty — or, if the very same item (by reference) is already sitting at that exact
         /// position and rotation, merges into its count instead. Not in SYS-INV-01's text, but
@@ -67,6 +95,7 @@ namespace Isle.Gameplay.Inventory
         /// sibling should recombine it, the same way most Tetris-style loot inventories do.</summary>
         public bool TryPlace(ItemDef item, Vec2Int position, bool rotated = false, int count = 1, ItemWear wear = null)
         {
+            if (IsList) return TryPlaceInList(item, position, count, wear);
             var mergeIndex = Placement.Stacks(item) ? _placements.FindIndex(p =>
                 ReferenceEquals(p.Item, item) && p.Position == position && p.Rotated == rotated) : -1;
             if (mergeIndex >= 0)
@@ -79,6 +108,26 @@ namespace Isle.Gameplay.Inventory
             if (!Fits(placement)) return false;
 
             _placements.Add(placement);
+            return true;
+        }
+
+        /// <summary>List mode: merge into a stack of the same item (same definition object), else a new entry under
+        /// <paramref name="key"/> or a fresh key; always within the weight cap.</summary>
+        bool TryPlaceInList(ItemDef item, Vec2Int key, int count, ItemWear wear)
+        {
+            if (count <= 0 || !HasRoomFor(item, count, wear)) return false;
+            if (Placement.Stacks(item) && wear == null)
+            {
+                var index = _placements.FindIndex(p => ReferenceEquals(p.Item, item) && p.Wear == null);
+                if (index >= 0)
+                {
+                    var p = _placements[index];
+                    _placements[index] = new Placement(item, p.Position, false, p.Count + count);
+                    return true;
+                }
+            }
+            if (key.Y != 0 || key.X < 0 || _placements.Any(p => p.Position == key)) key = NextKey();
+            _placements.Add(new Placement(item, key, false, count, wear));
             return true;
         }
 
@@ -103,6 +152,7 @@ namespace Isle.Gameplay.Inventory
         /// Backs bulk move, move-all and auto-sort — none of them care which free spot is used, just that one is found.</summary>
         public Vec2Int? FindFreePosition(GridSize size, bool rotated = false)
         {
+            if (IsList) return NextKey(); // the weight check is TryPlace's
             var effective = rotated ? new GridSize { W = size.H, H = size.W } : size;
 
             for (var y = 0; y <= Height - effective.H; y++)
@@ -199,6 +249,14 @@ namespace Isle.Gameplay.Inventory
         public bool TrySplit(Placement source, int splitCount, GridInventory destination, Vec2Int destPosition, bool destRotated = false)
         {
             if (splitCount <= 0 || splitCount >= source.Count) return false;
+            if (destination.IsList)
+            {
+                if (destination == this || !_placements.Contains(source)) return false;
+                if (!destination.TryPlace(source.Item, destPosition, false, splitCount, null)) return false;
+                var at = _placements.IndexOf(source);
+                _placements[at] = new Placement(source.Item, source.Position, source.Rotated, source.Count - splitCount, source.Wear);
+                return true;
+            }
             if (destination == this && destPosition == source.Position && destRotated == source.Rotated) return false;
             if (!_placements.Remove(source)) return false;
 
@@ -223,6 +281,13 @@ namespace Isle.Gameplay.Inventory
         /// </summary>
         public bool AutoSort()
         {
+            if (IsList)
+            {
+                var ordered = _placements.OrderBy(p => p.Item.Name).ThenBy(p => p.Item.Id.Value).ToList();
+                _placements.Clear();
+                _placements.AddRange(ordered);
+                return true;
+            }
             var sorted = _placements
                 .OrderByDescending(p => p.EffectiveSize().W * p.EffectiveSize().H)
                 .ToList();

@@ -61,6 +61,9 @@ namespace Isle.Data
         /// item's own footprint while it sits inside another container.</summary>
         public GridSize? BagGrid { get; init; }
 
+        /// <summary>SYS-INV-02: a bag's weight capacity (kg). Preferred over <see cref="BagGrid"/>.</summary>
+        public float BagCapacityKg { get; init; }
+
         /// <summary>The <see cref="WeaponDef"/> this item wields as, when it's a weapon (SCHEMA §Items).
         /// Invalid (default) for everything else — the item is just an item.</summary>
         public NamespacedId Weapon { get; init; }

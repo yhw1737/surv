@@ -96,6 +96,21 @@ namespace Isle.UI.Inventory
             {
                 var target = result.GetComponentInParent<GridView>();
                 if (target != null && TryDrop(target)) return;
+                // T-305: onto one of your lists or its tab — into that container; onto the ground list — drop it.
+                var source = result.GetComponentInParent<ItemListView>() is { } list ? list.Source
+                    : result.GetComponentInParent<ListTab>() is { } tab ? tab.Source : (ListSource?)null;
+                if (source == null || _owner.Network == null) continue;
+                var index = result.GetComponentInParent<ItemListView>()?.ContainerIndex ?? result.GetComponentInParent<ListTab>().ContainerIndex;
+                var owner = _owner;
+                void Done(bool ok)
+                {
+                    owner.Redraw();
+                    if (ok) owner.Changed?.Invoke();
+                }
+                if (source == ListSource.Container) owner.Network.RequestUnequipInto(owner.SlotName, index, new Vec2Int(-1, 0), false, Done);
+                else if (source == ListSource.Ground) owner.Network.RequestDropEquipped(owner.SlotName, Done);
+                else break;
+                return;
             }
 
             // Over the backdrop or the ground panel (and not over a grid): take it off and drop it on the ground.

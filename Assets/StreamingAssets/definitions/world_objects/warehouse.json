@@ -13,5 +13,6 @@
     "shape": "warehouse",
     "color": "#9A6F42",
     "size": 1.6
-  }
+  },
+  "storage_capacity_kg": 150
 }

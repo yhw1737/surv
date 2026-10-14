@@ -76,7 +76,9 @@ namespace Isle.Gameplay.Inventory
 
             _equipped[slot] = item;
             if (wear != null) _wear[slot] = wear;
-            if (item.BagGrid is { } bagGrid) _bags[slot] = new GridInventory(bagGrid.W, bagGrid.H);
+            // SYS-INV-02: a bag is a weight-capped list; the old grid size only for a definition that hasn't moved yet.
+            if (item.BagCapacityKg > 0f) _bags[slot] = new GridInventory(item.BagCapacityKg);
+            else if (item.BagGrid is { } bagGrid) _bags[slot] = new GridInventory(bagGrid.W, bagGrid.H);
             return true;
         }
 

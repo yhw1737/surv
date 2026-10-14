@@ -48,7 +48,7 @@ namespace Isle.Gameplay.Inventory
         {
             var scratch = containers.Select(c =>
             {
-                var copy = new GridInventory(c.Width, c.Height);
+                var copy = c.CloneEmpty();
                 foreach (var p in c.Placements) copy.TryPlace(p.Item, p.Position, p.Rotated, p.Count, p.Wear);
                 return copy;
             }).ToList();

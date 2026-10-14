@@ -1,5 +1,8 @@
 # SYS-INV-01 · Grid inventory, weight
 
+> **Superseded 2026-10-13 by SYS-INV-02 (list inventory)** for containers, placement and the screen. §Weight
+> (encumbrance) still applies. The grid mode stays in `GridInventory` only as a fallback for mods without capacities.
+
 ## Purpose
 Tetris-style grid placement. **Volume (cells) and weight (kg) are separate constraints** creating different kinds of pressure.
 

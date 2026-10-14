@@ -48,6 +48,9 @@ namespace Isle.UI.Art
 
         public static bool Has(PlayerInteraction player) => ByPlayer.ContainsKey(player);
 
+        /// <summary>T-306: the intro cutscene lays the local player down on the beach until they get up.</summary>
+        public static bool LocalLying { get; set; }
+
         public static StickFigureView Attach(PlayerInteraction player, Material material)
         {
             var go = new GameObject($"StickFigure_{player.name}");
@@ -302,6 +305,7 @@ namespace Isle.UI.Art
         {
             since = -1f;
             if (_death != null && _death.IsDead) return FigureAction.Dead;
+            if (_player != null && (_player.Sleeping || (LocalLying && _player.IsOwner))) return FigureAction.Sleep;
 
             var rolling = _movement != null && _movement.IsRolling;
             if (rolling && !_wasRolling) _rollAt = now;

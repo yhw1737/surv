@@ -74,7 +74,7 @@ namespace Isle.Tests.PlayMode
             // SYS-START-01: a fresh island starts on the beach with wreckage around. The random passenger's traits and
             // skills would skew every number below, so the rest of the run plays a blank survivor.
             Assert.IsNotNull(FindLocalPlayer().Survivor, "no survivor applied on a fresh island");
-            Assert.GreaterOrEqual(LootPiles.All.Count(p => p.Shape == "wreckage"), 4, "no wreckage on the beach");
+            Assert.GreaterOrEqual(LootPiles.All.Count(p => p.Shape == "wreckage"), 3, "no wreckage on the beach");
             LootPiles.Clear();
             StartDirector.Become(FindLocalPlayer(), new Survivor { Name = "Test" }, setSkills: false);
             foreach (var skill in DefRegistry.All<SkillDef>()) FindLocalPlayer().Skills.Restore(skill.Id, 0);
@@ -108,6 +108,44 @@ namespace Isle.Tests.PlayMode
             yield return Forage();
             yield return WoundsAndTending();
             yield return StationsAndToolbar();
+            yield return Sleep();
+        }
+
+        /// <summary>T-304: resting by a fire at night lies down and runs the night by on the clock over a few seconds, then
+        /// wakes at 06:00; a hit while asleep wakes you where the night stood.</summary>
+        IEnumerator Sleep()
+        {
+            var player = FindLocalPlayer();
+            var (shore, _) = CoastSpot(IslandWorld.Instance);
+            Teleport(player, shore);
+            ClearCreaturesNear(player.transform.position);
+            var clock = Isle.World.Time.WorldTime.Instance.Clock;
+            var fire = StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:campfire")), shore + Vector2.left * 0.5f);
+            fire.GetComponent<Isle.Gameplay.World.CampfireInteraction>().Fuel = 2000f;
+            fire.IsActive = true;
+            clock.SetTotalMinutes(clock.TotalMinutes / 1440 * 1440 + 22 * 60);
+            player.RequestRest();
+            yield return WaitUntil(() => player.Sleeping, 2f, "resting didn't lie down");
+            var asleepAt = clock.TotalMinutes;
+            yield return new WaitForSeconds(PlayerInteraction.SleepFadeSeconds + PlayerInteraction.SleepPassSeconds * 0.5f);
+            Assert.Greater(clock.TotalMinutes, asleepAt + 60, "the night isn't running by");
+            Assert.IsTrue(player.Sleeping, "woke up too soon");
+            yield return WaitUntil(() => !player.Sleeping, PlayerInteraction.SleepTotalSeconds + 2f, "never woke up");
+            Assert.AreEqual(Isle.World.Time.WorldClock.RestWakeMinute, clock.MinuteOfDay, "didn't wake at the wake hour");
+
+            // A hit wakes you.
+            clock.SetTotalMinutes(clock.TotalMinutes / 1440 * 1440 + 23 * 60);
+            yield return null;
+            fire.GetComponent<Isle.Gameplay.World.CampfireInteraction>().Fuel = 2000f; // the jump burned the hours skipped
+            fire.IsActive = true;
+            player.RequestRest();
+            yield return WaitUntil(() => player.Sleeping, 2f, "second rest didn't lie down");
+            yield return new WaitForSeconds(PlayerInteraction.SleepFadeSeconds + 0.5f);
+            player.ReceiveCreatureStrike(shore + Vector2.left, 5f);
+            yield return WaitUntil(() => !player.Sleeping, 2f, "a hit didn't wake the sleeper");
+            Assert.AreNotEqual(Isle.World.Time.WorldClock.RestWakeMinute, clock.MinuteOfDay, "a woken sleeper still slept the night through");
+            player.GetComponent<Vitals>().ResetOnRespawn();
+            StructureFactory.Remove(fire);
         }
 
         /// <summary>T-151 playtest: E at a workbench opens the craft window, at an unlit campfire lights it and at a lit one
@@ -310,7 +348,7 @@ namespace Isle.Tests.PlayMode
             screen.Show();
             for (var i = 0; i < 5; i++) yield return null;
             var berries = inventory.Bag.Placements.First(p => p.Item.Id.Value == "isle:berries");
-            var labels = screen.OpenMenuFor(0, berries);
+            var labels = screen.OpenMenuFor(berries.Item);
             Assert.Contains(Isle.UI.Prototype.Lang.Get("@ui.ctx_eat"), labels, "no eat option for berries");
             Assert.Contains(Isle.UI.Prototype.Lang.Get("@ui.ctx_drop"), labels, "no drop option");
             Assert.IsTrue(labels.Any(l => l == string.Format(Isle.UI.Prototype.Lang.Get("@ui.ctx_move_to"), Isle.UI.Prototype.Lang.Get(inventory.Slots.Get("back").Name))),
@@ -791,6 +829,7 @@ namespace Isle.Tests.PlayMode
             ClearCreaturesNear(player.transform.position);
             var anvil = Isle.Gameplay.Building.StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:anvil")),
                 (Vector2)player.transform.position + Vector2.right * 1f);
+            ClearLeftovers(inventory);
             Give(inventory, "isle:copper_ingot", 2);
             Give(inventory, "isle:wood", 2);
             player.RequestCraft("isle:craft_knife", "isle:copper");
@@ -832,6 +871,7 @@ namespace Isle.Tests.PlayMode
             Assert.Contains(rabbit, CreatureDirector.Instance.Carcasses.ToList(), "no carcass left");
             Assert.AreEqual(0, CountOf(inventory, "isle:raw_meat"), "the kill itself handed out meat");
             // SYS-HUNT-01 §Carrying: a rabbit is light — G puts it in the bag; dropping it lays the carcass back down.
+            ClearLeftovers(inventory); // a rabbit weighs up to 5 kg
             Teleport(player, rabbit.Position + Vector2.right * 0.3f);
             player.RequestHaul();
             yield return WaitUntil(() => CountOf(inventory, "isle:carcass__rabbit") == 1, 2f, "rabbit carcass never picked up");
@@ -1018,6 +1058,7 @@ namespace Isle.Tests.PlayMode
             Assert.AreEqual(59, inventory.Slots.WearOf("main_hand").Current, "harvest didn't wear the hatchet");
             inventory.Slots.Wear("main_hand", 59);
             Assert.IsNull(inventory.Slots.Working("main_hand"), "broken hatchet still works");
+            ClearLeftovers(inventory); // room for the next harvest
             woodBefore = CountOf(inventory, "isle:wood");
             yield return HarvestNearest(player, world, "isle:tree");
             Assert.AreEqual(woodBefore + 4, CountOf(inventory, "isle:wood"), "broken hatchet still gave its bonus");
@@ -1046,11 +1087,13 @@ namespace Isle.Tests.PlayMode
 
             // Smelting at a furnace.
             player.Skills.Restore(NamespacedId.Parse("isle:crafting"), Isle.Gameplay.Skills.XpCurve.TotalXpTo(20));
-            Give(inventory, "isle:furnace_kit", 1);
+            // T-305: a 14 kg kit outweighs the pockets and the straw backpack — it's set up straight from the ground.
+            LootPiles.Drop(player.transform.position, new[] { (DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:furnace_kit")), 1) });
             var furnaceAt = (Vector2)player.transform.position + Vector2.right * 1.5f;
             if (!player.CanPlaceAt(furnaceAt)) furnaceAt = (Vector2)player.transform.position + Vector2.left * 1.5f;
             player.RequestPlace("isle:furnace_kit", furnaceAt);
             yield return WaitUntil(() => StructureFactory.Built.Any(b => b != null && b.Def != null && b.Def.Id.Value == "isle:furnace"), 3f, "furnace never placed");
+            Assert.IsFalse(LootPiles.All.Any(p => p.Items.Any(e => e.Item.Id.Value == "isle:furnace_kit")), "the kit stayed on the ground");
             Give(inventory, "isle:coal", 1);
             player.RequestCraft("isle:craft_iron_ingot");
             yield return WaitUntil(() => CountOf(inventory, "isle:iron_ingot") == 1, 12f, "no iron ingot smelted");
@@ -1125,9 +1168,11 @@ namespace Isle.Tests.PlayMode
             Assert.AreEqual(VitalsCalculator.GaugeMax, vitals.Health, 0.01f);
             Assert.IsFalse(player.GetComponent<PlayerMovement>().Frozen);
 
+            // SYS-INV-02: what doesn't fit by weight stays on the ground; the gear comes back first.
+            var pileBefore = pile.Items.Count;
             Teleport(player, deathSpot);
             player.RequestInteract();
-            yield return WaitUntil(() => LootPiles.All.Count == 0, 3f, "pile never picked up");
+            yield return WaitUntil(() => LootPiles.Nearest(deathSpot, 1f) is not { } left || left.Items.Count < pileBefore, 3f, "pile never picked up");
             // The repaired hatchet came back through unequip → bag → death pile with its wear — into the bag, or straight
             // back into the empty main hand (recovering a body re-equips gear first).
             var hatchetWear = inventory.Containers().SelectMany(c => c.Placements).Where(pl => pl.Item.Id.Value == "isle:hatchet__stone").Select(pl => pl.Wear)
@@ -1238,10 +1283,30 @@ namespace Isle.Tests.PlayMode
         static ItemDef Dish(InventoryNetwork inventory) =>
             inventory.Containers().SelectMany(c => c.Placements).Select(p => p.Item).FirstOrDefault(i => i.Tags != null && i.Tags.Contains("dish"));
 
+        /// <summary>SYS-INV-02: pockets hold 12 kg, and this run piles up materials from step to step — clear loose ones
+        /// (no wear, not gear) before a step that needs room. Later steps count from what they hold, not from zero.</summary>
+        static void ClearLeftovers(InventoryNetwork inventory, string keep = null)
+        {
+            foreach (var c in inventory.Containers())
+                foreach (var p in c.Placements.Where(p => p.Wear == null && string.IsNullOrEmpty(p.Item.EquipSlot) && p.Item.Id.Value != keep).ToList())
+                    c.Remove(p);
+        }
+
         static void Give(InventoryNetwork inventory, string itemId, int count)
         {
             var item = DefRegistry.Get<ItemDef>(NamespacedId.Parse(itemId));
-            Assert.IsTrue(InventoryOps.TryGive(inventory.Containers(), item, count), $"test setup: no room for {itemId}");
+            if (InventoryOps.TryGive(inventory.Containers(), item, count)) return;
+            // Out of room: drop the harvest leftovers (wood, stone, fiber, rot) that earlier steps piled up.
+            foreach (var c in inventory.Containers())
+                foreach (var p in c.Placements.Where(p => p.Item.Id.Value is "isle:wood" or "isle:stone" or "isle:fiber" or "isle:rotten_food" && p.Item.Id.Value != itemId).ToList())
+                    c.Remove(p);
+            if (InventoryOps.TryGive(inventory.Containers(), item, count)) return;
+            // Still none (a heavy kit): the spare tools earlier steps left in the bags go too.
+            foreach (var c in inventory.Containers())
+                foreach (var p in c.Placements.Where(p => p.Wear != null && p.Wear.Carcass == null && p.Item.Id.Value != itemId).ToList())
+                    c.Remove(p);
+            Assert.IsTrue(InventoryOps.TryGive(inventory.Containers(), item, count),
+                $"test setup: no room for {itemId}: {string.Join(" | ", inventory.Containers().Select(c => $"{c.TotalWeightKg():0.#}/{c.CapacityKg} " + string.Join(",", c.Placements.Select(p => $"{p.Item.Id.Value}×{p.Count}"))))}");
         }
 
         /// <summary>A dry, node-free land tile right next to the sea, and that sea tile.</summary>

@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Isle.UI.Art
 {
     /// <summary>What the figure is doing, read from gameplay data by the view (SYS-CHAR-02 §Animation).</summary>
-    public enum FigureAction { None, Swing, Gather, Cast, Bite, Reel, Draw, Block, Roll, Dead }
+    public enum FigureAction { None, Swing, Gather, Cast, Bite, Reel, Draw, Block, Roll, Dead, Sleep }
 
     /// <summary>One frame of input to <see cref="StickFigureAnimator"/>. Presentation data only.</summary>
     public struct FigureInput
@@ -132,9 +132,9 @@ namespace Isle.UI.Art
             var stance = Mathf.Lerp(WalkStance, RunStance, _run);
             // No foot slides: a planted foot covers 2·halfSpan in `stance` of a cycle, so the cycle covers this.
             _phase = Gait.Advance(_phase, input.Distance, 2f * halfSpan / stance);
-            var moving = action is FigureAction.Roll or FigureAction.Dead ? 0f : Mathf.Clamp01(input.Speed / FullWalkSpeed);
+            var moving = action is FigureAction.Roll or FigureAction.Dead or FigureAction.Sleep ? 0f : Mathf.Clamp01(input.Speed / FullWalkSpeed);
             Spring.Damp(ref _moveBlend, ref _moveBlendV, moving, 12f, dt);
-            if (input.FacingTarget != 0f && action != FigureAction.Dead) _facingGoal = Mathf.Sign(input.FacingTarget);
+            if (input.FacingTarget != 0f && action is not (FigureAction.Dead or FigureAction.Sleep)) _facingGoal = Mathf.Sign(input.FacingTarget);
             Spring.Damp(ref _facing, ref _facingV, _facingGoal, 22f, dt);
 
             // Fancy Pants runs bent hard into the motion.
@@ -147,7 +147,8 @@ namespace Isle.UI.Art
             if (input.HasAim && action is FigureAction.None or FigureAction.Draw or FigureAction.Block) leanGoal -= input.AimAngle * 0.08f;
             Spring.Damp(ref _lean, ref _leanV, leanGoal, 10f, dt);
             Spring.Damp(ref _tuck, ref _tuckV, action == FigureAction.Roll ? 1f : 0f, 25f, dt);
-            Spring.Damp(ref _fall, ref _fallV, action == FigureAction.Dead ? 1f : 0f, 7f, dt);
+            // T-304: asleep lies down the same way, slower, and gets back up when it wakes.
+            Spring.Damp(ref _fall, ref _fallV, action is FigureAction.Dead or FigureAction.Sleep ? 1f : 0f, action == FigureAction.Sleep ? 4f : 7f, dt);
             Spring.Damp(ref _cloak, ref _cloakV, Mathf.Clamp(input.Speed * 0.08f, 0f, 0.35f) + 0.04f * Mathf.Sin(_time * 3.1f), 6f, dt);
 
             var p = new StickFigurePose { Action = action, ActionTime = t, DrawProgress = input.DrawProgress };
@@ -261,6 +262,12 @@ namespace Isle.UI.Art
                     handB = p.Hip + new Vector2(0.1f, -0.1f);
                     handFreq = 30f;
                     break;
+                case FigureAction.Sleep:
+                    // Hands on the chest, rising and falling with slow breaths.
+                    handF = p.Shoulder + new Vector2(0.12f, -0.22f + 0.02f * Mathf.Sin(_time * 1.6f));
+                    handB = p.Shoulder + new Vector2(0.06f, -0.26f + 0.02f * Mathf.Sin(_time * 1.6f));
+                    handFreq = 6f;
+                    break;
                 case FigureAction.Dead:
                     handF = p.Shoulder + new Vector2(0.06f, -0.46f);
                     handB = p.Shoulder + new Vector2(-0.08f, -0.45f);
@@ -321,7 +328,7 @@ namespace Isle.UI.Art
             p.Dead = action == FigureAction.Dead;
             p.CloakFlare = _cloak;
             p.FacingScale = Mathf.Abs(_facing) < 0.06f ? 0.06f * (_facing < 0f ? -1f : 1f) : Mathf.Clamp(_facing, -1f, 1f);
-            p.EyesClosed = Blink();
+            p.EyesClosed = action == FigureAction.Sleep || Blink();
             Pose = p;
         }
 

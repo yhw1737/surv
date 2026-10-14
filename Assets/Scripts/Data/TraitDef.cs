@@ -59,6 +59,9 @@ namespace Isle.Data
         public ItemRoll Belongings { get; init; }
         public DebrisSpec Debris { get; init; }
 
+        /// <summary>T-306: captions of the cutscene played before you wake (lang keys), one per shot; none, no cutscene.</summary>
+        public string[] Intro { get; init; }
+
         /// <summary>Survivor names (proper names, not translated).</summary>
         public string[] Names { get; init; }
 
