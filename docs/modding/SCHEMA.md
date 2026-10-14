@@ -115,6 +115,9 @@ closed set is a validator concern, not a type-system one. `bag_grid` is only set
 equipment (backpacks, belt pouches): the separate grid it opens when equipped, e.g.
 `{ "w": 6, "h": 7 }` for the leather backpack — distinct from `grid`, which is the bag *item's own*
 footprint while it sits inside another container.
+`bag_capacity_kg` (SYS-INV-02, T-305) is the bag's weight capacity as a list container — e.g. `15` for the leather
+backpack. When it's set the bag opens a list and `bag_grid` is ignored; `bag_grid` is kept only as a fallback for mods
+that haven't moved yet.
 
 ### Creatures
 ```json
@@ -428,7 +431,8 @@ This document constrains us before it serves modders.
 | Item | `places` | World-object id this item becomes when placed (kits) |
 | Item | `warmth` | Degrees added to `clothingBonus` while equipped |
 | Item | `light_radius` | Tiles of light while equipped (torch) |
-| World object | `storage` `{w,h}` | Container grid (crate 10×6) |
+| World object | `storage_capacity_kg` | List container capacity in kg (crate 50, warehouse 150) — SYS-INV-02 |
+| World object | `storage` `{w,h}` | Old container grid; fallback when `storage_capacity_kg` is absent |
 | World object | `rain_catcher` `{capacity, fill_per_second}` | Collects rain; one drink per unit, +40 thirst |
 | World object | `light_radius` | Tiles of light while active (lit campfire) |
 | World object | `station_tier` | 0..1, SYS-CRAFT-01 `stationTier` for gear crafted at it (workbench 0.25, furnace and anvil 0.5). 2026-10-09 |
@@ -593,7 +597,8 @@ inputs and half its material, rounded up.
 `background` + `skills` `[{skill, levels}]` (a past job), `effects` (same types as buff effects, permanent).
 
 **Scenario** (`definitions/scenarios/*.json`): `start_biome`, `start_wet`, `clothes` (worn at start), `belongings`
-`{min, max, pool [{item, count, weight}]}`, `debris` `{piles_min, piles_max, radius_tiles, contents [{item, min, max}]}`,
+`{min, max, pool [{item, count, weight}]}`, `debris` `{piles_min, piles_max, radius_tiles, contents [{item, min, max}]}`, `intro` (lang keys: the captions of the
+intro cutscene, one per shot — none, no cutscene; T-306),
 `names`, `skill_max`, `background_chance`, `good_traits_max`.
 
 New effect types read by the game: `carry_capacity_mult`, `move_speed_mult`, `xp_mult`, `hunger_drain_mult`,

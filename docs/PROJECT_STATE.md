@@ -6,6 +6,38 @@
 ## Header
 
 - Last updated: **2026-10-13**
+- **2026-10-14 — T-306 cutscenes + start load (developer request).** Same branch, uncommitted. Start items didn't fit:
+  belongings are light (1–3 picks, ≤ 0.5 kg each) but the wreckage was 4–6 piles of wood 1–3 (~20 kg) against 8 kg
+  pockets → now 3–4 piles of wood 1–2, cloth 0–1, fibre 0–2 (≤ ~10 kg). Capacities raised: pockets 12, pouch 3,
+  straw/leather/hunter's 15/20/25 kg. Cutscenes (SYS-START-01 §Intro and title): title card over the menu once per
+  launch; shipwreck intro on a fresh island (sailing → storm → sinking → dark → waking on the beach), captions from the
+  scenario's `intro`, skippable, player frozen/lying until it ends; off when tests skip the menu. Files:
+  `Cutscenes.cs` (new), `ScenarioDef.Intro`, `GameFeed.ScenarioBegan`, `StartDirector` raises it,
+  `StickFigureView.LocalLying`, `MainMenu` adds the title, `PrototypeBootstrap` installs the intro, lang, shipwreck.json,
+  bag JSONs, `InventoryNetwork.PocketsCapacityKg`. Tests: `CutsceneTimelineTests` (12), menu flow (title shown, intro
+  plays/freezes/skips, not on Continue), wreckage ≥ 3. **Verified:** EditMode 876/876, PlayMode 6/6. Cutscene visuals
+  not screenshot-checked (batch mode doesn't render IMGUI) — check in the editor.
+- **2026-10-13 — T-305 list inventory (developer request).** Same branch `feature/T-304-sleep`, uncommitted. The
+  Tarkov-style grid is replaced by Zomboid-style lists (SYS-INV-02; SYS-INV-01 marked superseded except §Weight).
+  `GridInventory(float capacityKg)` list mode: weight cap, `Vec2Int (n,0)` keys as ids, same-item stacks merge, no
+  rotation; grid mode kept as the mod fallback. Capacities: pockets 8, belt pouch 2, straw/leather/hunter's backpack
+  10/15/20, crate 50, warehouse 150, campfire 8 kg (`bag_capacity_kg`, `storage_capacity_kg`, `FuelCapacityKg`). Screen:
+  left = equipment row + a tab per carried container + its list; right = ground / crate / campfire tabs (fire controls
+  under its list). Rows drag onto lists, tabs, equipment slots or off the panels (drop); Shift+drag one; double-click /
+  Ctrl+click across; right-click menu. `ItemListView.cs` (new: `ListSource`, `ListEntry`, `ItemListView`, `ListTab`,
+  `ItemRow`), `InventoryScreen` rewritten, `GroundItemView` removed, `EquipDragHandler` drops onto lists,
+  `InventoryNetwork.RequestTransfer`, `PlayerInteraction.RequestCrateStore/RequestCrateTake`, `CmdStore` stores every
+  stack of the item. Tests: `ListInventoryTests` (8, EditMode), `InventoryDragTests` rewritten (tab drop, Shift+drag
+  one, ground list both ways, off-panel drop, right-click pick up, fire), smoke helper clears leftover materials when
+  8 kg pockets run out; the furnace kit is placed from the ground. Kits too heavy to carry are placed from the pile at
+  your feet (`LootPiles.TakeOne`, `CmdPlace` fallback, "Place" on ground rows); E over a pile that yields nothing falls
+  through to the station/water beside it. CLAUDE.md "Never" line updated. **Verified:** EditMode 864/864, PlayMode 6/6
+  (twice); screen renders checked (inventory, menu, campfire tab).
+- **2026-10-13 — T-304 sleep (developer request).** Branch `feature/T-304-306-sleep-list-inventory-intro` off `fix/T-151-playtest-round1` (PR #57),
+  uncommitted. R by a fire at night: lie down, screen fades, the clock runs to 07:00 over 3 s, fade back, rested; a hit
+  wakes you mid-night. `PlayerInteraction` (`Sleeping`, `SleepElapsed`, `UpdateSleep`, `WakeUp`), `StickFigureAnimator`
+  (`FigureAction.Sleep`), `StickFigureView`, `PrototypeHud.DrawSleep`, lang, smoke `Sleep` step, soak waits for the
+  rest notice. **Verified:** EditMode 856/856, PlayMode 6/6.
 - **2026-10-13 — Campfire screen (developer request, after PR #57 opened; same branch, uncommitted).** E at a campfire
   no longer lights it: it opens the inventory in campfire mode — the fire's 3×2 fuel grid on the left (state, fuel
   left, light / put-out button, "Cook here"), bags and equipment on the right; drag fuel in/out or right-click
@@ -2217,6 +2249,15 @@ since it's server-side gauge math with no UI yet:
 - ### 2026-10-09 — T-074/075 fill-ins
   [invented]: carcass gone at spoilage 1.5, max 2 scavengers per carcass, none underground, drag trail 0.8 tiles,
   co-op leash 2.5 tiles, bag size by species mean weight, G as the haul key, the spoiling look (tint, flies).
+- ### 2026-10-14 — Cutscene timing and start load (T-306)
+  [proposed]: title 1.2 / 2.3 / 1.0 s; intro shots at 0 / 3.5 / 7 / 9 / 10.5 s, stand up 13 s, end 14 s, lightning
+  4.2 / 5.6 / 6.6 / 7.8 s, wake fade 1.8 s; captions text; wreckage 3–4 piles (wood 1–2, cloth 0–1, fibre 0–2);
+  capacities pockets 12, pouch 3, backpacks 15/20/25 kg (replace the 8/2/10/15/20 below). Debt: the pockets capacity is a
+  C# constant (`InventoryNetwork.PocketsCapacityKg`) — should move to a definition.
+- ### 2026-10-13 — List inventory capacities (T-305)
+  [proposed]: pockets 8 kg, belt pouch 2, straw 10 / leather 15 / hunter's 20 kg backpacks, crate 50, warehouse 150,
+  campfire fuel 8 kg; bags don't reduce the weight they carry; rows keep the order things went in; a kit is placed
+  from the ground pile when it isn't carried (kit weights unchanged).
 - ### 2026-10-13 — Fire fuel values
   [proposed]: wood 120 / coal 360 fuel minutes, cap 480, 1 per in-game minute; E uses the longest-burning fuel.
 

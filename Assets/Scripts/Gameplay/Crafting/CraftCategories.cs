@@ -28,7 +28,7 @@ namespace Isle.Gameplay.Crafting
             if (output.Places.IsValid) return Build;
             if (HasPrefix(output, "tool")) return Tool;
             if (HasPrefix(output, "weapon") || HasPrefix(output, "ammo")) return Weapon;
-            if (output.Wear != null || output.Armor > 0f || output.BagGrid != null || !string.IsNullOrEmpty(output.EquipSlot)) return Gear;
+            if (output.Wear != null || output.Armor > 0f || output.BagGrid != null || output.BagCapacityKg > 0f || !string.IsNullOrEmpty(output.EquipSlot)) return Gear;
             return Material;
         }
 

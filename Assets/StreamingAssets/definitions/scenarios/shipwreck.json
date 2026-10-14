@@ -127,19 +127,19 @@
     ]
   },
   "debris": {
-    "piles_min": 4,
-    "piles_max": 6,
+    "piles_min": 3,
+    "piles_max": 4,
     "radius_tiles": 10,
     "contents": [
       {
         "item": "isle:wood",
         "min": 1,
-        "max": 3
+        "max": 2
       },
       {
         "item": "isle:cloth",
         "min": 0,
-        "max": 2
+        "max": 1
       },
       {
         "item": "isle:fiber",
@@ -148,6 +148,12 @@
       }
     ]
   },
+  "intro": [
+    "@intro.shipwreck_1",
+    "@intro.shipwreck_2",
+    "@intro.shipwreck_3",
+    "@intro.shipwreck_4"
+  ],
   "names": [
     "Ava",
     "Noah",

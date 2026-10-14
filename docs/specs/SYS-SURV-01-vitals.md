@@ -41,6 +41,12 @@ equipment on the right; drag fuel in or out, or right-click a fuel item → "Put
 buttons light it (needs fuel) or put it out, and "Cook here" opens the cook window. Walking away closes it. A clock jump
 (resting) burns the skipped hours too. The burning piece and the grid are saved (version 12).
 
+## Sleep (2026-10-13, developer request, T-304)
+R by a lit campfire at night lies down: the screen fades out (1 s), the clock runs through the night to the wake hour
+(3 s), it fades back in (1 s) and you stand up rested; movement is frozen meanwhile. A hit wakes you at once and the
+clock stops where it was ("Something woke you"). The figure lies on its back, eyes closed, hands rising with slow
+breaths. Timings are presentation [proposed].
+
 ## Temperature
 
 > **Display (2026-10-12, developer playtest):** the gauge's numbers read like body temperature ("42.7°" would already

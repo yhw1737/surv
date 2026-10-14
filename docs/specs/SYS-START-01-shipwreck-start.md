@@ -93,9 +93,33 @@ short-sighted · sweaty ✗ camel · picky eater ✗ light eater.
 - Worn: the rolled outfit (§Outfits).
 - Belongings: 1–3 different picks from chocolate ×2, bottled water, cloth ×2, fibre ×3, torch, cloth cap, steel knife
   (weights 3/3/2/1/1/1/0.5).
-- Wreckage: 4–6 piles within 10 tiles on dry ground, each wood 1–3, cloth 0–2, fibre 0–2.
+- Wreckage: 3–4 piles within 10 tiles on dry ground, each wood 1–2, cloth 0–1, fibre 0–2 (2026-10-14: was 4–6 piles of
+  wood 1–3, cloth 0–2 — up to ~20 kg, more than the pockets hold; now ≤ ~10 kg).
+- Intro: a cutscene before you wake (SYS-START-01 §Intro); its captions are the scenario's `intro` lang keys.
 
 All of it lives in `definitions/scenarios/shipwreck.json` and `definitions/traits/*.json`.
+
+## Intro and title (T-306) [proposed]
+Developer request 2026-10-14: a cutscene when the game starts and when a map starts. Presentation only — placeholder
+shapes (stage 1), no gameplay state changes.
+
+- **Title card**, once per launch, over the main menu: the sea at night, a moon, a low island, "ISLE" and the tagline.
+  Fade in 1.2 s, hold 2.3 s, fade out 1.0 s. Any key or click skips to the fade-out.
+- **Shipwreck intro**, on a fresh island only (not on Continue), after `StartDirector.Begin`:
+
+  | Shot | From (s) | What |
+  |---|---|---|
+  | Sailing | 0 | a lit cruise ship crosses the night sea |
+  | Storm | 3.5 | clouds, rain, swell, lightning at 4.2 / 5.6 / 6.6 / 7.8 s |
+  | Sinking | 7 | the ship tilts and goes under, lights flicker out, fade to black |
+  | Dark | 9 | black |
+  | Waking | 10.5 | fade from black over 1.8 s with one blink; you lie on the beach, stand up at 13 s; ends at 14 s |
+
+  One caption per shot (sinking and dark share one) from the scenario's `intro` lang keys; no `intro`, no cutscene.
+  Letterbox bars until waking. Any key skips to waking; another ends it. The local player can't move until it ends.
+
+Code: `UI/Prototype/Cutscenes.cs` (`CutsceneTimeline` pure, `TitleCutscene`, `ShipwreckCutscene`),
+`GameFeed.ScenarioBegan`, `StickFigureView.LocalLying`.
 
 ## Verification
 | # | Case | Expected |
@@ -103,5 +127,5 @@ All of it lives in `definitions/scenarios/shipwreck.json` and `definitions/trait
 | 1 | 1,000 rolls | points (with the outfit) 0 or −1; 3–6 traits; no group twice; no excluded pair; ≤ 1 background; outfit ≤ 2 points; skills in range; about 70% have a background |
 | 2 | Same seed | same passenger |
 | 3 | Every trait effect | a type the game reads |
-| 4 | New island | on a coast tile within 4 of the sea, wet, wearing the rolled outfit, ≥ 4 wreckage piles |
+| 4 | New island | on a coast tile within 4 of the sea, wet, wearing the rolled outfit, ≥ 3 wreckage piles |
 | 5 | Save, back to menu, continue | same name and traits |

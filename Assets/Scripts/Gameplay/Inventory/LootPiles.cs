@@ -91,7 +91,7 @@ namespace Isle.Gameplay.Inventory
         public static List<(ItemDef Item, int Count)> PickUp(LootPile pile, EquipSlots slots, System.Func<IReadOnlyList<GridInventory>> containers)
         {
             var taken = new List<(ItemDef Item, int Count)>();
-            foreach (var entry in pile.Items.OrderByDescending(e => e.Item.BagGrid != null).ToList())
+            foreach (var entry in pile.Items.OrderByDescending(e => e.Item.BagGrid != null || e.Item.BagCapacityKg > 0f).ToList())
             {
                 var item = entry.Item;
                 if (entry.Count != 1 || string.IsNullOrEmpty(item.EquipSlot) || slots.Get(item.EquipSlot) != null) continue;
@@ -127,6 +127,19 @@ namespace Isle.Gameplay.Inventory
             var entry = pile.Items[index];
             if (entry.Item.Id != expected || !place(entry)) return false;
             pile.Items.RemoveAt(index);
+            if (pile.Items.Count == 0) Remove(pile);
+            return true;
+        }
+
+        /// <summary>T-305: takes one <paramref name="item"/> out of <paramref name="pile"/> (a kit too heavy to carry is
+        /// placed straight from the ground). False when the pile has none.</summary>
+        public static bool TakeOne(LootPile pile, Isle.Core.Ids.NamespacedId item)
+        {
+            var index = pile == null ? -1 : pile.Items.FindIndex(e => e.Item.Id == item);
+            if (index < 0) return false;
+            var entry = pile.Items[index];
+            if (entry.Count > 1) pile.Items[index] = new LootEntry(entry.Item, entry.Count - 1, entry.Wear);
+            else pile.Items.RemoveAt(index);
             if (pile.Items.Count == 0) Remove(pile);
             return true;
         }

@@ -10,8 +10,8 @@ namespace Isle.Gameplay.World
     [RequireComponent(typeof(WorldObjectInstance))]
     public sealed class CampfireInteraction : MonoBehaviour, IInteractable
     {
-        public const int GridWidth = 3;
-        public const int GridHeight = 2;
+        /// <summary>SYS-INV-02: how much fuel it holds, by weight.</summary>
+        public const float FuelCapacityKg = 8f;
 
         WorldObjectInstance _instance;
         SpriteRenderer _renderer;
@@ -21,7 +21,7 @@ namespace Isle.Gameplay.World
         static readonly Color UnlitTint = new(0.45f, 0.45f, 0.45f);
 
         /// <summary>The fuel waiting to burn. Server state.</summary>
-        public Inventory.GridInventory Grid { get; } = new(GridWidth, GridHeight);
+        public Inventory.GridInventory Grid { get; } = new(FuelCapacityKg);
 
         /// <summary>In-game minutes left of the piece burning now.</summary>
         public float Fuel { get; set; }

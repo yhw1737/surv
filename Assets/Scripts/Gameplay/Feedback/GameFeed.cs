@@ -51,6 +51,11 @@ namespace Isle.Gameplay.Feedback
         /// <summary>E at an enchanting table: the HUD opens the enchanting window for it.</summary>
         public static event Action<object> EnchantOpened;
 
+        /// <summary>T-306: a fresh island's scenario began for the local player (a <c>ScenarioDef</c>) — the intro cutscene
+        /// plays.</summary>
+        public static event Action<object> ScenarioBegan;
+        public static void RaiseScenarioBegan(object scenario) => ScenarioBegan?.Invoke(scenario);
+
         /// <summary>E at a campfire: open its fuel grid beside the bags.</summary>
         public static event Action<object> CampfireOpened;
         public static void RaiseCampfireOpened(object fire) => CampfireOpened?.Invoke(fire);

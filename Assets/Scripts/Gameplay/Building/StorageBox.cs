@@ -15,6 +15,9 @@ namespace Isle.Gameplay.Building
 
         public void Initialize(int width, int height) => Contents = new GridInventory(width, height);
 
+        /// <summary>SYS-INV-02: a weight-capped list.</summary>
+        public void Initialize(float capacityKg) => Contents = new GridInventory(capacityKg);
+
         public void Interact(GameObject user) => GameFeed.RaiseStorageOpened(this);
     }
 }

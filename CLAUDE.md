@@ -241,7 +241,7 @@ docs/specs/SYS-INV-01-grid-inventory.md
 - Build outside ISLE Core
 - Reference a sprite, rig bone or art path from gameplay code
 - Block a system on missing art (use a placeholder shape)
-- Ship grid inventory without rotation and bulk move
+- Ship the list inventory without drag between lists, Shift+drag one and quick move (SYS-INV-02)
 - Unity types in `Data`; upward refs from `Core`
 - **Commit, push, or open a PR without an explicit request**
 - **Attribute AI in commits or PRs**

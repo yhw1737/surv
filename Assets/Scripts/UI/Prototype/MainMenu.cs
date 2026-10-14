@@ -46,6 +46,8 @@ namespace Isle.UI.Prototype
             _targetSlot = FirstEmptySlot();
             _seedText = GameSession.RandomSeed().ToString();
             BuildBackdrop();
+            // T-306: the title card plays once per launch, over the menu.
+            if (!TitleCutscene.Shown && !GameSession.SkipMenu) gameObject.AddComponent<TitleCutscene>();
         }
 
         void OnDestroy()

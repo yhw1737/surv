@@ -178,8 +178,8 @@ namespace Isle.Tests.PlayMode
                                 for (var f = 0; f < 3; f++) yield return null;
                                 notices.Clear();
                                 player.RequestRest();
-                                var restUntil = Time.time + 2f;
-                                while (notices.Count == 0 && Time.time < restUntil) yield return null;
+                                var restUntil = Time.time + 8f; // sleeping plays out over a few seconds (T-304)
+                                while (!notices.Contains("@ui.rested") && !notices.Contains("@ui.rest_need_fire") && !notices.Contains("@ui.rest_only_night") && Time.time < restUntil) yield return null;
                                 if (notices.Contains("@ui.rested")) rests++;
                                 else missed.Add($"rest: [{string.Join(",", notices)}] phase={clock.Phase} minute={clock.MinuteOfDay} fire={Isle.World.Objects.WorldObjectRegistry.NearestDistanceTiles(player.transform.position, "station/campfire"):0.00} dead={death.IsDead}");
                                 break;

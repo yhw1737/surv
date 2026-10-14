@@ -66,6 +66,7 @@ namespace Isle.Gameplay.Character
 
             ScatterWreckage(world, scenario.Debris, at, rng);
             GameFeed.RaiseNotice("@ui.start_awake");
+            if (player.IsOwner) GameFeed.RaiseScenarioBegan(scenario);
         }
 
         /// <summary>Weighted picks from the pool, each a different item.</summary>

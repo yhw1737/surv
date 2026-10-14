@@ -19,5 +19,6 @@
   "wear": {
     "style": "backpack",
     "color": "#8A5A36"
-  }
+  },
+  "bag_capacity_kg": 20
 }

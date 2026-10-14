@@ -483,7 +483,8 @@ namespace Isle.UI.Prototype
             if (item.Armor > 0f) parts.Add($"{Lang.Get("@ui.armor")} {item.Armor:0}");
             if (item.Durability is > 0) parts.Add($"{Lang.Get("@ui.durability")} {item.Durability}");
             if (item.Warmth > 0f) parts.Add($"{Lang.Get("@ui.tt_warmth")} +{item.Warmth:0}°");
-            if (item.BagGrid is { } bag) parts.Add($"{Lang.Get("@ui.tt_bag")} {bag.W}×{bag.H}");
+            if (item.BagCapacityKg > 0f) parts.Add($"{Lang.Get("@ui.tt_bag")} {item.BagCapacityKg:0.#} kg");
+            else if (item.BagGrid is { } bag) parts.Add($"{Lang.Get("@ui.tt_bag")} {bag.W}×{bag.H}");
             if (item.Places.IsValid) parts.Add(Lang.Get("@ui.place"));
             parts.Add($"{item.Weight:0.##} kg");
             return string.Join(" · ", parts);
