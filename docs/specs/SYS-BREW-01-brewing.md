@@ -18,7 +18,7 @@ A brewed item carries `consume` effects (SCHEMA §Items) on top of any `nutritio
 
 | type | fields | effect |
 |---|---|---|
-| `heal` | `amount` | health + amount, at once |
+| `heal` | `amount` | health + amount, at once (lost health only — wounds stay; SYS-MED-01) |
 | `heal_over_time` | `amount`, `seconds` | amount spread evenly over seconds |
 | `mana` | `amount` | mana + amount, at once (SYS-MAGIC-01) |
 | `mana_over_time` | `amount`, `seconds` | amount spread over seconds |

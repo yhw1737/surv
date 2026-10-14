@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Isle.Core;
 using Isle.Core.Util;
+using Isle.Data;
 using Isle.Gameplay.Inventory;
 using UnityEngine;
 using UnityEngine.UI;
@@ -39,6 +40,9 @@ namespace Isle.UI.Inventory
         /// — <see cref="DragHandler"/> routes mutations through it instead of touching
         /// <see cref="Inventory"/> directly. Null for local-only views (warehouse, demo crates).</summary>
         public InventoryNetwork Network { get; set; }
+
+        /// <summary>Set when this grid is a campfire's fuel (T-151 playtest): moves in and out go through the fire's requests.</summary>
+        public Isle.Gameplay.World.CampfireInteraction Campfire { get; set; }
 
         /// <summary>With <see cref="Network"/>: this grid's index in <see cref="InventoryNetwork.Containers"/>.</summary>
         public int ContainerIndex { get; set; }
@@ -146,8 +150,32 @@ namespace Isle.UI.Inventory
         }
 
         /// <summary>Rebuilds item icons from <see cref="Inventory"/>.Placements. Call after any mutation.</summary>
+        /// <summary>T-151 playtest round 2: true while any item icon is being dragged. A redraw then would destroy the
+        /// icon under the pointer and the drag would silently vanish, so redraws wait for the drop.</summary>
+        public static bool Dragging => _dragDepth > 0;
+
+        static int _dragDepth;
+        static readonly HashSet<GridView> _deferred = new();
+
+        internal static void BeginDragging() => _dragDepth++;
+
+        /// <summary>Called first thing in a drop: ends the drag and runs every redraw that waited for it.</summary>
+        internal static void EndDragging()
+        {
+            _dragDepth = System.Math.Max(0, _dragDepth - 1);
+            if (_dragDepth > 0) return;
+            foreach (var view in new List<GridView>(_deferred))
+                if (view != null) view.Redraw();
+            _deferred.Clear();
+        }
+
         public void Redraw()
         {
+            if (Dragging)
+            {
+                _deferred.Add(this);
+                return;
+            }
             foreach (var icon in _spawnedIcons) Destroy(icon);
             _spawnedIcons.Clear();
             _freshness.Clear();
@@ -196,8 +224,9 @@ namespace Isle.UI.Inventory
             image.raycastTarget = false;
 
             if (count > 1) Corner(rect, $"×{count}", TextAnchor.LowerRight, 11, Color.white);
-            if (rect.sizeDelta.x >= 64f || rect.sizeDelta.y >= 64f)
-                Corner(rect, Isle.UI.Prototype.Lang.Get(item.Name), TextAnchor.UpperLeft, 9, new Color(0.95f, 0.9f, 0.8f, 0.85f));
+            // A name only on tiles big enough to carry it (two cells or more) — 1×1 icons speak for themselves.
+            if (rect.sizeDelta.x >= CellSizePx * 1.5f || rect.sizeDelta.y >= CellSizePx * 1.5f)
+                Corner(rect, Isle.UI.Prototype.ItemText.Name(item), TextAnchor.UpperLeft, 9, new Color(0.95f, 0.9f, 0.8f, 0.85f));
         }
 
         /// <summary>SYS-CRAFT-02: a thin durability bar along the tile's bottom once an item is worn; a broken item's tile
@@ -403,6 +432,15 @@ namespace Isle.UI.Inventory
             var x = Mathf.Clamp(Mathf.RoundToInt(local.x / CellSizePx), 0, Inventory.Width - 1);
             var y = Mathf.Clamp(Mathf.RoundToInt(-local.y / CellSizePx), 0, Inventory.Height - 1);
             return new Vec2Int(x, y);
+        }
+
+        /// <summary>T-151 playtest: the cell a dragged item lands on — the icon's top-left snapped to the nearest cell, then
+        /// <see cref="GridInventory.DropSpot"/> (shifted inside, nearest free spot, merge onto a matching stack). Falls back
+        /// to the snapped cell (the request is then refused and the icon snaps back).</summary>
+        public Vec2Int DropCell(Vector2 screenTopLeft, Camera eventCamera, ItemDef item, bool rotated, Placement? moving)
+        {
+            var raw = ScreenToCell(screenTopLeft, eventCamera);
+            return Inventory.DropSpot(item, raw, rotated, moving) ?? raw;
         }
 
         /// <summary>Wire to the "move all" button's OnClick (container UI only, SYS-INV-01 §Required UX).</summary>

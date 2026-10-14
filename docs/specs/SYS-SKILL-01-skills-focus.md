@@ -27,6 +27,7 @@ Track skills and use **focus** to stop any one player mastering everything.
 | 5 | Melee | `isle:melee` | Combat | |
 | 6 | Ranged | `isle:ranged` | Combat | |
 | 7 | Magic | `isle:magic` | Combat | magic combat — `SYS-COMBAT-01`'s power formula is already skill-agnostic, so this needs no new formula, only a weapon category (BACKLOG T-117) |
+| 8 | Medicine | `isle:medicine` | Production | tending wounds and making medicine (SYS-MED-01; added by developer request 2026-10-13) |
 
 `isle:hunting` is retired — see `SYS-HUNT-01`'s 2026-09-07 note; butchery moved to Cooking.
 Production has 5 members, Combat 3 — the verification cases below are simulated against this

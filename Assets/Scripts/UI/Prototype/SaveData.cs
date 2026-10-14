@@ -13,7 +13,7 @@ namespace Isle.UI.Prototype
     public sealed class SaveData
     {
         /// <summary>Bump when a field changes meaning; an older file is ignored rather than misread.</summary>
-        public const int CurrentVersion = 10;
+        public const int CurrentVersion = 12;
 
         /// <summary>Oldest version still readable. v3 only lacks <see cref="Skills"/>, which then start from zero.</summary>
         public const int MinReadableVersion = 3;
@@ -29,6 +29,10 @@ namespace Isle.UI.Prototype
 
         /// <summary>Version 10: SYS-MAGIC-01 mana; negative = none saved (older saves start full).</summary>
         public float Mana = -1f;
+
+        /// <summary>Version 11: SYS-MED-01 open wounds.</summary>
+        public List<SavedWound> Wounds = new();
+        public List<int> Scars = new();
         public float PlayerX, PlayerY, ShelterX, ShelterY;
 
         /// <summary>Everything worn or wielded, one entry per occupied slot.</summary>
@@ -80,6 +84,8 @@ namespace Isle.UI.Prototype
                 save.Satiety ??= new List<SavedSatiety>();
                 save.Carcasses ??= new List<SavedCarcass>();
                 save.Dungeons ??= new List<Isle.Gameplay.Dungeons.DungeonDirector.SiteState>();
+                save.Wounds ??= new List<SavedWound>();
+                save.Scars ??= new List<int>();
                 return save;
             }
             catch (ArgumentException)
@@ -87,6 +93,14 @@ namespace Isle.UI.Prototype
                 return null;
             }
         }
+    }
+
+    [Serializable]
+    public sealed class SavedWound
+    {
+        public int Part, Kind;
+        public float Severity, Quality, Peak, Age, Infection;
+        public bool Tended, InfectionChecked, Fracture, Splinted;
     }
 
     [Serializable]
@@ -172,6 +186,10 @@ namespace Isle.UI.Prototype
     {
         public float X, Y;
         public bool Lit;
+
+        /// <summary>Version 12: in-game minutes left of the piece burning, and the fuel waiting in its grid.</summary>
+        public float Fuel;
+        public List<SavedStack> Contents = new();
     }
 
     /// <summary>A player-built structure: what it is, where, and what it holds.</summary>
@@ -180,6 +198,9 @@ namespace Isle.UI.Prototype
     {
         public string Def;
         public float X, Y, Water;
+
+        /// <summary>Version 12: a campfire's fuel left.</summary>
+        public float Fuel;
         public string Crop;
         public long PlantedAt;
         public bool Lit;

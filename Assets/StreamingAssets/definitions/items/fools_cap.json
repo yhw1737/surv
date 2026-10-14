@@ -1,0 +1,37 @@
+{
+  "id": "isle:fools_cap",
+  "name": "@item.fools_cap",
+  "tags": [
+    "food",
+    "mushroom",
+    "vegetable",
+    "toxin/nausea",
+    "raw"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.1,
+  "stack": 40,
+  "nutrition": {
+    "hunger": 4,
+    "thirst": 0,
+    "sanitation_risk": 0.0
+  },
+  "spoilage": {
+    "base_hours": 72,
+    "temp_factor": 0,
+    "result": "isle:rotten_food"
+  },
+  "identify": {
+    "skill": "isle:gathering",
+    "level": 5,
+    "unknown_name": "@item.unknown_brown_mushroom"
+  },
+  "icon_style": {
+    "shape": "mushroom",
+    "color": "#8A5A32",
+    "accent": "#E8D8C0"
+  }
+}

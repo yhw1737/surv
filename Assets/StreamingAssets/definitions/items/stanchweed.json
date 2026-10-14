@@ -1,0 +1,38 @@
+{
+  "id": "isle:stanchweed",
+  "name": "@item.stanchweed",
+  "tags": [
+    "herb",
+    "medical"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.05,
+  "stack": 40,
+  "medicine": {
+    "quality": 0.3,
+    "skill": "isle:medicine",
+    "xp": {
+      "skill": "isle:medicine",
+      "base": 20,
+      "per_unit": 0
+    }
+  },
+  "identify": {
+    "skill": "isle:gathering",
+    "level": 12,
+    "unknown_name": "@item.unknown_red_herb"
+  },
+  "spoilage": {
+    "base_hours": 96,
+    "temp_factor": 0,
+    "result": "isle:rotten_food"
+  },
+  "icon_style": {
+    "shape": "fiber",
+    "color": "#A84A3A",
+    "accent": "#E8A890"
+  }
+}

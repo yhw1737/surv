@@ -127,6 +127,14 @@ is left for later), the table and its recipe, XP 25 / half on failure, the tag-p
 **Not yet:** overload enchanting (post-EA); conditional effects (the schema's `conditional` type isn't read); an
 enchanter's minigame; co-op.
 
+## Craft time (2026-10-12, developer playtest)
+Crafting takes time, like gathering and cooking: `seconds = time_sec × (1 − 0.5 × min(level, 50) / 50)` with the
+recipe's primary skill [invented — same shape as SYS-COOK-01 §Cook time]. Stand still; moving 0.3 tiles or pressing E
+cancels at no cost; everything is checked again at the end, and only then are the inputs taken. Forged recipes keep
+their minigame instead (the hammering is the time). The craft window has a search box (every word must match the name
+or id) and tabs by what the recipe makes — tools, weapons, gear, build, materials, brews — read from the output's tags
+and blocks (`CraftCategories`), so a modded recipe finds its tab by itself.
+
 ## Crafter mark
 `ItemStack.CrafterName` set on creation, shown in tooltips. Master tier gets a distinguishing visual effect.
 

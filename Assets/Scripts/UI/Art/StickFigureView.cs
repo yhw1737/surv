@@ -326,7 +326,7 @@ namespace Isle.UI.Art
                 return FigureAction.Swing;
             }
             // Work that takes time — gathering, butchering, cooking, forging between blows — holds the working pose.
-            if (_player.Gathering != null || _player.Butchering != null || _player.Cooking != null || _player.Forge != null)
+            if (_player.Gathering != null || _player.Butchering != null || _player.Cooking != null || _player.Crafting != null || _player.Forge != null)
                 return FigureAction.Gather;
             return FigureAction.None;
         }

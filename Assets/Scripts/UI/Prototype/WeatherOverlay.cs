@@ -4,20 +4,36 @@ using UnityEngine;
 namespace Isle.UI.Prototype
 {
     /// <summary>Screen-space rain streaks and snowflakes while <see cref="WeatherController"/> says so, plus a faint
-    /// tint. Pure presentation; particle counts and speeds are look-and-feel values.</summary>
+    /// tint, fading in and out over <see cref="WeatherFadeSeconds"/>. Drawn behind the HUD's windows and not at all over
+    /// the full-screen inventory. Pure presentation; particle counts and speeds are look-and-feel values.</summary>
     public sealed class WeatherOverlay : MonoBehaviour
     {
         const int RainDrops = 140;
         const int SnowFlakes = 90;
 
+        /// <summary>How long rain or snow takes to come in or clear away on screen (SYS-WORLD-02, 2026-10-12).</summary>
+        public const float WeatherFadeSeconds = 6f;
+
         readonly Vector2[] _particles = new Vector2[RainDrops];
         bool _seeded;
+        bool _snow;
+
+        /// <summary>0 = clear, 1 = full rain or snow; eases toward the weather's state.</summary>
+        public float Intensity { get; private set; }
+
+        void Update()
+        {
+            var weather = WeatherController.Instance;
+            var falling = weather != null && (weather.IsRaining || weather.IsSnowing);
+            if (falling) _snow = weather.IsSnowing;
+            Intensity = Mathf.MoveTowards(Intensity, falling ? 1f : 0f, Time.deltaTime / WeatherFadeSeconds);
+        }
 
         void OnGUI()
         {
-            var weather = WeatherController.Instance;
-            if (weather == null || Event.current.type != EventType.Repaint) return;
-            if (!weather.IsRaining && !weather.IsSnowing) return;
+            GUI.depth = 10; // behind the HUD's windows (depth 0)
+            if (Event.current.type != EventType.Repaint || Intensity <= 0f) return;
+            if (Isle.UI.Inventory.InventoryScreen.Instance is { Open: true }) return;
 
             if (!_seeded)
             {
@@ -25,13 +41,13 @@ namespace Isle.UI.Prototype
                 _seeded = true;
             }
 
-            var snow = weather.IsSnowing;
-            GUI.color = snow ? new Color(1f, 1f, 1f, 0.06f) : new Color(0.2f, 0.3f, 0.5f, 0.12f);
+            var snow = _snow;
+            GUI.color = snow ? new Color(1f, 1f, 1f, 0.06f * Intensity) : new Color(0.2f, 0.3f, 0.5f, 0.12f * Intensity);
             GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
 
-            var count = snow ? SnowFlakes : RainDrops;
+            var count = Mathf.RoundToInt((snow ? SnowFlakes : RainDrops) * Intensity);
             var fall = snow ? 0.08f : 1.6f;
-            GUI.color = snow ? new Color(1f, 1f, 1f, 0.9f) : new Color(0.75f, 0.85f, 1f, 0.55f);
+            GUI.color = snow ? new Color(1f, 1f, 1f, 0.9f * Intensity) : new Color(0.75f, 0.85f, 1f, 0.55f * Intensity);
             for (var i = 0; i < count; i++)
             {
                 var p = _particles[i];

@@ -1,0 +1,32 @@
+{
+  "id": "isle:med_splint",
+  "name": "@recipe.med_splint",
+  "station": "isle:apothecary_table",
+  "ingredients": [
+    {
+      "item": "isle:wood",
+      "count": 2
+    },
+    {
+      "item": "isle:cloth",
+      "count": 1
+    }
+  ],
+  "output": {
+    "item": "isle:splint",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:medicine",
+    "base": 15,
+    "per_unit": 5
+  },
+  "skills": [
+    {
+      "skill": "isle:medicine",
+      "level": 1,
+      "primary": true
+    }
+  ]
+}

@@ -157,7 +157,7 @@ namespace Isle.Tests.PlayMode
                                 InventoryOps.TryGive(inventory.Containers(), DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:stone")), 1);
                                 var spears = InventoryOps.Count(inventory.Containers(), NamespacedId.Parse("isle:spear__stone"));
                                 player.RequestCraft("isle:craft_spear", "isle:stone");
-                                var craftUntil = Time.time + 5f;
+                                var craftUntil = Time.time + 12f; // crafting takes time (T-151 playtest)
                                 while (InventoryOps.Count(inventory.Containers(), NamespacedId.Parse("isle:spear__stone")) == spears && Time.time < craftUntil) yield return null;
                                 if (InventoryOps.Count(inventory.Containers(), NamespacedId.Parse("isle:spear__stone")) > spears) crafts++;
                                 break;
@@ -171,9 +171,11 @@ namespace Isle.Tests.PlayMode
                                 if (inventory.Containers().SelectMany(c => c.Placements).Count(p => p.Item.Tags.Contains("dish")) > dishes) cooks++;
                                 break;
                             case 3:
-                                Campfire(shore);
+                                // Night first, then the fire: a clock jump burns the fuel for the hours skipped.
                                 clock.SetTotalMinutes(clock.TotalMinutes / 1440 * 1440 + 22 * 60);
                                 for (var f = 0; f < 5; f++) yield return null;
+                                Campfire(shore);
+                                for (var f = 0; f < 3; f++) yield return null;
                                 notices.Clear();
                                 player.RequestRest();
                                 var restUntil = Time.time + 2f;
@@ -287,6 +289,7 @@ namespace Isle.Tests.PlayMode
             var fire = Isle.World.Objects.WorldObjectRegistry.All.FirstOrDefault(o => o != null && o.HasTag("station/campfire") && Vector2.Distance(o.transform.position, at) < 0.5f);
             if (fire == null)
                 fire = StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:campfire")), at).GetComponent<Isle.World.Objects.WorldObjectInstance>();
+            fire.GetComponent<Isle.Gameplay.World.CampfireInteraction>().Fuel = 480f;
             fire.IsActive = true;
             return fire;
         }

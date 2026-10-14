@@ -1,0 +1,36 @@
+{
+  "id": "isle:med_herbal_medicine",
+  "name": "@recipe.med_herbal_medicine",
+  "station": "isle:apothecary_table",
+  "ingredients": [
+    {
+      "item": "isle:healing_herb",
+      "count": 3
+    },
+    {
+      "item": "isle:stanchweed",
+      "count": 1
+    },
+    {
+      "item": "isle:bitter_herb",
+      "count": 1
+    }
+  ],
+  "output": {
+    "item": "isle:herbal_medicine",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:medicine",
+    "base": 20,
+    "per_unit": 10
+  },
+  "skills": [
+    {
+      "skill": "isle:medicine",
+      "level": 15,
+      "primary": true
+    }
+  ]
+}

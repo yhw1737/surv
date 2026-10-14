@@ -9,18 +9,18 @@
     "biomes": [
       "isle:forest"
     ],
-    "density": 0.006,
+    "density": 0.003,
     "cluster": {
       "scale_tiles": 22,
       "coverage": 0.18,
       "inside": 4.0,
       "outside": 0.08
     },
-    "elsewhere": 0.04
+    "elsewhere": 0.02
   },
   "gather": {
     "item": "isle:berries",
-    "count": 3,
+    "count": 8,
     "uses": 1,
     "respawn_minutes": 1440,
     "stamina_cost": 6,

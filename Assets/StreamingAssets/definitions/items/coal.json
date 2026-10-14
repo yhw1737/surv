@@ -16,5 +16,6 @@
     "shape": "coal",
     "color": "#2E2B2A",
     "accent": "#5A5552"
-  }
+  },
+  "fuel_minutes": 360
 }

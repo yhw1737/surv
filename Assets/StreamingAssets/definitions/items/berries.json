@@ -13,8 +13,8 @@
   "weight": 0.1,
   "stack": 40,
   "nutrition": {
-    "hunger": 8,
-    "thirst": 3,
+    "hunger": 3,
+    "thirst": 1,
     "sanitation_risk": 0.0
   },
   "spoilage": {

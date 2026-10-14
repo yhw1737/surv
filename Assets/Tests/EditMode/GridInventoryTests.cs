@@ -297,5 +297,51 @@ namespace Isle.Tests.EditMode
 
             Assert.AreEqual(2.0f, inventory.TotalWeightKg(), 0.001f);
         }
+    
+        // ---- T-151 playtest: drops land where they fit (DropSpot), quick moves try the other rotation.
+
+        [Test]
+        public void DropSpot_WideItemAtRightEdge_ShiftsInside()
+        {
+            var bag = new GridInventory(5, 5);
+            Assert.AreEqual(new Vec2Int(3, 0), bag.DropSpot(Item(2, 1), new Vec2Int(4, 0), rotated: false, moving: null));
+        }
+
+        [Test]
+        public void DropSpot_Occupied_FindsNearestFree()
+        {
+            var bag = new GridInventory(5, 5);
+            bag.TryPlace(Item(2, 2), new Vec2Int(2, 2));
+            var spot = bag.DropSpot(Item(1, 1), new Vec2Int(2, 2), rotated: false, moving: null);
+            Assert.IsNotNull(spot);
+            Assert.LessOrEqual(System.Math.Max(System.Math.Abs(spot.Value.X - 2), System.Math.Abs(spot.Value.Y - 2)), 1, "the nearest free cell is next door");
+        }
+
+        [Test]
+        public void DropSpot_MovingWithinTheSameBag_IgnoresItself()
+        {
+            var bag = new GridInventory(3, 3);
+            var item = Item(2, 2);
+            bag.TryPlace(item, new Vec2Int(0, 0));
+            var self = bag.PlacementAt(new Vec2Int(0, 0));
+            Assert.AreEqual(new Vec2Int(1, 1), bag.DropSpot(item, new Vec2Int(1, 1), rotated: false, moving: self));
+        }
+
+        [Test]
+        public void DropSpot_NothingFits_IsNull()
+        {
+            var bag = new GridInventory(2, 2);
+            bag.TryPlace(Item(2, 2), new Vec2Int(0, 0));
+            Assert.IsNull(bag.DropSpot(Item(1, 1), new Vec2Int(0, 0), rotated: false, moving: null));
+        }
+
+        [Test]
+        public void FindPlacementSpot_OnlyFitsTurned_ReturnsRotated()
+        {
+            var bag = new GridInventory(3, 1);
+            var spot = bag.FindPlacementSpot(Item(1, 3), rotated: false);
+            Assert.IsNotNull(spot, "a 1×3 fits a 3×1 bag turned");
+            Assert.IsTrue(spot.Value.rotated);
+        }
     }
 }

@@ -38,12 +38,21 @@ namespace Isle.UI.Inventory
             _rootCanvas = GetComponentInParent<Canvas>();
         }
 
+        /// <summary>The icon went away mid-drag (the screen closed or rebuilt): don't leave redraws waiting forever.</summary>
+        void OnDisable()
+        {
+            if (!_dragging) return;
+            _dragging = false;
+            GridView.EndDragging();
+        }
+
         public void OnBeginDrag(PointerEventData eventData)
         {
             _dragStartPosition = _rect.anchoredPosition;
             _dragStartParent = _rect.parent;
             _dragRotated = false;
             _dragging = true;
+            GridView.BeginDragging();
 
             // See DragHandler.OnBeginDrag — reparent to canvas root so this renders above every
             // panel, not just siblings within its own slot.
@@ -81,6 +90,7 @@ namespace Isle.UI.Inventory
         public void OnEndDrag(PointerEventData eventData)
         {
             _dragging = false;
+            GridView.EndDragging();
 
             foreach (var result in eventData.hovered)
             {
@@ -136,7 +146,7 @@ namespace Isle.UI.Inventory
             var camera = target.GetComponentInParent<Canvas>()?.worldCamera;
             // ponytail: snap by the icon's own visual top-left corner — see DragHandler.TryDrop.
             var screenPosition = RectTransformUtility.WorldToScreenPoint(camera, _rect.position);
-            var cell = target.ScreenToCell(screenPosition, camera);
+            var cell = target.DropCell(screenPosition, camera, _item, _dragRotated, null);
             return UnequipInto(target, cell, _dragRotated);
         }
 

@@ -20,9 +20,11 @@ namespace Isle.UI.Inventory
     [RequireComponent(typeof(RectTransform), typeof(Image))]
     public sealed class EquipSlotView : MonoBehaviour
     {
-        // ponytail: every slot drawn at a fixed 2x2-cell frame regardless of what actually fits in
-        // it — a placeholder dimension (Absolute Rule 7), not a spec value.
-        static int FrameSizePx => GridView.CellSizePx * 2;
+        /// <summary>Every slot is one square frame whatever fits in it — a placeholder dimension (Absolute Rule 7), not a
+        /// spec value. 0 = two grid cells (the old default); the inventory screen sets its own.</summary>
+        public static int SlotSizePx { get; set; }
+
+        static int FrameSizePx => SlotSizePx > 0 ? SlotSizePx : GridView.CellSizePx * 2;
 
         public string SlotName { get; private set; }
         public EquipSlots Slots { get; private set; }

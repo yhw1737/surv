@@ -118,6 +118,19 @@ namespace Isle.Gameplay.Inventory
             return taken;
         }
 
+        /// <summary>T-151 playtest: takes one entry of a pile — the one at <paramref name="index"/>, and only if it is still
+        /// <paramref name="expected"/> (the pile may have changed since the client looked) — when
+        /// <paramref name="place"/> finds room for it. An emptied pile goes away.</summary>
+        public static bool Take(LootPile pile, int index, Isle.Core.Ids.NamespacedId expected, System.Func<LootEntry, bool> place)
+        {
+            if (pile == null || index < 0 || index >= pile.Items.Count) return false;
+            var entry = pile.Items[index];
+            if (entry.Item.Id != expected || !place(entry)) return false;
+            pile.Items.RemoveAt(index);
+            if (pile.Items.Count == 0) Remove(pile);
+            return true;
+        }
+
         /// <summary>Clears every pile — for scene reloads and tests.</summary>
         public static void Clear()
         {

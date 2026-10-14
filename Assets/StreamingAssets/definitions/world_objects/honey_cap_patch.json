@@ -1,0 +1,42 @@
+{
+  "id": "isle:honey_cap_patch",
+  "name": "@world_object.golden_mushroom",
+  "tags": [
+    "node/mushroom",
+    "mushroom"
+  ],
+  "spawn": {
+    "biomes": [
+      "isle:forest",
+      "isle:marsh"
+    ],
+    "density": 0.002,
+    "cluster": {
+      "scale_tiles": 20,
+      "coverage": 0.2,
+      "inside": 3.5,
+      "outside": 0.1
+    },
+    "elsewhere": 0.0
+  },
+  "gather": {
+    "item": "isle:honey_cap",
+    "count": 3,
+    "uses": 1,
+    "respawn_minutes": 1440,
+    "stamina_cost": 4,
+    "xp": {
+      "skill": "isle:gathering",
+      "base": 18,
+      "per_unit": 0
+    },
+    "time_sec": 3
+  },
+  "visual": {
+    "shape": "mushroom",
+    "depleted": "stubble",
+    "color": "#D8A830",
+    "size": 0.9,
+    "jitter": 0.1
+  }
+}

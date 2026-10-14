@@ -26,12 +26,12 @@ namespace Isle.World.Weather
         public const float NightTemp = 24f;
         public const float PrecipitationTempPenalty = 5f;
 
-        // §Rain/Snow — in-game-minute duration ranges. Snow reuses Rain's range rather than
-        // inventing separate numbers — ponytail: no spec basis for a different snow duration.
-        public const float ClearMinMinutes = 180f;
-        public const float ClearMaxMinutes = 480f;
-        public const float RainMinMinutes = 20f;
-        public const float RainMaxMinutes = 60f;
+        // §Rain/Snow — in-game-minute duration ranges (lengthened 2026-10-12 after playtesting: rain came and went in under
+        // a minute). Snow reuses Rain's range — no spec basis for a different snow duration.
+        public const float ClearMinMinutes = 360f;
+        public const float ClearMaxMinutes = 960f;
+        public const float RainMinMinutes = 120f;
+        public const float RainMaxMinutes = 360f;
 
         // §Season — additive offset on top of BaseAmbientTemp, same unit scale. Spring/Autumn are
         // the unmodified baseline the day-phase table above was tuned against; Summer/Winter push

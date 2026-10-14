@@ -1,0 +1,20 @@
+{
+  "id": "isle:nausea",
+  "name": "@buff.nausea",
+  "duration_min": 180,
+  "fixed_duration": true,
+  "effects": [
+    {
+      "type": "stamina_max_mult",
+      "value": 0.6
+    },
+    {
+      "type": "move_speed_mult",
+      "value": 0.85
+    },
+    {
+      "type": "hunger_drain_mult",
+      "value": 1.5
+    }
+  ]
+}

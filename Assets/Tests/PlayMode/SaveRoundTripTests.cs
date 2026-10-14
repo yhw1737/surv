@@ -136,6 +136,15 @@ namespace Isle.Tests.PlayMode
             var abyss = dungeons.Sites.First(s => s.Def.Id.Value == "isle:abyss");
             abyss.SigilsPlaced.Add("isle:tide_sigil");
 
+            // SYS-SURV-01 §Fire: a campfire's waiting fuel travels with the save.
+            var campfire = StructureFactory.Build(DefRegistry.Get<WorldObjectDef>(NamespacedId.Parse("isle:campfire")), (Vector2)player.transform.position + new Vector2(2.5f, -2.5f));
+            Assert.IsTrue(campfire.GetComponent<Isle.Gameplay.World.CampfireInteraction>().Grid.TryPlace(DefRegistry.Get<ItemDef>(NamespacedId.Parse("isle:wood")), new Isle.Core.Vec2Int(0, 0), false, 3));
+            var campfireAt = (Vector2)campfire.transform.position;
+
+            // SYS-MED-01: an open wound, tended, travels with the save.
+            vitals.Injuries.Clear();
+            vitals.Injuries.Restore(new Isle.Gameplay.Character.Wound { Part = Isle.Gameplay.Character.BodyPart.RightArm, Kind = Isle.Gameplay.Character.WoundKind.Burn, Severity = 12f, Tended = true, Quality = 0.7f });
+
             // SYS-DIFF-01: the world's difficulty travels with the save.
             Isle.Gameplay.World.Difficulty.Current = Isle.Gameplay.World.DifficultyLevel.Hard;
 
@@ -172,6 +181,14 @@ namespace Isle.Tests.PlayMode
             Assert.AreEqual(150, restoredKnife.Wear?.Max, "knife max");
             Assert.AreEqual(QualityTier.Fine, restoredKnife.Wear?.Quality, "knife quality");
             Assert.AreEqual(Isle.Gameplay.World.DifficultyLevel.Hard, Isle.Gameplay.World.Difficulty.Current, "difficulty not restored");
+            var restoredFire = Isle.World.Objects.WorldObjectRegistry.All.First(o => o.HasTag("station/campfire") && Vector2.Distance(o.transform.position, campfireAt) < 0.6f);
+            Assert.AreEqual(3, restoredFire.GetComponent<Isle.Gameplay.World.CampfireInteraction>().Grid.Placements.Sum(p => p.Count), "campfire fuel not restored");
+            Assert.AreEqual(1, vitals.Injuries.Wounds.Count, "wound not restored");
+            var wound = vitals.Injuries.Wounds[0];
+            Assert.AreEqual(Isle.Gameplay.Character.BodyPart.RightArm, wound.Part);
+            Assert.AreEqual(Isle.Gameplay.Character.WoundKind.Burn, wound.Kind);
+            Assert.AreEqual(12f, wound.Severity, 0.5f, "wound severity");
+            Assert.IsTrue(wound.Tended);
             CollectionAssert.AreEqual(new[] { "isle:keen" }, restoredKnife.Wear.Enchants.Select(e => e.Value), "knife enchant");
             Assert.AreEqual("Test Smith", restoredKnife.Wear.Crafter, "knife crafter mark");
             var restoredCarcass = inventory.Containers().SelectMany(c => c.Placements).FirstOrDefault(p => p.Item.Id == carcassItem.Id);

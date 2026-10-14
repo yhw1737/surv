@@ -127,8 +127,44 @@ namespace Isle.Gameplay.Inventory
                 return (_placements[existingIndex].Position, _placements[existingIndex].Rotated);
 
             var free = FindFreePosition(item.Grid, rotated);
-            return free == null ? null : (free.Value, rotated);
+            if (free != null) return (free.Value, rotated);
+            // T-151 playtest: a long item that only fits turned goes in turned.
+            if (item.Grid.W == item.Grid.H) return null;
+            var turned = FindFreePosition(item.Grid, !rotated);
+            return turned == null ? null : (turned.Value, !rotated);
         }
+
+        /// <summary>Where a dragged item should land when let go near <paramref name="near"/> (its top-left cell): shifted
+        /// inside the grid so it doesn't hang over an edge, then the nearest free spot within <see cref="DropSearchRadius"/>
+        /// cells if that one is taken; a matching stack under it merges. Null when nothing fits nearby. Ignores
+        /// <paramref name="moving"/> (the item itself, when moved within this grid).</summary>
+        public Vec2Int? DropSpot(ItemDef item, Vec2Int near, bool rotated, Placement? moving)
+        {
+            var size = rotated ? new GridSize { W = item.Grid.H, H = item.Grid.W } : item.Grid;
+            if (Placement.Stacks(item))
+                foreach (var p in _placements)
+                    if (ReferenceEquals(p.Item, item) && (!moving.HasValue || !p.Equals(moving.Value))
+                        && Overlaps(near, new GridSize { W = 1, H = 1 }, p.Position, p.EffectiveSize()))
+                        return p.Position;
+
+            var start = new Vec2Int(System.Math.Clamp(near.X, 0, System.Math.Max(0, Width - size.W)),
+                                    System.Math.Clamp(near.Y, 0, System.Math.Max(0, Height - size.H)));
+            Vec2Int? best = null;
+            var bestDistance = int.MaxValue;
+            for (var dy = -DropSearchRadius; dy <= DropSearchRadius; dy++)
+            for (var dx = -DropSearchRadius; dx <= DropSearchRadius; dx++)
+            {
+                var candidate = new Vec2Int(start.X + dx, start.Y + dy);
+                var distance = dx * dx + dy * dy;
+                if (distance >= bestDistance || !FitsAt(candidate, size, moving)) continue;
+                best = candidate;
+                bestDistance = distance;
+            }
+            return best;
+        }
+
+        /// <summary>How far (cells) a drop looks for room around where it was let go. Presentation tolerance.</summary>
+        public const int DropSearchRadius = 2;
 
         /// <summary>Moves one placement into <paramref name="destination"/> — merging into a matching
         /// item already there, or its first free spot otherwise (SYS-INV-01 §Required UX: bulk move,

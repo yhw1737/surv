@@ -185,6 +185,23 @@ namespace Isle.Gameplay.Character
 
         public static bool IsHeatstroke(float temperature) => temperature > HeatstrokeHpTemp;
 
+        /// <summary>The §Temperature band <paramref name="temperature"/> sits in, as a word id for the HUD
+        /// (T-151 playtest: the gauge reads as body heat, so the screen names the band and shows the air temperature instead
+        /// of an unbelievable "42.7°"). Bands: &lt;28 freezing, &lt;33 cold, &lt;36 cool, ≤38 comfortable, ≤41 warm, ≤44 hot,
+        /// above heatstroke.</summary>
+        public static string ThermalState(float temperature) =>
+            temperature < HypothermiaHpTemp ? "freezing"
+            : temperature < HypothermiaWarningTemp ? "cold"
+            : temperature < ComfortLowTemp ? "cool"
+            : temperature <= ComfortHighTemp ? "comfortable"
+            : temperature <= HeatstrokeWarningTemp ? "warm"
+            : temperature <= HeatstrokeHpTemp ? "hot"
+            : "heatstroke";
+
+        /// <summary>§Temperature's comfortable band, 36–38.</summary>
+        public const float ComfortLowTemp = 36f;
+        public const float ComfortHighTemp = 38f;
+
         /// <summary>§Gauges "at zero" rows, combined — both can apply at once.</summary>
         public static float ZeroGaugeHpDrainPerSecond(float hunger, float thirst)
         {

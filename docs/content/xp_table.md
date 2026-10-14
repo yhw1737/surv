@@ -55,7 +55,11 @@ damage capped at the creature's remaining HP (no XP for overkill).
 | Melee damage | melee | — | 1.0 / HP | damage | fists ~10 DPS, fighting 25% of the hour | 9,000 |
 | Ranged damage | ranged | — | 1.5 / HP | damage | ~13 DPS with misses, ammo-gated, ~20% | 9,000 |
 
-Enchanting and Magic have no actions in the prototype yet, so no values.
+| Tend a wound | medicine | 20 | 0 | — | gated by wounds (2026-10-13, [proposed]) | — |
+| Make medicine | medicine | 15–20 | 5–10 | ingredient units | apothecary recipes (2026-10-13, [proposed]) | — |
+
+Enchanting (enchants, brews) and Magic (bolts, xp_per_damage) got values with T-106 / T-107 / T-117 in their own
+specs.
 
 ## Level gates using these levels
 

@@ -229,6 +229,8 @@ namespace Isle.UI.Prototype
             l.Add($"Body {v.Temperature:0.00}° · ambient {v.AmbientTemp:0.0}° · clothing +{v.ClothingBonus:0.0} · fire {(float.IsInfinity(v.NearestCampfireDistanceTiles) ? "-" : v.NearestCampfireDistanceTiles.ToString("0.0"))} t"
                   + $" · wet {v.WetPenalty:0.00} · hypothermia {v.HypothermiaSeverity:0.00}");
             var dots = string.Join(" ", new[] { DamageTypes.Toxic, DamageTypes.Slash, DamageTypes.Heat }.Select(t => (t, n: v.Status.Stacks(t))).Where(x => x.n > 0).Select(x => $"{x.t}×{x.n}"));
+            if (v.Injuries.Wounds.Count > 0)
+                l.Add($"Wounds {v.Injuries.Wounds.Count} · max HP {v.MaxHealth:0} · bleed {v.Injuries.BleedPerSecond:0.00}/s · legs ×{v.Injuries.LegMult:0.00} · arms ×{v.Injuries.ArmMult:0.00}");
             l.Add($"Armor {v.WornArmor():0.0} · activity {v.CurrentActivity}{(v.Overloaded ? " · OVERLOADED" : "")}{(dots.Length > 0 ? " · dots " + dots : "")}");
             var now = Isle.Gameplay.Character.Vitals.NowMinutes;
             var buffs = v.Buffs.Entries().Where(b => b.ExpiresAt == 0 || b.ExpiresAt > now)

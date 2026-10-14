@@ -1,0 +1,27 @@
+{
+  "id": "isle:herbal_medicine",
+  "name": "@item.herbal_medicine",
+  "tags": [
+    "medical"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.1,
+  "stack": 10,
+  "medicine": {
+    "quality": 0.8,
+    "skill": "isle:medicine",
+    "xp": {
+      "skill": "isle:medicine",
+      "base": 20,
+      "per_unit": 0
+    }
+  },
+  "icon_style": {
+    "shape": "potion",
+    "color": "#5E9A50",
+    "accent": "#E8E0D0"
+  }
+}

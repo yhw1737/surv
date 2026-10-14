@@ -1,0 +1,32 @@
+{
+  "id": "isle:med_refined_medicine",
+  "name": "@recipe.med_refined_medicine",
+  "station": "isle:apothecary_table",
+  "ingredients": [
+    {
+      "item": "isle:herbal_medicine",
+      "count": 2
+    },
+    {
+      "item": "isle:glowcap",
+      "count": 2
+    }
+  ],
+  "output": {
+    "item": "isle:refined_medicine",
+    "count": 1
+  },
+  "time_sec": 4,
+  "xp": {
+    "skill": "isle:medicine",
+    "base": 20,
+    "per_unit": 10
+  },
+  "skills": [
+    {
+      "skill": "isle:medicine",
+      "level": 30,
+      "primary": true
+    }
+  ]
+}

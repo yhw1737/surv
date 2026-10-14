@@ -1,0 +1,36 @@
+{
+  "id": "isle:duskberry",
+  "name": "@item.duskberry",
+  "tags": [
+    "food",
+    "fruit",
+    "toxin/nausea",
+    "raw"
+  ],
+  "grid": {
+    "w": 1,
+    "h": 1
+  },
+  "weight": 0.1,
+  "stack": 40,
+  "nutrition": {
+    "hunger": 4,
+    "thirst": 2,
+    "sanitation_risk": 0.0
+  },
+  "spoilage": {
+    "base_hours": 48,
+    "temp_factor": 0,
+    "result": "isle:rotten_food"
+  },
+  "identify": {
+    "skill": "isle:gathering",
+    "level": 10,
+    "unknown_name": "@item.unknown_red_berry"
+  },
+  "icon_style": {
+    "shape": "berries",
+    "color": "#D0402E",
+    "accent": "#F28A5A"
+  }
+}

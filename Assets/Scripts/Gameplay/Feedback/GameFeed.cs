@@ -50,6 +50,14 @@ namespace Isle.Gameplay.Feedback
 
         /// <summary>E at an enchanting table: the HUD opens the enchanting window for it.</summary>
         public static event Action<object> EnchantOpened;
+
+        /// <summary>E at a campfire: open its fuel grid beside the bags.</summary>
+        public static event Action<object> CampfireOpened;
+        public static void RaiseCampfireOpened(object fire) => CampfireOpened?.Invoke(fire);
+
+        /// <summary>E at a station: "craft" or "cook" (the HUD opens that window).</summary>
+        public static event Action<string> StationOpened;
+        public static void RaiseStationOpened(string kind) => StationOpened?.Invoke(kind);
         public static void RaiseEnchantOpened(object table) => EnchantOpened?.Invoke(table);
         public static void RaiseXpGained(NamespacedId skill, float amount, int newLevel) => XpGained?.Invoke(skill, amount, newLevel);
         public static void RaiseNotice(string langKey) => Notice?.Invoke(langKey);

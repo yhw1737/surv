@@ -3,7 +3,8 @@
   "name": "@item.wood",
   "tags": [
     "material",
-    "wood"
+    "wood",
+    "fuel"
   ],
   "grid": {
     "w": 1,
@@ -15,5 +16,6 @@
     "shape": "log",
     "color": "#9A6B42",
     "accent": "#D9B07A"
-  }
+  },
+  "fuel_minutes": 120
 }

@@ -68,12 +68,14 @@ namespace Isle.UI.Prototype
         {
             GameFeed.StorageOpened += OnStorageOpened;
             GameFeed.EnchantOpened += OnEnchantOpened;
+            GameFeed.StationOpened += OnStationOpened;
         }
 
         void OnDisable()
         {
             GameFeed.StorageOpened -= OnStorageOpened;
             GameFeed.EnchantOpened -= OnEnchantOpened;
+            GameFeed.StationOpened -= OnStationOpened;
         }
         void OnStorageOpened(object box) => _openBox = box as StorageBox;
 
@@ -86,6 +88,7 @@ namespace Isle.UI.Prototype
             if (kb != null && kb.kKey.wasPressedThisFrame) _cookOpen = !_cookOpen;
             if (kb != null && kb.pKey.wasPressedThisFrame) _skillsOpen = !_skillsOpen;
             if (kb != null && kb.hKey.wasPressedThisFrame) _helpOpen = !_helpOpen;
+            if (kb != null && kb.oKey.wasPressedThisFrame) _statusOpen = !_statusOpen;
             if (kb != null && kb.escapeKey.wasPressedThisFrame) _placing = null;
 
             // Say why a roll didn't happen instead of silently ignoring Space.
@@ -148,6 +151,7 @@ namespace Isle.UI.Prototype
             if (!inventoryOpen)
             {
                 DrawGauges();
+                DrawToolbar();
                 DrawClock();
                 DrawPrompt();
                 DrawBossBar();
@@ -160,6 +164,7 @@ namespace Isle.UI.Prototype
             if (_openBox != null) DrawBox();
             if (_enchantOpen) DrawEnchantWindow();
             if (_creativeOpen) DrawCreativeWindow();
+            if (_statusOpen) DrawStatusWindow();
             if (_placing != null) DrawPlacementGhost();
             if (_player.DrawStartedAt >= 0f) DrawChargeBar();
             if (_player.Fight != null) DrawFight();
@@ -204,9 +209,11 @@ namespace Isle.UI.Prototype
             DrawGauge(ref y, $"{Lang.Get("@ui.mana")} {_vitals.Mana:0}/{manaMax:0}", _vitals.Mana / manaMax * VitalsCalculator.GaugeMax, new Color(0.4f, 0.55f, 1f));
 
             var warmth = Mathf.InverseLerp(TemperatureMin, TemperatureMax, _vitals.Temperature) * VitalsCalculator.GaugeMax;
-            var temperature = $"{Lang.Get("@ui.temperature")} {_vitals.Temperature:0.0}°";
+            // T-151 playtest: the band in words and the air temperature, not a body reading like "42.7°".
+            var temperature = $"{Lang.Get("@temp_state." + VitalsCalculator.ThermalState(_vitals.Temperature))} · {Lang.Get("@ui.ambient")} {_vitals.AmbientTemp:0}°";
             if (_vitals.HypothermiaSeverity > 0.01f) temperature += $"  {Lang.Get("@ui.hypothermia")} {_vitals.HypothermiaSeverity * 100f:0}%";
             DrawGauge(ref y, temperature, warmth, new Color(0.9f, 0.5f, 0.5f));
+            DrawWoundSummary(ref y);
         }
 
         void DrawGauge(ref float y, string text, float value, Color colour)
@@ -341,6 +348,11 @@ namespace Isle.UI.Prototype
                 _progress = (Above(Isle.UI.Art.StickFigureView.PositionOf(player), 2.1f), player.CookProgress);
                 return prompts;
             }
+            if (player.Crafting != null)
+            {
+                _progress = (Above(Isle.UI.Art.StickFigureView.PositionOf(player), 2.1f), player.CraftProgress);
+                return prompts;
+            }
 
             if (Isle.Gameplay.Dungeons.DungeonDirector.Instance?.Progress(player) is { } work)
             {
@@ -419,7 +431,15 @@ namespace Isle.UI.Prototype
         void DrawTooltip(ItemDef item, GridInventory container, ItemWear wear = null)
         {
             // SYS-CRAFT-01 §Crafter mark: a Master piece's name is gilded.
-            var lines = new List<string> { wear?.Quality == QualityTier.Master ? UiTheme.Colour(Lang.Get(item.Name), UiTheme.MasterGold) : Lang.Get(item.Name) };
+            var lines = new List<string> { wear?.Quality == QualityTier.Master ? UiTheme.Colour(ItemText.Name(item), UiTheme.MasterGold) : ItemText.Name(item) };
+            // SYS-FORAGE-01: what you can't identify, you can't read — only its look, its weight, and what it'd take.
+            if (!ItemText.Known(item))
+            {
+                if (ItemText.IdentifyHint(item) is { } hint) lines.Add(UiTheme.Colour(hint, UiTheme.Accent));
+                lines.Add($"{Lang.Get("@ui.tt_weight")}: {item.Weight:0.##} kg");
+                DrawTooltipLines(lines);
+                return;
+            }
             // SYS-CRAFT-01 §Quality: the tier a piece was crafted at, and what it does.
             if (wear?.Quality is { } quality)
                 lines.Add($"{Lang.Get("@ui.quality")}: {Lang.Get("@quality." + quality.ToString().ToLowerInvariant())} (×{Isle.Gameplay.Crafting.QualityCalculator.PowerMult(quality):0.##})");
@@ -472,11 +492,17 @@ namespace Isle.UI.Prototype
                 var hoursLeft = (1f - SpoilageTracker.Live.SpoilageOf(container, item)) * item.Spoilage.BaseHours;
                 lines.Add($"{Lang.Get("@ui.tt_spoils")}: {hoursLeft:0.#}{Lang.Get("@ui.tt_hours")}");
             }
+            if (item.Medicine != null) lines.Add($"{Lang.Get("@ui.tt_tend_quality")}: {item.Medicine.Quality * 100f:0}%");
             if (item.Armor > 0f) lines.Add($"{Lang.Get("@ui.armor")}: {item.Armor:0}");
             if (item.Warmth > 0f) lines.Add($"{Lang.Get("@ui.tt_warmth")}: +{item.Warmth:0}°");
             if (item.BagGrid is { } bagGrid) lines.Add($"{Lang.Get("@ui.tt_bag")}: {bagGrid.W}×{bagGrid.H}");
             lines.Add($"{Lang.Get("@ui.tt_weight")}: {item.Weight:0.##} kg");
 
+            DrawTooltipLines(lines);
+        }
+
+        void DrawTooltipLines(List<string> lines)
+        {
             const float width = 300f;
             var height = lines.Count * 18f + 10f;
             var mouse = Event.current.mousePosition;
@@ -512,7 +538,8 @@ namespace Isle.UI.Prototype
         /// <summary>What right-clicking an item in the inventory does: place it, wear/wield it, or eat it.</summary>
         public void Use(ItemDef item)
         {
-            if (item.Places.IsValid) _placing = item.Id.Value;
+            if (item.Medicine != null) _player.RequestTend(item.Id.Value); // SYS-MED-01
+            else if (item.Places.IsValid) _placing = item.Id.Value;
             else if (!string.IsNullOrEmpty(item.EquipSlot)) _player.RequestEquipItem(item.Id.Value);
             else _player.RequestUse(item.Id.Value);
         }
@@ -587,14 +614,14 @@ namespace Isle.UI.Prototype
             var rowY = y;
             foreach (var placed in bag)
             {
-                if (GUI.Button(new Rect(rect.x + 8f, rowY, PanelWidth, RowHeight - 4f), $"{Lang.Get(placed.Item.Name)} ×{placed.Count}  →"))
+                if (GUI.Button(new Rect(rect.x + 8f, rowY, PanelWidth, RowHeight - 4f), $"{ItemText.Name(placed.Item)} ×{placed.Count}  →"))
                     _player.RequestStore(placed.Item.Id.Value);
                 rowY += RowHeight;
             }
             rowY = y;
             foreach (var placed in contents.ToList())
             {
-                if (GUI.Button(new Rect(rect.x + PanelWidth + 16f, rowY, PanelWidth, RowHeight - 4f), $"←  {Lang.Get(placed.Item.Name)} ×{placed.Count}"))
+                if (GUI.Button(new Rect(rect.x + PanelWidth + 16f, rowY, PanelWidth, RowHeight - 4f), $"←  {ItemText.Name(placed.Item)} ×{placed.Count}"))
                     _player.RequestTake(placed.Item.Id.Value);
                 rowY += RowHeight;
             }
