@@ -226,6 +226,7 @@ namespace Isle.UI.Prototype
             {
                 _player.RequestCook(_cookMethod, _cookPicks);
                 _cookPicks.Clear();
+                _cookOpen = false; // T-307: same as crafting
             }
             GUI.enabled = true;
         }
@@ -389,6 +390,7 @@ namespace Isle.UI.Prototype
             {
                 if (material != null) _player.RequestCraft(chosen.Id.Value, material.Id.Value);
                 else _player.RequestCraft(chosen.Id.Value);
+                _craftOpen = false; // T-307: the window gets out of the way once the work is under way
             }
             GUI.enabled = true;
         }

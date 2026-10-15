@@ -338,20 +338,23 @@ namespace Isle.UI.Art
         float FacingTarget(FigureAction action)
         {
             Vector2 shown = _shown;
+            // T-307: left and right as seen on screen, whichever way the view is turned.
+            static float Side(Vector2 ground) => Isle.Core.Util.ViewTilt.ToScreen(ground).x;
             switch (action)
             {
                 case FigureAction.Gather when _player.Gathering != null:
-                    return Mathf.Sign(_player.Gathering.Position.x - shown.x);
+                    return Mathf.Sign(Side(_player.Gathering.Position - shown));
                 case FigureAction.Gather or FigureAction.Swing when _player.Forge != null && NearestForge(shown) is { } anvil:
-                    return Mathf.Sign(anvil.x - shown.x);
+                    return Mathf.Sign(Side(anvil - shown));
                 case FigureAction.Cast or FigureAction.Bite or FigureAction.Reel:
-                    return Mathf.Sign(_player.CastPoint.x - shown.x);
+                    return Mathf.Sign(Side(_player.CastPoint - shown));
                 case FigureAction.Block:
-                    return Mathf.Abs(_player.BlockDirection.x) > 0.05f ? Mathf.Sign(_player.BlockDirection.x) : 0f;
+                    return Mathf.Abs(Side(_player.BlockDirection)) > 0.05f ? Mathf.Sign(Side(_player.BlockDirection)) : 0f;
                 case FigureAction.Swing or FigureAction.Draw when _player.IsOwner && AimPoint() is { } aim:
-                    return Mathf.Sign(aim.x - shown.x);
+                    return Mathf.Sign(Side(aim - shown));
             }
-            return Mathf.Abs(_velocity.x) > 0.15f ? Mathf.Sign(_velocity.x) : 0f;
+            var side = Side(_velocity);
+            return Mathf.Abs(side) > 0.15f ? Mathf.Sign(side) : 0f;
         }
 
         static Vector2? AimPoint()

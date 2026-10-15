@@ -27,7 +27,17 @@ namespace Isle.World.Island
         /// <summary>Placeholder shape for harvestable nodes; water spots have none and stay painted on the map.</summary>
         public SpriteRenderer View { get; set; }
 
-        public bool IsHarvestable => Def.Gather != null && UsesLeft > 0;
+        /// <summary>T-307: cut down (<see cref="WorldObjectDef.Fell"/>) — a stump until it grows back.</summary>
+        public bool Felled { get; set; }
+
+        public bool IsHarvestable => Def.Gather != null && UsesLeft > 0 && !Felled;
+
+        /// <summary>T-307: can be cut down now.</summary>
+        public bool IsFellable => Def.Fell != null && !Felled;
+
+        /// <summary>Still standing (it blocks, it's drawn whole): not felled, and not used up unless it can be felled
+        /// (picking a palm's coconuts leaves the palm).</summary>
+        public bool IsStanding => !Felled && (Def.Gather == null || UsesLeft > 0 || Def.Fell != null);
         public bool IsDrinkable => Def.Drink != null;
     }
 
@@ -114,7 +124,7 @@ namespace Isle.World.Island
             {
                 if (!_nodeByTile.TryGetValue(new Vec2Int(centre.X + dx, centre.Y + dy), out var node)) continue;
                 var radius = node.Def.BlockRadius;
-                if (radius <= 0f || (node.Def.Gather != null && node.UsesLeft <= 0)) continue;
+                if (radius <= 0f || !node.IsStanding) continue;
                 if ((node.Position - world).sqrMagnitude < radius * radius) return true;
             }
             return false;
@@ -221,8 +231,9 @@ namespace Isle.World.Island
             _realSeconds += UnityEngine.Time.deltaTime;
             foreach (var node in _nodes)
             {
-                if (node.Def.Gather == null || node.UsesLeft > 0 || _realSeconds < node.RespawnAt) continue;
+                if (node.Def.Gather == null || (node.UsesLeft > 0 && !node.Felled) || _realSeconds < node.RespawnAt) continue;
                 node.UsesLeft = node.Def.Gather.Uses;
+                node.Felled = false;
                 Paint(node);
                 _mapDirty = true;
             }
@@ -301,9 +312,10 @@ namespace Isle.World.Island
         public ResourceNode NodeAt(Vec2Int tile) => _nodeByTile.GetValueOrDefault(tile);
 
         /// <summary>Puts a node back the way a save recorded it.</summary>
-        public void RestoreNode(ResourceNode node, int usesLeft, float respawnInSeconds)
+        public void RestoreNode(ResourceNode node, int usesLeft, float respawnInSeconds, bool felled = false)
         {
             node.UsesLeft = usesLeft;
+            node.Felled = felled;
             node.RespawnAt = _realSeconds + respawnInSeconds;
             Paint(node);
             _mapDirty = true;
@@ -391,6 +403,23 @@ namespace Isle.World.Island
                 Paint(node);
                 _mapDirty = true;
             }
+            return true;
+        }
+
+        /// <summary>T-307 server-side felling: the node goes down to its stump, its harvest with it, and grows back after the
+        /// fell spec's respawn time. Returns the yield.</summary>
+        public bool TryFell(ResourceNode node, out NamespacedId item, out int count)
+        {
+            item = default;
+            count = 0;
+            if (!node.IsFellable) return false;
+            node.Felled = true;
+            node.UsesLeft = 0;
+            item = node.Def.Fell.Item;
+            count = node.Def.Fell.Count;
+            node.RespawnAt = _realSeconds + GatherCalculator.RespawnRealSeconds(node.Def.Fell.RespawnMinutes);
+            Paint(node);
+            _mapDirty = true;
             return true;
         }
 
@@ -485,7 +514,7 @@ namespace Isle.World.Island
             // Every node is drawn as its own shape; a depleted one shows what's left (visual.depleted: a stump,
             // rubble, a bare bush) or, without one, fades to a ghost of itself. The map pixel underneath keeps the
             // node's colour for the minimap while it has something to give.
-            var depleted = node.Def.Gather != null && node.UsesLeft <= 0;
+            var depleted = !node.IsStanding;
             ApplyLook(node);
             _map.SetPixel(node.Tile.X, node.Tile.Y, depleted ? BiomeColour(node.Tile) : NodeColour(node.Def));
         }
@@ -495,15 +524,16 @@ namespace Isle.World.Island
         {
             var view = node.View;
             if (view == null) return;
-            var depleted = node.Def.Gather != null && node.UsesLeft <= 0;
-            var remnant = depleted ? node.Def.Visual?.Depleted : null;
+            var depleted = !node.IsStanding;
+            var remnant = depleted ? node.Def.Visual?.Depleted
+                : node.Def.Gather != null && node.UsesLeft <= 0 ? node.Def.Visual?.Picked : null; // T-307: a palm with no coconuts
             var hash = NodeHash(node.Tile);
             var jitter = node.Def.Visual?.Jitter ?? 0f;
             var colour = NodeColour(node.Def);
             if (jitter > 0f) colour = Shade(colour, (int)(hash >> 8) % 3, jitter);
             var standing = node.Def.Gather != null;
             view.sprite = !standing ? ShapeLibrary.Sprite(node.Def.Visual?.Shape, colour)
-                : ShapeLibrary.StandingSprite(remnant ?? node.Def.Visual?.Shape, colour, remnant != null ? 0 : (int)(hash % 7919u));
+                : ShapeLibrary.StandingSprite(remnant ?? node.Def.Visual?.Shape, colour, depleted && remnant != null ? 0 : (int)(hash % 7919u));
             view.color = depleted && remnant == null ? DepletedTint : Color.white;
         }
 

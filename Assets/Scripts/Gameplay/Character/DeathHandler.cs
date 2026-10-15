@@ -88,6 +88,8 @@ namespace Isle.Gameplay.Character
         {
             transform.position = _lastShelter;
             IsDead = false;
+            // T-307: you don't come back into the jaws of whatever killed you.
+            Hunting.CreatureDirector.Instance?.ClearAround(_lastShelter, Hunting.CreatureDirector.StartClearRadiusTiles);
             if (TryGetComponent<PlayerMovement>(out var movement)) movement.Frozen = false;
             if (TryGetComponent<Vitals>(out var vitals)) vitals.ResetOnRespawn();
         }

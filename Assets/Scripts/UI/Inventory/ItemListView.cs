@@ -49,6 +49,8 @@ namespace Isle.UI.Inventory
 
         RectTransform _content;
         readonly List<GameObject> _rows = new();
+        readonly List<(ItemDef Item, RectTransform Fill, Image Bar, Text Label)> _freshness = new();
+        GridInventory _container;
 
         public void Bind(InventoryScreen screen, ListSource source, int containerIndex, RectTransform content)
         {
@@ -60,10 +62,13 @@ namespace Isle.UI.Inventory
 
         public int RowCount => _rows.Count;
 
-        public void Refresh(IReadOnlyList<ListEntry> entries)
+        /// <param name="container">The container the rows are in, for freshness (SYS-SPOIL-01); null for the ground.</param>
+        public void Refresh(IReadOnlyList<ListEntry> entries, GridInventory container = null)
         {
             foreach (var row in _rows) Destroy(row);
             _rows.Clear();
+            _freshness.Clear();
+            _container = container;
             var width = ((RectTransform)transform).rect.width;
             if (width <= 0f) width = ((RectTransform)transform).sizeDelta.x;
             for (var i = 0; i < entries.Count; i++)
@@ -95,12 +100,72 @@ namespace Isle.UI.Inventory
                 Label(rect, $"{kg:0.##} kg", width - 112f, 13, TextAnchor.MiddleRight, UiTheme.Muted, 96f);
                 // Gear shows its wear as a thin bar along the bottom (SYS-CRAFT-02).
                 if (entry.Wear != null && entry.Wear.Carcass == null && entry.Wear.NeedsRepair) WearLine(rect, entry.Wear.Fraction);
+                // T-307: food that spoils shows how fresh it is — a bar that shrinks right to left, green to red.
+                if (entry.Item.Spoilage != null && container != null) FreshnessBar(rect, entry.Item, width);
 
                 go.GetComponent<ItemRow>().Bind(this, entry);
                 go.GetComponent<ItemTooltip>().Bind(new Placement(entry.Item, entry.Key, false, entry.Count, entry.Wear), null);
                 _rows.Add(go);
             }
             _content.sizeDelta = new Vector2(_content.sizeDelta.x, entries.Count * RowPx + 8f);
+            RefreshFreshness();
+        }
+
+        /// <summary>T-307: freshness of the food rows, updated in place (spoilage moves with the clock, the rows don't).</summary>
+        public void RefreshFreshness()
+        {
+            if (_container == null) return;
+            foreach (var (item, fill, bar, label) in _freshness)
+            {
+                if (fill == null) continue;
+                var fresh = Mathf.Clamp01(1f - SpoilageTracker.Live.SpoilageOf(_container, item));
+                fill.anchorMax = new Vector2(fresh, 1f);
+                bar.color = FreshColour(fresh);
+                label.text = $"{fresh * 100f:0}%";
+                label.color = bar.color;
+            }
+        }
+
+        /// <summary>Green while fresh, through yellow, to red as it rots.</summary>
+        public static Color FreshColour(float fresh) =>
+            fresh > 0.5f ? Color.Lerp(new Color(0.95f, 0.8f, 0.3f), new Color(0.45f, 0.82f, 0.35f), (fresh - 0.5f) * 2f)
+            : Color.Lerp(new Color(0.88f, 0.25f, 0.2f), new Color(0.95f, 0.8f, 0.3f), fresh * 2f);
+
+        void FreshnessBar(RectTransform row, ItemDef item, float width)
+        {
+            // A dark track under the name, the coloured fill anchored at its left edge, the percentage beside it.
+            var track = new GameObject("Freshness", typeof(RectTransform), typeof(Image));
+            var trackRect = (RectTransform)track.transform;
+            trackRect.SetParent(row, false);
+            trackRect.anchorMin = trackRect.anchorMax = trackRect.pivot = new Vector2(0f, 0f);
+            trackRect.anchoredPosition = new Vector2(RowPx + 2f, 5f);
+            trackRect.sizeDelta = new Vector2(Mathf.Max(60f, width - RowPx - 200f), 5f);
+            var trackImage = track.GetComponent<Image>();
+            trackImage.color = new Color(0f, 0f, 0f, 0.45f);
+            trackImage.raycastTarget = false;
+
+            var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            var fillRect = (RectTransform)fill.transform;
+            fillRect.SetParent(trackRect, false);
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.pivot = new Vector2(0f, 0.5f);
+            fillRect.offsetMin = fillRect.offsetMax = Vector2.zero;
+            var bar = fill.GetComponent<Image>();
+            bar.raycastTarget = false;
+
+            var label = new GameObject("Percent", typeof(RectTransform), typeof(Text));
+            var labelRect = (RectTransform)label.transform;
+            labelRect.SetParent(row, false);
+            labelRect.anchorMin = labelRect.anchorMax = labelRect.pivot = new Vector2(0f, 0f);
+            labelRect.anchoredPosition = new Vector2(RowPx + 8f + trackRect.sizeDelta.x, 0f);
+            labelRect.sizeDelta = new Vector2(44f, 15f);
+            var text = label.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = 11;
+            text.alignment = TextAnchor.MiddleLeft;
+            text.raycastTarget = false;
+            _freshness.Add((item, fillRect, bar, text));
         }
 
         static void Label(RectTransform parent, string text, float x, int size, TextAnchor anchor, Color colour, float width)

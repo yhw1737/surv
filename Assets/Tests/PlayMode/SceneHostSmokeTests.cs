@@ -75,6 +75,14 @@ namespace Isle.Tests.PlayMode
             // skills would skew every number below, so the rest of the run plays a blank survivor.
             Assert.IsNotNull(FindLocalPlayer().Survivor, "no survivor applied on a fresh island");
             Assert.GreaterOrEqual(LootPiles.All.Count(p => p.Shape == "wreckage"), 3, "no wreckage on the beach");
+            // T-307: nothing waits at the start — no creature close by (a margin for ones that wandered in since), and
+            // no dungeon entrance within reach of the first steps.
+            var startAt = (Vector2)FindLocalPlayer().transform.position;
+            var nearStart = CreatureDirector.Instance.Creatures.Where(c => !c.InDungeon && c.Def.Boss == null
+                && Vector2.Distance(c.Position, startAt) < CreatureDirector.StartClearRadiusTiles - 6f).ToList();
+            Assert.IsEmpty(nearStart, $"creatures at the start: {string.Join(", ", nearStart.Select(c => c.Def.Id.Value))}");
+            foreach (var site in Isle.Gameplay.Dungeons.DungeonDirector.Instance.Sites)
+                Assert.GreaterOrEqual(Vector2.Distance(site.Entrance, startAt), Isle.Gameplay.Dungeons.DungeonDirector.StartClearTiles - 2f, $"{site.Def.Id} next to the start");
             LootPiles.Clear();
             StartDirector.Become(FindLocalPlayer(), new Survivor { Name = "Test" }, setSkills: false);
             foreach (var skill in DefRegistry.All<SkillDef>()) FindLocalPlayer().Skills.Restore(skill.Id, 0);
@@ -1067,6 +1075,40 @@ namespace Isle.Tests.PlayMode
             player.RequestRepairEquipped("main_hand");
             yield return WaitUntil(() => inventory.Slots.WearOf("main_hand").Max == 55, 3f, "hatchet never repaired");
             Assert.AreEqual(55, inventory.Slots.WearOf("main_hand").Current);
+
+            // T-307: a palm with the hatchet in hand is chopped down for wood (2 + 1 tool bonus) — a stump, coconuts and
+            // all; with empty hands its coconuts are picked and it stays standing.
+            ClearLeftovers(inventory);
+            var palm = world.Nodes.First(n => n.Def.Id.Value == "isle:palm_tree" && n.IsFellable && world.NearestWater(n.Position, 2f) == null
+                && !world.Nodes.Any(o => o != n && (o.IsHarvestable || o.IsFellable) && Vector2.Distance(o.Position, n.Position) < 2.5f));
+            Teleport(player, palm.Position);
+            ClearCreaturesNear(player.transform.position);
+            woodBefore = CountOf(inventory, "isle:wood");
+            Assert.IsTrue(player.WouldFell(palm), "a hatchet in hand doesn't fell a palm");
+            player.RequestInteract();
+            yield return WaitUntil(() => palm.Felled, 15f, "the palm was never felled");
+            Assert.AreEqual(woodBefore + 3, CountOf(inventory, "isle:wood"), "felling a palm: 2 wood + 1 for the hatchet");
+            Assert.IsFalse(palm.IsStanding, "a felled palm still stands");
+            Assert.IsFalse(palm.IsHarvestable, "a felled palm still has coconuts");
+            var hatchetBack = inventory.Slots.Get("main_hand");
+            player.RequestUnequipSlot("main_hand");
+            yield return WaitUntil(() => inventory.Slots.Get("main_hand") == null, 3f, "hatchet never put away");
+            var coconutPalm = world.Nodes.First(n => n.Def.Id.Value == "isle:palm_tree" && n.IsHarvestable && n != palm && world.NearestWater(n.Position, 2f) == null
+                && !world.Nodes.Any(o => o != n && (o.IsHarvestable || o.IsFellable) && Vector2.Distance(o.Position, n.Position) < 2.5f));
+            Teleport(player, coconutPalm.Position);
+            ClearCreaturesNear(player.transform.position);
+            var coconuts = CountOf(inventory, "isle:coconut");
+            for (var pick = 0; pick < coconutPalm.Def.Gather.Uses; pick++)
+            {
+                var uses = coconutPalm.UsesLeft;
+                player.RequestInteract();
+                yield return WaitUntil(() => coconutPalm.UsesLeft < uses, 15f, "no coconut picked");
+            }
+            Assert.AreEqual(coconuts + coconutPalm.Def.Gather.Uses, CountOf(inventory, "isle:coconut"));
+            Assert.IsTrue(coconutPalm.IsStanding, "picking coconuts cut the palm down");
+            Assert.IsFalse(coconutPalm.Felled);
+            if (hatchetBack != null) player.RequestEquipItem(hatchetBack.Id.Value);
+            yield return WaitUntil(() => inventory.Slots.Get("main_hand") != null, 3f, "hatchet never back in hand");
 
             // Tiered veins: an iron vein refuses a stone pickaxe and yields to a copper one.
             Give(inventory, "isle:pickaxe__stone", 1);

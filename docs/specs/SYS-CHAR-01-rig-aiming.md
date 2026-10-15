@@ -88,6 +88,23 @@ BaseSpeed = 4.2 tiles/s
 
 Dodge roll (Space): 0.6 s total, i-frames 0.1–0.45 s, stamina 25, disabled when overweight. Direction = movement input, or away from the aim if no input.
 
+**Acceleration (T-307, 2026-10-14) [proposed].** Walking and sprinting no longer start and stop instantly: from standing
+to full speed takes `AccelSeconds = 0.18 s` (rate `max(target, BaseSpeed) / 0.18` tiles/s²); letting go brakes at
+`BaseSpeed × 1.65 / DecelSeconds` with `DecelSeconds = 0.12 s` (a sprint stops in 0.12 s, a walk sooner). Hitting a wall
+zeroes that axis. A roll ignores it; leaving a roll carries walking speed. The velocity is part of the predicted state
+(reconciled with the position). `MovementCalculator.Accelerate`.
+
+## Controls (T-307, 2026-10-14)
+
+| Key | Action |
+|---|---|
+| WASD | move — relative to the screen, whichever way the view is turned |
+| Q / E | turn the view 45° left / right (eases over 0.25 s) [proposed] |
+| **F** | interact (gather, fell, drink, open, pick up, butcher…) — **was E** |
+| **V** | cast at the water under the mouse / reel in — **was F** |
+
+Older specs that say "E" for interacting mean **F** now.
+
 ## Weapon grips
 
 | Grip | Arm_Front | Arm_Back | Used by |

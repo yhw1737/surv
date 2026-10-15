@@ -272,8 +272,8 @@ namespace Isle.UI.Prototype
             }
 
             foreach (var node in world.Nodes)
-                if (node.Def.Gather != null && node.UsesLeft < node.Def.Gather.Uses)
-                    save.Nodes.Add(new SavedNode { X = node.Tile.X, Y = node.Tile.Y, UsesLeft = node.UsesLeft, RespawnInSeconds = Mathf.Max(0f, node.RespawnAt - world.Now) });
+                if (node.Def.Gather != null && (node.UsesLeft < node.Def.Gather.Uses || node.Felled))
+                    save.Nodes.Add(new SavedNode { X = node.Tile.X, Y = node.Tile.Y, UsesLeft = node.UsesLeft, RespawnInSeconds = Mathf.Max(0f, node.RespawnAt - world.Now), Felled = node.Felled });
 
             foreach (var fire in WorldObjectRegistry.All)
             {
@@ -407,7 +407,7 @@ namespace Isle.UI.Prototype
             foreach (var saved in save.Nodes)
             {
                 var node = world.NodeAt(new Vec2Int(saved.X, saved.Y));
-                if (node != null) world.RestoreNode(node, saved.UsesLeft, saved.RespawnInSeconds);
+                if (node != null) world.RestoreNode(node, saved.UsesLeft, saved.RespawnInSeconds, saved.Felled);
             }
 
             var fires = WorldObjectRegistry.All;

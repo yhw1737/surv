@@ -108,6 +108,12 @@ range is roughly 1–10 s, with trees the longest.
 | `gather.respawn_minutes` | In-game minutes until a depleted node is restored |
 | `gather.time_sec` | Seconds a harvest takes at level 1 |
 
+**Felling (T-307, 2026-10-14).** A node may also carry a `fell` block (same fields as `gather`; `uses` is ignored).
+With a main-hand item tagged `fell.tool_tag` the interact key fells the node instead of picking it: it goes to its
+`visual.depleted` remnant, its `gather` harvest goes with it, and it grows back whole after `fell.respawn_minutes`.
+Picking a fellable node clean doesn't remove it: it stays standing (and blocking) and is drawn as `visual.picked`
+until its harvest grows back. Saved per node (`SavedNode.Felled`).
+
 - Reach: `PlayerInteraction.ReachTiles` (2 tiles). The server re-checks reach (SYS-NET-01).
 - Respawn is measured in in-game time: `realSeconds = respawnMinutes / WorldClock.MinutesPerRealSecond`.
   1 in-game day (1440 min) = 20 real minutes.
@@ -123,7 +129,7 @@ Absolute Rule 6).
 | `isle:rock` | forest, marsh | 0.004 **[invented]** | stone ×2, 2 uses | 8 | 5 days **[invented]** |
 | `isle:berry_bush` | forest | 0.006 **[invented]** | berries ×3, 1 use | 3 | 1 day **[invented]** |
 | `isle:tall_grass` | forest, marsh | 0.01 **[invented]** | fiber ×2, 1 use | 2 | 12 h **[invented]** |
-| `isle:palm_tree` | coast | 0.006 **[invented]** | coconut ×1, 2 uses | 6 | 2 days **[invented]** |
+| `isle:palm_tree` | coast | 0.006 **[invented]** | coconut ×1, 2 uses (stays standing, `palm_bare`); **fell** with an axe: wood ×2 (+1 axe), 8 s, back in 3 days **[proposed]** | 6 | 2 days **[invented]** |
 
 ## Verification
 

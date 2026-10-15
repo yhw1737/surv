@@ -306,11 +306,13 @@ namespace Isle.Gameplay.Dungeons
             // Entrances placed beside another dungeon's (the Abyss under the Ruin) go after the ones they stand by.
             var defs = DefRegistry.All<DungeonDef>().OrderBy(d => d.Entrance?.Near.IsValid == true ? 1 : 0).ThenBy(d => d.Id.Value).ToList();
             var placed = new List<Vec2Int>();
+            var start = IslandWorld.WorldToTile(Character.StartDirector.StartPoint(world));
             for (var i = 0; i < defs.Count; i++)
             {
                 var def = defs[i];
                 var near = def.Entrance?.Near.IsValid == true ? _sites.FirstOrDefault(s => s.Def.Id == def.Entrance.Near) : null;
-                var tile = near != null ? PickTileBeside(world, IslandWorld.WorldToTile(near.Entrance), placed, i) : PickEntranceTile(world, def, placed, i);
+                var tile = near != null ? PickTileBeside(world, IslandWorld.WorldToTile(near.Entrance), placed, i) 
+                    : PickEntranceTile(world, def, placed, i, start) ?? PickEntranceTile(world, def, placed, i, new Vec2Int(-100000, -100000)); // a biome only near the start
                 if (tile == null) continue;
                 placed.Add(tile.Value);
                 var site = new Site { Def = def, Index = i, Entrance = IslandWorld.TileToWorld(tile.Value) };
@@ -345,7 +347,10 @@ namespace Isle.Gameplay.Dungeons
 
         /// <summary>A walkable tile in the def's biome, as far as possible from the entrances already placed (spread over
         /// the island like the landmarks). Seed-deterministic through the island's hash.</summary>
-        static Vec2Int? PickEntranceTile(IslandWorld world, DungeonDef def, List<Vec2Int> placed, int salt)
+        /// <summary>T-307: no entrance this close to where players wake. [proposed]</summary>
+        public const float StartClearTiles = 40f;
+
+        static Vec2Int? PickEntranceTile(IslandWorld world, DungeonDef def, List<Vec2Int> placed, int salt, Vec2Int start)
         {
             const int step = 8;
             var biomeName = def.Entrance?.Biome.IsValid == true ? def.Entrance.Biome.Name : null;
@@ -357,6 +362,7 @@ namespace Isle.Gameplay.Dungeons
                 var tile = new Vec2Int(x, y);
                 if (!world.IsWalkable(IslandWorld.TileToWorld(tile))) continue;
                 if (biomeName != null && world.Island.BiomeAt(x, y).ToString().ToLowerInvariant() != biomeName) continue;
+                if (Vector2.Distance(new Vector2(start.X, start.Y), new Vector2(x, y)) < StartClearTiles) continue;
                 var score = placed.Count == 0 ? 0.0 : placed.Min(p => Mathf.Sqrt((p.X - x) * (p.X - x) + (p.Y - y) * (p.Y - y)));
                 score += Hash(world.Seed ^ (salt * 977), x, y) % 1000 / 1000.0;
                 if (score <= bestScore) continue;

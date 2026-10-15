@@ -24,6 +24,11 @@ namespace Isle.Data
         /// <summary>Harvestable node (SYS-WORLD-03 §Gathering). Null for non-harvestable objects.</summary>
         public GatherSpec Gather { get; init; }
 
+        /// <summary>T-307: a second way to work the node — felling it with <see cref="GatherSpec.ToolTag"/> in hand (a palm
+        /// for wood). It takes the whole node: its <see cref="Gather"/> harvest goes with it until it grows back after
+        /// this spec's respawn time. Null for nodes that can't be felled.</summary>
+        public GatherSpec Fell { get; init; }
+
         /// <summary>Water source (SYS-WORLD-03 §Water). Null for anything that isn't drinkable.</summary>
         public DrinkSpec Drink { get; init; }
 

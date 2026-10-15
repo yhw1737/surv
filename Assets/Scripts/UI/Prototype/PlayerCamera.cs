@@ -3,6 +3,9 @@ using Isle.Core.Util;
 using Isle.Gameplay.Character;
 using Isle.World.Island;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace Isle.UI.Prototype
 {
@@ -27,6 +30,15 @@ namespace Isle.UI.Prototype
 
             var target = LocalPlayer();
             if (target == null) return;
+
+            // T-307: Q / E turn the view a step around the player; everything standing turns to keep facing the camera.
+            var kb = Keyboard.current;
+            if (kb != null && GUIUtility.keyboardControl == 0 && Time.timeScale > 0f)
+            {
+                if (kb.qKey.wasPressedThisFrame) ViewTilt.Turn(-1);
+                if (kb.eKey.wasPressedThisFrame) ViewTilt.Turn(1);
+            }
+            if (ViewTilt.StepTurn(Time.unscaledDeltaTime) || _sortedYaw != ViewTilt.YawDegrees) ApplySortAxis();
 
             _camera.clearFlags = CameraClearFlags.SolidColor;
             _camera.backgroundColor = IslandWorld.SeaColour;
@@ -54,6 +66,32 @@ namespace Isle.UI.Prototype
 
         Vector2 _focus;
         bool _hasFocus;
+        float _sortedYaw;
+
+        static readonly System.Reflection.FieldInfo SortAxisField =
+            typeof(Renderer2DData).GetField("m_TransparencySortAxis", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        /// <summary>T-307: standing things draw back to front along the screen's up direction. URP's 2D renderer reads
+        /// the sort axis only from its asset, so it's set there (and put back to north when the camera goes away, so
+        /// the asset isn't left turned).</summary>
+        void ApplySortAxis()
+        {
+            _sortedYaw = ViewTilt.YawDegrees;
+            SetSortAxis(ViewTilt.ScreenUp);
+        }
+
+        static void SetSortAxis(Vector2 up)
+        {
+            if (SortAxisField == null || GraphicsSettings.currentRenderPipeline is not UniversalRenderPipelineAsset asset) return;
+            foreach (var data in asset.rendererDataList)
+                if (data is Renderer2DData renderer2D) SortAxisField.SetValue(renderer2D, new Vector3(up.x, up.y, 0f));
+        }
+
+        void OnDestroy()
+        {
+            ViewTilt.ResetYaw();
+            SetSortAxis(Vector2.up);
+        }
 
         static PlayerInteraction LocalPlayer()
         {

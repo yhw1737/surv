@@ -268,3 +268,8 @@ uses, tier 3 (iron pickaxe or better), 14 s. Hollow knight and Warden use the `a
 
 **Not yet (other systems):** the Heart and the Keeper / Crown of the Deep endings (SYS-END-01) — the Warden drops
 ore only; "less loot" as a curse (the spec lists it with a ❓; not built); abyss creatures as artifact sources.
+
+## Entrances away from the start (T-307, 2026-10-14) [proposed]
+No entrance is placed within 40 tiles of where players wake (`StartDirector.StartPoint`, seed-deterministic). A biome
+found only near the start falls back to the old rule. Existing saves see entrances move (placement is recomputed from
+the seed on load).

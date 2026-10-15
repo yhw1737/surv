@@ -46,6 +46,9 @@ id, not a place.
   container. Right-click: the item's menu (eat, drink, wear, hold, place, plant, tend, move to each container, drop,
   put on the fire / take out).
 - Dragging a row off both panels drops it on the ground.
+- **Freshness (T-307).** A row of food that spoils carries a bar under its name: full and green when fresh, shrinking
+  right to left and turning yellow then red as it spoils, with the percentage beside it (carried containers, crates,
+  the fire; not the ground).
 
 ## Server
 Every move is a request; the server checks capacity and moves what fits (`InventoryNetwork.RequestTransfer`):
